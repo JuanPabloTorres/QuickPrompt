@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Application
+    x:Class="QuickPrompt.App"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:QuickPrompt.Converters"
+    xmlns:local="clr-namespace:QuickPrompt">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--  Colores de la Paleta  -->
+            <Color x:Key="PrimaryGreen">#16C47F</Color>
+            <Color x:Key="PrimaryYellow">#FFD65A</Color>
+            <Color x:Key="PrimaryOrange">#FF9D23</Color>
+            <Color x:Key="PrimaryRed">#F93827</Color>
+            <Color x:Key="NeutralGray">#E6E6E6</Color>
+            <Color x:Key="TextDark">#333333</Color>
+            <Color x:Key="TextLight">#FFFFFF</Color>
+
+            <Color x:Key="AppBlack">#242124</Color>
+
+            <!--  Estilo Base para Botones  -->
+            <Style x:Key="baseBtn" TargetType="Button">
+                <Setter Property="HeightRequest" Value="50" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="10,5" />
+                <Setter Property="Margin" Value="5" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{StaticResource TextLight}" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow
+                            Brush="{StaticResource Black}"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="5,5" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--  Botón Principal  -->
+            <Style
+                x:Key="PrimaryButtonStyle"
+                BasedOn="{StaticResource baseBtn}"
+                TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGreen}" />
+
+            </Style>
+
+            <!--  Botón Secundario  -->
+            <Style
+                x:Key="SecondaryButtonStyle"
+                BasedOn="{StaticResource baseBtn}"
+                TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryYellow}" />
+                <Setter Property="TextColor" Value="{StaticResource TextDark}" />
+            </Style>
+
+            <!--  Botón de Advertencia  -->
+            <Style
+                x:Key="WarningButtonStyle"
+                BasedOn="{StaticResource baseBtn}"
+                TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryOrange}" />
+
+            </Style>
+
+            <!--  Botón Crítico  -->
+            <Style
+                x:Key="CriticalButtonStyle"
+                BasedOn="{StaticResource baseBtn}"
+                TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryRed}" />
+
+            </Style>
+
+
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+
+        </ResourceDictionary>
+
+
+    </Application.Resources>
+</Application>

@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Quick Prompt"
+    BackgroundColor="WhiteSmoke">
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="20"
+            HorizontalOptions="FillAndExpand"
+            Spacing="20">
+
+            <!--  Título  -->
+            <Label
+                FontAttributes="Bold"
+                FontSize="24"
+                HorizontalOptions="Center"
+                Text="Gestión de Prompts"
+                TextColor="{StaticResource TextDark}" />
+
+            <!--  Entrada para el Título  -->
+            <Border
+                Padding="10"
+                BackgroundColor="GhostWhite"
+                Stroke="{StaticResource PrimaryGreen}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Entry
+                    FontSize="16"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Título del Prompt"
+                    PlaceholderColor="{StaticResource NeutralGray}"
+                    Text="{Binding PromptTitle}" />
+            </Border>
+
+            <!--  Entrada para la Descripción  -->
+            <Border
+                Padding="10"
+                BackgroundColor="GhostWhite"
+                Stroke="{StaticResource PrimaryYellow}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Entry
+                    FontSize="16"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Descripción (opcional)"
+                    PlaceholderColor="{StaticResource NeutralGray}"
+                    Text="{Binding PromptDescription}" />
+            </Border>
+
+            <!--  Editor para el Prompt  -->
+            <Border
+                Padding="10"
+                BackgroundColor="GhostWhite"
+                Stroke="{StaticResource PrimaryOrange}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Editor
+                    AutoSize="TextChanges"
+                    CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                    FontSize="16"
+                    HeightRequest="150"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Escribe aquí tu Prompt..."
+                    PlaceholderColor="{StaticResource NeutralGray}"
+                    SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                    Text="{Binding PromptText}" />
+            </Border>
+
+            <!--  Texto seleccionado  -->
+            <Label
+                Margin="0,10,0,5"
+                FontSize="14"
+                Text="{Binding SelectedTextLabel}"
+                TextColor="{StaticResource TextDark}" />
+
+            <!--  Botones  -->
+            <Grid
+                ColumnDefinitions="*, *"
+                ColumnSpacing="10"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                RowDefinitions="Auto, Auto, Auto"
+                RowSpacing="10">
+                <!--  Fila 1  -->
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Command="{Binding SavePromptCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="Guardar Prompt" />
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Command="{Binding CreateVariableCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="Crear Variable" />
+
+                <!--  Fila 2  -->
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Command="{Binding RemoveBracesFromSelectedTextCommand}"
+                    Style="{StaticResource WarningButtonStyle}"
+                    Text="Quitar Llaves" />
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Command="{Binding CopyToClipboardCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Text="Copiar Prompt" />
+
+                <!--  Fila 3  -->
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Command="{Binding ClearTextCommand}"
+                    Style="{StaticResource CriticalButtonStyle}"
+                    Text="Borrar Texto" />
+            </Grid>
+
+            <!--  Indicador de Carga  -->
+            <ActivityIndicator
+                HeightRequest="50"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                VerticalOptions="Center"
+                Color="{StaticResource PrimaryGreen}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

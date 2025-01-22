@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.Pages.EditPromptPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Editar Prompt">
+
+    <VerticalStackLayout Padding="10" Spacing="20">
+        <Label
+            FontAttributes="Bold"
+            FontSize="24"
+            HorizontalOptions="Center"
+            Text="Editar Prompt" />
+
+        <!--  Entrada para el Título  -->
+        <Border
+            Padding="10"
+            BackgroundColor="GhostWhite"
+            Stroke="{StaticResource PrimaryGreen}"
+            StrokeShape="RoundRectangle 10,10,10,10"
+            StrokeThickness="1">
+            <Entry
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Placeholder="Título"
+                Text="{Binding PromptTemplate.Title}" />
+        </Border>
+
+        <!--  Entrada para la Descripción  -->
+        <Border
+            Padding="10"
+            BackgroundColor="GhostWhite"
+            Stroke="{StaticResource PrimaryYellow}"
+            StrokeShape="RoundRectangle 10,10,10,10"
+            StrokeThickness="1">
+            <Entry
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Placeholder="Descripción"
+                Text="{Binding PromptTemplate.Description}" />
+        </Border>
+
+        <!--  Editor para el Prompt  -->
+        <Border
+            Padding="10"
+            BackgroundColor="GhostWhite"
+            Stroke="{StaticResource PrimaryOrange}"
+            StrokeShape="RoundRectangle 10,10,10,10"
+            StrokeThickness="1">
+            <Editor
+                CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                HeightRequest="150"
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Placeholder="Plantilla del Prompt"
+                SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                Text="{Binding PromptTemplate.Template, Mode=TwoWay}" />
+        </Border>
+
+        <!--  Texto seleccionado  -->
+        <Label
+            Margin="0,10,0,5"
+            FontSize="14"
+            Text="{Binding SelectedTextLabel}"
+            TextColor="{StaticResource TextDark}" />
+
+        <Grid
+            ColumnDefinitions="*, *"
+            ColumnSpacing="10"
+            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+            RowDefinitions="Auto, Auto"
+            RowSpacing="10">
+            <!--  Fila 1  -->
+            <Button
+                Grid.Row="0"
+                Grid.Column="0"
+                Command="{Binding SaveChangesCommand}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Text="Guardar Cambios" />
+            <Button
+                Grid.Row="0"
+                Grid.Column="1"
+                Command="{Binding CreateVariableCommand}"
+                Style="{StaticResource SecondaryButtonStyle}"
+                Text="Crear Variable" />
+
+            <!--  Fila 2  -->
+            <Button
+                Grid.Row="1"
+                Grid.Column="0"
+                Command="{Binding RemoveBracesFromSelectedTextCommand}"
+                Style="{StaticResource WarningButtonStyle}"
+                Text="Quitar Llaves" />
+
+            <!--  Fila 2  -->
+            <Button
+                Grid.Row="1"
+                Grid.Column="1"
+                Command="{Binding RemoveBracesFromSelectedTextCommand}"
+                Style="{StaticResource CriticalButtonStyle}"
+                Text="Ir a Ejecutar" />
+        </Grid>
+
+        <!--  Indicador de Carga  -->
+        <ActivityIndicator
+            HeightRequest="50"
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
+            VerticalOptions="Center"
+            Color="{StaticResource PrimaryGreen}" />
+    </VerticalStackLayout>
+</ContentPage>
