@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using QuickPrompt.CustomEntries;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.ViewModels;
+using System.Reflection;
 using System.Text.Json;
 
 namespace QuickPrompt
@@ -28,10 +30,13 @@ namespace QuickPrompt
             // Cargar el archivo JSON
             var appSettings = LoadAppSettings();
 
+            // Recuperar la API Key desde la configuración
+            var apiKey = appSettings["GPTApiKeys:Key1"];
+
             builder.Services.AddSingleton<PromptDatabaseService>();  // Inyectar el servicio de base de datos
 
             // Registro del servicio para ChatGPT
-            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(appSettings.ApiKeys.Key1));
+            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
 
             // Registro del ViewModel
             builder.Services.AddTransient<MainPageViewModel>();
@@ -60,15 +65,40 @@ namespace QuickPrompt
             return builder.Build();
         }
 
-        private static AppSettings LoadAppSettings()
+        public static IConfiguration LoadAppSettings()
         {
-            var jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+            var assembly = Assembly.GetExecutingAssembly(); // Obtener el ensamblado actual
 
-            if (!File.Exists(jsonFilePath))
-                throw new FileNotFoundException($"No se encontró el archivo de configuración: {jsonFilePath}");
+            var resourceName = "QuickPrompt.appsettings.json"; // Nombre completo del recurso incrustado
 
-            var json = File.ReadAllText(jsonFilePath);
-            return JsonSerializer.Deserialize<AppSettings>(json);
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+            {
+                throw new FileNotFoundException($"El recurso incrustado '{resourceName}' no fue encontrado.");
+            }
+
+            var configuration = new ConfigurationBuilder().AddJsonStream(stream) // Cargar desde el recurso incrustado
+                .Build();
+
+            return configuration;
         }
+
+        //private static AppSettings LoadAppSettings()
+        //{
+        //    // Directorio de salida para aplicaciones MAUI
+        //    var jsonFilePath = Path.Combine(FileSystem.AppDataDirectory, "appsettings.json");
+
+        //    // Validar existencia del archivo
+        //    if (!File.Exists(jsonFilePath))
+        //    {
+        //        throw new FileNotFoundException($"No se encontró el archivo de configuración en: {jsonFilePath}");
+        //    }
+
+        //    // Leer y deserializar el archivo JSON
+        //    var json = File.ReadAllText(jsonFilePath);
+        //    return JsonSerializer.Deserialize<AppSettings>(json);
+        //}
+
+
     }
 }
