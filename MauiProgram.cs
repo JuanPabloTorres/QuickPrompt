@@ -13,50 +13,20 @@ namespace QuickPrompt
 {
     public static class MauiProgram
     {
- 
-
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .UseMauiCommunityToolkit()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+            ConfigureBuilder(builder);
 
-            // Cargar el archivo JSON
             var appSettings = LoadAppSettings();
 
-            // Recuperar la API Key desde la configuración
-            var apiKey = appSettings["GPTApiKeys:Key1"];
+            RegisterServices(builder, appSettings);
 
-            builder.Services.AddSingleton<PromptDatabaseService>();  // Inyectar el servicio de base de datos
+            RegisterViewModels(builder);
 
-            // Registro del servicio para ChatGPT
-            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
+            RegisterPages(builder);
 
-            // Registro del ViewModel
-            builder.Services.AddTransient<MainPageViewModel>();
-
-            builder.Services.AddTransient<LoadPromptsPageViewModel>();
-
-            builder.Services.AddTransient<PromptDetailsPageViewModel>();
-
-            builder.Services.AddTransient<EditPromptPageViewModel>();
-
-            // Registro de la página principal con inyección de dependencias
-            builder.Services.AddTransient<MainPage>();
-
-            builder.Services.AddTransient<PromptDetailsPage>();
-
-            builder.Services.AddTransient<EditPromptPage>();
-
-            Routing.RegisterRoute("PromptDetailsPage", typeof(PromptDetailsPage));
-            
-            Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
+            ConfigureRouting();
 
 #if DEBUG
             builder.Logging.AddDebug();
@@ -65,11 +35,25 @@ namespace QuickPrompt
             return builder.Build();
         }
 
-        public static IConfiguration LoadAppSettings()
+        // Configura el builder base de la aplicación
+        private static void ConfigureBuilder(MauiAppBuilder builder)
         {
-            var assembly = Assembly.GetExecutingAssembly(); // Obtener el ensamblado actual
+            builder
+                .UseMauiApp<App>()
+                .UseMauiCommunityToolkit()
+                .ConfigureFonts(fonts =>
+                {
+                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                });
+        }
 
-            var resourceName = "QuickPrompt.appsettings.json"; // Nombre completo del recurso incrustado
+        // Carga las configuraciones desde un recurso incrustado
+        private static IConfiguration LoadAppSettings()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+
+            const string resourceName = "QuickPrompt.appsettings.json";
 
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
@@ -77,28 +61,49 @@ namespace QuickPrompt
                 throw new FileNotFoundException($"El recurso incrustado '{resourceName}' no fue encontrado.");
             }
 
-            var configuration = new ConfigurationBuilder().AddJsonStream(stream) // Cargar desde el recurso incrustado
+            return new ConfigurationBuilder()
+                .AddJsonStream(stream)
                 .Build();
-
-            return configuration;
         }
 
-        //private static AppSettings LoadAppSettings()
-        //{
-        //    // Directorio de salida para aplicaciones MAUI
-        //    var jsonFilePath = Path.Combine(FileSystem.AppDataDirectory, "appsettings.json");
+        // Registra los servicios necesarios en el contenedor de dependencias
+        private static void RegisterServices(MauiAppBuilder builder, IConfiguration appSettings)
+        {
+            var apiKey = appSettings["GPTApiKeys:Key1"];
 
-        //    // Validar existencia del archivo
-        //    if (!File.Exists(jsonFilePath))
-        //    {
-        //        throw new FileNotFoundException($"No se encontró el archivo de configuración en: {jsonFilePath}");
-        //    }
+            builder.Services.AddSingleton<PromptDatabaseService>();
 
-        //    // Leer y deserializar el archivo JSON
-        //    var json = File.ReadAllText(jsonFilePath);
-        //    return JsonSerializer.Deserialize<AppSettings>(json);
-        //}
+            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
+        }
 
+        // Registra los ViewModels en el contenedor de dependencias
+        private static void RegisterViewModels(MauiAppBuilder builder)
+        {
+            builder.Services.AddTransient<MainPageViewModel>();
 
+            builder.Services.AddTransient<LoadPromptsPageViewModel>();
+
+            builder.Services.AddTransient<PromptDetailsPageViewModel>();
+
+            builder.Services.AddTransient<EditPromptPageViewModel>();
+        }
+
+        // Registra las páginas en el contenedor de dependencias
+        private static void RegisterPages(MauiAppBuilder builder)
+        {
+            builder.Services.AddTransient<MainPage>();
+
+            builder.Services.AddTransient<PromptDetailsPage>();
+
+            builder.Services.AddTransient<EditPromptPage>();
+        }
+
+        // Configura las rutas para la navegación
+        private static void ConfigureRouting()
+        {
+            Routing.RegisterRoute(nameof(PromptDetailsPage), typeof(PromptDetailsPage));
+
+            Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
+        }
     }
 }

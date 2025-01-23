@@ -181,7 +181,7 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
         handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
 
         // Incrementar el contador
-       this.selectedWordCount =handler.IncrementSelectedWordCount();
+        this.selectedWordCount = handler.IncrementSelectedWordCount();
 
         // Actualizar el estado global
         PromptText = handler.Text;
@@ -190,49 +190,6 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
         SelectedTextLabel = $"Texto seleccionado: {selectedWordCount}";
     }
-
-
-    //private void EncloseSelectedTextWithBraces()
-    //{
-    //    string selectedText = PromptText.Substring(CursorPosition, SelectionLength);
-
-    //    PromptText = PromptText.Remove(CursorPosition, SelectionLength).Insert(CursorPosition, $"{{{selectedText}}}");
-
-    //    selectedWordCount++;
-    //}
-
-    //private async void EncloseSelectedTextWithBraces()
-    //{
-    //    if (SelectionLength <= 0 || string.IsNullOrEmpty(PromptText))
-    //    {
-    //        await AlertService.ShowAlert("Error", "Selecciona un texto válido.");
-    //        return;
-    //    }
-
-    //    // Verificar si la selección ya está rodeada por llaves
-    //    bool hasOpeningBrace = CursorPosition > 0 && PromptText[CursorPosition - 1] == '{';
-
-    //    bool hasClosingBrace = CursorPosition + SelectionLength < PromptText.Length && PromptText[CursorPosition + SelectionLength] == '}';
-
-
-    //    if (hasOpeningBrace && hasClosingBrace)
-    //    {
-    //        await AlertService.ShowAlert("Aviso", "El texto seleccionado ya está rodeado por llaves.");
-
-    //        return;
-    //    }
-
-    //    // Obtener el texto seleccionado
-    //    string selectedText = PromptText.Substring(CursorPosition, SelectionLength);
-
-    //    // Envolver el texto con llaves
-    //    PromptText = PromptText.Remove(CursorPosition, SelectionLength).Insert(CursorPosition, $"{{{selectedText}}}");
-
-    //    // Incrementar el contador
-    //    selectedWordCount++;
-    //}
-
-
 
     [RelayCommand]
     private async Task RemoveBracesFromSelectedText()
