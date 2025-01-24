@@ -14,7 +14,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5d5;"
-                    Color="{StaticResource PrimaryOrange}" />
+                    Color="{StaticResource PrimaryBlueLight}" />
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Save data
@@ -29,11 +29,7 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
-            <Label
-                FontAttributes="Bold"
-                FontSize="24"
-                HorizontalOptions="Center"
-                Text="Lista de Prompts Guardados" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Lista de Prompts Guardados" />
 
             <!--  Barra de búsqueda  -->
             <SearchBar
@@ -44,17 +40,7 @@
                 Text="{Binding SearchQuery, Mode=TwoWay}"
                 TextChanged="OnSearchTextChanged" />
 
-            <!--  Botón para Actualizar  -->
-            <!--<Button
-            Command="{Binding RefreshPromptsCommand}"
-            Style="{StaticResource SecondaryButtonStyle}"
-            Text="Actualizar Lista">
 
-            <Button.ImageSource>
-            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe5d5;" />
-            </Button.ImageSource>
-
-            </Button>-->
 
             <CollectionView
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"

@@ -9,6 +9,8 @@ namespace QuickPrompt.Models;
  public class AppSettings
 {
     public GPTApiKeys ApiKeys { get; set; }
+
+    public string Version { get; set; }
 }
 
 public class GPTApiKeys

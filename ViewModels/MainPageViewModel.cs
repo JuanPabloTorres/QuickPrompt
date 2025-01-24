@@ -9,7 +9,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class MainPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel
+public partial class MainPageViewModel(PromptDatabaseService _databaseService, Models.AppSettings appSettings) : BaseViewModel
 {
     [ObservableProperty]
     private int cursorPosition;
@@ -39,6 +39,9 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
     [ObservableProperty]
     private string selectedTextLabel;
+
+    [ObservableProperty]
+    private string appVersion = $"Versión: {appSettings.Version}";
 
     public IList<string> variablesSeleccionadas = new List<string>();
 

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls;
 using QuickPrompt.CustomEntries;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
@@ -76,6 +77,14 @@ namespace QuickPrompt
             builder.Services.AddSingleton<PromptDatabaseService>();
 
             builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
+
+            // Registrar configuración de versión como servicio
+            var appSettingsModel = new AppSettings
+            {
+                Version = appSettings["AppSettings:Version"] ?? "1.0.0", // Valor predeterminado si no se encuentra
+            };
+
+            builder.Services.AddSingleton(appSettingsModel);
         }
 
         // Registra los ViewModels en el contenedor de dependencias

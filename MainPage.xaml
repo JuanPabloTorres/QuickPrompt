@@ -8,6 +8,51 @@
     BackgroundColor="WhiteSmoke">
 
     <!--  Barra de herramientas  -->
+    <!--<ContentPage.ToolbarItems>
+    -->
+    <!--  Botón de Guardar  -->
+    <!--
+    <ToolbarItem Command="{Binding SavePromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+    <ToolbarItem.IconImageSource>
+    <FontImageSource
+    FontFamily="MaterialIconsOutlined-Regular"
+    Glyph="&#xe89c;"
+    Color="{StaticResource PrimaryOrange}" />
+    </ToolbarItem.IconImageSource>
+    <ToolTipProperties.Text>
+    Click to Save data
+    </ToolTipProperties.Text>
+    </ToolbarItem>
+
+    -->
+    <!--  Botón de Crear Variable  -->
+    <!--
+    <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+    <ToolbarItem.IconImageSource>
+    <FontImageSource
+    FontFamily="MaterialIconsOutlined-Regular"
+    Glyph="&#xead3;"
+    Color="{StaticResource PrimaryGreen}" />
+    </ToolbarItem.IconImageSource>
+    </ToolbarItem>
+
+    -->
+    <!--  Botón de Copiar  -->
+    <!--
+    <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+    <ToolbarItem.IconImageSource>
+    <FontImageSource
+    FontFamily="MaterialIconsOutlined-Regular"
+    Glyph="&#xe5c9;"
+    Color="{StaticResource PrimaryRed}" />
+    </ToolbarItem.IconImageSource>
+    </ToolbarItem>
+
+
+
+    </ContentPage.ToolbarItems>-->
+
+    <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
         <!--  Botón de Guardar  -->
         <ToolbarItem Command="{Binding SavePromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
@@ -15,7 +60,8 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe89c;"
-                    Color="{StaticResource PrimaryOrange}" />
+                    Color="{StaticResource PrimaryBlueLight}" />
+
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Save data
@@ -28,8 +74,12 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xead3;"
-                    Color="{StaticResource PrimaryGreen}" />
+                    Color="{StaticResource PrimaryBlueLight}" />
+
             </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Create a Variable
+            </ToolTipProperties.Text>
         </ToolbarItem>
 
         <!--  Botón de Copiar  -->
@@ -38,13 +88,15 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5c9;"
-                    Color="{StaticResource PrimaryRed}" />
+                    Color="{StaticResource PrimaryTeal}" />
+                <!--  Color asociado al botón Copiar  -->
             </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Clear Text
+            </ToolTipProperties.Text>
         </ToolbarItem>
-
-
-
     </ContentPage.ToolbarItems>
+
 
     <ScrollView>
 
@@ -54,12 +106,7 @@
             Spacing="20">
 
             <!--  Título  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="24"
-                HorizontalOptions="Center"
-                Text="Gestión de Prompts"
-                TextColor="{StaticResource TextDark}" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Gestión de Prompts" />
 
             <!--  Entrada para el Título  -->
             <Border
@@ -109,11 +156,7 @@
             </Border>
 
             <!--  Texto seleccionado  -->
-            <Label
-                Margin="0,10,0,5"
-                FontSize="14"
-                Text="{Binding SelectedTextLabelCount}"
-                TextColor="{StaticResource TextDark}" />
+            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabelCount}" />
 
             <Button
                 Grid.Row="0"
@@ -139,7 +182,10 @@
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
                 VerticalOptions="Center"
-                Color="{StaticResource PrimaryGreen}" />
+                Color="{StaticResource PrimaryTeal}" />
+
+
+            <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

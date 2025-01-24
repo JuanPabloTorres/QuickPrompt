@@ -6,7 +6,11 @@
     xmlns:local="clr-namespace:QuickPrompt"
     xmlns:pages="clr-namespace:QuickPrompt.Pages"
     Title="QuickPrompt"
-    Shell.FlyoutBehavior="Disabled">
+    Shell.FlyoutBehavior="Disabled"
+    Shell.PresentationMode="Animated"
+    Shell.TabBarForegroundColor="{StaticResource PrimaryBlueDark}"
+    Shell.TabBarTitleColor="{StaticResource PrimaryBlueDark}"
+    Shell.TabBarUnselectedColor="{StaticResource PrimaryTeal}">
 
     <!--<ShellContent
     Title="Home"
@@ -21,7 +25,10 @@
         <!--  Home Tab  -->
         <Tab Title="Home">
             <Tab.Icon>
-                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe88a;" />
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe88a;"
+                    Color="{StaticResource PrimaryBlueLight}" />
             </Tab.Icon>
             <ShellContent
                 Title="Home"
@@ -32,7 +39,10 @@
         <!--  Saved Prompts Tab  -->
         <Tab Title="Prompts">
             <Tab.Icon>
-                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8de;" />
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe8de;"
+                    Color="{StaticResource PrimaryBlueLight}" />
             </Tab.Icon>
             <ShellContent
                 Title="Prompts"

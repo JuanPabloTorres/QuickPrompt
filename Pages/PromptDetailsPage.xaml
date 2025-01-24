@@ -14,7 +14,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe80d;"
-                    Color="Black" />
+                    Color="{StaticResource PrimaryBlueLight}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
@@ -24,26 +24,11 @@
             Padding="10"
             Spacing="10"
             VerticalOptions="FillAndExpand">
-            <Label
-                Margin="0,10,0,0"
-                FontAttributes="Bold"
-                FontSize="24"
-                HorizontalOptions="Center"
-                Text="{Binding PromptTitle}" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="{Binding PromptTitle}" />
 
-            <Label
-                Margin="0,10,0,0"
-                FontAttributes="Italic"
-                FontSize="18"
-                HorizontalOptions="Center"
-                Text="{Binding Description}" />
+            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding Description}" />
 
-            <Label
-                Margin="0,10,0,0"
-                FontAttributes="Italic"
-                FontSize="18"
-                HorizontalOptions="Center"
-                Text="{Binding PromptText}" />
+            <Label Style="{StaticResource SubHeadline}" Text="{Binding PromptText}" />
 
             <ScrollView>
                 <VerticalStackLayout>
