@@ -199,4 +199,13 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     {
         SelectedTextLabel = $"Texto seleccionado: {variablesWordCount}";
     }
+
+    [RelayCommand]
+    private async Task GoToDetail()
+    {
+        if (this.PromptTemplate != null)
+        {
+            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={this.PromptTemplate.Id}", true);
+        }
+    }
 }

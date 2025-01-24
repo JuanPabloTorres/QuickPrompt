@@ -97,9 +97,15 @@
         <Button
             Grid.Row="1"
             Grid.Column="1"
-            Command="{Binding RemoveBracesFromSelectedTextCommand}"
+            Command="{Binding GoToDetailCommand}"
             Style="{StaticResource CriticalButtonStyle}"
-            Text="Ir a Ejecutar" />
+            Text="Ir a Ejecutar">
+
+            <Button.ImageSource>
+                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xeb2e;" />
+            </Button.ImageSource>
+
+        </Button>
 
         <!--  Indicador de Carga  -->
         <ActivityIndicator
