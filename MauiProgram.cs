@@ -30,7 +30,9 @@ namespace QuickPrompt
             ConfigureRouting();
 
 #if DEBUG
-            builder.Logging.AddDebug();
+    builder.Logging.AddDebug();
+#else
+            builder.Logging.AddConsole(); // Habilita logging en release
 #endif
 
             return builder.Build();
