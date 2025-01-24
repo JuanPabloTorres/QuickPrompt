@@ -1,33 +1,70 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Pages.PromptDetailsPage"
-             Title="Detalles Del Prompt">
+<ContentPage
+    x:Class="QuickPrompt.Pages.PromptDetailsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Detalles Del Prompt">
 
     <ScrollView>
         <VerticalStackLayout Padding="20">
-            <Label Text="{Binding PromptTitle}" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"  Margin="0,10,0,0"/>
+            <Label
+                Margin="0,10,0,0"
+                FontAttributes="Bold"
+                FontSize="24"
+                HorizontalOptions="Center"
+                Text="{Binding PromptTitle}" />
 
-            <Label Text="{Binding Description}" FontSize="18" FontAttributes="Italic" HorizontalOptions="Center"  Margin="0,10,0,0"/>
+            <Label
+                Margin="0,10,0,0"
+                FontAttributes="Italic"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Text="{Binding Description}" />
 
-            <Label Text="{Binding PromptText}" FontSize="18" FontAttributes="Italic" HorizontalOptions="Center"  Margin="0,10,0,0"/>
+            <Label
+                Margin="0,10,0,0"
+                FontAttributes="Italic"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Text="{Binding PromptText}" />
 
             <ScrollView>
                 <VerticalStackLayout>
-                    <Label Text="Completa las variables:" FontSize="20" FontAttributes="Bold"  Margin="0,10,0,0"/>
+                    <Label
+                        Margin="0,10,0,0"
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        Text="Completa las variables:" />
 
-                    <CollectionView ItemsSource="{Binding Variables}"  IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+                    <CollectionView IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <VerticalStackLayout Padding="10">
-                                    <Label Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Label
+                                        FontAttributes="Bold"
+                                        FontSize="18"
+                                        Text="{Binding Name}" />
                                     <Entry Placeholder="Ingresa el valor..." Text="{Binding Value}" />
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
 
-                    <Button Text="Generar Prompt" Command="{Binding GeneratePromptCommand}"  Margin="0,10,0,0"   Style="{StaticResource WarningButtonStyle}"  IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"/>
+                    <Button
+                        Margin="0,10,0,0"
+                        Command="{Binding GeneratePromptCommand}"
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        Style="{StaticResource WarningButtonStyle}"
+                        Text="Generar Prompt">
+
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xe26c;"
+                                Color="{StaticResource AppBlack}" />
+                        </Button.ImageSource>
+
+                    </Button>
 
 
 
@@ -35,18 +72,35 @@
                 </VerticalStackLayout>
             </ScrollView>
 
-            <Label Text="{Binding FinalPrompt}" FontSize="18" FontAttributes="Italic" HorizontalOptions="Center"  Margin="0,10,0,0"/>
+            <Label
+                Margin="0,10,0,0"
+                FontAttributes="Italic"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Text="{Binding FinalPrompt}" />
 
-            <Button Text="Enviar a ChatGPT"         IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Command="{Binding SendPromptToChatGPTCommand}"
-                    Style="{StaticResource PrimaryButtonStyle}" />
+            <Button
+                Command="{Binding SendPromptToChatGPTCommand}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Text="Enviar a ChatGPT">
 
-            <!-- Indicador de Carga -->
-            <ActivityIndicator IsRunning="{Binding IsLoading}"
-                               IsVisible="{Binding IsLoading}"
-                               Color="{StaticResource PrimaryGreen}"
-                               HeightRequest="50"
-                               VerticalOptions="Center" />
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xea20;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+
+            </Button>
+
+            <!--  Indicador de Carga  -->
+            <ActivityIndicator
+                HeightRequest="50"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                VerticalOptions="Center"
+                Color="{StaticResource PrimaryGreen}" />
 
         </VerticalStackLayout>
 

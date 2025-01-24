@@ -27,6 +27,7 @@ public static class AppMessages
         public const string PromptSaveError = "Ocurrió un problema al guardar el prompt. Por favor, inténtalo nuevamente.";
         public const string PromptVariablesError = "Debes completar todas las variables antes de generar el prompt.";        
         public const string PromptGenerateError = "Ocurrió un problema al generar el prompt. Por favor, inténtalo nuevamente.";
+        public const string PromptEmptyAndUnSelected = "El campo del prompt está vacío y no hay ningún texto seleccionado. Por favor, inténtelo nuevamente.";
     }
 
     // **Mensajes de Aviso**
@@ -34,5 +35,6 @@ public static class AppMessages
     {
         public const string SelectWordError = "Selecciona una palabra o frase para convertirla en variable.";
         public const string WordAlreadyHasBraces = "La palabra o frase ya está rodeada por llaves.";
+      
     }
 }

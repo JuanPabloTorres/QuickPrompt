@@ -5,6 +5,37 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Editar Prompt">
 
+    <!--  Barra de herramientas  -->
+    <ContentPage.ToolbarItems>
+        <!--  Botón de Guardar  -->
+        <ToolbarItem Command="{Binding SaveChangesCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xf232;"
+                    Color="Black" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Save data
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
+        <!--  Botón de Crear Variable  -->
+        <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xead3;"
+                    Color="Black" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+
+
+
+
+
+    </ContentPage.ToolbarItems>
+
     <VerticalStackLayout Padding="10" Spacing="20">
         <Label
             FontAttributes="Bold"
@@ -47,7 +78,7 @@
             StrokeThickness="1">
             <Editor
                 CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                HeightRequest="150"
+                HeightRequest="300"
                 IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Placeholder="Plantilla del Prompt"
                 SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
@@ -61,42 +92,14 @@
             Text="{Binding SelectedTextLabel}"
             TextColor="{StaticResource TextDark}" />
 
-        <Grid
-            ColumnDefinitions="*, *"
-            ColumnSpacing="10"
-            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-            RowDefinitions="Auto, Auto"
-            RowSpacing="10">
-            <!--  Fila 1  -->
-            <Button
-                Grid.Row="0"
-                Grid.Column="0"
-                Command="{Binding SaveChangesCommand}"
-                Style="{StaticResource PrimaryButtonStyle}"
-                Text="Guardar Cambios" />
-            <Button
-                Grid.Row="0"
-                Grid.Column="1"
-                Command="{Binding CreateVariableCommand}"
-                Style="{StaticResource SecondaryButtonStyle}"
-                Text="Crear Variable" />
 
-            <!--  Fila 2  -->
-            <Button
-                Grid.Row="1"
-                Grid.Column="0"
-                Command="{Binding RemoveBracesFromSelectedTextCommand}"
-                Style="{StaticResource WarningButtonStyle}"
-                Text="Quitar Llaves" />
 
-            <!--  Fila 2  -->
-            <Button
-                Grid.Row="1"
-                Grid.Column="1"
-                Command="{Binding RemoveBracesFromSelectedTextCommand}"
-                Style="{StaticResource CriticalButtonStyle}"
-                Text="Ir a Ejecutar" />
-        </Grid>
+        <Button
+            Grid.Row="1"
+            Grid.Column="1"
+            Command="{Binding RemoveBracesFromSelectedTextCommand}"
+            Style="{StaticResource CriticalButtonStyle}"
+            Text="Ir a Ejecutar" />
 
         <!--  Indicador de Carga  -->
         <ActivityIndicator

@@ -1,46 +1,93 @@
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-             x:Class="QuickPrompt.Pages.LoadPromptsPage"
-             Title="Prompts Guardados">
+<ContentPage
+    x:Class="QuickPrompt.Pages.LoadPromptsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
+    Title="Prompts Guardados">
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
-            <Label Text="Lista de Prompts Guardados" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" />
+            <Label
+                FontAttributes="Bold"
+                FontSize="24"
+                HorizontalOptions="Center"
+                Text="Lista de Prompts Guardados" />
 
-            <!-- Barra de búsqueda -->
-            <SearchBar Placeholder="Buscar por título..."
-                       Text="{Binding SearchQuery, Mode=TwoWay}"
-                       SearchCommand="{Binding FilterPromptsCommand}"
-                       TextChanged="OnSearchTextChanged"
-                       SearchCommandParameter="{Binding SearchQuery}" />
+            <!--  Barra de búsqueda  -->
+            <SearchBar
+                Placeholder="Buscar por título..."
+                SearchCommand="{Binding FilterPromptsCommand}"
+                SearchCommandParameter="{Binding SearchQuery}"
+                Text="{Binding SearchQuery, Mode=TwoWay}"
+                TextChanged="OnSearchTextChanged" />
 
-            <!-- Botón para Actualizar -->
-            <Button Text="Actualizar Lista" Command="{Binding RefreshPromptsCommand}"  Style="{StaticResource SecondaryButtonStyle}"/>
+            <!--  Botón para Actualizar  -->
+            <Button
+                Command="{Binding RefreshPromptsCommand}"
+                Style="{StaticResource SecondaryButtonStyle}"
+                Text="Actualizar Lista">
 
-            <CollectionView ItemsSource="{Binding Prompts}" SelectionMode="Single"    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+                <Button.ImageSource>
+                    <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe5d5;" />
+                </Button.ImageSource>
+
+            </Button>
+
+            <CollectionView
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                ItemsSource="{Binding Prompts}"
+                SelectionMode="Single">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border Stroke="LightGray" StrokeThickness="2" Padding="10" Margin="5">
+                        <Border
+                            Margin="5"
+                            Padding="10"
+                            Stroke="LightGray"
+                            StrokeThickness="2">
                             <VerticalStackLayout>
-                                <Label Text="{Binding Title}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
-                                <Label Text="{Binding Description}" FontSize="16" FontAttributes="Italic" />
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="20"
+                                    HorizontalOptions="Center"
+                                    Text="{Binding Title}" />
+                                <Label
+                                    FontAttributes="Italic"
+                                    FontSize="16"
+                                    Text="{Binding Description}" />
 
-                                <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-                                    <Button Text="Seleccionar"
-                                            Style="{StaticResource PrimaryButtonStyle}"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectPromptCommand}"
-                                            CommandParameter="{Binding .}" />
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectPromptCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource PrimaryButtonStyle}">
 
-                                    <Button Text="Editar"
-                                            Style="{StaticResource WarningButtonStyle}"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=NavigateToEditPromptCommand}"
-                                            CommandParameter="{Binding .}" />
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
+                                        </Button.ImageSource>
 
-                                    <Button Text="Eliminar"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=DeletePromptCommand}"
-                                            CommandParameter="{Binding .}"
-                                            Style="{StaticResource CriticalButtonStyle}" />
+
+                                    </Button>
+
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=NavigateToEditPromptCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource WarningButtonStyle}">
+
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
+                                        </Button.ImageSource>
+
+                                    </Button>
+
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=DeletePromptCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource CriticalButtonStyle}">
+
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
+                                        </Button.ImageSource>
+                                    </Button>
                                 </HorizontalStackLayout>
 
                             </VerticalStackLayout>
@@ -49,16 +96,21 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.Footer>
-                    <Label Text="{Binding Prompts.Count,StringFormat='Total:{0}'}" FontSize="20" FontAttributes="Bold" HorizontalOptions="End"/>
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        HorizontalOptions="End"
+                        Text="{Binding Prompts.Count, StringFormat='Total:{0}'}" />
                 </CollectionView.Footer>
             </CollectionView>
 
-            <!-- Indicador de Carga -->
-            <ActivityIndicator IsRunning="{Binding IsLoading}"
-                               IsVisible="{Binding IsLoading}"
-                               Color="{StaticResource PrimaryGreen}"
-                               HeightRequest="50"
-                               VerticalOptions="Center" />
+            <!--  Indicador de Carga  -->
+            <ActivityIndicator
+                HeightRequest="50"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                VerticalOptions="Center"
+                Color="{StaticResource PrimaryGreen}" />
         </VerticalStackLayout>
 
     </ScrollView>

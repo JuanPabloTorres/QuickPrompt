@@ -5,6 +5,7 @@ using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
@@ -20,7 +21,10 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
     private string promptText;
 
     [ObservableProperty]
-    private string selectedTextLabel = "Texto seleccionado: 0";
+    private string selectedTextLabelCount = "Total Variables: Ninguno";
+
+    [ObservableProperty]
+    private string wordToVariable; // Muestra la palabra seleccionada en el Label
 
     private int selectedWordCount = 0;
 
@@ -32,6 +36,11 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
     [ObservableProperty]
     private string promptDescription;  // Descripción del prompt
+
+    [ObservableProperty]
+    private string selectedTextLabel;
+
+    public IList<string> variablesSeleccionadas = new List<string>();
 
     [RelayCommand]
     private async Task SavePromptAsync()
@@ -100,6 +109,8 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
         return variables;
     }
 
+    private bool isUpdating; // Bandera para evitar ciclos de actualización
+
     // Método para limpiar los campos de entrada
     private void ClearPromptInputs()
     {
@@ -111,7 +122,7 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
         selectedWordCount = 0;
 
-        SelectedTextLabel = $"Texto seleccionado: {selectedWordCount}";
+        this.WordToVariable = $"Total Variables: {selectedWordCount}";
     }
 
     [RelayCommand]
@@ -132,13 +143,62 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
     }
 
     [RelayCommand]
+    private void HandleSelectionChanged()
+    {
+        if (SelectionLength <= 0 || string.IsNullOrEmpty(PromptText))
+        {
+            WordToVariable = "Texto seleccionado: Ninguno";
+
+            return;
+        }
+
+        string selectedText = PromptText.Substring(CursorPosition, SelectionLength);
+
+        // Crear instancia del manejador de texto
+        var handler = new BraceTextHandler(PromptText, selectedWordCount);
+
+        if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
+        {
+            // Si tiene llaves, quitar las llaves
+            var (startIndex, length) = handler.AdjustSelectionForBraces(CursorPosition, SelectionLength);
+
+            string textWithoutBraces = handler.ExtractTextWithoutBraces(startIndex, length);
+
+            handler.UpdateText(startIndex, length, textWithoutBraces);
+
+            handler.DecrementSelectedWordCount();
+
+            PromptText = handler.Text;
+
+            selectedWordCount = handler.SelectedWordCount;
+
+            this.WordToVariable = $"Texto seleccionado: {textWithoutBraces}";
+
+            UpdateSelectedTextLabelCount();
+        }
+        else
+        {
+            // Si no tiene llaves, agregar llaves
+            handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
+
+            handler.IncrementSelectedWordCount();
+
+            PromptText = handler.Text;
+
+            selectedWordCount = handler.SelectedWordCount;
+
+            this.WordToVariable = $"Texto seleccionado: {selectedText}";
+        }
+    }
+
+    [RelayCommand]
     private async Task CreateVariableAsync()
     {
         if (IsSelectionValid())
         {
             EncloseSelectedTextWithBraces();
 
-            UpdateSelectedTextLabel();
+            UpdateSelectedTextLabelCount();
         }
         else
         {
@@ -169,7 +229,9 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
         // Verificar si el texto ya está rodeado por llaves
         if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
         {
-            await AlertService.ShowAlert("Aviso", "El texto seleccionado ya está rodeado por llaves.");
+            //await AlertService.ShowAlert("Aviso", "El texto seleccionado ya está rodeado por llaves.");
+
+            await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
 
             return;
         }
@@ -188,7 +250,9 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
         selectedWordCount = handler.SelectedWordCount;
 
-        SelectedTextLabel = $"Texto seleccionado: {selectedWordCount}";
+        SelectedTextLabelCount = $"Total Variables: {selectedWordCount}";
+
+        UpdateSelectedTextLabelCount();
     }
 
     [RelayCommand]
@@ -199,6 +263,13 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
     public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
     {
+
+        if (!IsSelectionValid())
+        {
+            await AlertService.ShowAlert("Aviso", AppMessages.Prompts.PromptEmptyAndUnSelected);
+
+            return;
+        }
         // Crear instancia de la herramienta
         var handler = new BraceTextHandler(PromptText, selectedWordCount);
 
@@ -222,7 +293,7 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
                 selectedWordCount = handler.SelectedWordCount;
 
-                SelectedTextLabel = $"Texto seleccionado: {selectedWordCount}";
+                UpdateSelectedTextLabelCount();
             }
             else
             {
@@ -237,8 +308,8 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService) :
 
     private bool IsSelectionValid() => !string.IsNullOrEmpty(PromptText) && SelectionLength > 0;
 
-    private void UpdateSelectedTextLabel()
+    private void UpdateSelectedTextLabelCount()
     {
-        SelectedTextLabel = $"Texto seleccionado: {selectedWordCount}";
+        this.SelectedTextLabelCount = $"Total Variables: {selectedWordCount}";
     }
 }

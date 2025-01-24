@@ -163,7 +163,9 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Verificar si el texto ya está rodeado por llaves
         if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
         {
-            await AlertService.ShowAlert("Error", AppMessages.Warnings.WordAlreadyHasBraces);
+            //await AlertService.ShowAlert("Error", AppMessages.Warnings.WordAlreadyHasBraces);
+
+            await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
 
             return;
         }
