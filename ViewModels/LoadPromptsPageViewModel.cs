@@ -20,6 +20,11 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
 
     public async Task LoadPromptsAsync()
     {
+        if (!string.IsNullOrEmpty(this.SearchQuery))
+        {
+            this.SearchQuery = string.Empty;
+        }
+
         await ExecuteWithLoadingAsync(async () =>
         {
             var promptList = await _databaseService.GetAllPromptsAsync();

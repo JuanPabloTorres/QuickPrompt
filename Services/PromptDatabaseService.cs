@@ -42,4 +42,24 @@ public class PromptDatabaseService
     {
         return _database.Table<PromptTemplate>().FirstOrDefaultAsync(p => p.Id == id);  // Retorna el prompt con el ID especificado
     }
+
+    // Actualizar un prompt existente (incluyendo variables)
+    public async Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables)
+    {
+        var existingPrompt = await GetPromptByIdAsync(id);
+
+        if (existingPrompt == null)
+        {
+            throw new KeyNotFoundException($"No se encontró un prompt con el ID: {id}");
+        }
+
+        // Actualizar las propiedades del prompt existente
+        existingPrompt.Title = newTitle;
+        existingPrompt.Template = newTemplate;
+        existingPrompt.Description = newDescription;
+        existingPrompt.Variables = newVariables;
+
+        // Guardar los cambios en la base de datos
+        return await _database.UpdateAsync(existingPrompt);
+    }
 }

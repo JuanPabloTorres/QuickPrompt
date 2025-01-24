@@ -46,6 +46,13 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
                 this.variablesWordCount = BraceTextHandler.CountWordsWithBraces(prompt.Template);
 
+                if (this.variablesWordCount > 0 && this.PromptTemplate.Variables.Count() == 0)
+                {
+                    this.PromptTemplate.Variables = ExtractVariables(this.PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
+                }
+
+                //var _wordWithBraces = BraceTextHandler.GetWordsWithBraces(prompt.Template);
+
                 UpdateSelectedTextLabel();
             }
             else
@@ -71,7 +78,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
                 return;
             }
 
-            await _databaseService.SavePromptAsync(this.PromptTemplate);
+            await _databaseService.UpdatePromptAsync(this.PromptTemplate.Id,this.PromptTemplate.Title,this.PromptTemplate.Template,this.PromptTemplate.Description,this.PromptTemplate.Variables);
 
             await AppShell.Current.DisplayAlert("Éxito", "El prompt ha sido actualizado correctamente.", "OK");
 
@@ -182,6 +189,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Si aún no detecta el cambio, reasigna el objeto completo
         this.PromptTemplate = new PromptTemplate
         {
+            Id = this.PromptTemplate.Id,
             Template = handler.Text,
             Title = this.PromptTemplate.Title,
             Description = this.PromptTemplate.Description,

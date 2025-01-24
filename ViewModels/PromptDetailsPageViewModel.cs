@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseService,IChatGPTService _chatGPTService) : BaseViewModel, IQueryAttributable
+public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseService, IChatGPTService _chatGPTService) : BaseViewModel, IQueryAttributable
 {
     [ObservableProperty]
     private string promptTitle;
@@ -23,8 +23,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     [ObservableProperty]
     private string finalPrompt;
 
-
-
+    [ObservableProperty]
+    private bool isShareButtonVisible = false; // Controla la visibilidad del botón "Compartir"
 
     [ObservableProperty]
     private ObservableCollection<VariableInput> variables = new();
@@ -53,35 +53,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         }, AppMessages.Prompts.PromptLoadError);
     }
 
-
-    //public async Task LoadPromptAsync(Guid selectedId)
-    //{
-    //    try
-    //    {
-    //        var prompt = await _databaseService.GetPromptByIdAsync(selectedId);
-
-    //        if (prompt != null)
-    //        {
-    //            PromptTitle = prompt.Title;
-
-    //            Description = prompt.Description;
-
-    //            PromptText = prompt.Template;
-
-    //            // Cargar las variables con inputs vacíos
-    //            Variables = new ObservableCollection<VariableInput>(
-    //                prompt.Variables.Select(v => new VariableInput { Name = v.Key, Value = string.Empty })
-    //            );
-    //        }
-    //    }
-    //    catch (Exception ex)
-    //    {
-
-    //        await AppShell.Current.DisplayAlert("Error", ex.Message, "OK");
-    //    }
-      
-    //}
-
     [RelayCommand]
     private async Task SendPromptToChatGPTAsync()
     {
@@ -105,7 +76,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         }
     }
 
-
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.ContainsKey("selectedId") && Guid.TryParse(query["selectedId"]?.ToString(), out Guid id))
@@ -117,36 +87,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             await AppShell.Current.DisplayAlert("Error", "ID de prompt no válido.", "OK");
         }
     }
-
-
-
-    //[RelayCommand]
-    //private async Task GeneratePromptAsync()
-    //{
-    //    try
-    //    {
-    //        IsLoading = true; // Mostrar indicador de carga
-
-    //        if (!AreVariablesFilled())
-    //        {
-    //            await AppShell.Current.DisplayAlert("Error", "Debes llenar todas las variables.", "OK");
-    //            return;
-    //        }
-
-    //        FinalPrompt = GenerateFinalPrompt();
-
-    //        await AppShell.Current.DisplayAlert("Prompt Generado", FinalPrompt, "OK");
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        // Manejo de errores
-    //        await AppShell.Current.DisplayAlert("Error", "Ocurrió un problema al generar el prompt. Por favor, inténtalo nuevamente.", "OK");
-    //    }
-    //    finally
-    //    {
-    //        IsLoading = false; // Asegurar que el indicador de carga se oculta siempre
-    //    }
-    //}
 
     [RelayCommand]
     private async Task GeneratePromptAsync()
@@ -161,11 +101,11 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
             FinalPrompt = GenerateFinalPrompt();
 
+            IsShareButtonVisible = true; // Mostrar el botón de compartir
+
             await AppShell.Current.DisplayAlert("Prompt Generado", FinalPrompt, "OK");
         }, AppMessages.GenericError);
     }
-
-
 
     // Métodos auxiliares
     private bool AreVariablesFilled()
@@ -185,8 +125,25 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         return finalPromptBuilder.ToString();
     }
 
+    // Comando para compartir un prompt
+    [RelayCommand]
+    protected async Task SharePromptAsync()
+    {
+        if (string.IsNullOrEmpty(this.PromptTitle) || string.IsNullOrEmpty(this.FinalPrompt))
+        {
+            await AlertService.ShowAlert("Error", "No se seleccionó un prompt para compartir.");
 
-  
+            return;
+        }
+
+        await ExecuteWithLoadingAsync(
+            async () =>
+            {
+                await SharePromptService.SharePromptAsync(this.PromptTitle, this.FinalPrompt);
+            },
+            "Ocurrió un error al intentar compartir el prompt."
+        );
+    }
 }
 
 public class VariableInput

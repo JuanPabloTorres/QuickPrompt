@@ -5,6 +5,28 @@
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     Title="Prompts Guardados">
 
+
+    <!--  Barra de herramientas  -->
+    <ContentPage.ToolbarItems>
+        <!--  Botón de Guardar  -->
+        <ToolbarItem Command="{Binding RefreshPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5d5;"
+                    Color="{StaticResource PrimaryOrange}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Save data
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
+
+
+
+
+    </ContentPage.ToolbarItems>
+
     <ScrollView>
         <VerticalStackLayout Padding="10">
             <Label
@@ -15,6 +37,7 @@
 
             <!--  Barra de búsqueda  -->
             <SearchBar
+                HorizontalOptions="FillAndExpand"
                 Placeholder="Buscar por título..."
                 SearchCommand="{Binding FilterPromptsCommand}"
                 SearchCommandParameter="{Binding SearchQuery}"
@@ -22,16 +45,16 @@
                 TextChanged="OnSearchTextChanged" />
 
             <!--  Botón para Actualizar  -->
-            <Button
-                Command="{Binding RefreshPromptsCommand}"
-                Style="{StaticResource SecondaryButtonStyle}"
-                Text="Actualizar Lista">
+            <!--<Button
+            Command="{Binding RefreshPromptsCommand}"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Text="Actualizar Lista">
 
-                <Button.ImageSource>
-                    <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe5d5;" />
-                </Button.ImageSource>
+            <Button.ImageSource>
+            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe5d5;" />
+            </Button.ImageSource>
 
-            </Button>
+            </Button>-->
 
             <CollectionView
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"

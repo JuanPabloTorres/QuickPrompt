@@ -5,15 +5,40 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:QuickPrompt"
     xmlns:pages="clr-namespace:QuickPrompt.Pages"
-    Shell.FlyoutBehavior="Flyout"
-    Title="QuickPrompt">
+    Title="QuickPrompt"
+    Shell.FlyoutBehavior="Disabled">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <!--<ShellContent
+    Title="Home"
+    ContentTemplate="{DataTemplate local:MainPage}"
+    Route="MainPage" />
 
-    <ShellContent Title="Prompts Guardados" ContentTemplate="{DataTemplate pages:LoadPromptsPage}" Route="LoadPromptsPage" />
+    <ShellContent Title="Prompts Guardados" ContentTemplate="{DataTemplate pages:LoadPromptsPage}" Route="LoadPromptsPage" />-->
 
+
+    <!--  TabBar Configuration  -->
+    <TabBar>
+        <!--  Home Tab  -->
+        <Tab Title="Home">
+            <Tab.Icon>
+                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe88a;" />
+            </Tab.Icon>
+            <ShellContent
+                Title="Home"
+                ContentTemplate="{DataTemplate local:MainPage}"
+                Route="MainPage" />
+        </Tab>
+
+        <!--  Saved Prompts Tab  -->
+        <Tab Title="Prompts">
+            <Tab.Icon>
+                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8de;" />
+            </Tab.Icon>
+            <ShellContent
+                Title="Prompts"
+                ContentTemplate="{DataTemplate pages:LoadPromptsPage}"
+                Route="LoadPromptsPage" />
+        </Tab>
+    </TabBar>
 
 </Shell>

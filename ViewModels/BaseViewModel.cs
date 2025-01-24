@@ -1,5 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.Models;
+using QuickPrompt.Services;
+using QuickPrompt.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,6 +70,38 @@ namespace QuickPrompt.ViewModels
         {
             await NavigateToAsync("..");
         }
+
+        // Extra las palabras que continene {} 
+        protected List<string> ExtractVariables(string text)
+        {
+            var variables = new List<string>();
+
+            int startIndex = text.IndexOf('{');
+
+            while (startIndex != -1)
+            {
+                int endIndex = text.IndexOf('}', startIndex);
+
+                if (endIndex != -1)
+                {
+                    string variable = text.Substring(startIndex + 1, endIndex - startIndex - 1);
+
+                    if (!variables.Contains(variable))
+                    {
+                        variables.Add(variable);
+                    }
+                    startIndex = text.IndexOf('{', endIndex);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return variables;
+        }
+
+
     }
 
 }

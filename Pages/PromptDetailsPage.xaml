@@ -5,8 +5,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Detalles Del Prompt">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem
+            Command="{Binding SharePromptCommand}"
+            IsEnabled="{Binding IsShareButtonVisible}"
+            Text="Compartir">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe80d;"
+                    Color="Black" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
     <ScrollView>
-        <VerticalStackLayout Padding="20">
+        <VerticalStackLayout
+            Padding="10"
+            Spacing="10"
+            VerticalOptions="FillAndExpand">
             <Label
                 Margin="0,10,0,0"
                 FontAttributes="Bold"
@@ -39,36 +56,34 @@
                     <CollectionView IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <VerticalStackLayout Padding="10">
+                                <VerticalStackLayout Padding="4" Spacing="5">
                                     <Label
                                         FontAttributes="Bold"
                                         FontSize="18"
                                         Text="{Binding Name}" />
-                                    <Entry Placeholder="Ingresa el valor..." Text="{Binding Value}" />
+                                    <!--<Entry Placeholder="Ingresa el valor..." Text="{Binding Value}" />-->
+
+                                    <!--  Entrada para el Título  -->
+                                    <Border
+                                        Padding="5"
+                                        Stroke="{StaticResource AppBlack}"
+                                        StrokeShape="RoundRectangle 5,5,5,5"
+                                        StrokeThickness="1">
+                                        <VerticalStackLayout>
+
+
+                                            <Entry Placeholder="Ingresa el valor..." Text="{Binding Value}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
 
-                    <Button
-                        Margin="0,10,0,0"
-                        Command="{Binding GeneratePromptCommand}"
-                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                        Style="{StaticResource WarningButtonStyle}"
-                        Text="Generar Prompt">
-
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xe26c;"
-                                Color="{StaticResource AppBlack}" />
-                        </Button.ImageSource>
-
-                    </Button>
 
 
-
-                    <!--<Button Text="Guardar Valores" Command="{Binding GeneratePromptCommand}"  Margin="0,10,0,0"   Style="{StaticResource PrimaryButtonStyle}"/>-->
+                    <!--<Button Text="Guardar Valores" Command="{Binding GeneratePromptCommand}"  Margin="0,10,0,0"   Style="{StaticResource PrimaryButtonStyle}" />-->
                 </VerticalStackLayout>
             </ScrollView>
 
@@ -77,21 +92,36 @@
                 FontAttributes="Italic"
                 FontSize="18"
                 HorizontalOptions="Center"
-                Text="{Binding FinalPrompt}" />
+                Text="{Binding FinalPrompt, StringFormat='Prompt Generado: {0}'}" />
+
+            <Button
+                Margin="0,10,0,0"
+                Command="{Binding GeneratePromptCommand}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource WarningButtonStyle}"
+                Text="Generar Prompt">
+
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe26c;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
 
             <Button
                 Command="{Binding SendPromptToChatGPTCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource PrimaryButtonStyle}"
-                Text="Enviar a ChatGPT">
+                Text="Enviar a ChatGPT"
+                VerticalOptions="End">
 
                 <Button.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xea20;"
+                        Glyph="&#xe163;"
                         Color="{StaticResource AppBlack}" />
                 </Button.ImageSource>
-
             </Button>
 
             <!--  Indicador de Carga  -->
@@ -101,9 +131,6 @@
                 IsVisible="{Binding IsLoading}"
                 VerticalOptions="Center"
                 Color="{StaticResource PrimaryGreen}" />
-
         </VerticalStackLayout>
-
     </ScrollView>
-
 </ContentPage>

@@ -91,6 +91,45 @@ namespace QuickPrompt.Tools
             return count;
         }
 
+        public static List<string> GetWordsWithBraces(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return new List<string>();
+
+            List<string> wordsWithBraces = new List<string>();
+            int index = 0;
+
+            while (index < text.Length)
+            {
+                // Buscar el índice de la llave de apertura
+                int openingBrace = text.IndexOf('{', index);
+
+                // Si no se encuentra, terminamos la búsqueda
+                if (openingBrace == -1)
+                    break;
+
+                // Buscar el índice de la llave de cierre después de la llave de apertura
+                int closingBrace = text.IndexOf('}', openingBrace + 1);
+
+                // Si no se encuentra, terminamos la búsqueda
+                if (closingBrace == -1)
+                    break;
+
+                // Extraer la palabra entre las llaves
+                string word = text.Substring(openingBrace + 1, closingBrace - openingBrace - 1);
+
+                // Agregar a la lista si no está vacía
+                if (!string.IsNullOrWhiteSpace(word))
+                    wordsWithBraces.Add(word);
+
+                // Avanzar el índice más allá de la llave de cierre
+                index = closingBrace + 1;
+            }
+
+            return wordsWithBraces;
+        }
+
+
 
     }
 
