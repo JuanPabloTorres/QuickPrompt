@@ -5,52 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="Qucik Prompt"
-    BackgroundColor="WhiteSmoke">
-
-    <!--  Barra de herramientas  -->
-    <!--<ContentPage.ToolbarItems>
-    -->
-    <!--  Botón de Guardar  -->
-    <!--
-    <ToolbarItem Command="{Binding SavePromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-    <ToolbarItem.IconImageSource>
-    <FontImageSource
-    FontFamily="MaterialIconsOutlined-Regular"
-    Glyph="&#xe89c;"
-    Color="{StaticResource PrimaryOrange}" />
-    </ToolbarItem.IconImageSource>
-    <ToolTipProperties.Text>
-    Click to Save data
-    </ToolTipProperties.Text>
-    </ToolbarItem>
-
-    -->
-    <!--  Botón de Crear Variable  -->
-    <!--
-    <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-    <ToolbarItem.IconImageSource>
-    <FontImageSource
-    FontFamily="MaterialIconsOutlined-Regular"
-    Glyph="&#xead3;"
-    Color="{StaticResource PrimaryGreen}" />
-    </ToolbarItem.IconImageSource>
-    </ToolbarItem>
-
-    -->
-    <!--  Botón de Copiar  -->
-    <!--
-    <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-    <ToolbarItem.IconImageSource>
-    <FontImageSource
-    FontFamily="MaterialIconsOutlined-Regular"
-    Glyph="&#xe5c9;"
-    Color="{StaticResource PrimaryRed}" />
-    </ToolbarItem.IconImageSource>
-    </ToolbarItem>
-
-
-
-    </ContentPage.ToolbarItems>-->
+    BackgroundColor="WhiteSmoke"
+    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
@@ -61,7 +17,6 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe89c;"
                     Color="{StaticResource PrimaryBlueLight}" />
-
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Save data
@@ -75,7 +30,6 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xead3;"
                     Color="{StaticResource PrimaryBlueLight}" />
-
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Create a Variable
@@ -97,7 +51,6 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-
     <ScrollView>
 
         <VerticalStackLayout
@@ -111,7 +64,7 @@
             <!--  Entrada para el Título  -->
             <Border
                 Padding="10"
-                Stroke="{StaticResource PrimaryGreen}"
+                Stroke="{StaticResource PrimaryTeal}"
                 StrokeShape="RoundRectangle 10,10,10,10"
                 StrokeThickness="1">
                 <Entry
@@ -139,7 +92,7 @@
             <!--  Editor para el Prompt  -->
             <Border
                 Padding="10"
-                Stroke="{StaticResource PrimaryOrange}"
+                Stroke="{StaticResource PrimaryBlueDark}"
                 StrokeShape="RoundRectangle 10,10,10,10"
                 StrokeThickness="1">
                 <Editor
@@ -171,10 +124,7 @@
                         Glyph="&#xe14d;"
                         Color="{StaticResource AppBlack}" />
                 </Button.ImageSource>
-
             </Button>
-
-
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
@@ -183,7 +133,6 @@
                 IsVisible="{Binding IsLoading}"
                 VerticalOptions="Center"
                 Color="{StaticResource PrimaryTeal}" />
-
 
             <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion}" />
         </VerticalStackLayout>

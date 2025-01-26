@@ -3,8 +3,9 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-    Title="Prompts Guardados">
-
+    Title="Prompts Guardados"
+    BackgroundColor="WhiteSmoke"
+    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
@@ -20,11 +21,6 @@
                 Click to Save data
             </ToolTipProperties.Text>
         </ToolbarItem>
-
-
-
-
-
     </ContentPage.ToolbarItems>
 
     <ScrollView>
@@ -35,17 +31,21 @@
             <SearchBar
                 HorizontalOptions="FillAndExpand"
                 Placeholder="Buscar por título..."
+                PlaceholderColor="{StaticResource AppBlack}"
                 SearchCommand="{Binding FilterPromptsCommand}"
                 SearchCommandParameter="{Binding SearchQuery}"
                 Text="{Binding SearchQuery, Mode=TwoWay}"
-                TextChanged="OnSearchTextChanged" />
-
-
+                TextChanged="OnSearchTextChanged"
+                TextColor="{StaticResource AppBlack}" />
 
             <CollectionView
+                EmptyView="No Hay Disponibles"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="Single">
+
+
+
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border
@@ -58,11 +58,13 @@
                                     FontAttributes="Bold"
                                     FontSize="20"
                                     HorizontalOptions="Center"
-                                    Text="{Binding Title}" />
+                                    Text="{Binding Title}"
+                                    TextColor="{StaticResource AppBlack}" />
                                 <Label
                                     FontAttributes="Italic"
                                     FontSize="16"
-                                    Text="{Binding Description}" />
+                                    Text="{Binding Description}"
+                                    TextColor="{StaticResource AppBlack}" />
 
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
                                     <Button
@@ -73,8 +75,6 @@
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
                                         </Button.ImageSource>
-
-
                                     </Button>
 
                                     <Button
@@ -85,7 +85,6 @@
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
                                         </Button.ImageSource>
-
                                     </Button>
 
                                     <Button
@@ -98,7 +97,6 @@
                                         </Button.ImageSource>
                                     </Button>
                                 </HorizontalStackLayout>
-
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
@@ -109,7 +107,8 @@
                         FontAttributes="Bold"
                         FontSize="20"
                         HorizontalOptions="End"
-                        Text="{Binding Prompts.Count, StringFormat='Total:{0}'}" />
+                        Text="{Binding Prompts.Count, StringFormat='Total:{0}'}"
+                        TextColor="{StaticResource AppBlack}" />
                 </CollectionView.Footer>
             </CollectionView>
 
@@ -119,8 +118,7 @@
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
                 VerticalOptions="Center"
-                Color="{StaticResource PrimaryGreen}" />
+                Color="{StaticResource PrimaryTeal}" />
         </VerticalStackLayout>
-
     </ScrollView>
 </ContentPage>

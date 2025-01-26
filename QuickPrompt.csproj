@@ -40,22 +40,39 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-		<Platforms>AnyCPU;ARM32</Platforms>
+		<Platforms>AnyCPU;ARM32;ARM64</Platforms>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
-	  <DebugSymbols>True</DebugSymbols>
-	</PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>true</Optimize>
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+    <EnableProguard>false</EnableProguard>
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|ARM32'">
-	  <DebugSymbols>True</DebugSymbols>
-	</PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|ARM64'">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>true</Optimize>
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+    <EnableProguard>false</EnableProguard>
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
 
-	<ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|ARM32'">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>true</Optimize>
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+    <EnableProguard>false</EnableProguard>
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
+
+
+  <ItemGroup>
 		<!-- App Icon -->
 		<!--<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />-->
     
-		<MauiIcon Include="Resources\AppIcon\quickprompticon2.svg" Color="#011F4B" />
+		<MauiIcon Include="Resources\AppIcon\quickprompticon3.svg" Color="#011F4B" />
     
 		<MauiSplashScreen Include="Resources\Splash\quickpromptsplash.svg" Color="#011F4B" BaseSize="128,128" />
 		

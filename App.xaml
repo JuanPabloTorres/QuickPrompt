@@ -12,26 +12,15 @@
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!--  Colores de la Paleta 1  -->
-            <!--<Color x:Key="PrimaryGreen">#16C47F</Color>
-            <Color x:Key="PrimaryYellow">#FFD65A</Color>
-            <Color x:Key="PrimaryOrange">#FF9D23</Color>
-            <Color x:Key="PrimaryRed">#F93827</Color>-->
-
-            <!--  Colores de la Paleta 2  -->
+            <!--  Paleta De Colores  -->
             <Color x:Key="PrimaryYellow">#EFB036</Color>
             <Color x:Key="PrimaryBlueLight">#3B6790</Color>
             <Color x:Key="PrimaryBlueDark">#23486A</Color>
             <Color x:Key="PrimaryTeal">#4C7B8B</Color>
-
             <Color x:Key="NeutralGray">#E6E6E6</Color>
             <Color x:Key="TextDark">#333333</Color>
             <Color x:Key="TextLight">#FFFFFF</Color>
-
             <Color x:Key="AppBlack">#242124</Color>
-
-
-
 
             <Style x:Key="baseBtn" TargetType="Button">
                 <Setter Property="HeightRequest" Value="50" />
@@ -85,8 +74,6 @@
                 TargetType="Button">
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
             </Style>
-
-
 
             <!--  Estilo Base para Labels  -->
             <Style x:Key="BaseLabelStyle" TargetType="Label">
@@ -157,13 +144,7 @@
                 <Setter Property="FontAttributes" Value="Italic" />
             </Style>
 
-
-
-
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
-
         </ResourceDictionary>
-
-
     </Application.Resources>
 </Application>

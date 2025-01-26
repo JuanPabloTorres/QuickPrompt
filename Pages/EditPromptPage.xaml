@@ -3,7 +3,9 @@
     x:Class="QuickPrompt.Pages.EditPromptPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Editar Prompt">
+    Title="Editar Prompt"
+    BackgroundColor="WhiteSmoke"
+    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
@@ -31,72 +33,75 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <VerticalStackLayout Padding="10" Spacing="20">
-        <Label Style="{StaticResource TitleLabelStyle}" Text="Editar Prompt" />
+    <ScrollView>
 
-        <!--  Entrada para el Título  -->
-        <Border
-            Padding="10"
-            BackgroundColor="GhostWhite"
-            Stroke="{StaticResource PrimaryGreen}"
-            StrokeShape="RoundRectangle 10,10,10,10"
-            StrokeThickness="1">
-            <Entry
-                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Placeholder="Título"
-                Text="{Binding PromptTemplate.Title}" />
-        </Border>
+        <VerticalStackLayout Padding="10" Spacing="20">
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Editar Prompt" />
 
-        <!--  Entrada para la Descripción  -->
-        <Border
-            Padding="10"
-            BackgroundColor="GhostWhite"
-            Stroke="{StaticResource PrimaryYellow}"
-            StrokeShape="RoundRectangle 10,10,10,10"
-            StrokeThickness="1">
-            <Entry
-                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Placeholder="Descripción"
-                Text="{Binding PromptTemplate.Description}" />
-        </Border>
+            <!--  Entrada para el Título  -->
+            <Border
+                Padding="10"
+                Stroke="{StaticResource PrimaryTeal}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Entry
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Título"
+                    Text="{Binding PromptTemplate.Title}"
+                    TextColor="Black" />
+            </Border>
 
-        <!--  Editor para el Prompt  -->
-        <Border
-            Padding="10"
-            BackgroundColor="GhostWhite"
-            Stroke="{StaticResource PrimaryOrange}"
-            StrokeShape="RoundRectangle 10,10,10,10"
-            StrokeThickness="1">
-            <Editor
-                CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                HeightRequest="300"
-                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Placeholder="Plantilla del Prompt"
-                SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                Text="{Binding PromptTemplate.Template, Mode=TwoWay}" />
-        </Border>
+            <!--  Entrada para la Descripción  -->
+            <Border
+                Padding="10"
+                Stroke="{StaticResource PrimaryYellow}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Entry
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Descripción"
+                    Text="{Binding PromptTemplate.Description}"
+                    TextColor="Black" />
+            </Border>
 
-        <!--  Texto seleccionado  -->
-        <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabel}" />
+            <!--  Editor para el Prompt  -->
+            <Border
+                Padding="10"
+                Stroke="{StaticResource PrimaryBlueDark}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+                <Editor
+                    CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                    HeightRequest="300"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Placeholder="Plantilla del Prompt"
+                    SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                    Text="{Binding PromptTemplate.Template, Mode=TwoWay}"
+                    TextColor="Black" />
+            </Border>
 
-        <Button
-            Grid.Row="1"
-            Grid.Column="1"
-            Command="{Binding GoToDetailCommand}"
-            Style="{StaticResource CriticalButtonStyle}"
-            Text="Ir a Ejecutar">
+            <!--  Texto seleccionado  -->
+            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabel}" />
 
-            <Button.ImageSource>
-                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xeb2e;" />
-            </Button.ImageSource>
-        </Button>
+            <Button
+                Grid.Row="1"
+                Grid.Column="1"
+                Command="{Binding GoToDetailCommand}"
+                Style="{StaticResource CriticalButtonStyle}"
+                Text="Ir a Ejecutar">
 
-        <!--  Indicador de Carga  -->
-        <ActivityIndicator
-            HeightRequest="50"
-            IsRunning="{Binding IsLoading}"
-            IsVisible="{Binding IsLoading}"
-            VerticalOptions="Center"
-            Color="{StaticResource PrimaryGreen}" />
-    </VerticalStackLayout>
+                <Button.ImageSource>
+                    <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xeb2e;" />
+                </Button.ImageSource>
+            </Button>
+
+            <!--  Indicador de Carga  -->
+            <ActivityIndicator
+                HeightRequest="50"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                VerticalOptions="Center"
+                Color="{StaticResource PrimaryTeal}" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
