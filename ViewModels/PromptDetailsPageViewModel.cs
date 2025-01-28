@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
+using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
@@ -24,7 +25,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     private string finalPrompt;
 
     [ObservableProperty]
-    private bool isShareButtonVisible = false; // Controla la visibilidad del botón "Compartir"
+    private bool isShareButtonVisible = false;
 
     [ObservableProperty]
     private ObservableCollection<VariableInput> variables = new();
@@ -56,24 +57,9 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     [RelayCommand]
     private async Task SendPromptToChatGPTAsync()
     {
-        if (string.IsNullOrWhiteSpace(FinalPrompt))
-        {
-            await AppShell.Current.DisplayAlert("Error", "Genera el prompt antes de enviarlo.", "OK");
+        await AppShell.Current.DisplayAlert("Notificación", AppMessages.Prompts.PromptDevelopmentMessage, "OK");
 
-            return;
-        }
-
-        try
-        {
-            // Llamada al servicio
-            var response = await _chatGPTService.GetResponseFromChatGPTAsync(FinalPrompt);
-
-            await AppShell.Current.DisplayAlert("Respuesta de ChatGPT", response, "OK");
-        }
-        catch (Exception ex)
-        {
-            await AppShell.Current.DisplayAlert("Error", $"Hubo un problema: {ex.Message}", "OK");
-        }
+        return;
     }
 
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -143,6 +129,18 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             },
             "Ocurrió un error al intentar compartir el prompt."
         );
+    }
+
+    [RelayCommand]
+    private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
+    {
+        if (selectedPrompt != null)
+        {
+            await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
+        {
+            { "selectedId", selectedPrompt.Id }
+        });
+        }
     }
 }
 

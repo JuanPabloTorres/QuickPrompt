@@ -78,7 +78,7 @@
             <!--  Entrada para la Descripción  -->
             <Border
                 Padding="10"
-                Stroke="{StaticResource PrimaryYellow}"
+                Stroke="{StaticResource PrimaryBlueDark}"
                 StrokeShape="RoundRectangle 10,10,10,10"
                 StrokeThickness="1">
                 <Entry

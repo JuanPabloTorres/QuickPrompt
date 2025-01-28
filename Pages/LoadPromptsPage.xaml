@@ -44,8 +44,6 @@
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="Single">
 
-
-
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border

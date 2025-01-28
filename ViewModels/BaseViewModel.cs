@@ -101,6 +101,13 @@ namespace QuickPrompt.ViewModels
             return variables;
         }
 
+        protected async Task NotifySuccessAndNavigateBack()
+        {
+            await AppShell.Current.DisplayAlert("Éxito", "El prompt ha sido actualizado correctamente.", "OK");
+
+            await GoBackAsync();
+        }
+
 
     }
 

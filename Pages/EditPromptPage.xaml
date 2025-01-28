@@ -10,7 +10,7 @@
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
         <!--  Botón de Guardar  -->
-        <ToolbarItem Command="{Binding SaveChangesCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <ToolbarItem Command="{Binding UpdateChangesCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"

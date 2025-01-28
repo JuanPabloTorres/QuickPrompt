@@ -48,13 +48,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
                 this.PromptTemplate.Variables = ExtractVariables(this.PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
 
-                //if (this.variablesWordCount > 0 && this.PromptTemplate.Variables.Count() == 0)
-                //{
-                //    this.PromptTemplate.Variables = ExtractVariables(this.PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
-                //}
-
-                //var _wordWithBraces = BraceTextHandler.GetWordsWithBraces(prompt.Template);
-
                 UpdateSelectedTextLabel();
             }
             else
@@ -64,34 +57,8 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         }, AppMessages.Prompts.PromptLoadError);
     }
 
-    //[RelayCommand]
-    //private async Task SaveChangesAsync()
-    //{
-    //    await ExecuteWithLoadingAsync(async () =>
-    //    {
-    //        var validator = new PromptValidator();
-
-    // string validationError = validator.Validate(PromptTemplate.Title, PromptTemplate.Template);
-
-    // if (!string.IsNullOrEmpty(validationError)) { await AppShell.Current.DisplayAlert("Error",
-    // validationError, "OK");
-
-    // return; }
-
-    // this.PromptTemplate.Variables = ExtractVariables(this.PromptTemplate.Template).ToDictionary(v
-    // => v, v => string.Empty);
-
-    // await _databaseService.UpdatePromptAsync(this.PromptTemplate.Id, this.PromptTemplate.Title,
-    // this.PromptTemplate.Template, this.PromptTemplate.Description, this.PromptTemplate.Variables);
-
-    // await AppShell.Current.DisplayAlert("Éxito", "El prompt ha sido actualizado correctamente.", "OK");
-
-    //        await GoBackAsync(); // Utiliza el método centralizado para regresar
-    //    }, AppMessages.Prompts.PromptSaveError);
-    //}
-
     [RelayCommand]
-    private async Task SaveChangesAsync()
+    private async Task UpdateChangesAsync()
     {
         await ExecuteWithLoadingAsync(async () =>
         {
@@ -100,7 +67,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
             UpdatePromptVariables();
 
-            await SavePromptChangesAsync();
+            await UpdatePromptChangesAsync();
 
             await NotifySuccessAndNavigateBack();
         }, AppMessages.Prompts.PromptSaveError);
@@ -127,7 +94,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
     }
 
-    private async Task SavePromptChangesAsync()
+    private async Task UpdatePromptChangesAsync()
     {
         await _databaseService.UpdatePromptAsync(
             PromptTemplate.Id,
@@ -135,13 +102,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             PromptTemplate.Template,
             PromptTemplate.Description,
             PromptTemplate.Variables);
-    }
-
-    private async Task NotifySuccessAndNavigateBack()
-    {
-        await AppShell.Current.DisplayAlert("Éxito", "El prompt ha sido actualizado correctamente.", "OK");
-
-        await GoBackAsync();
     }
 
     private PromptTemplate InitializePromptTemplate(PromptTemplate existingPrompt, string newTemplate)
@@ -156,7 +116,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         };
     }
 
-    [RelayCommand]
     private async Task RemoveBracesFromSelectedText()
     {
         await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
@@ -182,20 +141,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
                 handler.DecrementSelectedWordCount();
 
-                // Actualizar estado global
-                //this.PromptTemplate.Template = handler.Text;
-
-                this.PromptTemplate =InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-                // Si aún no detecta el cambio, reasigna el objeto completo
-                //this.PromptTemplate = new PromptTemplate
-                //{
-                //    Id = this.PromptTemplate.Id,
-                //    Template = handler.Text,
-                //    Title = this.PromptTemplate.Title,
-                //    Description = this.PromptTemplate.Description,
-                //    // Agrega más propiedades si las tienes
-                //};
+                this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
 
                 variablesWordCount = handler.SelectedWordCount;
 
@@ -241,9 +187,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Verificar si el texto ya está rodeado por llaves
         if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
         {
-            //await AlertService.ShowAlert("Error", AppMessages.Warnings.WordAlreadyHasBraces);
-
-            await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
+            await RemoveBracesFromSelectedText();
 
             return;
         }
@@ -257,17 +201,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Incrementar el contador
         this.variablesWordCount = handler.IncrementSelectedWordCount();
 
-        // Si aún no detecta el cambio, reasigna el objeto completo
-        //this.PromptTemplate = new PromptTemplate
-        //{
-        //    Id = this.PromptTemplate.Id,
-        //    Template = handler.Text,
-        //    Title = this.PromptTemplate.Title,
-        //    Description = this.PromptTemplate.Description,
-        //    // Agrega más propiedades si las tienes
-        //};
-
-        this.PromptTemplate=InitializePromptTemplate(this.PromptTemplate, handler.Text);
+        this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
 
         variablesWordCount = handler.SelectedWordCount;
 

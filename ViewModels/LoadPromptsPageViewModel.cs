@@ -29,7 +29,7 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
         {
             var promptList = await _databaseService.GetAllPromptsAsync();
 
-            Prompts = new ObservableCollection<PromptTemplate>(promptList ?? Enumerable.Empty<PromptTemplate>());
+            Prompts = new ObservableCollection<PromptTemplate>(promptList.OrderBy(v => v.Title) ?? Enumerable.Empty<PromptTemplate>());
         }, AppMessages.Prompts.PromptLoadError);
     }
 
@@ -100,6 +100,4 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
             }, AppMessages.Prompts.PromptDeleteError);
         }
     }
-
-
 }

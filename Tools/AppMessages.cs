@@ -28,6 +28,7 @@ public static class AppMessages
         public const string PromptVariablesError = "Debes completar todas las variables antes de generar el prompt.";        
         public const string PromptGenerateError = "Ocurrió un problema al generar el prompt. Por favor, inténtalo nuevamente.";
         public const string PromptEmptyAndUnSelected = "El campo del prompt está vacío y no hay ningún texto seleccionado. Por favor, inténtelo nuevamente.";
+        public const string PromptDevelopmentMessage = "Esta funcionalidad está en desarrollo. Disculpe los inconvenientes.";
     }
 
     // **Mensajes de Aviso**
