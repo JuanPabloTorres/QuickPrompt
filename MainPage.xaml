@@ -59,7 +59,7 @@
             Spacing="20">
 
             <!--  Título  -->
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Gestión de Prompts" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Prompt Management" />
 
             <!--  Entrada para el Título  -->
             <Border
@@ -70,7 +70,7 @@
                 <Entry
                     FontSize="16"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Título del Prompt"
+                    Placeholder="Prompt Title"
                     Text="{Binding PromptTitle}"
                     TextColor="Black" />
             </Border>
@@ -84,7 +84,7 @@
                 <Entry
                     FontSize="16"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Descripción (opcional)"
+                    Placeholder="Description (optional)"
                     Text="{Binding PromptDescription}"
                     TextColor="Black" />
             </Border>
@@ -101,11 +101,10 @@
                     FontSize="16"
                     HeightRequest="300"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Escribe aquí tu Prompt..."
+                    Placeholder="Write your prompt here..."
                     SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
                     Text="{Binding PromptText}"
-                    TextColor="{StaticResource AppBlack}"
-                    Unfocused="OnEditorUnfocused" />
+                    TextColor="{StaticResource AppBlack}" />
             </Border>
 
             <!--  Texto seleccionado  -->
@@ -116,7 +115,7 @@
                 Grid.Column="0"
                 Command="{Binding CopyToClipboardCommand}"
                 Style="{StaticResource PrimaryButtonStyle}"
-                Text="Copiar Prompt">
+                Text="Copy Prompt">
 
                 <Button.ImageSource>
                     <FontImageSource

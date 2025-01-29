@@ -21,6 +21,21 @@ namespace QuickPrompt.Tools
 
             return null; // No hay errores
         }
+
+        public string ValidateEn(string title, string text)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return "You must enter a title to save the prompt.";
+
+            if (string.IsNullOrWhiteSpace(text))
+                return "The prompt text cannot be empty.";
+
+            if (!text.Contains("{") || !text.Contains("}"))
+                return "The prompt must contain at least one variable (enclosed in braces) to be saved.";
+
+            return null; // No errors
+        }
+
     }
 
 }

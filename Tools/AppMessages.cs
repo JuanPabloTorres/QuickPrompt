@@ -14,6 +14,7 @@ public static class AppMessages
     public const string UnknownError = "Ha ocurrido un error desconocido.";
     public const string UnauthorizedError = "No tienes permiso para realizar esta acción.";
     public const string ValidationError = "Algunos campos no son válidos. Por favor, verifica e intenta nuevamente.";
+    
 
     // **Mensajes Relacionados con Prompts**
     public static class Prompts

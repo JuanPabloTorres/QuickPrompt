@@ -9,31 +9,30 @@ namespace QuickPrompt.ViewModels;
 
 public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel, IQueryAttributable
 {
-    [ObservableProperty]
-    private PromptTemplate promptTemplate;
+    // ============================== 🌟 PROPIEDADES ==============================
 
-    [ObservableProperty]
-    private int cursorPosition;
+    [ObservableProperty] private PromptTemplate promptTemplate;
+    [ObservableProperty] private int cursorPosition;
+    [ObservableProperty] private int selectionLength;
+    [ObservableProperty] private string promptText;
 
-    [ObservableProperty]
-    private int selectionLength;
+    // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
 
-    private int variablesWordCount = 0;
-
-    [ObservableProperty]
-    private string promptText;
-
-    [ObservableProperty]
-    private string selectedTextLabel = "Texto seleccionado: 0";
-
+    /// <summary>
+    /// Aplica atributos de navegación y carga el prompt si el ID es válido.
+    /// </summary>
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.ContainsKey("selectedId") && Guid.TryParse(query["selectedId"].ToString(), out Guid promptId))
+        if (query.TryGetValue("selectedId", out var selectedId) &&
+            Guid.TryParse(selectedId?.ToString(), out Guid promptId))
         {
             await LoadPromptAsync(promptId);
         }
     }
 
+    /// <summary>
+    /// Carga un prompt desde la base de datos y actualiza la interfaz.
+    /// </summary>
     private async Task LoadPromptAsync(Guid promptId)
     {
         await ExecuteWithLoadingAsync(async () =>
@@ -43,20 +42,35 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             if (prompt != null)
             {
                 this.PromptTemplate = prompt;
+                this.PromptTemplate.Variables = ExtractVariables(prompt.Template)
+                    .ToDictionary(v => v, v => string.Empty);
 
-                this.variablesWordCount = BraceTextHandler.CountWordsWithBraces(prompt.Template);
-
-                this.PromptTemplate.Variables = ExtractVariables(this.PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
-
-                UpdateSelectedTextLabel();
+                UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(prompt.Template));
             }
             else
             {
-                await AppShell.Current.DisplayAlert("Aviso", AppMessages.Prompts.PromptNotFound, "OK");
+                await AppShell.Current.DisplayAlert("Notice", AppMessagesEng.Prompts.PromptNotFound, "OK");
             }
         }, AppMessages.Prompts.PromptLoadError);
     }
 
+    /// <summary>
+    /// Navega a la página de detalles del prompt.
+    /// </summary>
+    [RelayCommand]
+    private async Task GoToDetail()
+    {
+        if (this.PromptTemplate != null)
+        {
+            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={this.PromptTemplate.Id}", true);
+        }
+    }
+
+    // ============================== 🔄 MÉTODOS PARA ACTUALIZACIÓN DEL PROMPT ==============================
+
+    /// <summary>
+    /// Actualiza los cambios del prompt si es válido.
+    /// </summary>
     [RelayCommand]
     private async Task UpdateChangesAsync()
     {
@@ -66,34 +80,40 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
                 return;
 
             UpdatePromptVariables();
-
             await UpdatePromptChangesAsync();
-
             await NotifySuccessAndNavigateBack();
-        }, AppMessages.Prompts.PromptSaveError);
+        }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
+    /// <summary>
+    /// Valida que el prompt tenga un título y contenido válido.
+    /// </summary>
     private bool ValidatePromptTemplate()
     {
         var validator = new PromptValidator();
-
-        string validationError = validator.Validate(PromptTemplate.Title, PromptTemplate.Template);
+        string validationError = validator.ValidateEn(PromptTemplate.Title, PromptTemplate.Template);
 
         if (!string.IsNullOrEmpty(validationError))
         {
             AppShell.Current.DisplayAlert("Error", validationError, "OK").ConfigureAwait(false);
-
             return false;
         }
 
         return true;
     }
 
+    /// <summary>
+    /// Extrae y actualiza las variables del prompt.
+    /// </summary>
     private void UpdatePromptVariables()
     {
-        PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
+        PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template)
+            .ToDictionary(v => v, v => string.Empty);
     }
 
+    /// <summary>
+    /// Guarda los cambios del prompt en la base de datos.
+    /// </summary>
     private async Task UpdatePromptChangesAsync()
     {
         await _databaseService.UpdatePromptAsync(
@@ -104,6 +124,85 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             PromptTemplate.Variables);
     }
 
+    // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
+
+    /// <summary>
+    /// Elimina las llaves `{}` del texto seleccionado.
+    /// </summary>
+    private async Task RemoveBracesFromSelectedText()
+    {
+        await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
+    }
+
+    /// <summary>
+    /// Maneja la selección de texto para quitar llaves `{}` si están presentes.
+    /// </summary>
+    public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
+    {
+        var handler = new BraceTextHandler(this.PromptTemplate.Template);
+
+        if (handler.IsSelectionValid(cursorPosition, selectionLength))
+        {
+            var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
+            string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
+            handler.UpdateText(startIndex, length, selectedText);
+
+            this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
+            UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+        }
+        else
+        {
+            await AlertService.ShowAlert("Warning", AppMessagesEng.Warnings.InvalidTextSelection);
+        }
+    }
+
+    /// <summary>
+    /// Convierte el texto seleccionado en una variable rodeada de `{}`.
+    /// </summary>
+    [RelayCommand]
+    private async Task CreateVariableAsync()
+    {
+        if (IsSelectionValid(this.PromptTemplate.Template, this.SelectionLength))
+        {
+            EncloseSelectedTextWithBraces();
+        }
+        else
+        {
+            await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
+        }
+    }
+
+    /// <summary>
+    /// Encierra la palabra seleccionada entre `{}` si es válida.
+    /// </summary>
+    private async void EncloseSelectedTextWithBraces()
+    {
+        var handler = new BraceTextHandler(this.PromptTemplate.Template);
+
+        if (!handler.IsSelectionValid(CursorPosition, SelectionLength))
+        {
+            await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
+            return;
+        }
+
+        if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
+        {
+            await RemoveBracesFromSelectedText();
+            return;
+        }
+
+        string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
+        handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
+
+        this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
+        UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+    }
+
+    // ============================== 🔧 MÉTODO AUXILIAR PARA INICIALIZAR PROMPTS ==============================
+
+    /// <summary>
+    /// Inicializa un nuevo objeto `PromptTemplate` con valores actualizados.
+    /// </summary>
     private PromptTemplate InitializePromptTemplate(PromptTemplate existingPrompt, string newTemplate)
     {
         return new PromptTemplate
@@ -112,115 +211,8 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             Template = newTemplate,
             Title = existingPrompt.Title,
             Description = existingPrompt.Description,
-            Variables = ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
+            Variables = ExtractVariables(newTemplate)
+                .ToDictionary(v => v, v => string.Empty)
         };
-    }
-
-    private async Task RemoveBracesFromSelectedText()
-    {
-        await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
-    }
-
-    public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
-    {
-        // Crear instancia de la herramienta
-        var handler = new BraceTextHandler(this.PromptTemplate.Template, variablesWordCount);
-
-        if (handler.IsSelectionValid(cursorPosition, selectionLength))
-        {
-            if (handler.IsSurroundedByBraces(cursorPosition, selectionLength))
-            {
-                // Ajustar selección para incluir las llaves
-                var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
-
-                // Extraer texto sin llaves
-                string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
-
-                // Actualizar texto y contador
-                handler.UpdateText(startIndex, length, selectedText);
-
-                handler.DecrementSelectedWordCount();
-
-                this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-                variablesWordCount = handler.SelectedWordCount;
-
-                UpdateSelectedTextLabel();
-            }
-            else
-            {
-                await AlertService.ShowAlert("Aviso", "La palabra seleccionada no tiene llaves alrededor para quitar.");
-            }
-        }
-        else
-        {
-            await AlertService.ShowAlert("Error", "Selecciona una palabra válida para restaurar.");
-        }
-    }
-
-    [RelayCommand]
-    private async Task CreateVariableAsync()
-    {
-        if (IsSelectionValid())
-        {
-            EncloseSelectedTextWithBraces();
-        }
-        else
-        {
-            await AlertService.ShowAlert("Error", AppMessages.Warnings.SelectWordError);
-        }
-    }
-
-    private async void EncloseSelectedTextWithBraces()
-    {
-        // Crear instancia de BraceTextHandler
-        var handler = new BraceTextHandler(this.PromptTemplate.Template, variablesWordCount);
-
-        // Verificar si la selección es válida
-        if (!handler.IsSelectionValid(CursorPosition, SelectionLength))
-        {
-            await AlertService.ShowAlert("Error", AppMessages.Warnings.SelectWordError);
-
-            return;
-        }
-
-        // Verificar si el texto ya está rodeado por llaves
-        if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
-        {
-            await RemoveBracesFromSelectedText();
-
-            return;
-        }
-
-        // Obtener el texto seleccionado
-        string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
-
-        // Envolver el texto con llaves
-        handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
-
-        // Incrementar el contador
-        this.variablesWordCount = handler.IncrementSelectedWordCount();
-
-        this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-        variablesWordCount = handler.SelectedWordCount;
-
-        UpdateSelectedTextLabel();
-    }
-
-    private bool IsSelectionValid() => !string.IsNullOrEmpty(this.PromptTemplate.Template) && SelectionLength > 0;
-
-    private void UpdateSelectedTextLabel()
-    {
-        SelectedTextLabel = $"Texto seleccionado: {variablesWordCount}";
-    }
-
-    [RelayCommand]
-    private async Task GoToDetail()
-    {
-        if (this.PromptTemplate != null)
-        {
-            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={this.PromptTemplate.Id}", true);
-        }
     }
 }

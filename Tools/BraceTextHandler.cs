@@ -9,13 +9,13 @@ namespace QuickPrompt.Tools
     public class BraceTextHandler
     {
         public string Text { get; private set; }
-        public int SelectedWordCount { get; private set; }
+   
 
-        public BraceTextHandler(string initialText, int initialWordCount = 0)
+        public BraceTextHandler(string initialText)
         {
             Text = initialText ?? throw new ArgumentNullException(nameof(initialText));
 
-            SelectedWordCount = initialWordCount;
+          
         }
 
         public bool IsSelectionValid(int cursorPosition, int selectionLength)
@@ -26,7 +26,9 @@ namespace QuickPrompt.Tools
         public bool IsSurroundedByBraces(int cursorPosition, int selectionLength)
         {
             bool hasOpeningBrace = cursorPosition > 0 && Text[cursorPosition - 1] == '{';
+
             bool hasClosingBrace = cursorPosition + selectionLength < Text.Length && Text[cursorPosition + selectionLength] == '}';
+
             return hasOpeningBrace && hasClosingBrace;
         }
 
@@ -45,18 +47,18 @@ namespace QuickPrompt.Tools
             Text = Text.Remove(startIndex, length).Insert(startIndex, newText);
         }
 
-        public void DecrementSelectedWordCount()
-        {
-            if (SelectedWordCount > 0)
-            {
-                SelectedWordCount--;
-            }
-        }
+        //public void DecrementSelectedWordCount()
+        //{
+        //    if (SelectedWordCount > 0)
+        //    {
+        //        SelectedWordCount--;
+        //    }
+        //}
 
-        public int IncrementSelectedWordCount()
-        {
-           return this.SelectedWordCount++;
-        }
+        //public int IncrementSelectedWordCount()
+        //{
+        //   return SelectedWordCount++;
+        //}
 
         public static int CountWordsWithBraces(string text)
         {
@@ -90,6 +92,8 @@ namespace QuickPrompt.Tools
 
             return count;
         }
+
+ 
 
         public static List<string> GetWordsWithBraces(string text)
         {
