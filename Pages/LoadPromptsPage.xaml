@@ -25,12 +25,12 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Lista de Prompts Guardados" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Saved Prompts List" />
 
             <!--  Barra de búsqueda  -->
             <SearchBar
                 HorizontalOptions="FillAndExpand"
-                Placeholder="Buscar por título..."
+                Placeholder="Search by title..."
                 PlaceholderColor="{StaticResource AppBlack}"
                 SearchCommand="{Binding FilterPromptsCommand}"
                 SearchCommandParameter="{Binding SearchQuery}"
@@ -39,7 +39,7 @@
                 TextColor="{StaticResource AppBlack}" />
 
             <CollectionView
-                EmptyView="No Hay Disponibles"
+                EmptyView="No Items Available"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="Single">
@@ -105,7 +105,7 @@
                         FontAttributes="Bold"
                         FontSize="20"
                         HorizontalOptions="End"
-                        Text="{Binding Prompts.Count, StringFormat='Total:{0}'}"
+                        Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
                         TextColor="{StaticResource AppBlack}" />
                 </CollectionView.Footer>
             </CollectionView>

@@ -3,7 +3,7 @@
     x:Class="QuickPrompt.Pages.EditPromptPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Editar Prompt"
+    Title="Enhance Your Prompt"
     BackgroundColor="WhiteSmoke"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
@@ -36,7 +36,7 @@
     <ScrollView>
 
         <VerticalStackLayout Padding="10" Spacing="20">
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Editar Prompt" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Modify Prompt" />
 
             <!--  Entrada para el Título  -->
             <Border
@@ -88,7 +88,7 @@
                 Grid.Column="1"
                 Command="{Binding GoToDetailCommand}"
                 Style="{StaticResource CriticalButtonStyle}"
-                Text="Ir a Ejecutar">
+                Text="Go to Execute">
 
                 <Button.ImageSource>
                     <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xeb2e;" />

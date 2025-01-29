@@ -20,7 +20,10 @@
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
 
-        <ToolbarItem Command="{Binding NavigateToEditPromptCommand}" Text="Editar"   CommandParameter="{Binding Promp}">
+        <ToolbarItem
+            Command="{Binding NavigateToEditPromptCommand}"
+            CommandParameter="{Binding PromptID}"
+            Text="Editar">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
@@ -47,7 +50,7 @@
                         Margin="0,10,0,0"
                         FontAttributes="Bold"
                         FontSize="20"
-                        Text="Completa las variables:"
+                        Text="Complete the variables:"
                         TextColor="{StaticResource AppBlack}" />
                     <CollectionView IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
@@ -68,7 +71,7 @@
                                         <VerticalStackLayout>
 
                                             <Entry
-                                                Placeholder="Ingresa el valor..."
+                                                Placeholder="Enter the value..."
                                                 Text="{Binding Value}"
                                                 TextColor="{StaticResource AppBlack}" />
                                         </VerticalStackLayout>
@@ -79,7 +82,7 @@
                         <CollectionView.Footer />
                     </CollectionView>
 
-                    <!--<Button Text="Guardar Valores" Command="{Binding GeneratePromptCommand}"  Margin="0,10,0,0"   Style="{StaticResource PrimaryButtonStyle}" />-->
+
                 </VerticalStackLayout>
             </ScrollView>
 
@@ -88,7 +91,7 @@
                 FontAttributes="Italic"
                 FontSize="18"
                 HorizontalOptions="Center"
-                Text="{Binding FinalPrompt, StringFormat='Prompt Generado: {0}'}"
+                Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
                 TextColor="{StaticResource AppBlack}" />
 
             <Button
@@ -96,7 +99,7 @@
                 Command="{Binding GeneratePromptCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource CriticalButtonStyle}"
-                Text="Generar Prompt">
+                Text="Generate Prompt">
 
                 <Button.ImageSource>
                     <FontImageSource
@@ -110,7 +113,7 @@
                 Command="{Binding SendPromptToChatGPTCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource PrimaryButtonStyle}"
-                Text="Enviar a ChatGPT"
+                Text="Send To ChatGPT"
                 VerticalOptions="End">
 
                 <Button.ImageSource>

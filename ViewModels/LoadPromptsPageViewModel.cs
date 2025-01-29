@@ -10,13 +10,15 @@ namespace QuickPrompt.ViewModels;
 
 public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel
 {
-    //private readonly PromptDatabaseService _databaseService;
+    // ======================= 📌 PROPIEDADES =======================
 
     [ObservableProperty]
     private ObservableCollection<PromptTemplate> prompts = new();  // Inicializamos la lista vacía
 
     [ObservableProperty]
     private string searchQuery;
+
+    // ======================= 📌 MÉTODO PRINCIPAL: Cargar Prompts =======================
 
     public async Task LoadPromptsAsync()
     {
@@ -32,6 +34,8 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
             Prompts = new ObservableCollection<PromptTemplate>(promptList.OrderBy(v => v.Title) ?? Enumerable.Empty<PromptTemplate>());
         }, AppMessages.Prompts.PromptLoadError);
     }
+
+    // ======================= 🔍 FILTRAR PROMPTS =======================
 
     [RelayCommand]
     private async Task FilterPromptsAsync(string query)
@@ -51,7 +55,8 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
         }, AppMessages.Prompts.PromptFilterError);
     }
 
-    // Comando para seleccionar un prompt
+    // ======================= 📌 SELECCIONAR UN PROMPT =======================
+
     [RelayCommand]
     private async Task SelectPrompt(PromptTemplate selectedPrompt)
     {
@@ -61,11 +66,15 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
         }
     }
 
+    // ======================= 🔄 REFRESCAR PROMPTS =======================
+
     [RelayCommand]
     private async Task RefreshPrompts()
     {
         await LoadPromptsAsync();
     }
+
+    // ======================= ✏️ EDITAR UN PROMPT =======================
 
     [RelayCommand]
     private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
@@ -73,11 +82,13 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
         if (selectedPrompt != null)
         {
             await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-        {
-            { "selectedId", selectedPrompt.Id }
-        });
+            {
+                { "selectedId", selectedPrompt.Id }
+            });
         }
     }
+
+    // ======================= ❌ ELIMINAR UN PROMPT =======================
 
     [RelayCommand]
     private async Task DeletePromptAsync(PromptTemplate selectedPrompt)
@@ -85,9 +96,9 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
         if (selectedPrompt == null) return;
 
         bool confirm = await AppShell.Current.DisplayAlert(
-            "Confirmar Eliminación",
-            $"¿Estás seguro de que deseas eliminar el prompt \"{selectedPrompt.Title}\"?",
-            "Eliminar", "Cancelar");
+            "Confirm Deletion",
+            $"Are you sure you want to delete the prompt \"{selectedPrompt.Title}\"?",
+            "Delete", "Cancel");
 
         if (confirm)
         {
@@ -96,8 +107,8 @@ public partial class LoadPromptsPageViewModel(PromptDatabaseService _databaseSer
                 await _databaseService.DeletePromptAsync(selectedPrompt);
                 Prompts.Remove(selectedPrompt);
 
-                await AppShell.Current.DisplayAlert("Éxito", "El prompt ha sido eliminado.", "OK");
-            }, AppMessages.Prompts.PromptDeleteError);
+                await AppShell.Current.DisplayAlert("Success", $"The prompt {selectedPrompt.Title} has been deleted.", "OK");
+            }, AppMessagesEng.Prompts.PromptDeleteError);
         }
     }
 }
