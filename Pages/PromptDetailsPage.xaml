@@ -3,7 +3,7 @@
     x:Class="QuickPrompt.Pages.PromptDetailsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Detalles Del Prompt"
+    Title="Prompt Details"
     BackgroundColor="WhiteSmoke"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
@@ -42,7 +42,7 @@
 
             <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding Description}" />
 
-            <Label Style="{StaticResource SubHeadline}" Text="{Binding PromptText}" />
+            <Label Style="{StaticResource NormalLabelStyle}" Text="{Binding PromptText}" />
 
             <ScrollView>
                 <VerticalStackLayout>
@@ -91,6 +91,7 @@
                 FontAttributes="Italic"
                 FontSize="18"
                 HorizontalOptions="Center"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
                 TextColor="{StaticResource AppBlack}" />
 

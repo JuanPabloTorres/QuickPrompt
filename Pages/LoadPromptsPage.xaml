@@ -10,7 +10,7 @@
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
         <!--  Botón de Guardar  -->
-        <ToolbarItem Command="{Binding RefreshPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <ToolbarItem Command="{Binding LoadInitialPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
@@ -25,7 +25,7 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Saved Prompts List" />
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
 
             <!--  Barra de búsqueda  -->
             <SearchBar
@@ -98,17 +98,41 @@
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
+
+
+
                 </CollectionView.ItemTemplate>
 
-                <CollectionView.Footer>
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="20"
-                        HorizontalOptions="End"
-                        Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
-                        TextColor="{StaticResource AppBlack}" />
-                </CollectionView.Footer>
+
             </CollectionView>
+
+            <VerticalStackLayout>
+                <Button
+                    Command="{Binding LoadMorePromptsCommand}"
+                    HorizontalOptions="Center"
+                    IsEnabled="{Binding IsLoading}"
+                    IsVisible="{Binding IsMoreDataAvailable}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="Load More">
+
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe313;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+
+
+                </Button>
+
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="20"
+                    HorizontalOptions="End"
+                    Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
+                    TextColor="{StaticResource AppBlack}" />
+
+            </VerticalStackLayout>
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator

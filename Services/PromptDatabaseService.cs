@@ -1,4 +1,5 @@
-﻿using QuickPrompt.Models;
+﻿using Microsoft.Maui.Storage;
+using QuickPrompt.Models;
 using SQLite;
 using System.Collections.Generic;
 using System.IO;
@@ -31,6 +32,69 @@ public class PromptDatabaseService
         return _database.Table<PromptTemplate>().ToListAsync();  // Retorna la lista completa de prompts
     }
 
+    public async Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, int currentTotal)
+    {
+        // Calcular cuántos elementos se deben omitir
+        int _toSkip = offset * limit;
+
+        // Obtener el total de prompts
+        int _totalCount = await GetTotalPromptsCountAsync();
+
+        // Ajustar _toSkip si excede el total de prompts
+        if (_toSkip > _totalCount)
+        {
+            //_toSkip = Math.Max(0, _totalCount - limit);  // Ajustar para evitar desbordes
+
+            _toSkip = (offset - 1) * limit;
+
+            _toSkip = _toSkip - currentTotal;
+
+            //var _diferenciaEntreLoqueTengo = _totalCount - currentTotal;
+
+            //_toSkip += _diferenciaEntreLoqueTengo;
+        }
+
+        // Consultar la base de datos con paginación
+        var _prompts = await _database.Table<PromptTemplate>()
+                                      .Skip(_toSkip)          // Saltar los registros necesarios
+                                      .Take(limit)            // Tomar el bloque de datos
+                                      .ToListAsync();
+
+        return _prompts;
+    }
+
+    //// Leer los prompts con paginación
+    //public async Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit)
+    //{
+    //    var _toSkip = (offset * limit);
+
+    // var _totalCount = await GetTotalPromptsCountAsync();
+
+    // if (_toSkip > 0) { if (_totalCount <= _toSkip) { if (_toSkip % _totalCount != 0) { _toSkip =
+    // _toSkip - limit; } }
+
+    // }
+
+    // var _prompts = await _database.Table<PromptTemplate>().Skip(_toSkip).Take(limit).OrderBy(v=>v.Title).ToListAsync();
+
+    //    return _prompts;
+    //}
+
+    // Leer los prompts con paginación y filtro
+    public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, string filter = "")
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            // Si no hay filtro, devuelve el bloque directamente
+            return _database.Table<PromptTemplate>().Skip(offset).Take(limit).ToListAsync();
+        }
+        else
+        {
+            // Si hay filtro, busca por título y devuelve el bloque
+            return _database.Table<PromptTemplate>().Where(p => p.Title.Contains(filter)).Skip(offset).Take(limit).ToListAsync();
+        }
+    }
+
     // Eliminar un prompt
     public Task<int> DeletePromptAsync(PromptTemplate prompt)
     {
@@ -61,5 +125,11 @@ public class PromptDatabaseService
 
         // Guardar los cambios en la base de datos
         return await _database.UpdateAsync(existingPrompt);
+    }
+
+    //Obtiene el total de registros de prompts almacenados en la base de datos.
+    public Task<int> GetTotalPromptsCountAsync()
+    {
+        return _database.Table<PromptTemplate>().CountAsync();
     }
 }

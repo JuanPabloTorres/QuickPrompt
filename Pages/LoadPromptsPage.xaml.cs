@@ -15,8 +15,16 @@ public partial class LoadPromptsPage : ContentPage
 
     protected override async void OnAppearing()
     {
-        // Recargar los prompts al aparecer la página
-        await _viewModel.LoadPromptsAsync();
+        if (_viewModel.blockHandler.IsInitialBlockIndex())
+        {
+            await this._viewModel.LoadInitialPrompts();
+        }
+        else
+        {
+        await this._viewModel.CheckForMorePromptsAsync();
+
+        }
+
     }
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
@@ -26,7 +34,7 @@ public partial class LoadPromptsPage : ContentPage
 
         if (string.IsNullOrWhiteSpace(e.NewTextValue))
         {
-            await viewModel.LoadPromptsAsync();
+            await viewModel.LoadInitialPrompts();
         }
     }
 }
