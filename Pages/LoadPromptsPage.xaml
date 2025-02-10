@@ -9,7 +9,7 @@
 
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
-        <!--  Botón de Guardar  -->
+
         <ToolbarItem Command="{Binding LoadInitialPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
@@ -18,7 +18,20 @@
                     Color="{StaticResource PrimaryBlueLight}" />
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
-                Click to Save data
+                Click to reload data
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
+        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
+
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe92b;"
+                    Color="{StaticResource PrimaryRed}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Delete Selected Prompts
             </ToolTipProperties.Text>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
@@ -33,8 +46,8 @@
                 Placeholder="Search by title..."
                 PlaceholderColor="{StaticResource AppBlack}"
                 SearchCommand="{Binding FilterPromptsCommand}"
-                SearchCommandParameter="{Binding SearchQuery}"
-                Text="{Binding SearchQuery, Mode=TwoWay}"
+                SearchCommandParameter="{Binding Search}"
+                Text="{Binding Search, Mode=TwoWay}"
                 TextChanged="OnSearchTextChanged"
                 TextColor="{StaticResource AppBlack}" />
 
@@ -42,7 +55,7 @@
                 EmptyView="No Items Available"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
-                SelectionMode="Single">
+                SelectionMode="None">
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -94,6 +107,14 @@
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
                                         </Button.ImageSource>
                                     </Button>
+
+                                    <!--  CheckBox para seleccionar los prompts  -->
+                                    <CheckBox
+                                        CheckedChanged="OnCheckBoxCheckedChanged"
+                                        HorizontalOptions="EndAndExpand"
+                                        IsChecked="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectedPrompts}"
+                                        VerticalOptions="Center"
+                                        Color="{StaticResource PrimaryRed}" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
                         </Border>
@@ -110,10 +131,10 @@
                 <Button
                     Command="{Binding LoadMorePromptsCommand}"
                     HorizontalOptions="Center"
-                    IsEnabled="{Binding IsLoading}"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     IsVisible="{Binding IsMoreDataAvailable}"
                     Style="{StaticResource PrimaryButtonStyle}"
-                    Text="Load More">
+                    Text="More">
 
                     <Button.ImageSource>
                         <FontImageSource

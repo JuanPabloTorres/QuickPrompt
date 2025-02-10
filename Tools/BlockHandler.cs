@@ -13,7 +13,7 @@ namespace QuickPrompt.Tools
         public IList<T>? Data { get; set; }
 
         // Tamaño fijo del bloque
-        public const int SIZE = 10;
+        public const int SIZE = 5;
 
         // Índice actual del bloque
         public int BlockIndex { get; set; } = 0;
@@ -67,7 +67,17 @@ namespace QuickPrompt.Tools
         /// <summary>
         /// Resetea el índice del bloque a 0.
         /// </summary>
-        public void Reset() => BlockIndex = 0;
+        public void Reset()
+        {
+            BlockIndex = 0;
+
+            if (Data is not null)
+            {
+                Data.Clear();
+            }
+
+            CountInDB = 0;
+        }
 
         public bool IsInitialBlockIndex()
         {
@@ -105,6 +115,7 @@ namespace QuickPrompt.Tools
             {
                 // Calcular y ajustar el desplazamiento
                 int adjustment = displayedDataCount - currentToSkip;
+
                 return currentToSkip + adjustment;
             }
 
