@@ -41,15 +41,49 @@
             <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
 
             <!--  Barra de búsqueda  -->
-            <SearchBar
+            <!--<SearchBar
+            HorizontalOptions="FillAndExpand"
+            Placeholder="Search by title..."
+            PlaceholderColor="{StaticResource AppBlack}"
+            SearchCommand="{Binding FilterPromptsCommand}"
+            Text="{Binding Search, Mode=TwoWay}"
+            TextColor="{StaticResource AppBlack}" />-->
+
+            <!--  Entrada para el Título  -->
+            <Border
+                Padding="2"
                 HorizontalOptions="FillAndExpand"
-                Placeholder="Search by title..."
-                PlaceholderColor="{StaticResource AppBlack}"
-                SearchCommand="{Binding FilterPromptsCommand}"
-                SearchCommandParameter="{Binding Search}"
-                Text="{Binding Search, Mode=TwoWay}"
-                TextChanged="OnSearchTextChanged"
-                TextColor="{StaticResource AppBlack}" />
+                Stroke="{StaticResource PrimaryTeal}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+
+                <Grid ColumnDefinitions="*, Auto" HorizontalOptions="FillAndExpand">
+                    <!--  Campo de entrada de texto  -->
+                    <Entry
+                        Grid.Column="0"
+                        FontSize="18"
+                        HorizontalOptions="FillAndExpand"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        Placeholder="Search by title..."
+                        Text="{Binding Search}"
+                        TextColor="{StaticResource AppBlack}"
+                        VerticalOptions="CenterAndExpand" />
+
+                    <!--  Botón de búsqueda  -->
+                    <Button
+                        Grid.Column="1"
+                        Command="{Binding FilterPromptsCommand}"
+                        HorizontalOptions="EndAndExpand"
+                        Scale="1"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        VerticalOptions="CenterAndExpand">
+                        <Button.ImageSource>
+                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8b6;" />
+                        </Button.ImageSource>
+                    </Button>
+                </Grid>
+
+            </Border>
 
             <CollectionView
                 EmptyView="No Items Available"
@@ -69,18 +103,18 @@
                                     FontAttributes="Bold"
                                     FontSize="20"
                                     HorizontalOptions="Center"
-                                    Text="{Binding Title}"
+                                    Text="{Binding Prompt.Title}"
                                     TextColor="{StaticResource AppBlack}" />
                                 <Label
                                     FontAttributes="Italic"
                                     FontSize="16"
-                                    Text="{Binding Description}"
+                                    Text="{Binding Prompt.Description}"
                                     TextColor="{StaticResource AppBlack}" />
 
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
                                     <Button
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectPromptCommand}"
-                                        CommandParameter="{Binding .}"
+                                        CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource PrimaryButtonStyle}">
 
                                         <Button.ImageSource>
@@ -90,7 +124,7 @@
 
                                     <Button
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=NavigateToEditPromptCommand}"
-                                        CommandParameter="{Binding .}"
+                                        CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource WarningButtonStyle}">
 
                                         <Button.ImageSource>
@@ -112,19 +146,15 @@
                                     <CheckBox
                                         CheckedChanged="OnCheckBoxCheckedChanged"
                                         HorizontalOptions="EndAndExpand"
-                                        IsChecked="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectedPrompts}"
-                                        VerticalOptions="Center"
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        Scale="1.5"
+                                        VerticalOptions="CenterAndExpand"
                                         Color="{StaticResource PrimaryRed}" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
-
-
-
                 </CollectionView.ItemTemplate>
-
-
             </CollectionView>
 
             <VerticalStackLayout>
@@ -142,8 +172,6 @@
                             Glyph="&#xe313;"
                             Color="{StaticResource AppBlack}" />
                     </Button.ImageSource>
-
-
                 </Button>
 
                 <Label
@@ -152,7 +180,6 @@
                     HorizontalOptions="End"
                     Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
                     TextColor="{StaticResource AppBlack}" />
-
             </VerticalStackLayout>
 
             <!--  Indicador de Carga  -->
