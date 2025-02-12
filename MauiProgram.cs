@@ -109,6 +109,14 @@ namespace QuickPrompt
             builder.Services.AddTransient<PromptDetailsPage>();
 
             builder.Services.AddTransient<EditPromptPage>();
+            
+            builder.Services.AddTransient<SettingPage>();
+          
+       
+            
+            builder.Services.AddTransient<QuickPromptPage>();
+            
+      
         }
 
         // Configura las rutas para la navegación

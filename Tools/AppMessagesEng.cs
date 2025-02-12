@@ -15,6 +15,8 @@ namespace QuickPrompt.Tools
         public const string UnauthorizedError = "You do not have permission to perform this action.";
         public const string ValidationError = "Some fields are invalid. Please check and try again.";
         public const string TotalMessage = "Total Variables:";
+        public const string DatabaseUpdateError = "An error occurred while updating the database. Please try again later."; // NEW
+
 
         // **Messages Related to Prompts**
         public static class Prompts

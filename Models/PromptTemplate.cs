@@ -16,12 +16,11 @@ namespace QuickPrompt.Models
 
         public string Title { get; set; }  // Título del prompt
 
-   
         public string Template { get; set; }  // Prompt con variables dinámicas
         public string Description { get; set; }  // Descripción del prompt
 
-        // Variables serializadas en formato JSON
-        // Serialización de las variables como JSON para guardarlas en SQLite
+        // Variables serializadas en formato JSON Serialización de las variables como JSON para
+        // guardarlas en SQLite
         public string VariablesJson
         {
             get => JsonConvert.SerializeObject(Variables);  // Serializar a JSON
@@ -30,5 +29,7 @@ namespace QuickPrompt.Models
 
         [Ignore]
         public Dictionary<string, string> Variables { get; set; } = new();
+
+        public bool IsFavorite { get; set; }
     }
 }

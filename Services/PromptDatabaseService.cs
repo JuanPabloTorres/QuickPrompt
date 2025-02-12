@@ -90,4 +90,29 @@ public class PromptDatabaseService
     {
         return _database.Table<PromptTemplate>().Where(p => p.Title.ToLower().Contains(filter.ToLower())).CountAsync();
     }
+
+    // Actualizar el estado de favorito de un prompt
+    public async Task<int> UpdateFavoriteStatusAsync(Guid id, bool isFavorite)
+    {
+        var existingPrompt = await GetPromptByIdAsync(id);
+
+        if (existingPrompt == null)
+        {
+            throw new KeyNotFoundException($"No se encontró un prompt con el ID: {id}");
+        }
+
+        // Actualizar el estado de favorito
+        existingPrompt.IsFavorite = isFavorite;
+
+        // Guardar los cambios en la base de datos
+        return await _database.UpdateAsync(existingPrompt);
+    }
+
+    // Método para obtener los prompts marcados como favoritos como IEnumerable
+    public async Task<IEnumerable<PromptTemplate>> GetFavoritePromptsAsync()
+    {
+        var favorites = await _database.Table<PromptTemplate>().Where(p => p.IsFavorite == true).ToListAsync();
+
+        return favorites.AsEnumerable(); // Convertir la lista en IEnumerable
+    }
 }

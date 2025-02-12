@@ -126,7 +126,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection());
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -170,7 +170,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection());
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -301,4 +301,6 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
     {
         OnPropertyChanged(nameof(SelectedPromptsToDelete));
     }
+
+
 }

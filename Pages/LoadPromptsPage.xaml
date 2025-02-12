@@ -82,7 +82,6 @@
                         </Button.ImageSource>
                     </Button>
                 </Grid>
-
             </Border>
 
             <CollectionView
@@ -99,17 +98,48 @@
                             Stroke="LightGray"
                             StrokeThickness="2">
                             <VerticalStackLayout>
-                                <Label
-                                    FontAttributes="Bold"
-                                    FontSize="20"
-                                    HorizontalOptions="Center"
-                                    Text="{Binding Prompt.Title}"
-                                    TextColor="{StaticResource AppBlack}" />
-                                <Label
-                                    FontAttributes="Italic"
-                                    FontSize="16"
-                                    Text="{Binding Prompt.Description}"
-                                    TextColor="{StaticResource AppBlack}" />
+
+                                <Grid
+                                    Padding="5"
+                                    ColumnDefinitions="Auto, * , Auto"
+                                    RowDefinitions="Auto">
+
+                                    <!--  Título y Descripción  -->
+                                    <VerticalStackLayout
+                                        Grid.Column="1"
+                                        HorizontalOptions="StartAndExpand"
+                                        VerticalOptions="StartAndExpand">
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="20"
+                                            Text="{Binding Prompt.Title}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                        <Label
+                                            FontAttributes="Italic"
+                                            FontSize="16"
+                                            Text="{Binding Prompt.Description}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                    </VerticalStackLayout>
+
+                                    <!--  Botón de Favoritos  -->
+                                    <Button
+                                        Grid.Column="2"
+                                        Command="{Binding ToFavoriteOrNotCommand}"
+                                        HorizontalOptions="End"
+                                        Style="{StaticResource PrimaryFavoriteButtonStyle}"
+                                        VerticalOptions="Center">
+                                        <Button.ImageSource>
+                                            <FontImageSource
+                                                FontFamily="MaterialIconsOutlined-Regular"
+                                                Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
+                                                Color="{StaticResource AppBlack}" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                </Grid>
+
+
+
 
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
                                     <Button
@@ -141,6 +171,8 @@
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
                                         </Button.ImageSource>
                                     </Button>
+
+
 
                                     <!--  CheckBox para seleccionar los prompts  -->
                                     <CheckBox

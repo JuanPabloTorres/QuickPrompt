@@ -1,4 +1,5 @@
 ﻿using QuickPrompt.Models;
+using QuickPrompt.Services;
 using QuickPrompt.ViewModels.Prompts;
 using System;
 using System.Collections.Generic;
@@ -29,5 +30,10 @@ public static class CollectionExtensions
     public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(this IEnumerable<PromptTemplate> prompts)
     {
         return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p => new PromptTemplateViewModel(p)));
+    }
+
+    public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(this IEnumerable<PromptTemplate> prompts, PromptDatabaseService promptDatabaseService)
+    {
+        return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p => new PromptTemplateViewModel(p,promptDatabaseService)));
     }
 }

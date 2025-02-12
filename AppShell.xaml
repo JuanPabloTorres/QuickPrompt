@@ -12,26 +12,33 @@
     Shell.TabBarTitleColor="{StaticResource PrimaryBlueDark}"
     Shell.TabBarUnselectedColor="{StaticResource PrimaryTeal}">
 
-    <!--<ShellContent
-    Title="Home"
-    ContentTemplate="{DataTemplate local:MainPage}"
-    Route="MainPage" />
-
-    <ShellContent Title="Prompts Guardados" ContentTemplate="{DataTemplate pages:LoadPromptsPage}" Route="LoadPromptsPage" />-->
-
-
     <!--  TabBar Configuration  -->
     <TabBar>
+
         <!--  Home Tab  -->
-        <Tab Title="Home">
+        <Tab Title="Quick">
             <Tab.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe88a;"
+                    Glyph="&#xea0b;"
                     Color="{StaticResource PrimaryBlueLight}" />
             </Tab.Icon>
             <ShellContent
-                Title="Home"
+                Title="Quick Prompt"
+                ContentTemplate="{DataTemplate pages:QuickPromptPage}"
+                Route="QPages" />
+        </Tab>
+
+        <!--  Create Tab  -->
+        <Tab Title="Create">
+            <Tab.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe147;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </Tab.Icon>
+            <ShellContent
+                Title="Create"
                 ContentTemplate="{DataTemplate local:MainPage}"
                 Route="MainPage" />
         </Tab>
@@ -49,6 +56,19 @@
                 ContentTemplate="{DataTemplate pages:LoadPromptsPage}"
                 Route="LoadPromptsPage" />
         </Tab>
-    </TabBar>
 
+        <!--  Configurations Tab  -->
+        <Tab Title="Settings">
+            <Tab.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe8b8;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </Tab.Icon>
+            <ShellContent
+                Title="Settings"
+                ContentTemplate="{DataTemplate pages:SettingPage}"
+                Route="Setting" />
+        </Tab>
+    </TabBar>
 </Shell>

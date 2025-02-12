@@ -77,6 +77,14 @@
                 <Setter Property="TextColor" Value="{StaticResource TextLight}" />
             </Style>
 
+            <!--  Botón Principal  -->
+            <Style
+                x:Key="PrimaryFavoriteButtonStyle"
+                BasedOn="{StaticResource baseBtn}"
+                TargetType="Button">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+
             <!--  Estilo Base para Labels  -->
             <Style x:Key="BaseLabelStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
@@ -148,6 +156,7 @@
 
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
+            <converters:BooleanToStarIconConverter x:Key="BooleanToStarIconConverter" />
 
         </ResourceDictionary>
     </Application.Resources>
