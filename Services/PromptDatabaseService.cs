@@ -47,6 +47,20 @@ public class PromptDatabaseService
         }
     }
 
+    public async Task<List<PromptTemplate>> GetFavoritesPromptsByBlockAsync(int offset, int limit, string filter = "")
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            // Si no hay filtro, devuelve el bloque directamente
+            return await _database.Table<PromptTemplate>().Where(v=>v.IsFavorite).Skip(offset).Take(limit).ToListAsync();
+        }
+        else
+        {
+            // Si hay filtro, busca por título y devuelve el bloque
+            return await _database.Table<PromptTemplate>().Where(p => p.Title.ToLower().Contains(filter.ToLower()) && p.IsFavorite).Skip(offset).Take(limit).ToListAsync();
+        }
+    }
+
     // Eliminar un prompt
     public Task<int> DeletePromptAsync(PromptTemplate prompt)
     {
@@ -89,6 +103,18 @@ public class PromptDatabaseService
     public Task<int> GetTotalPromptsCountAsync(string filter)
     {
         return _database.Table<PromptTemplate>().Where(p => p.Title.ToLower().Contains(filter.ToLower())).CountAsync();
+    }
+
+    //Obtiene el total de registros de prompts almacenados en la base de datos.
+    public Task<int> GetFavoriteTotalPromptsCountAsync()
+    {
+        return _database.Table<PromptTemplate>().Where(v=>v.IsFavorite).CountAsync();
+    }
+
+    //Obtiene el total de registros de prompts almacenados en la base de datos.
+    public Task<int> GetFavoriteTotalPromptsCountAsync(string filter)
+    {
+        return _database.Table<PromptTemplate>().Where(p => p.Title.ToLower().Contains(filter.ToLower()) && p.IsFavorite).CountAsync();
     }
 
     // Actualizar el estado de favorito de un prompt

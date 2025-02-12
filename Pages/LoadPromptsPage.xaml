@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-    Title="Prompts Guardados"
+    Title="Prompts Saved"
     BackgroundColor="WhiteSmoke"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
@@ -40,14 +40,7 @@
         <VerticalStackLayout Padding="10">
             <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
 
-            <!--  Barra de búsqueda  -->
-            <!--<SearchBar
-            HorizontalOptions="FillAndExpand"
-            Placeholder="Search by title..."
-            PlaceholderColor="{StaticResource AppBlack}"
-            SearchCommand="{Binding FilterPromptsCommand}"
-            Text="{Binding Search, Mode=TwoWay}"
-            TextColor="{StaticResource AppBlack}" />-->
+
 
             <!--  Entrada para el Título  -->
             <Border

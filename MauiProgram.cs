@@ -30,7 +30,7 @@ namespace QuickPrompt
             ConfigureRouting();
 
 #if DEBUG
-    builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #else
             builder.Logging.AddConsole(); // Habilita logging en release
 #endif
@@ -99,6 +99,10 @@ namespace QuickPrompt
             builder.Services.AddTransient<PromptDetailsPageViewModel>();
 
             builder.Services.AddTransient<EditPromptPageViewModel>();
+
+            builder.Services.AddTransient<QuickPromptViewModel>();
+            
+            builder.Services.AddTransient<SettingViewModel>();
         }
 
         // Registra las páginas en el contenedor de dependencias
@@ -109,14 +113,10 @@ namespace QuickPrompt
             builder.Services.AddTransient<PromptDetailsPage>();
 
             builder.Services.AddTransient<EditPromptPage>();
-            
+
             builder.Services.AddTransient<SettingPage>();
-          
-       
-            
+
             builder.Services.AddTransient<QuickPromptPage>();
-            
-      
         }
 
         // Configura las rutas para la navegación

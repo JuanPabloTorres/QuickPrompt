@@ -22,7 +22,7 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
 
     [ObservableProperty] private string promptDescription;
 
-    [ObservableProperty] private string appVersion = $"Version: {appSettings.Version}";
+  
 
     // ============================ COMANDOS ============================
 

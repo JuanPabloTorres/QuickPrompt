@@ -13,7 +13,7 @@ namespace QuickPrompt.Tools
         public IList<T>? Data { get; set; }
 
         // Tamaño fijo del bloque
-        public const int SIZE = 5;
+        public const int SIZE = 10;
 
         // Índice actual del bloque
         public int BlockIndex { get; set; } = 0;

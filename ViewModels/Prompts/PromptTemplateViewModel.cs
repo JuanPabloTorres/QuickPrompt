@@ -29,11 +29,12 @@ namespace QuickPrompt.ViewModels.Prompts
             Prompt = prompt;
 
             this.promptDatabaseService = promptDatabaseService;
+
+            this.IsFavorite = prompt.IsFavorite;
         }
 
         public PromptTemplateViewModel(PromptTemplate prompt)
         {
-            
         }
 
         // ======================= 📌 Comando para agregar a favorito =======================

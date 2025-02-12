@@ -1,12 +1,219 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Pages.QuickPromptPage"
-             Title="QuickPromptPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+<ContentPage
+    x:Class="QuickPrompt.Pages.QuickPromptPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
+    Title="Quick Prompt Page">
+    <!--  Barra de herramientas  -->
+    <ContentPage.ToolbarItems>
+
+        <ToolbarItem Command="{Binding LoadInitialPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5d5;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to reload data
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
+        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
+
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe92b;"
+                    Color="{StaticResource PrimaryRed}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Delete Selected Prompts
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10">
+            <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
+
+            <!--  Barra de búsqueda  -->
+            <!--<SearchBar
+            HorizontalOptions="FillAndExpand"
+            Placeholder="Search by title..."
+            PlaceholderColor="{StaticResource AppBlack}"
+            SearchCommand="{Binding FilterPromptsCommand}"
+            Text="{Binding Search, Mode=TwoWay}"
+            TextColor="{StaticResource AppBlack}" />-->
+
+            <!--  Entrada para el Título  -->
+            <Border
+                Padding="2"
+                HorizontalOptions="FillAndExpand"
+                Stroke="{StaticResource PrimaryTeal}"
+                StrokeShape="RoundRectangle 10,10,10,10"
+                StrokeThickness="1">
+
+                <Grid ColumnDefinitions="*, Auto" HorizontalOptions="FillAndExpand">
+                    <!--  Campo de entrada de texto  -->
+                    <Entry
+                        Grid.Column="0"
+                        FontSize="18"
+                        HorizontalOptions="FillAndExpand"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        Placeholder="Search by title..."
+                        Text="{Binding Search}"
+                        TextColor="{StaticResource AppBlack}"
+                        VerticalOptions="CenterAndExpand" />
+
+                    <!--  Botón de búsqueda  -->
+                    <Button
+                        Grid.Column="1"
+                        Command="{Binding FilterPromptsCommand}"
+                        HorizontalOptions="EndAndExpand"
+                        Scale="1"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        VerticalOptions="CenterAndExpand">
+                        <Button.ImageSource>
+                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8b6;" />
+                        </Button.ImageSource>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <CollectionView
+                EmptyView="No Items Available"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                ItemsSource="{Binding Prompts}"
+                SelectionMode="None">
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Margin="5"
+                            Padding="10"
+                            Stroke="LightGray"
+                            StrokeThickness="2">
+                            <VerticalStackLayout>
+
+                                <Grid
+                                    Padding="5"
+                                    ColumnDefinitions="Auto, * , Auto"
+                                    RowDefinitions="Auto">
+
+                                    <!--  Título y Descripción  -->
+                                    <VerticalStackLayout
+                                        Grid.Column="1"
+                                        HorizontalOptions="StartAndExpand"
+                                        VerticalOptions="StartAndExpand">
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="20"
+                                            Text="{Binding Prompt.Title}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                        <Label
+                                            FontAttributes="Italic"
+                                            FontSize="16"
+                                            Text="{Binding Prompt.Description}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                    </VerticalStackLayout>
+
+                                    <!--  Botón de Favoritos  -->
+                                    <Button
+                                        Grid.Column="2"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=ToggleFavoriteCommand}"
+                                        CommandParameter="{Binding .}"
+                                        HorizontalOptions="End"
+                                        Style="{StaticResource PrimaryFavoriteButtonStyle}"
+                                        VerticalOptions="Center">
+                                        <Button.ImageSource>
+                                            <FontImageSource
+                                                FontFamily="MaterialIconsOutlined-Regular"
+                                                Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
+                                                Color="{StaticResource AppBlack}" />
+                                        </Button.ImageSource>
+                                    </Button>
+                                </Grid>
+
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=SelectPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        Style="{StaticResource PrimaryButtonStyle}">
+
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=NavigateToEditPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        Style="{StaticResource WarningButtonStyle}">
+
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=DeletePromptCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource CriticalButtonStyle}">
+
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <!--  CheckBox para seleccionar los prompts  -->
+                                    <CheckBox
+                                        CheckedChanged="OnCheckBoxCheckedChanged"
+                                        HorizontalOptions="EndAndExpand"
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        Scale="1.5"
+                                        VerticalOptions="CenterAndExpand"
+                                        Color="{StaticResource PrimaryRed}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <VerticalStackLayout>
+                <Button
+                    Command="{Binding LoadMorePromptsCommand}"
+                    HorizontalOptions="Center"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    IsVisible="{Binding IsMoreDataAvailable}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="More">
+
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe313;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="20"
+                    HorizontalOptions="End"
+                    Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
+                    TextColor="{StaticResource AppBlack}" />
+            </VerticalStackLayout>
+
+            <!--  Indicador de Carga  -->
+            <ActivityIndicator
+                HeightRequest="50"
+                IsRunning="{Binding IsLoading}"
+                IsVisible="{Binding IsLoading}"
+                VerticalOptions="Center"
+                Color="{StaticResource PrimaryTeal}" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

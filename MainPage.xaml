@@ -133,7 +133,7 @@
                 VerticalOptions="Center"
                 Color="{StaticResource PrimaryTeal}" />
 
-            <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion}" />
+    
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
