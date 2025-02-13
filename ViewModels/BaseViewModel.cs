@@ -15,6 +15,14 @@ namespace QuickPrompt.ViewModels
     {
         // ============================== 🌟 PROPIEDADES ==============================
 
+        [ObservableProperty]
+        private string search;
+
+        [ObservableProperty]
+        private bool isAllSelected = false;
+
+        protected string oldSearch;
+
         /// <summary>
         /// Controla el estado de carga de la aplicación.
         /// </summary>
@@ -156,7 +164,13 @@ namespace QuickPrompt.ViewModels
         /// <returns>
         /// Verdadero si la selección es válida.
         /// </returns>
-        protected bool IsSelectionValid(string promptText, int selectionLength)
-            => !string.IsNullOrEmpty(promptText) && selectionLength > 0;
+        protected bool IsSelectionValid(string promptText, int selectionLength) => !string.IsNullOrEmpty(promptText) && selectionLength > 0;
+
+        protected void CleanSearch()
+        {
+            this.oldSearch = string.Empty;
+
+            this.Search = string.Empty;
+        }
     }
 }

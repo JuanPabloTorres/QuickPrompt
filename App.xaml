@@ -21,7 +21,8 @@
             <Color x:Key="TextDark">#333333</Color>
             <Color x:Key="TextLight">#FFFFFF</Color>
             <Color x:Key="AppBlack">#242124</Color>
-            <Color x:Key="PrimaryRed">#D64545</Color>
+            <Color x:Key="PrimaryRed">#BE3144</Color>
+            <Color x:Key="PrimaryGray">#FBFBFB</Color>
 
             <Style x:Key="baseBtn" TargetType="Button">
                 <Setter Property="HeightRequest" Value="50" />
@@ -40,6 +41,74 @@
                             Offset="5,5" />
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
+            <Style x:Key="CardStyle" TargetType="Border">
+                <Setter Property="Margin" Value="5" />
+                <Setter Property="Padding" Value="10" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
+                <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 5,5,5,5" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow
+                            Brush="{StaticResource AppBlack}"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="5,5" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--  Estilo para bordes de entradas de texto  -->
+            <Style x:Key="InputBorderStyle" TargetType="Border">
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+                <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="Padding" Value="4" />
+            </Style>
+            <!--  Estilo para el Border de entrada  -->
+            <Style x:Key="InputBorderStyle2" TargetType="Border">
+                <Setter Property="Padding" Value="10" />
+                <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+                <Setter Property="StrokeThickness" Value="1" />
+            </Style>
+
+            <!--  Estilo para el Entry dentro del Border  -->
+            <Style x:Key="InputEntryStyle" TargetType="Entry">
+                <Setter Property="FontSize" Value="16" />
+
+                <Setter Property="Placeholder" Value="Prompt Title" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+            </Style>
+
+            <!--  Estilo para el Editor de texto  -->
+            <Style x:Key="PromptEditorStyle" TargetType="Editor">
+                <Setter Property="AutoSize" Value="TextChanges" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="HeightRequest" Value="300" />
+
+                <Setter Property="Placeholder" Value="Write your prompt here..." />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+                <Setter Property="BackgroundColor" Value="WhiteSmoke" />
+                <Setter Property="Margin" Value="5" />
+
+            </Style>
+
+
+            <!--  Estilo para el botón de búsqueda  -->
+            <Style x:Key="SearchButtonStyle" TargetType="Button">
+                <Setter Property="HorizontalOptions" Value="EndAndExpand" />
+                <Setter Property="VerticalOptions" Value="CenterAndExpand" />
+
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+
             </Style>
 
             <!--  Botón Principal  -->
@@ -100,10 +169,33 @@
                 BasedOn="{StaticResource BaseLabelStyle}"
                 TargetType="Label">
                 <Setter Property="FontSize" Value="24" />
-                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="FontAttributes" Value="Italic" />
+                <Setter Property="TextTransform" Value="Uppercase" />
                 <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{StaticResource PrimaryYellow}" />
+                <Setter Property="TextColor" Value="{StaticResource PrimaryBlueDark}" />
             </Style>
+
+            <!--  Estilo para etiquetas de conteo de prompts  -->
+            <Style x:Key="TotalCountLabelStyle" TargetType="Label">
+                <Setter Property="FontAttributes" Value="Italic" />
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="HorizontalOptions" Value="End" />
+                <Setter Property="TextTransform" Value="Uppercase" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+            </Style>
+
+            <!--  Estilo para campos de entrada de texto  -->
+            <Style x:Key="SearchEntryStyle" TargetType="Entry">
+                <Setter Property="BackgroundColor" Value="WhiteSmoke" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontAttributes" Value="Italic" />
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+                <Setter Property="VerticalOptions" Value="CenterAndExpand" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+                <Setter Property="Placeholder" Value="Search by title..." />
+            </Style>
+
+
 
             <!--  Estilo para Subtítulos  -->
             <Style
@@ -144,6 +236,15 @@
                 <Setter Property="FontAttributes" Value="Italic" />
             </Style>
 
+            <!--  Estilo para etiquetas generales  -->
+            <Style x:Key="SelectAllLabelStyle" TargetType="Label">
+                <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+            </Style>
+
+
             <!--  Estilo para la Versión  -->
             <Style x:Key="VersionLabelStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="12" />
@@ -154,10 +255,26 @@
                 <Setter Property="FontAttributes" Value="Italic" />
             </Style>
 
+            <!--  Estilo para la línea divisoria  -->
+            <Style x:Key="DividerLineStyle" TargetType="BoxView">
+                <Setter Property="Margin" Value="0,5" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+                <Setter Property="HeightRequest" Value="1" />
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+            </Style>
+
+            <!--  Estilo para el Indicador de Carga  -->
+            <Style x:Key="LoadingIndicatorStyle" TargetType="ActivityIndicator">
+                <Setter Property="HeightRequest" Value="50" />
+                <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="Color" Value="{StaticResource PrimaryTeal}" />
+            </Style>
+
+
+
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
             <converters:BooleanToStarIconConverter x:Key="BooleanToStarIconConverter" />
-
         </ResourceDictionary>
     </Application.Resources>
 </Application>

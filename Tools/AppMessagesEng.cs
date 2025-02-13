@@ -43,6 +43,7 @@ namespace QuickPrompt.Tools
             public const string WordAlreadyHasBraces = "The word or phrase is already surrounded by braces.";
             public const string WordHasNoBraces = "The selected word does not have braces around it to remove.";
             public const string InvalidTextSelection = "Please select a valid text.";
+            public const string EmptySearch = "Please type a search before continue.";
         }
     }
 }

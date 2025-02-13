@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
-    public partial class QuickPromptViewModel:BaseViewModel
+    public partial class QuickPromptViewModel : BaseViewModel
     {
         // ======================= 📌 PROPIEDADES =======================
         [ObservableProperty]
@@ -79,7 +79,8 @@ namespace QuickPrompt.ViewModels
         }
 
         /// <summary>
-        /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si se proporciona.
+        /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si
+        /// se proporciona.
         /// </summary>
         /// <param name="filter">
         /// Texto opcional para filtrar los prompts.
@@ -152,7 +153,28 @@ namespace QuickPrompt.ViewModels
         {
             await ExecuteWithLoadingAsync(async () =>
             {
+                if (string.IsNullOrEmpty(this.Search))
+                {
+                    await AppShell.Current.DisplayAlert("Error", AppMessagesEng.Warnings.EmptySearch, "OK");
+
+                    return;
+                }
+
                 if (!IsSearchFlag)
+                {
+                    if (string.IsNullOrEmpty(this.oldSearch))
+                    {
+                        this.oldSearch = this.Search;
+                    }
+
+                    ToggleSearchFlag(true);
+
+                    blockHandler.Reset();
+
+                    this.Prompts.Clear();
+                }
+
+                if (this.oldSearch != this.Search)
                 {
                     ToggleSearchFlag(true);
 
@@ -235,7 +257,7 @@ namespace QuickPrompt.ViewModels
             {
                 await ExecuteWithLoadingAsync(async () =>
                 {
-                    await _databaseService.DeletePromptAsync(selectedPrompt.Prompt);
+                    await _databaseService.DeletePromptAsync(selectedPrompt.Prompt.Id);
 
                     Prompts.Remove(selectedPrompt);
 
@@ -267,7 +289,7 @@ namespace QuickPrompt.ViewModels
                 {
                     foreach (var prompt in selectedPromptsToDelete.ToList())
                     {
-                        await _databaseService.DeletePromptAsync(prompt.Prompt);
+                        await _databaseService.DeletePromptAsync(prompt.Prompt.Id);
 
                         Prompts.Remove(prompt);
 
@@ -319,14 +341,12 @@ namespace QuickPrompt.ViewModels
 
             prompt.IsFavorite = !prompt.IsFavorite;
 
-            await _databaseService.UpdateFavoriteStatusAsync(prompt.Prompt.Id,prompt.IsFavorite);
+            await _databaseService.UpdateFavoriteStatusAsync(prompt.Prompt.Id, prompt.IsFavorite);
 
             if (!prompt.IsFavorite)
             {
                 Prompts.Remove(prompt);
             }
         }
-
-
     }
 }

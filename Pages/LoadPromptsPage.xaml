@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     Title="Prompts Saved"
-    BackgroundColor="WhiteSmoke"
+    BackgroundColor="GhostWhite"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <!--  Barra de herramientas  -->
@@ -15,7 +15,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5d5;"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{StaticResource PrimaryYellow}" />
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to reload data
@@ -38,38 +38,25 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
 
 
 
             <!--  Entrada para el Título  -->
-            <Border
-                Padding="2"
-                HorizontalOptions="FillAndExpand"
-                Stroke="{StaticResource PrimaryTeal}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
 
                 <Grid ColumnDefinitions="*, Auto" HorizontalOptions="FillAndExpand">
                     <!--  Campo de entrada de texto  -->
                     <Entry
                         Grid.Column="0"
-                        FontSize="18"
-                        HorizontalOptions="FillAndExpand"
                         IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                        Placeholder="Search by title..."
-                        Text="{Binding Search}"
-                        TextColor="{StaticResource AppBlack}"
-                        VerticalOptions="CenterAndExpand" />
+                        Style="{StaticResource SearchEntryStyle}"
+                        Text="{Binding Search}" />
 
                     <!--  Botón de búsqueda  -->
                     <Button
                         Grid.Column="1"
                         Command="{Binding FilterPromptsCommand}"
-                        HorizontalOptions="EndAndExpand"
-                        Scale="1"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        VerticalOptions="CenterAndExpand">
+                        Style="{StaticResource SearchButtonStyle}">
                         <Button.ImageSource>
                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8b6;" />
                         </Button.ImageSource>
@@ -83,13 +70,31 @@
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="None">
 
+                <CollectionView.Header>
+
+                    <VerticalStackLayout>
+                        <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts List" />
+
+                        <!--  CheckBox para Seleccionar Todo  -->
+                        <HorizontalStackLayout HorizontalOptions="EndAndExpand">
+                            <Label Style="{StaticResource SelectAllLabelStyle}" Text="Select All" />
+                            <CheckBox
+                                CheckedChanged="OnSelectAllCheckedChanged"
+                                IsChecked="{Binding IsAllSelected, Mode=TwoWay}"
+                                Color="{StaticResource PrimaryRed}" />
+                        </HorizontalStackLayout>
+
+                        <!--  Línea divisoria  -->
+                        <BoxView Style="{StaticResource DividerLineStyle}" />
+                    </VerticalStackLayout>
+
+                </CollectionView.Header>
+
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border
-                            Margin="5"
-                            Padding="10"
-                            Stroke="LightGray"
-                            StrokeThickness="2">
+                        <Border Style="{StaticResource CardStyle}">
+
+
                             <VerticalStackLayout>
 
                                 <Grid
@@ -180,6 +185,15 @@
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+
+                <CollectionView.Footer>
+                    <VerticalStackLayout>
+                        <!--  Línea divisoria  -->
+                        <BoxView Style="{StaticResource DividerLineStyle}" />
+
+                        <Label Style="{StaticResource TotalCountLabelStyle}" Text="{Binding Prompts.Count, StringFormat='Total: {0}'}" />
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
             </CollectionView>
 
             <VerticalStackLayout>
@@ -199,21 +213,14 @@
                     </Button.ImageSource>
                 </Button>
 
-                <Label
-                    FontAttributes="Bold"
-                    FontSize="20"
-                    HorizontalOptions="End"
-                    Text="{Binding Prompts.Count, StringFormat='Total: {0}'}"
-                    TextColor="{StaticResource AppBlack}" />
+
             </VerticalStackLayout>
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
-                HeightRequest="50"
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
-                VerticalOptions="Center"
-                Color="{StaticResource PrimaryTeal}" />
+                Style="{StaticResource LoadingIndicatorStyle}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

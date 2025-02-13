@@ -50,8 +50,7 @@ namespace QuickPrompt.ViewModels.Prompts
                 // Actualizar en la base de datos
                 await this.promptDatabaseService.UpdateFavoriteStatusAsync(this.Prompt.Id, this.Prompt.IsFavorite);
 
-                await AppShell.Current.DisplayAlert("Success", prompt.IsFavorite ? "Prompt added to favorites." : "Prompt removed from favorites.",
-               "OK");
+                await AppShell.Current.DisplayAlert("Success", prompt.IsFavorite ? "Prompt added to favorites." : "Prompt removed from favorites.", "OK");
             }, AppMessagesEng.DatabaseUpdateError);
         }
     }

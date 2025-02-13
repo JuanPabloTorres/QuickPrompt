@@ -36,4 +36,19 @@ public partial class QuickPromptPage : ContentPage
             viewModel.TogglePromptSelection(prompt);
         }
     }
+
+    private void OnSelectAllCheckedChanged(object sender, CheckedChangedEventArgs e)
+    {
+        bool isChecked = e.Value;
+
+        _viewModel.IsAllSelected = isChecked;
+
+        if (_viewModel.Prompts == null || !_viewModel.Prompts.Any())
+            return;
+
+        foreach (var prompt in _viewModel.Prompts)
+        {
+            prompt.IsSelected = isChecked;
+        }
+    }
 }

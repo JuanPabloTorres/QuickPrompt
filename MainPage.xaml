@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    Title="Qucik Prompt"
+    Title="Create"
     BackgroundColor="WhiteSmoke"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
@@ -61,51 +61,40 @@
             <!--  Título  -->
             <Label Style="{StaticResource TitleLabelStyle}" Text="Prompt Management" />
 
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
             <!--  Entrada para el Título  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryTeal}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Entry
-                    FontSize="16"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Prompt Title"
-                    Text="{Binding PromptTitle}"
-                    TextColor="Black" />
+                    Placeholder="Type Title..."
+                    Style="{StaticResource InputEntryStyle}"
+                    Text="{Binding PromptTitle}" />
             </Border>
 
             <!--  Entrada para la Descripción  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryBlueDark}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Entry
-                    FontSize="16"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Description (optional)"
-                    Text="{Binding PromptDescription}"
-                    TextColor="Black" />
+                    Placeholder="Type Description..."
+                    Style="{StaticResource InputEntryStyle}"
+                    Text="{Binding PromptDescription}" />
             </Border>
 
             <!--  Editor para el Prompt  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryBlueDark}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Editor
-                    AutoSize="TextChanges"
                     CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                    FontSize="16"
-                    HeightRequest="300"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Write your prompt here..."
                     SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                    Text="{Binding PromptText}"
-                    TextColor="{StaticResource AppBlack}" />
+                    Style="{StaticResource PromptEditorStyle}"
+                    Text="{Binding PromptText}" />
+
             </Border>
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
 
             <!--  Texto seleccionado  -->
             <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabelCount}" />
@@ -114,6 +103,7 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 Command="{Binding CopyToClipboardCommand}"
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource PrimaryButtonStyle}"
                 Text="Copy Prompt">
 
@@ -127,13 +117,10 @@
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
-                HeightRequest="50"
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
-                VerticalOptions="Center"
-                Color="{StaticResource PrimaryTeal}" />
+                Style="{StaticResource LoadingIndicatorStyle}" />
 
-    
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

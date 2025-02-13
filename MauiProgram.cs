@@ -101,7 +101,7 @@ namespace QuickPrompt
             builder.Services.AddTransient<EditPromptPageViewModel>();
 
             builder.Services.AddTransient<QuickPromptViewModel>();
-            
+
             builder.Services.AddTransient<SettingViewModel>();
         }
 

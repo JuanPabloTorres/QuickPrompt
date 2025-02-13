@@ -48,7 +48,7 @@
             <Tab.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe8de;"
+                    Glyph="&#xe0ee;"
                     Color="{StaticResource PrimaryBlueLight}" />
             </Tab.Icon>
             <ShellContent

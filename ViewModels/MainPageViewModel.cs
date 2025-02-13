@@ -32,19 +32,23 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
         await ExecuteWithLoadingAsync(async () =>
         {
             var validator = new PromptValidator();
+
             string validationError = validator.ValidateEn(PromptTitle, PromptText);
 
             if (!string.IsNullOrEmpty(validationError))
             {
                 await AppShell.Current.DisplayAlert("Error", validationError, "OK");
+
                 return;
             }
 
             var newPrompt = CreatePromptTemplate();
+
             await _databaseService.SavePromptAsync(newPrompt);
 
             ClearPromptInputs();
             await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
+
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
