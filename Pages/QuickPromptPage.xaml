@@ -100,13 +100,15 @@
                                     <!--  Título y Descripción  -->
                                     <VerticalStackLayout
                                         Grid.Column="1"
-                                        HorizontalOptions="StartAndExpand"
+                                        HorizontalOptions="FillAndExpand"
                                         VerticalOptions="StartAndExpand">
                                         <Label
                                             FontAttributes="Bold"
                                             FontSize="20"
                                             Text="{Binding Prompt.Title}"
                                             TextColor="{StaticResource AppBlack}" />
+                                        <!--  Línea divisoria  -->
+                                        <BoxView Style="{StaticResource DividerLineStyle}" />
                                         <Label
                                             FontAttributes="Italic"
                                             FontSize="16"
@@ -119,9 +121,7 @@
                                         Grid.Column="2"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=ToggleFavoriteCommand}"
                                         CommandParameter="{Binding .}"
-                                        HorizontalOptions="End"
-                                        Style="{StaticResource PrimaryFavoriteButtonStyle}"
-                                        VerticalOptions="Center">
+                                        Style="{StaticResource FavoriteButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource
                                                 FontFamily="MaterialIconsOutlined-Regular"
@@ -189,16 +189,15 @@
             <VerticalStackLayout>
                 <Button
                     Command="{Binding LoadMorePromptsCommand}"
-                    HorizontalOptions="Center"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     IsVisible="{Binding IsMoreDataAvailable}"
-                    Style="{StaticResource PrimaryButtonStyle}"
+                    Style="{StaticResource LoadMoreButtonStyle}"
                     Text="More">
 
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe313;"
+                            Glyph="&#xead0;"
                             Color="{StaticResource AppBlack}" />
                     </Button.ImageSource>
                 </Button>

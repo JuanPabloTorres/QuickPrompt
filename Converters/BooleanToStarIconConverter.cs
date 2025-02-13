@@ -14,7 +14,7 @@ namespace QuickPrompt.Converters
             // Unicode para estrella vacía (☆) y estrella llena (★)
             string glyphIconNotFavorite = "\ue836"; // Material Icons Outlined - Empty Star
 
-            string glyphIconFavorite = "\ue8d0";   // Material Icons Outlined - Filled Star
+            string glyphIconFavorite = "\ue2e6";   // Material Icons Outlined - Filled Star
 
 
             if (value is bool isFavorite)

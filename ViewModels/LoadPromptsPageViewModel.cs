@@ -27,7 +27,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
     public bool IsSearchFlag { get; set; }
 
-    private readonly PromptDatabaseService _databaseService;
+
 
     // Constructor primario con la lógica de inicialización
     public LoadPromptsPageViewModel(PromptDatabaseService _databaseService)

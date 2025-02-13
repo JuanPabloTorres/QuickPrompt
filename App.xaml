@@ -97,18 +97,14 @@
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
                 <Setter Property="BackgroundColor" Value="WhiteSmoke" />
                 <Setter Property="Margin" Value="5" />
-
             </Style>
-
 
             <!--  Estilo para el botón de búsqueda  -->
             <Style x:Key="SearchButtonStyle" TargetType="Button">
                 <Setter Property="HorizontalOptions" Value="EndAndExpand" />
                 <Setter Property="VerticalOptions" Value="CenterAndExpand" />
-
                 <Setter Property="BorderWidth" Value="1" />
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
-
             </Style>
 
             <!--  Botón Principal  -->
@@ -154,6 +150,41 @@
                 <Setter Property="BackgroundColor" Value="Transparent" />
             </Style>
 
+            <!--  Estilo para el botón de Favoritos  -->
+            <Style
+                x:Key="FavoriteButtonStyle"
+                BasedOn="{StaticResource PrimaryFavoriteButtonStyle}"
+                TargetType="Button">
+                <Setter Property="HorizontalOptions" Value="End" />
+                <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="Scale" Value="1.2" />
+
+            </Style>
+
+            <!--  Estilo para el botón de "Cargar Más"  -->
+            <Style x:Key="LoadMoreButtonStyle" TargetType="Button">
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+                <Setter Property="IsEnabled" Value="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
+                <Setter Property="IsVisible" Value="{Binding IsMoreDataAvailable}" />
+                <Setter Property="Text" Value="More" />
+                <Setter Property="Margin" Value="12" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextTransform" Value="Uppercase" />
+                <Setter Property="FontFamily" Value="12" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryYellow}" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow
+                            Brush="{StaticResource AppBlack}"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="5,5" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
             <!--  Estilo Base para Labels  -->
             <Style x:Key="BaseLabelStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
@@ -194,8 +225,6 @@
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
                 <Setter Property="Placeholder" Value="Search by title..." />
             </Style>
-
-
 
             <!--  Estilo para Subtítulos  -->
             <Style
@@ -244,7 +273,6 @@
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
             </Style>
 
-
             <!--  Estilo para la Versión  -->
             <Style x:Key="VersionLabelStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="12" />
@@ -269,8 +297,6 @@
                 <Setter Property="VerticalOptions" Value="Center" />
                 <Setter Property="Color" Value="{StaticResource PrimaryTeal}" />
             </Style>
-
-
 
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />

@@ -13,6 +13,9 @@ namespace QuickPrompt.ViewModels
 {
     public abstract partial class BaseViewModel : ObservableObject
     {
+
+        protected  PromptDatabaseService _databaseService;
+
         // ============================== 🌟 PROPIEDADES ==============================
 
         [ObservableProperty]
