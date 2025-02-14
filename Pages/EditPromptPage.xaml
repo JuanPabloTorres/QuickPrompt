@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Enhance Your Prompt"
-    BackgroundColor="WhiteSmoke"
+    BackgroundColor="GhostWhite"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <!--  Barra de herramientas  -->
@@ -38,70 +38,65 @@
         <VerticalStackLayout Padding="10" Spacing="20">
             <Label Style="{StaticResource TitleLabelStyle}" Text="Modify Prompt" />
 
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
             <!--  Entrada para el Título  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryTeal}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Entry
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Título"
-                    Text="{Binding PromptTemplate.Title}"
-                    TextColor="Black" />
+                    Placeholder="Type Title..."
+                    Style="{StaticResource InputEntryStyle}"
+                    Text="{Binding PromptTemplate.Title}" />
             </Border>
 
             <!--  Entrada para la Descripción  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryYellow}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Entry
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Descripción"
-                    Text="{Binding PromptTemplate.Description}"
-                    TextColor="Black" />
+                    Placeholder="Type Description..."
+                    Style="{StaticResource InputEntryStyle}"
+                    Text="{Binding PromptTemplate.Description}" />
             </Border>
 
             <!--  Editor para el Prompt  -->
-            <Border
-                Padding="10"
-                Stroke="{StaticResource PrimaryBlueDark}"
-                StrokeShape="RoundRectangle 10,10,10,10"
-                StrokeThickness="1">
+            <Border Style="{StaticResource InputBorderStyle}">
                 <Editor
                     CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
                     HeightRequest="300"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     Placeholder="Plantilla del Prompt"
                     SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                    Text="{Binding PromptTemplate.Template, Mode=TwoWay}"
-                    TextColor="Black" />
+                    Style="{StaticResource PromptEditorStyle}"
+                    Text="{Binding PromptTemplate.Template, Mode=TwoWay}" />
             </Border>
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
 
             <!--  Texto seleccionado  -->
             <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabelCount}" />
 
-            <Button
-                Grid.Row="1"
-                Grid.Column="1"
-                Command="{Binding GoToDetailCommand}"
-                Style="{StaticResource CriticalButtonStyle}"
-                Text="Go to Execute">
+            <!--<Button
+            Grid.Row="1"
+            Grid.Column="1"
+            Command="{Binding GoToDetailCommand}"
+            Style="{StaticResource NavigationButtonStyle}"
+            Text="Go to Execute">
 
-                <Button.ImageSource>
-                    <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xeb2e;" />
-                </Button.ImageSource>
-            </Button>
+            <Button.ImageSource>
+            <FontImageSource
+            FontFamily="MaterialIconsOutlined-Regular"
+            Glyph="&#xeb2e;"
+            Color="{StaticResource AppBlack}" />
+            </Button.ImageSource>
+            </Button>-->
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
-                HeightRequest="50"
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
-                VerticalOptions="Center"
-                Color="{StaticResource PrimaryTeal}" />
+                Style="{StaticResource LoadingIndicatorStyle}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

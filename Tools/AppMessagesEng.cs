@@ -22,17 +22,32 @@ namespace QuickPrompt.Tools
         public static class Prompts
         {
             public const string PromptDeleteError = "Unable to delete the prompt. Please try again.";
+
             public const string PromptEmptyTitleError = "The prompt title cannot be empty.";
+
+
             public const string PromptFilterError = "An issue occurred while filtering the prompts. Please try again.";
+
             public const string PromptLoadError = "An issue occurred while loading the prompts. Please try again.";
+
             public const string PromptNotFound = "The prompt was not found in the database.";
+
             public const string PromptSavedSuccess = "The prompt has been saved successfully.";
+
             public const string PromptSaveError = "An issue occurred while saving the prompt. Please try again.";
+
             public const string PromptVariablesError = "You must complete all variables before generating the prompt.";
+
             public const string PromptGenerateError = "An issue occurred while generating the prompt. Please try again.";
+
             public const string PromptEmptyAndUnSelected = "The prompt field is empty and no text is selected. Please try again.";
+
             public const string PromptDevelopmentMessage = "This feature is under development. We apologize for any inconvenience.";
+
             public const string PromptCopiedToClipboard = "The prompt has been copied to the clipboard.";
+
+            public const string PromptVariableIsTheSameThanOther = "The selected variable is already in use within the prompt.";
+
 
         }
 

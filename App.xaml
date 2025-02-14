@@ -158,14 +158,11 @@
                 <Setter Property="HorizontalOptions" Value="End" />
                 <Setter Property="VerticalOptions" Value="Center" />
                 <Setter Property="Scale" Value="1.2" />
-
             </Style>
 
             <!--  Estilo para el botón de "Cargar Más"  -->
             <Style x:Key="LoadMoreButtonStyle" TargetType="Button">
                 <Setter Property="HorizontalOptions" Value="FillAndExpand" />
-                <Setter Property="IsEnabled" Value="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
-                <Setter Property="IsVisible" Value="{Binding IsMoreDataAvailable}" />
                 <Setter Property="Text" Value="More" />
                 <Setter Property="Margin" Value="12" />
                 <Setter Property="FontAttributes" Value="Bold" />
@@ -184,6 +181,26 @@
                 </Setter>
             </Style>
 
+            <!--  Estilo para el botón de "Navegación"  -->
+            <Style x:Key="NavigationButtonStyle" TargetType="Button">
+                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+                <Setter Property="Text" Value="More" />
+                <Setter Property="Margin" Value="12" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextTransform" Value="Uppercase" />
+                <Setter Property="FontFamily" Value="12" />
+                <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryYellow}" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow
+                            Brush="{StaticResource AppBlack}"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="5,5" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
             <!--  Estilo Base para Labels  -->
             <Style x:Key="BaseLabelStyle" TargetType="Label">
@@ -233,6 +250,7 @@
                 TargetType="Label">
                 <Setter Property="FontSize" Value="20" />
                 <Setter Property="FontAttributes" Value="Italic" />
+                <Setter Property="HorizontalOptions" Value="CenterAndExpand" />
                 <Setter Property="TextColor" Value="{StaticResource PrimaryBlueLight}" />
             </Style>
 
@@ -275,11 +293,12 @@
 
             <!--  Estilo para la Versión  -->
             <Style x:Key="VersionLabelStyle" TargetType="Label">
-                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
-                <Setter Property="HorizontalOptions" Value="End" />
+                <Setter Property="HorizontalOptions" Value="CenterAndExpand" />
                 <Setter Property="VerticalOptions" Value="End" />
                 <Setter Property="Margin" Value="10" />
+                <Setter Property="TextTransform" Value="Uppercase" />
                 <Setter Property="FontAttributes" Value="Italic" />
             </Style>
 
@@ -301,6 +320,7 @@
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
             <converters:BooleanToStarIconConverter x:Key="BooleanToStarIconConverter" />
+            <converters:FinalPromptVisibilityConverter x:Key="FinalPromptVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

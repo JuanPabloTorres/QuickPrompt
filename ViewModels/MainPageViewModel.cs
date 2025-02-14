@@ -9,7 +9,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class MainPageViewModel(PromptDatabaseService _databaseService, Models.AppSettings appSettings) : BaseViewModel
+public partial class MainPageViewModel(PromptDatabaseService promptDatabaseService) : BaseViewModel(promptDatabaseService)
 {
     // ============================ PROPIEDADES Y VARIABLES ============================
     [ObservableProperty] private int cursorPosition;
@@ -21,8 +21,6 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
     [ObservableProperty] private string promptTitle;
 
     [ObservableProperty] private string promptDescription;
-
-  
 
     // ============================ COMANDOS ============================
 
@@ -48,7 +46,6 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
 
             ClearPromptInputs();
             await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
-
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
@@ -91,6 +88,7 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
         if (!IsSelectionValid(PromptText, SelectionLength))
         {
             await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.InvalidTextSelection);
+
             return;
         }
 
@@ -104,6 +102,14 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
         }
 
         string selectedText = PromptText.Substring(CursorPosition, SelectionLength);
+
+        if (BraceTextHandler.ContainsVariable($"{{{selectedText}}}", this.PromptText))
+        {
+            var _nextVariableVersion = BraceTextHandler.GetNextVariableSuffixVersion(this.PromptText, selectedText);
+
+            // Agregar sufijo numérico para hacer el nombre único
+            selectedText += _nextVariableVersion;
+        }
 
         handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
 
@@ -135,6 +141,9 @@ public partial class MainPageViewModel(PromptDatabaseService _databaseService, M
             var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
 
             string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
+
+            // Remover el sufijo "/n" si existe en la variable
+            selectedText = BraceTextHandler.RemoveVariableSuffix(selectedText);
 
             handler.UpdateText(startIndex, length, selectedText);
 

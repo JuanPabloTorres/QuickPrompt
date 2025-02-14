@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel, IQueryAttributable
+public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel(_databaseService), IQueryAttributable
 {
     // ============================== 🌟 PROPIEDADES ==============================
 
     [ObservableProperty] private PromptTemplate promptTemplate;
+
     [ObservableProperty] private int cursorPosition;
+
     [ObservableProperty] private int selectionLength;
+
     [ObservableProperty] private string promptText;
 
     // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
@@ -42,8 +45,8 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             if (prompt != null)
             {
                 this.PromptTemplate = prompt;
-                this.PromptTemplate.Variables = ExtractVariables(prompt.Template)
-                    .ToDictionary(v => v, v => string.Empty);
+
+                this.PromptTemplate.Variables = ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
 
                 UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(prompt.Template));
             }
@@ -51,7 +54,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             {
                 await AppShell.Current.DisplayAlert("Notice", AppMessagesEng.Prompts.PromptNotFound, "OK");
             }
-        }, AppMessages.Prompts.PromptLoadError);
+        }, AppMessagesEng.Prompts.PromptLoadError);
     }
 
     /// <summary>
@@ -80,7 +83,9 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
                 return;
 
             UpdatePromptVariables();
+
             await UpdatePromptChangesAsync();
+
             await NotifySuccessAndNavigateBack();
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
@@ -107,8 +112,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     /// </summary>
     private void UpdatePromptVariables()
     {
-        PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template)
-            .ToDictionary(v => v, v => string.Empty);
+        PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
     }
 
     /// <summary>
@@ -144,10 +148,16 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         if (handler.IsSelectionValid(cursorPosition, selectionLength))
         {
             var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
+
             string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
+
+            // Remover el sufijo "/n" si existe en la variable
+            selectedText = BraceTextHandler.RemoveVariableSuffix(selectedText);
+
             handler.UpdateText(startIndex, length, selectedText);
 
             this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
+
             UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
         }
         else
@@ -175,26 +185,65 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     /// <summary>
     /// Encierra la palabra seleccionada entre `{}` si es válida.
     /// </summary>
+    //private async void EncloseSelectedTextWithBraces()
+    //{
+    //    var handler = new BraceTextHandler(this.PromptTemplate.Template);
+
+    // if (!handler.IsSelectionValid(CursorPosition, SelectionLength)) { await
+    // AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
+
+    // return; }
+
+    // if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength)) { await RemoveBracesFromSelectedText();
+
+    // return; }
+
+    // string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
+
+    // handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
+
+    // this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
+
+    //    UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+    //}
+
     private async void EncloseSelectedTextWithBraces()
     {
         var handler = new BraceTextHandler(this.PromptTemplate.Template);
 
+        // Verificar si la selección es válida
         if (!handler.IsSelectionValid(CursorPosition, SelectionLength))
         {
             await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
             return;
         }
 
+        // Si ya está rodeado por llaves, eliminarlas
         if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
         {
             await RemoveBracesFromSelectedText();
+
             return;
         }
 
+        // Extraer el texto seleccionado
         string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
+
+        if (BraceTextHandler.ContainsVariable($"{{{selectedText}}}", this.PromptTemplate.Template))
+        {
+            var _nextVariableVersion = BraceTextHandler.GetNextVariableSuffixVersion(this.PromptTemplate.Template, selectedText);
+
+            // Agregar sufijo numérico para hacer el nombre único
+            selectedText += _nextVariableVersion;
+        }
+
+        // Actualizar el texto con las llaves `{}` incluidas
         handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
 
+        // Actualizar la plantilla con el nuevo texto
         this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
+
+        // Actualizar el contador de variables
         UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
     }
 
@@ -211,8 +260,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             Template = newTemplate,
             Title = existingPrompt.Title,
             Description = existingPrompt.Description,
-            Variables = ExtractVariables(newTemplate)
-                .ToDictionary(v => v, v => string.Empty)
+            Variables = ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
     }
 }

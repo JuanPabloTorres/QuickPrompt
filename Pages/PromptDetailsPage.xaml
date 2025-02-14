@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Prompt Details"
-    BackgroundColor="WhiteSmoke"
+    BackgroundColor="GhostWhite"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
 
     <ContentPage.ToolbarItems>
@@ -31,6 +31,20 @@
                     Color="{StaticResource PrimaryBlueLight}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
+
+        <!--  Botón de Copiar  -->
+        <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5c9;"
+                    Color="{StaticResource PrimaryTeal}" />
+                <!--  Color asociado al botón Copiar  -->
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Clear Text
+            </ToolTipProperties.Text>
+        </ToolbarItem>
     </ContentPage.ToolbarItems>
 
     <ScrollView>
@@ -40,9 +54,22 @@
             VerticalOptions="FillAndExpand">
             <Label Style="{StaticResource TitleLabelStyle}" Text="{Binding PromptTitle}" />
 
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
             <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding Description}" />
 
-            <Label Style="{StaticResource NormalLabelStyle}" Text="{Binding PromptText}" />
+            <!--<Label Style="{StaticResource NormalLabelStyle}" Text="{Binding PromptText}" />-->
+
+            <!--  Editor para el Prompt  -->
+            <Border Style="{StaticResource InputBorderStyle}">
+                <Editor
+                    CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                    IsEnabled="False"
+                    SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                    Style="{StaticResource PromptEditorStyle}"
+                    Text="{Binding PromptText}" />
+            </Border>
 
             <ScrollView>
                 <VerticalStackLayout>
@@ -91,7 +118,7 @@
                 FontAttributes="Italic"
                 FontSize="18"
                 HorizontalOptions="Center"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
                 Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
                 TextColor="{StaticResource AppBlack}" />
 
@@ -127,11 +154,9 @@
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
-                HeightRequest="50"
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
-                VerticalOptions="Center"
-                Color="{StaticResource PrimaryTeal}" />
+                Style="{StaticResource LoadingIndicatorStyle}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
