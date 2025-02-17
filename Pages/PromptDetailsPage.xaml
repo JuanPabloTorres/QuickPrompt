@@ -48,28 +48,25 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
+
         <VerticalStackLayout
             Padding="10"
-            Spacing="10"
+            Spacing="8"
             VerticalOptions="FillAndExpand">
             <Label Style="{StaticResource TitleLabelStyle}" Text="{Binding PromptTitle}" />
 
             <!--  Línea divisoria  -->
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
-            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding Description}" />
+            <Label
+                HorizontalOptions="CenterAndExpand"
+                Style="{StaticResource SubtitleLabelStyle}"
+                Text="{Binding Description}" />
 
             <!--<Label Style="{StaticResource NormalLabelStyle}" Text="{Binding PromptText}" />-->
 
-            <!--  Editor para el Prompt  -->
-            <Border Style="{StaticResource InputBorderStyle}">
-                <Editor
-                    CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                    IsEnabled="False"
-                    SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                    Style="{StaticResource PromptEditorStyle}"
-                    Text="{Binding PromptText}" />
-            </Border>
+            <!--  Label para el Prompt  -->
+            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding PromptText}" />
 
             <ScrollView>
                 <VerticalStackLayout>
@@ -79,28 +76,24 @@
                         FontSize="20"
                         Text="Complete the variables:"
                         TextColor="{StaticResource AppBlack}" />
-                    <CollectionView IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" ItemsSource="{Binding Variables}">
+
+                    <!--  Línea divisoria  -->
+                    <BoxView Style="{StaticResource DividerLineStyle}" />
+
+                    <CollectionView
+                        Margin="5"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <VerticalStackLayout Padding="4" Spacing="5">
-                                    <Label
-                                        FontAttributes="Bold"
-                                        FontSize="18"
-                                        Text="{Binding Name}"
-                                        TextColor="{StaticResource AppBlack}" />
+                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
 
                                     <!--  Entrada para el Título  -->
-                                    <Border
-                                        Padding="5"
-                                        Stroke="{StaticResource AppBlack}"
-                                        StrokeShape="RoundRectangle 5,5,5,5"
-                                        StrokeThickness="1">
+                                    <Border Style="{StaticResource InputBorderStyle2}">
                                         <VerticalStackLayout>
 
-                                            <Entry
-                                                Placeholder="Enter the value..."
-                                                Text="{Binding Value}"
-                                                TextColor="{StaticResource AppBlack}" />
+                                            <Entry Style="{StaticResource VariableInputEntryStyle}" Text="{Binding Value}" />
                                         </VerticalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>
@@ -123,10 +116,9 @@
                 TextColor="{StaticResource AppBlack}" />
 
             <Button
-                Margin="0,10,0,0"
                 Command="{Binding GeneratePromptCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource CriticalButtonStyle}"
+                Style="{StaticResource DetailButtonStyle}"
                 Text="Generate Prompt">
 
                 <Button.ImageSource>

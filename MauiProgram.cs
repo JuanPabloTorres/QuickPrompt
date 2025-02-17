@@ -61,14 +61,13 @@ namespace QuickPrompt
             const string resourceName = "QuickPrompt.appsettings.json";
 
             using var stream = assembly.GetManifestResourceStream(resourceName);
+
             if (stream == null)
             {
                 throw new FileNotFoundException($"El recurso incrustado '{resourceName}' no fue encontrado.");
             }
 
-            return new ConfigurationBuilder()
-                .AddJsonStream(stream)
-                .Build();
+            return new ConfigurationBuilder().AddJsonStream(stream).Build();
         }
 
         // Registra los servicios necesarios en el contenedor de dependencias

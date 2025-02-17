@@ -58,7 +58,10 @@
                         Command="{Binding FilterPromptsCommand}"
                         Style="{StaticResource SearchButtonStyle}">
                         <Button.ImageSource>
-                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe8b6;" />
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xe8b6;"
+                                Color="{StaticResource AppBlack}" />
                         </Button.ImageSource>
                     </Button>
                 </Grid>

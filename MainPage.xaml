@@ -16,7 +16,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe89c;"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{StaticResource PrimaryTeal}" />
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Save data
@@ -29,7 +29,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xead3;"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{StaticResource PrimaryBlueDark}" />
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Create a Variable
@@ -42,7 +42,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5c9;"
-                    Color="{StaticResource PrimaryTeal}" />
+                    Color="{StaticResource PrimaryRed}" />
                 <!--  Color asociado al botón Copiar  -->
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>

@@ -161,48 +161,6 @@ namespace QuickPrompt.ViewModels
         }
 
         /// <summary>
-        /// Extrae las variables contenidas entre llaves `{}` en un texto. Si una variable se
-        /// repite, se le agrega un sufijo incremental para hacerla única.
-        /// </summary>
-        /// <param name="text">
-        /// Texto de entrada que contiene las variables entre `{}`.
-        /// </param>
-        /// <returns>
-        /// Lista de variables extraídas del texto.
-        /// </returns>
-        //protected List<string> ExtractVariables(string promptText)
-        //{
-        //    var variables = new List<string>();
-
-        // var variableCount = new Dictionary<string, int>();
-
-        // int startIndex = promptText.IndexOf('{');
-
-        // while (startIndex != -1) { int endIndex = promptText.IndexOf('}', startIndex);
-
-        // if (endIndex == -1) break; // Salir si no hay cierre de llave
-
-        // string variable = promptText.Substring(startIndex + 1, endIndex - startIndex - 1);
-
-        // if (variableCount.ContainsKey(variable)) { variableCount[variable]++;
-
-        // variable = $"{variable}/{variableCount[variable]}"; // Agregar sufijo para variables repetidas
-
-        // if (BraceTextHandler.ContainsVariable($"{{{variable}}}", promptText)) { var
-        // _nextVariableCount = variableCount[variable] + 1;
-
-        // variable = TextHelper.ReplaceVariableSuffix(variable, _nextVariableCount);
-
-        // } } else { variableCount[variable] = 0; // Inicializar contador }
-
-        // variables.Add(variable);
-
-        // startIndex = promptText.IndexOf('{', endIndex); }
-
-        //    return variables;
-        //}
-
-        /// <summary>
         /// Actualiza el contador de palabras seleccionadas y su etiqueta.
         /// </summary>
         /// <param name="count">
@@ -210,9 +168,7 @@ namespace QuickPrompt.ViewModels
         /// </param>
         protected void UpdateSelectedTextLabelCount(int count)
         {
-            SelectedTextLabelCount = count == 0
-                ? $"{AppMessagesEng.TotalMessage} None"
-                : $"{AppMessagesEng.TotalMessage} {count}";
+            SelectedTextLabelCount = count == 0 ? $"{AppMessagesEng.TotalMessage} None" : $"{AppMessagesEng.TotalMessage} {count}";
         }
 
         /// <summary>

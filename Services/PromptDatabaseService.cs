@@ -16,16 +16,102 @@ namespace QuickPrompt.Services
         public PromptDatabaseService()
         {
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+
             _database = new SQLiteAsyncConnection(dbPath);
-            InitializeDatabase();
+            // Llamar a la inicialización de la base de datos de manera asíncrona
+            Task.Run(async () => await InitializeDatabaseAsync());
         }
 
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
         /// </summary>
-        private async void InitializeDatabase()
+        private async Task InitializeDatabaseAsync()
         {
             await _database.CreateTableAsync<PromptTemplate>();
+
+            await InsertDefaultPromptsAsync();
+        }
+
+        /// <summary>
+        /// Inserta prompts útiles por defecto si la base de datos está vacía.
+        /// </summary>
+        private async Task InsertDefaultPromptsAsync()
+        {
+            int existingCount = await _database.Table<PromptTemplate>().CountAsync();
+
+            if (existingCount > 0)
+                return; // No agregar si ya hay prompts en la base de datos
+
+            var defaultPrompts = new List<PromptTemplate>
+            {
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Daily Workout Plan",
+                    Description = "Generate a structured workout plan for different fitness levels.",
+                    Template = "Create a {workout} plan for {fitness level} with a duration of {time} minutes.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "workout", "Strength training" },
+                        { "fitness level", "Beginner" },
+                        { "time", "30" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Essay Outline Generator",
+                    Description = "Provides an outline for an essay based on a given topic.",
+                    Template = "Create an essay outline on {topic} including introduction, main points, and conclusion.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "topic", "Artificial Intelligence in Healthcare" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Travel Itinerary Planner",
+                    Description = "Suggests an itinerary for a trip based on location and duration.",
+                    Template = "Plan a {days}-day trip to {destination}, including places to visit and activities.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "days", "5" },
+                        { "destination", "Paris" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Healthy Meal Plan",
+                    Description = "Suggests a healthy meal plan based on dietary preference.",
+                    Template = "Create a {days}-day meal plan for a {diet} diet, including breakfast, lunch, and dinner.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "days", "7" },
+                        { "diet", "Vegan" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Interview Question Generator",
+                    Description = "Generates interview questions for a specific job role.",
+                    Template = "Generate interview questions for a {job role} position in {industry}.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "job role", "Software Engineer" },
+                        { "industry", "Technology" }
+                    },
+                    IsFavorite = true
+                }
+            };
+
+            await _database.InsertAllAsync(defaultPrompts);
         }
 
         // =============================== 🔹 OPERACIONES CRUD PRINCIPALES ===============================
