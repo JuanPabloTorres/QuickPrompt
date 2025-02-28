@@ -14,9 +14,24 @@ public partial class QuickPromptPage : ContentPage
         BindingContext = _viewModel = viewModel;
     }
 
+    /// <summary>
+    /// Configura el ID de los anuncios de AdMob según la plataforma (Android o iOS).
+    /// </summary>
+    private void SetBannerId()
+    {
+#if __ANDROID__
+        // Configuración para Android
+        AdmobBanner.AdsId = "ca-app-pub-6397442763590886/6154534752"; // Reemplaza con tu ID de AdMob para Android
+#elif __IOS__
+        // Configuración para iOS
+        AdmobBanner.AdsId = "ca-app-pub-6397442763590886/6154534752"; // Reemplaza con tu ID de AdMob para iOS
+#endif
+    }
 
     protected override async void OnAppearing()
     {
+        SetBannerId();
+
         if (_viewModel.blockHandler.IsInitialBlockIndex())
         {
             await this._viewModel.LoadInitialPrompts();
@@ -24,16 +39,6 @@ public partial class QuickPromptPage : ContentPage
         else
         {
             await this._viewModel.CheckForMorePromptsAsync(this._viewModel.GetSearchValue());
-        }
-    }
-
-    private void OnCheckBoxCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        if (BindingContext is not QuickPromptViewModel viewModel) return;
-
-        if (sender is CheckBox checkBox && checkBox.BindingContext is PromptTemplateViewModel prompt)
-        {
-            viewModel.TogglePromptSelection(prompt);
         }
     }
 

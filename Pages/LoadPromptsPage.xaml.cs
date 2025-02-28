@@ -27,16 +27,6 @@ public partial class LoadPromptsPage : ContentPage
         }
     }
 
-    private void OnCheckBoxCheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        if (BindingContext is not LoadPromptsPageViewModel viewModel) return;
-
-        if (sender is CheckBox checkBox && checkBox.BindingContext is PromptTemplateViewModel prompt)
-        {
-            viewModel.TogglePromptSelection(prompt);
-        }
-    }
-
     private void OnSelectAllCheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         bool isChecked = e.Value;

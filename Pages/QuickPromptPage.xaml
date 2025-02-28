@@ -3,6 +3,7 @@
     x:Class="QuickPrompt.Pages.QuickPromptPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     Title="Quick Prompt"
     BackgroundColor="GhostWhite"
@@ -22,7 +23,7 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
-        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
+        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete.Count, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
 
             <ToolbarItem.IconImageSource>
                 <FontImageSource
@@ -38,6 +39,21 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
+
+
+            <!--  Google AdMob Banner  -->
+            <controls:MTAdView x:Name="AdmobBanner">
+
+                <controls:MTAdView.HeightRequest>
+                    <x:OnIdiom>
+                        <x:OnIdiom.Phone>50</x:OnIdiom.Phone>
+                    </x:OnIdiom>
+                </controls:MTAdView.HeightRequest>
+
+
+            </controls:MTAdView>
+
+
 
             <!--  Entrada para el Título  -->
             <Border Style="{StaticResource InputBorderStyle}">
@@ -155,10 +171,7 @@
                                         </Button.ImageSource>
                                     </Button>
 
-                                    <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=DeletePromptCommand}"
-                                        CommandParameter="{Binding .}"
-                                        Style="{StaticResource CriticalButtonStyle}">
+                                    <Button Command="{Binding ItemToDeleteCommand}" Style="{StaticResource CriticalButtonStyle}">
 
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
@@ -167,7 +180,6 @@
 
                                     <!--  CheckBox para seleccionar los prompts  -->
                                     <CheckBox
-                                        CheckedChanged="OnCheckBoxCheckedChanged"
                                         HorizontalOptions="EndAndExpand"
                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                         Scale="1.5"
@@ -211,6 +223,9 @@
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
                 Style="{StaticResource LoadingIndicatorStyle}" />
+
+
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

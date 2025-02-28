@@ -13,6 +13,10 @@ namespace QuickPrompt.ViewModels.Prompts
 {
     public partial class PromptTemplateViewModel : BaseViewModel
     {
+        public Action<PromptTemplateViewModel> onSelectToDelete;
+
+        public Action<PromptTemplateViewModel> onItemToDelete;
+
         [ObservableProperty]
         private PromptTemplate prompt;
 
@@ -24,13 +28,21 @@ namespace QuickPrompt.ViewModels.Prompts
 
         private readonly PromptDatabaseService promptDatabaseService;
 
-        public PromptTemplateViewModel(PromptTemplate prompt, PromptDatabaseService promptDatabaseService)
+        public PromptTemplateViewModel(
+            PromptTemplate prompt,
+            PromptDatabaseService promptDatabaseService,
+            Action<PromptTemplateViewModel> onSelectToDelete,
+            Action<PromptTemplateViewModel> onItemToDelete)
         {
             Prompt = prompt;
 
             this.promptDatabaseService = promptDatabaseService;
 
             this.IsFavorite = prompt.IsFavorite;
+
+            this.onSelectToDelete = onSelectToDelete;
+
+            this.onItemToDelete = onItemToDelete;
         }
 
         public PromptTemplateViewModel(PromptTemplate prompt)
@@ -48,10 +60,33 @@ namespace QuickPrompt.ViewModels.Prompts
             await ExecuteWithLoadingAsync(async () =>
             {
                 // Actualizar en la base de datos
-                await this.promptDatabaseService.UpdateFavoriteStatusAsync(this.Prompt.Id, this.Prompt.IsFavorite);
+                var _response = await this.promptDatabaseService.UpdateFavoriteStatusAsync(this.Prompt.Id, this.Prompt.IsFavorite);
 
-                await AppShell.Current.DisplayAlert("Success", prompt.IsFavorite ? "Prompt added to favorites." : "Prompt removed from favorites.", "OK");
+                if (_response)
+                {
+                    IsFavorite = !IsFavorite;
+
+                    this.Prompt.IsFavorite = IsFavorite;
+                }
+                else
+                {
+                    await AppShell.Current.DisplayAlert("Error", AppMessagesEng.GenericError, "OK");
+                }
             }, AppMessagesEng.DatabaseUpdateError);
+        }
+
+        // ======================= 📌 Método para alternar selección =======================
+         partial void OnIsSelectedChanged(bool isSelected)
+        {
+            onSelectToDelete?.Invoke(this);
+        }
+
+        // ======================= 📌 Método para borrar el item seleccionado =======================
+
+        [RelayCommand]
+        private void ItemToDelete()
+        {
+            onItemToDelete.Invoke(this);
         }
     }
 }

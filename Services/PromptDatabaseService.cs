@@ -204,17 +204,30 @@ namespace QuickPrompt.Services
         // =============================== 🔹 OPERACIONES SOBRE FAVORITOS ===============================
 
         /// <summary>
-        /// Actualiza el estado de favorito de un prompt.
+        /// Actualiza el estado de favorito de un prompt en la base de datos.
         /// </summary>
-        public async Task<int> UpdateFavoriteStatusAsync(Guid id, bool isFavorite)
+        /// <param name="id">El identificador único del prompt.</param>
+        /// <param name="isFavorite">Estado de favorito a establecer (true si es favorito, false si no lo es).</param>
+        /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
+        public async Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite)
         {
-            var prompt = await GetPromptByIdAsync(id);
-            if (prompt == null)
-                throw new KeyNotFoundException(AppMessagesEng.Prompts.PromptNotFound);
+            // Obtener el prompt de la base de datos
+            var prompt = await GetPromptByIdAsync(id) ??
+                         throw new KeyNotFoundException(AppMessagesEng.Prompts.PromptNotFound);
 
+            // Evitar actualizar si el estado no ha cambiado
+            if (prompt.IsFavorite == isFavorite)
+                return false; // No es necesario actualizar
+
+            // Actualizar el estado de favorito
             prompt.IsFavorite = isFavorite;
-            return await _database.UpdateAsync(prompt);
+
+            // Guardar cambios en la base de datos
+            int rowsAffected = await _database.UpdateAsync(prompt);
+
+            return rowsAffected > 0; // Retorna true si al menos una fila fue afectada
         }
+
 
         /// <summary>
         /// Obtiene todos los prompts marcados como favoritos.

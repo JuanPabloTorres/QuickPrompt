@@ -22,18 +22,16 @@ public static class CollectionExtensions
         }
     }
 
-    /// <summary>
-    /// Convierte una lista de PromptTemplate en una ObservableCollection de PromptTemplateViewModel.
-    /// </summary>
-    /// <param name="prompts">Lista de PromptTemplate a convertir.</param>
-    /// <returns>ObservableCollection de PromptTemplateViewModel.</returns>
-    public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(this IEnumerable<PromptTemplate> prompts)
+    public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(
+        this IEnumerable<PromptTemplate> prompts,
+        PromptDatabaseService promptDatabaseService,
+        Action<PromptTemplateViewModel> onSelectToDelete,
+        Action<PromptTemplateViewModel> onItemToDelete)
     {
-        return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p => new PromptTemplateViewModel(p)));
-    }
-
-    public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(this IEnumerable<PromptTemplate> prompts, PromptDatabaseService promptDatabaseService)
-    {
-        return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p => new PromptTemplateViewModel(p,promptDatabaseService)));
+        return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p =>
+        new PromptTemplateViewModel(p,
+        promptDatabaseService,
+        onSelectToDelete,
+        onItemToDelete)));
     }
 }

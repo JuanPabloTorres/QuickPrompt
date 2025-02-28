@@ -22,7 +22,7 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
-        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
+        <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete.Count, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
 
             <ToolbarItem.IconImageSource>
                 <FontImageSource
@@ -166,10 +166,7 @@
                                         </Button.ImageSource>
                                     </Button>
 
-                                    <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=DeletePromptCommand}"
-                                        CommandParameter="{Binding .}"
-                                        Style="{StaticResource CriticalButtonStyle}">
+                                    <Button Command="{Binding ItemToDeleteCommand}" Style="{StaticResource CriticalButtonStyle}">
 
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
@@ -180,7 +177,6 @@
 
                                     <!--  CheckBox para seleccionar los prompts  -->
                                     <CheckBox
-                                        CheckedChanged="OnCheckBoxCheckedChanged"
                                         HorizontalOptions="EndAndExpand"
                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                         Scale="1.5"

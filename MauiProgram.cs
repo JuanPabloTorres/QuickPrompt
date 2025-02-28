@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls;
+using Plugin.MauiMTAdmob;
 using QuickPrompt.CustomEntries;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
@@ -44,6 +45,7 @@ namespace QuickPrompt
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseMauiMTAdmob()  // Habilitar logs
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -51,6 +53,8 @@ namespace QuickPrompt
                     fonts.AddFont("MaterialIconsOutlined-Regular.otf", "MaterialIconsOutlined-Regular");
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons-Regular");
                 });
+
+        
         }
 
         // Carga las configuraciones desde un recurso incrustado

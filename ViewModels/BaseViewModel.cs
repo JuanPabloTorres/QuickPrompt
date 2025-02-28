@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
+using QuickPrompt.ViewModels.Prompts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -190,6 +191,24 @@ namespace QuickPrompt.ViewModels
             this.oldSearch = string.Empty;
 
             this.Search = string.Empty;
+
         }
+
+        /// <summary>
+        /// Alterna la selección de un prompt en la lista de eliminación. 
+        /// Si el prompt ya está seleccionado, lo elimina; de lo contrario, lo agrega.
+        /// </summary>
+        /// <param name="prompt">El prompt a seleccionar o deseleccionar.</param>
+        public virtual void TogglePromptSelection(PromptTemplateViewModel prompt)
+        {
+           
+        }
+
+        // ======================= ❌ ELIMINAR UN PROMPT =======================   
+        public   virtual void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
+        {
+            
+        }
+
     }
 }

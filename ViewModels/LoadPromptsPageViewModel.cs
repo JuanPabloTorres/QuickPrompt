@@ -14,8 +14,7 @@ namespace QuickPrompt.ViewModels;
 public partial class LoadPromptsPageViewModel : BaseViewModel
 {
     // ======================= 📌 PROPIEDADES =======================
-    [ObservableProperty]
-    private ObservableCollection<PromptTemplateViewModel> selectedPromptsToDelete = new();  // Lista de prompts seleccionados para eliminar
+    public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();  // Lista de prompts seleccionados para eliminar
 
     public BlockHandler<PromptTemplateViewModel> blockHandler = new();
 
@@ -27,15 +26,10 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
     public bool IsSearchFlag { get; set; }
 
-
-
     // Constructor primario con la lógica de inicialización
     public LoadPromptsPageViewModel(PromptDatabaseService _databaseService)
     {
         this._databaseService = _databaseService;
-
-        // Suscribirse al evento CollectionChanged una sola vez
-        this.SelectedPromptsToDelete.CollectionChanged += SelectedPromptsToDelete_CollectionChanged;
     }
 
     // ======================= 📌 MÉTODO PRINCIPAL: Cargar Prompts =======================
@@ -54,6 +48,18 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         CleanSearch();
         // Actualizar el total de prompts y cargar el primer bloque
         await LoadPromptsAsync();
+    }
+
+    public override void TogglePromptSelection(PromptTemplateViewModel prompt)
+    {
+        if (SelectedPromptsToDelete.Contains(prompt))
+        {
+            SelectedPromptsToDelete.Remove(prompt);  // Si ya estaba seleccionado, lo deseleccionamos
+        }
+        else
+        {
+            SelectedPromptsToDelete.Add(prompt);  // Si no estaba seleccionado, lo agregamos
+        }
     }
 
     public void ToggleSearchFlag(bool on_Or_off)
@@ -122,7 +128,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -189,7 +195,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -234,9 +240,8 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         }
     }
 
-    // ======================= ❌ ELIMINAR UN PROMPT =======================
-    [RelayCommand]
-    private async Task DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
+    // ======================= ❌ ELIMINAR UN PROMPT =======================   
+    public async override void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
     {
         if (selectedPrompt == null) return;
 
@@ -264,7 +269,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
     [RelayCommand]
     public async Task DeleteSelectedPromptsAsync()
     {
-        if (!selectedPromptsToDelete.Any())
+        if (!SelectedPromptsToDelete.Any())
         {
             await AppShell.Current.DisplayAlert("Notification", "No items selected for deletion.", "OK");
             return;
@@ -272,18 +277,18 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
         bool confirm = await AppShell.Current.DisplayAlert(
             "Confirm Deletion",
-            $"Are you sure you want to delete {selectedPromptsToDelete.Count} selected items?",
+            $"Are you sure you want to delete {SelectedPromptsToDelete.Count} selected items?",
             "Delete", "Cancel");
 
         if (confirm)
         {
             await ExecuteWithLoadingAsync(async () =>
             {
-                foreach (var prompt in selectedPromptsToDelete.ToList())
+                foreach (var prompt in SelectedPromptsToDelete.ToList())
                 {
                     await _databaseService.DeletePromptAsync(prompt.Prompt.Id);
                     Prompts.Remove(prompt);
-                    selectedPromptsToDelete.Remove(prompt);  // Asegurarse de limpiar la lista seleccionada
+                    SelectedPromptsToDelete.Remove(prompt);  // Asegurarse de limpiar la lista seleccionada
                 }
 
                 // Actualizar el BlockHandler y verificar si hay más datos
@@ -295,29 +300,5 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         }
     }
 
-    // ======================= 📌 Lógica de selección =======================
-    /// <summary>
-    /// Agrega o quita el prompt de la lista de selección.
-    /// </summary>
-    /// <param name="prompt">
-    /// El prompt a seleccionar o deseleccionar.
-    /// </param>
-    public void TogglePromptSelection(PromptTemplateViewModel prompt)
-    {
-        //this.SelectedPromptsToDelete.CollectionChanged += SelectedPromptsToDelete_CollectionChanged;
-
-        if (selectedPromptsToDelete.Contains(prompt))
-        {
-            selectedPromptsToDelete.Remove(prompt);  // Si ya estaba seleccionado, lo deseleccionamos
-        }
-        else
-        {
-            selectedPromptsToDelete.Add(prompt);  // Si no estaba seleccionado, lo agregamos
-        }
-    }
-
-    private void SelectedPromptsToDelete_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-    {
-        OnPropertyChanged(nameof(SelectedPromptsToDelete));
-    }
+   
 }
