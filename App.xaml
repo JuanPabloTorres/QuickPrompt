@@ -164,11 +164,28 @@
             <!--  Estilo para el botón de Favoritos  -->
             <Style
                 x:Key="FavoriteButtonStyle"
-                BasedOn="{StaticResource PrimaryFavoriteButtonStyle}"
+                BasedOn="{StaticResource baseBtn}"
                 TargetType="Button">
                 <Setter Property="HorizontalOptions" Value="End" />
                 <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="Scale" Value="1.2" />
+                <Setter Property="CornerRadius" Value="30" />
+                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="BorderColor" Value="Transparent" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="Margin" Value="8" />
+
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow
+                            Brush="{StaticResource AppBlack}"
+                            Opacity="0.3"
+                            Radius="10"
+                            Offset="5,5" />
+                    </Setter.Value>
+                </Setter>
+
+
             </Style>
 
             <!--  Estilo para el botón de "Cargar Más"  -->
@@ -325,9 +342,9 @@
             <Style x:Key="VersionLabelStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
-                <Setter Property="HorizontalOptions" Value="CenterAndExpand" />
-                <Setter Property="VerticalOptions" Value="End" />
-                <Setter Property="Margin" Value="10" />
+
+
+
                 <Setter Property="TextTransform" Value="Uppercase" />
                 <Setter Property="FontAttributes" Value="Italic" />
             </Style>
@@ -348,8 +365,13 @@
             </Style>
 
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
+
             <converters:BooleanToStarIconConverter x:Key="BooleanToStarIconConverter" />
+
+            <converters:BooleanToColorConverter x:Key="BooleanToColorConverter" />
+
             <converters:FinalPromptVisibilityConverter x:Key="FinalPromptVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>

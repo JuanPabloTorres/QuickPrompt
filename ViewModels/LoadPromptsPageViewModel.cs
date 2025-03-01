@@ -128,7 +128,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -195,7 +195,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -210,16 +210,6 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         }, AppMessagesEng.Prompts.PromptLoadError);
     }
 
-    // ======================= 📌 SELECCIONAR UN PROMPT =======================
-    [RelayCommand]
-    private async Task SelectPrompt(PromptTemplate selectedPrompt)
-    {
-        if (selectedPrompt != null)
-        {
-            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={selectedPrompt.Id}", true);
-        }
-    }
-
     // ======================= 🔄 REFRESCAR PROMPTS =======================
     [RelayCommand]
     private async Task RefreshPrompts()
@@ -227,21 +217,8 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         await LoadInitialPrompts();
     }
 
-    // ======================= ✏️ EDITAR UN PROMPT =======================
-    [RelayCommand]
-    private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
-    {
-        if (selectedPrompt != null)
-        {
-            await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
-        }
-    }
-
-    // ======================= ❌ ELIMINAR UN PROMPT =======================   
-    public async override void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
+    // ======================= ❌ ELIMINAR UN PROMPT =======================
+    public override async void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
     {
         if (selectedPrompt == null) return;
 
@@ -299,6 +276,4 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             }, AppMessages.Prompts.PromptDeleteError);
         }
     }
-
-   
 }

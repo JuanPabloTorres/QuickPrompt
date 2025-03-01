@@ -1,14 +1,24 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using QuickPrompt.Models;
 
-namespace QuickPrompt.ViewModels
+namespace QuickPrompt.ViewModels;
+
+/// <summary>
+/// ViewModel para la página de configuración. Maneja la información de la versión de la aplicación.
+/// </summary>
+public partial class SettingViewModel : BaseViewModel
 {
-    public partial class SettingViewModel(Models.AppSettings appSettings) :BaseViewModel
+    [ObservableProperty]
+    private string appVersion;
+
+    /// <summary>
+    /// Constructor que inicializa la versión de la aplicación.
+    /// </summary>
+    /// <param name="appSettings">
+    /// Instancia de la configuración de la aplicación.
+    /// </param>
+    public SettingViewModel(AppSettings appSettings)
     {
-        [ObservableProperty] private string appVersion = $"Version: {appSettings.Version}";
+        appVersion = appSettings?.Version ?? "Unknown Version"; // Evita valores nulos
     }
 }

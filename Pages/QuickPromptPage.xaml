@@ -145,14 +145,14 @@
                                             <FontImageSource
                                                 FontFamily="MaterialIconsOutlined-Regular"
                                                 Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
-                                                Color="{StaticResource AppBlack}" />
+                                                Color="{StaticResource PrimaryYellow}" />
                                         </Button.ImageSource>
                                     </Button>
                                 </Grid>
 
                                 <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
                                     <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=SelectPromptCommand}"
+                                        Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource PrimaryButtonStyle}">
 
@@ -162,7 +162,7 @@
                                     </Button>
 
                                     <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=NavigateToEditPromptCommand}"
+                                        Command="{Binding NavigateToEditPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource WarningButtonStyle}">
 

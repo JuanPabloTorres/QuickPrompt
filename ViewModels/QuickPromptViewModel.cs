@@ -221,15 +221,7 @@ namespace QuickPrompt.ViewModels
             }, AppMessagesEng.Prompts.PromptLoadError);
         }
 
-        // ======================= 📌 SELECCIONAR UN PROMPT =======================
-        [RelayCommand]
-        private async Task SelectPrompt(PromptTemplate selectedPrompt)
-        {
-            if (selectedPrompt != null)
-            {
-                await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={selectedPrompt.Id}", true);
-            }
-        }
+      
 
         // ======================= 🔄 REFRESCAR PROMPTS =======================
         [RelayCommand]
@@ -238,18 +230,7 @@ namespace QuickPrompt.ViewModels
             await LoadInitialPrompts();
         }
 
-        // ======================= ✏️ EDITAR UN PROMPT =======================
-        [RelayCommand]
-        private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
-        {
-            if (selectedPrompt != null)
-            {
-                await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
-            }
-        }
+       
 
         // ======================= ❌ ELIMINAR UN PROMPT =======================
       

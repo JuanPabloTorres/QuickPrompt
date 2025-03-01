@@ -3,8 +3,23 @@
     x:Class="QuickPrompt.Pages.SettingPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Setting">
-    <VerticalStackLayout>
-        <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion}" />
-    </VerticalStackLayout>
+    Title="Setting"
+    BackgroundColor="GhostWhite"
+    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
+    <TableView Intent="Settings">
+        <TableRoot>
+            <!--  Sección de Información  -->
+            <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
+                <ViewCell>
+                    <HorizontalStackLayout Padding="10">
+                        <Label
+                            FontAttributes="Bold"
+                            Style="{StaticResource VersionLabelStyle}"
+                            Text="Version:" />
+                        <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion, Mode=TwoWay}" />
+                    </HorizontalStackLayout>
+                </ViewCell>
+            </TableSection>
+        </TableRoot>
+    </TableView>
 </ContentPage>

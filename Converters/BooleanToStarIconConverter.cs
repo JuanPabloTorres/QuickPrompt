@@ -12,9 +12,9 @@ namespace QuickPrompt.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             // Unicode para estrella vacía (☆) y estrella llena (★)
-            string glyphIconNotFavorite = "\ue836"; // Material Icons Outlined - Empty Star
+            string glyphIconNotFavorite = "\ue3e6"; // Material Icons Outlined - Empty Star
 
-            string glyphIconFavorite = "\ue2e6";   // Material Icons Outlined - Filled Star
+            string glyphIconFavorite = "\ue3e7";   // Material Icons Outlined - Filled Star
 
 
             if (value is bool isFavorite)

@@ -101,35 +101,34 @@
 
                             <VerticalStackLayout>
 
-                                <Grid
-                                    Padding="5"
-                                    ColumnDefinitions="Auto, * , Auto"
-                                    RowDefinitions="Auto">
+                                <Grid Padding="4">
 
-                                    <!--  Título y Descripción  -->
-                                    <VerticalStackLayout
-                                        Grid.Column="1"
-                                        HorizontalOptions="FillAndExpand"
-                                        VerticalOptions="StartAndExpand">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
 
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+
+                                    </Grid.ColumnDefinitions>
+
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0">
 
                                         <Label
                                             FontAttributes="Bold"
                                             FontSize="20"
                                             Text="{Binding Prompt.Title}"
                                             TextColor="{StaticResource AppBlack}" />
-                                        <!--  Línea divisoria  -->
+
                                         <BoxView Style="{StaticResource DividerLineStyle}" />
-                                        <Label
-                                            FontAttributes="Italic"
-                                            FontSize="16"
-                                            Text="{Binding Prompt.Description}"
-                                            TextColor="{StaticResource AppBlack}" />
                                     </VerticalStackLayout>
 
-                                    <!--  Botón de Favoritos  -->
                                     <Button
-                                        Grid.Column="2"
+                                        Grid.Row="0"
+                                        Grid.Column="1"
+                                        BackgroundColor="{Binding IsFavorite, Converter={StaticResource BooleanToColorConverter}}"
                                         Command="{Binding ToFavoriteOrNotCommand}"
                                         Style="{StaticResource FavoriteButtonStyle}">
                                         <Button.ImageSource>
@@ -140,14 +139,45 @@
                                         </Button.ImageSource>
                                     </Button>
 
+
+                                    <!--  Título y Descripción  -->
+                                    <VerticalStackLayout
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        HorizontalOptions="FillAndExpand"
+                                        VerticalOptions="StartAndExpand">
+
+
+                                        <!--<Label
+                                            FontAttributes="Bold"
+                                            FontSize="20"
+                                            Text="{Binding Prompt.Title}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                        -->
+                                        <!--  Línea divisoria  -->
+                                        <!--
+                                        <BoxView Style="{StaticResource DividerLineStyle}" />-->
+                                        <Label
+                                            FontAttributes="Italic"
+                                            FontSize="16"
+                                            Text="{Binding Prompt.Description}"
+                                            TextColor="{StaticResource AppBlack}" />
+                                    </VerticalStackLayout>
+
+
+
+
+
+
+
                                 </Grid>
 
 
 
 
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                                <HorizontalStackLayout HorizontalOptions="CenterAndExpand" Spacing="10">
                                     <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=SelectPromptCommand}"
+                                        Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource PrimaryButtonStyle}">
 
@@ -157,7 +187,7 @@
                                     </Button>
 
                                     <Button
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:LoadPromptsPageViewModel}}, Path=NavigateToEditPromptCommand}"
+                                        Command="{Binding NavigateToEditPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
                                         Style="{StaticResource WarningButtonStyle}">
 
