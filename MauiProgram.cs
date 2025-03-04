@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Hosting;
 using Plugin.MauiMTAdmob;
 using QuickPrompt.CustomEntries;
 using QuickPrompt.Models;
@@ -18,6 +20,7 @@ namespace QuickPrompt
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             ConfigureBuilder(builder);
 
             var appSettings = LoadAppSettings();
@@ -35,6 +38,12 @@ namespace QuickPrompt
 #else
             builder.Logging.AddConsole(); // Habilita logging en release
 #endif
+
+            var mauiApp = builder.Build();
+
+            //Ioc.Default.ConfigureServices(mauiApp.Services);
+
+            InitializeIoC(mauiApp);
 
             return builder.Build();
         }
@@ -54,7 +63,14 @@ namespace QuickPrompt
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons-Regular");
                 });
 
-        
+            //var mauiApp = builder.Build();
+
+            //Ioc.Default.ConfigureServices(builder.Services.BuildServiceProvider());
+        }
+
+        private static void InitializeIoC(MauiApp mauiApp)
+        {
+            Ioc.Default.ConfigureServices(mauiApp.Services);
         }
 
         // Carga las configuraciones desde un recurso incrustado
@@ -90,6 +106,9 @@ namespace QuickPrompt
             };
 
             builder.Services.AddSingleton(appSettingsModel);
+
+            builder.Services.AddSingleton<AdmobService>();
+
         }
 
         // Registra los ViewModels en el contenedor de dependencias
@@ -106,6 +125,8 @@ namespace QuickPrompt
             builder.Services.AddTransient<QuickPromptViewModel>();
 
             builder.Services.AddTransient<SettingViewModel>();
+
+            builder.Services.AddTransient<AdmobBannerViewModel>();
         }
 
         // Registra las páginas en el contenedor de dependencias

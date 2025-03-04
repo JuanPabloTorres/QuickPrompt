@@ -75,22 +75,12 @@
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
             <!--  Texto seleccionado  -->
-            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabelCount}" />
+            <Label
+                HorizontalOptions="End"
+                Style="{StaticResource SubtitleLabelStyle}"
+                Text="{Binding SelectedTextLabelCount}" />
 
-            <!--<Button
-            Grid.Row="1"
-            Grid.Column="1"
-            Command="{Binding GoToDetailCommand}"
-            Style="{StaticResource NavigationButtonStyle}"
-            Text="Go to Execute">
 
-            <Button.ImageSource>
-            <FontImageSource
-            FontFamily="MaterialIconsOutlined-Regular"
-            Glyph="&#xeb2e;"
-            Color="{StaticResource AppBlack}" />
-            </Button.ImageSource>
-            </Button>-->
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator

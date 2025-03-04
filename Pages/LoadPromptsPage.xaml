@@ -2,6 +2,7 @@
     x:Class="QuickPrompt.Pages.LoadPromptsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     Title="Prompts Saved"
     BackgroundColor="GhostWhite"
@@ -38,6 +39,9 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="10">
+
+            <!--  Inserción del banner de AdMob  -->
+            <views:AdmobBannerView />
 
 
 
@@ -128,14 +132,14 @@
                                     <Button
                                         Grid.Row="0"
                                         Grid.Column="1"
-                                        BackgroundColor="{Binding IsFavorite, Converter={StaticResource BooleanToColorConverter}}"
+                                        BackgroundColor="White"
                                         Command="{Binding ToFavoriteOrNotCommand}"
                                         Style="{StaticResource FavoriteButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource
                                                 FontFamily="MaterialIconsOutlined-Regular"
                                                 Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
-                                                Color="{StaticResource AppBlack}" />
+                                                Color="{StaticResource PrimaryBlueDark}" />
                                         </Button.ImageSource>
                                     </Button>
 

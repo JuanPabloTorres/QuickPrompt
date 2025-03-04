@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     Title="Quick Prompt"
     BackgroundColor="GhostWhite"
@@ -42,7 +43,7 @@
 
 
             <!--  Google AdMob Banner  -->
-            <controls:MTAdView x:Name="AdmobBanner">
+            <!--<controls:MTAdView x:Name="AdmobBanner">
 
                 <controls:MTAdView.HeightRequest>
                     <x:OnIdiom>
@@ -51,7 +52,12 @@
                 </controls:MTAdView.HeightRequest>
 
 
-            </controls:MTAdView>
+            </controls:MTAdView>-->
+
+            <!--  Inserción del banner de AdMob  -->
+            <views:AdmobBannerView />
+
+            <!--<ContentView x:Name="AdmobBannerContainer" />-->
 
 
 
@@ -145,7 +151,7 @@
                                             <FontImageSource
                                                 FontFamily="MaterialIconsOutlined-Regular"
                                                 Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
-                                                Color="{StaticResource PrimaryYellow}" />
+                                                Color="{StaticResource PrimaryBlueDark}" />
                                         </Button.ImageSource>
                                     </Button>
                                 </Grid>

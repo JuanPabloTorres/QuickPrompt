@@ -45,22 +45,25 @@
 
             <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
             <Style x:Key="CardStyle" TargetType="Border">
-                <Setter Property="Margin" Value="5" />
+                <Setter Property="Margin" Value="10" />
                 <Setter Property="Padding" Value="10" />
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
                 <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
-                <Setter Property="StrokeShape" Value="RoundRectangle 5,5,5,5" />
-                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
+                <Setter Property="StrokeThickness" Value="1.5" />
+
                 <Setter Property="Shadow">
                     <Setter.Value>
                         <Shadow
                             Brush="{StaticResource AppBlack}"
-                            Opacity="0.3"
-                            Radius="10"
-                            Offset="5,5" />
+                            Opacity="0.2"
+                            Radius="8"
+                            Offset="3,3" />
                     </Setter.Value>
                 </Setter>
             </Style>
+
+
 
             <!--  Estilo para bordes de entradas de texto  -->
             <Style x:Key="InputBorderStyle" TargetType="Border">
@@ -68,7 +71,7 @@
                 <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
                 <Setter Property="StrokeThickness" Value="1" />
-                <Setter Property="Padding" Value="4" />
+                <Setter Property="Padding" Value="5" />
             </Style>
             <!--  Estilo para el Border de entrada  -->
             <Style x:Key="InputBorderStyle2" TargetType="Border">
@@ -138,7 +141,7 @@
                 x:Key="CriticalButtonStyle"
                 BasedOn="{StaticResource baseBtn}"
                 TargetType="Button">
-                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryRed}" />
                 <Setter Property="TextColor" Value="{StaticResource TextLight}" />
             </Style>
 
