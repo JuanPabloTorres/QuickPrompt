@@ -13,6 +13,7 @@ namespace QuickPrompt.Services
         
         private readonly string _interstitialAdId = "ca-app-pub-6397442763590886/7668858602"; // Reemplázalo con tu ID real
 
+
         public AdmobService()
         {
             LoadInterstitialAd(); // Precargar el anuncio
