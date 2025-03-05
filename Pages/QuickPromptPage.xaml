@@ -41,25 +41,8 @@
     <ScrollView>
         <VerticalStackLayout Padding="10">
 
-
             <!--  Google AdMob Banner  -->
-            <!--<controls:MTAdView x:Name="AdmobBanner">
-
-                <controls:MTAdView.HeightRequest>
-                    <x:OnIdiom>
-                        <x:OnIdiom.Phone>50</x:OnIdiom.Phone>
-                    </x:OnIdiom>
-                </controls:MTAdView.HeightRequest>
-
-
-            </controls:MTAdView>-->
-
-            <!--  Inserción del banner de AdMob  -->
             <views:AdmobBannerView />
-
-            <!--<ContentView x:Name="AdmobBannerContainer" />-->
-
-
 
             <!--  Entrada para el Título  -->
             <Border Style="{StaticResource InputBorderStyle}">
@@ -229,9 +212,6 @@
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
                 Style="{StaticResource LoadingIndicatorStyle}" />
-
-
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

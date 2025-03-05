@@ -90,7 +90,6 @@
                     SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
                     Style="{StaticResource PromptEditorStyle}"
                     Text="{Binding PromptText}" />
-
             </Border>
 
             <!--  Línea divisoria  -->
@@ -120,7 +119,6 @@
                 IsRunning="{Binding IsLoading}"
                 IsVisible="{Binding IsLoading}"
                 Style="{StaticResource LoadingIndicatorStyle}" />
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

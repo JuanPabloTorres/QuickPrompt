@@ -4,13 +4,19 @@ namespace QuickPrompt.Pages;
 
 public partial class EditPromptPage : ContentPage
 {
-	public EditPromptPage(EditPromptPageViewModel viewModel)
-	{
-		InitializeComponent();
+    public EditPromptPageViewModel _viewModel;
+
+    public EditPromptPage(EditPromptPageViewModel viewModel)
+    {
+        InitializeComponent();
+
+        _viewModel = viewModel; 
 
         BindingContext = viewModel;
     }
 
-
-
+    protected override void OnAppearing()
+    {
+        _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
+    }
 }

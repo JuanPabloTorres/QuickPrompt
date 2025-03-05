@@ -58,6 +58,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             else
             {
                 await AppShell.Current.DisplayAlert("Notice", AppMessagesEng.Prompts.PromptNotFound, "OK");
+
+                await GoBackAsync();
             }
         }, AppMessagesEng.Prompts.PromptLoadError);
     }

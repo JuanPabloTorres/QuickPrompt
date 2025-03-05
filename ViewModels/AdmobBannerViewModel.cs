@@ -1,32 +1,50 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using QuickPrompt.Models;
+using QuickPrompt.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace QuickPrompt.ViewModels
+public partial class AdmobBannerViewModel : BaseViewModel
 {
-    public partial class AdmobBannerViewModel : BaseViewModel
+    private readonly AdMobSettings _adMobSettings;
+
+    /// <summary>
+    /// ID del anuncio de AdMob según la plataforma.
+    /// </summary>
+    public string AdUnitId { get; private set; }
+
+    public AdmobBannerViewModel(AdMobSettings adMobSettings)
     {
-        [ObservableProperty]
-        private string adUnitId;
+        _adMobSettings = adMobSettings ?? throw new ArgumentNullException(nameof(adMobSettings));
 
-        public AdmobBannerViewModel()
+        AdUnitId = GetAdUnitId();
+    }
+
+    /// <summary>
+    /// Obtiene el ID del anuncio de AdMob según la plataforma.
+    /// </summary>
+    /// <returns>
+    /// ID de AdMob configurado para la plataforma actual.
+    /// </returns>
+    private string GetAdUnitId()
+    {
+        if (_adMobSettings == null)
+            throw new InvalidOperationException("Los ajustes de AdMob no están configurados.");
+
+        if (DeviceInfo.Platform == DevicePlatform.Android)
         {
-            SetAdUnitId();
+            return _adMobSettings.Android ?? throw new InvalidOperationException("AdMob ID para Android no está configurado.");
         }
-
-        /// <summary>
-        /// Configura el ID de los anuncios de AdMob según la plataforma.
-        /// </summary>
-        private void SetAdUnitId()
+        else if (DeviceInfo.Platform == DevicePlatform.iOS)
         {
-#if __ANDROID__
-            AdUnitId = "ca-app-pub-6397442763590886/6154534752"; // Reemplaza con tu ID real de AdMob
-#elif __IOS__
-            AdUnitId = "ca-app-pub-6397442763590886/6300978111"; // Reemplaza con tu ID real de AdMob
-#endif
+            return _adMobSettings.iOs ?? throw new InvalidOperationException("AdMob ID para iOS no está configurado.");
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Plataforma no soportada para anuncios AdMob.");
         }
     }
 }

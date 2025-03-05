@@ -4,18 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Plugin.MauiMTAdmob;
+using QuickPrompt.Models;
 
 namespace QuickPrompt.Services
 {
     public class AdmobService
     {
-        //private readonly string _interstitialAdId = "ca-app-pub-6397442763590886/6154534752"; // Reemplázalo con tu ID real
-        
-        private readonly string _interstitialAdId = "ca-app-pub-6397442763590886/7668858602"; // Reemplázalo con tu ID real
+        private string _interstitialAdId; // Reemplázalo con tu ID real
 
-
-        public AdmobService()
+        public AdmobService(AdMobSettings adMobSettings)
         {
+            _interstitialAdId = adMobSettings.InterstitialAdId;
+
             LoadInterstitialAd(); // Precargar el anuncio
         }
 

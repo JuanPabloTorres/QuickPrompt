@@ -17,7 +17,7 @@ namespace QuickPrompt.ViewModels.Prompts
         public Action<PromptTemplateViewModel> onSelectToDelete;
 
         public Action<PromptTemplateViewModel> onItemToDelete;
-        
+
         public Action<PromptTemplateViewModel> onRemoveFavorite;
 
         [ObservableProperty]
@@ -48,12 +48,11 @@ namespace QuickPrompt.ViewModels.Prompts
             this.onItemToDelete = onItemToDelete;
         }
 
-
         public PromptTemplateViewModel(
           PromptTemplate prompt,
           PromptDatabaseService promptDatabaseService,
           Action<PromptTemplateViewModel> onSelectToDelete,
-          Action<PromptTemplateViewModel> onItemToDelete,Action<PromptTemplateViewModel> onRemoveFavorite)
+          Action<PromptTemplateViewModel> onItemToDelete, Action<PromptTemplateViewModel> onRemoveFavorite)
         {
             Prompt = prompt;
 
@@ -76,10 +75,6 @@ namespace QuickPrompt.ViewModels.Prompts
         [RelayCommand]
         private async Task ToFavoriteOrNot()
         {
-            //IsFavorite = !IsFavorite;
-
-            //this.Prompt.IsFavorite = IsFavorite;
-
             await ExecuteWithLoadingAsync(async () =>
             {
                 // Actualizar en la base de datos
@@ -87,20 +82,17 @@ namespace QuickPrompt.ViewModels.Prompts
 
                 if (!_response)
                 {
-
                     await AppShell.Current.DisplayAlert("Error", AppMessagesEng.GenericError, "OK");
-                   
                 }
 
                 IsFavorite = !IsFavorite;
 
                 this.Prompt.IsFavorite = IsFavorite;
-
             }, AppMessagesEng.DatabaseUpdateError);
         }
 
         // ======================= 📌 Método para alternar selección =======================
-         partial void OnIsSelectedChanged(bool isSelected)
+         partial void OnIsSelectedChanged(bool value)
         {
             onSelectToDelete?.Invoke(this);
         }

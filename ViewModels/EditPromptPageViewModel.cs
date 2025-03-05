@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService) : BaseViewModel(_databaseService), IQueryAttributable
+public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService,AdmobService admobService) : BaseViewModel(_databaseService,admobService), IQueryAttributable
 {
     // ============================== 🌟 PROPIEDADES ==============================
 
@@ -26,8 +26,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     /// </summary>
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("selectedId", out var selectedId) &&
-            Guid.TryParse(selectedId?.ToString(), out Guid promptId))
+        if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
         {
             await LoadPromptAsync(promptId);
         }
@@ -53,6 +52,8 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             else
             {
                 await AppShell.Current.DisplayAlert("Notice", AppMessagesEng.Prompts.PromptNotFound, "OK");
+
+                await GoBackAsync();
             }
         }, AppMessagesEng.Prompts.PromptLoadError);
     }
@@ -85,6 +86,8 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             UpdatePromptVariables();
 
             await UpdatePromptChangesAsync();
+
+            await _adMobService.ShowInterstitialAdAsync();
 
             await NotifySuccessAndNavigateBack();
         }, AppMessagesEng.Prompts.PromptSaveError);
@@ -181,31 +184,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
         }
     }
-
-    /// <summary>
-    /// Encierra la palabra seleccionada entre `{}` si es válida.
-    /// </summary>
-    //private async void EncloseSelectedTextWithBraces()
-    //{
-    //    var handler = new BraceTextHandler(this.PromptTemplate.Template);
-
-    // if (!handler.IsSelectionValid(CursorPosition, SelectionLength)) { await
-    // AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
-
-    // return; }
-
-    // if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength)) { await RemoveBracesFromSelectedText();
-
-    // return; }
-
-    // string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
-
-    // handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
-
-    // this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-    //    UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
-    //}
 
     private async void EncloseSelectedTextWithBraces()
     {

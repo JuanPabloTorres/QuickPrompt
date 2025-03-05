@@ -105,10 +105,18 @@ namespace QuickPrompt
                 Version = appSettings["AppSettings:Version"] ?? "1.0.0", // Valor predeterminado si no se encuentra
             };
 
+            var adMobSettings = new AdMobSettings()
+            {
+                InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"],
+                Android = appSettings["AdMobSettings:Android"],
+                iOs = appSettings["AdMobSettings:iOs"],
+            };
+
             builder.Services.AddSingleton(appSettingsModel);
 
-            builder.Services.AddSingleton<AdmobService>();
+            builder.Services.AddSingleton(adMobSettings);
 
+            builder.Services.AddSingleton<AdmobService>();
         }
 
         // Registra los ViewModels en el contenedor de dependencias

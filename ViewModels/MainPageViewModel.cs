@@ -9,7 +9,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class MainPageViewModel(PromptDatabaseService promptDatabaseService, AdmobService admobService) : BaseViewModel(promptDatabaseService)
+public partial class MainPageViewModel(PromptDatabaseService promptDatabaseService, AdmobService admobService) : BaseViewModel(promptDatabaseService, admobService: admobService)
 {
     // ============================ PROPIEDADES Y VARIABLES ============================
     [ObservableProperty] private int cursorPosition;
@@ -21,8 +21,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
     [ObservableProperty] private string promptTitle;
 
     [ObservableProperty] private string promptDescription;
-
-    
 
     // ============================ COMANDOS ============================
 
@@ -48,11 +46,10 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
             ClearPromptInputs();
 
-            await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
-
             // Mostrar anuncio intersticial después de guardar el prompt
-            await admobService.ShowInterstitialAdAsync();
+            await _adMobService.ShowInterstitialAdAsync();
 
+            await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
@@ -186,13 +183,5 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
         PromptText = string.Empty;
 
         UpdateSelectedTextLabelCount(0);
-    }
-
-    // ============================ 📌 EVENTO DE INICIALIZACIÓN ============================
-    public void Initialize()
-    {
-        admobService.LoadInterstitialAd();  // Precargar el anuncio intersticial
-
-        admobService.SetupAdEvents();       // Configurar eventos de AdMob
     }
 }

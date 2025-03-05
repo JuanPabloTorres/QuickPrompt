@@ -23,11 +23,20 @@ namespace QuickPrompt.ViewModels
             this._databaseService = promptDatabaseService;
         }
 
+        protected BaseViewModel(PromptDatabaseService promptDatabaseService, AdmobService admobService)
+        {
+            this._databaseService = promptDatabaseService;
+
+            this._adMobService = admobService;
+        }
+
         protected BaseViewModel(AppSettings appSettings)
         {
         }
 
         protected PromptDatabaseService _databaseService;
+
+        protected AdmobService _adMobService;
 
         // ============================== 🌟 PROPIEDADES ==============================
 
@@ -207,6 +216,14 @@ namespace QuickPrompt.ViewModels
         // ======================= ❌ ELIMINAR UN PROMPT =======================
         public virtual void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
         {
+        }
+
+        // ============================ 📌 EVENTO DE INICIALIZACIÓN ============================
+        public void Initialize()
+        {
+            _adMobService.LoadInterstitialAd();  // Precargar el anuncio intersticial
+
+            _adMobService.SetupAdEvents();       // Configurar eventos de AdMob
         }
     }
 }
