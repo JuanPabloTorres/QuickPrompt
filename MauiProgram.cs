@@ -61,6 +61,7 @@ namespace QuickPrompt
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                     fonts.AddFont("MaterialIconsOutlined-Regular.otf", "MaterialIconsOutlined-Regular");
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons-Regular");
+                    fonts.AddFont("Designer.otf", "Designer");
                 });
 
             //var mauiApp = builder.Build();

@@ -6,9 +6,21 @@
     xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-    Title="Quick Prompt"
     BackgroundColor="GhostWhite"
+    Shell.PresentationMode="Animated"
     Shell.TitleColor="{StaticResource PrimaryBlueDark}">
+
+    <Shell.TitleView>
+        <Grid>
+            <Label
+                FontFamily="Designer"
+                FontSize="18"
+                Text="Quick Prompt"
+                TextColor="{StaticResource PrimaryBlueDark}"
+                VerticalOptions="Center" />
+        </Grid>
+    </Shell.TitleView>
+
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
 

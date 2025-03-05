@@ -72,11 +72,17 @@
 		<!-- App Icon -->
 		<!--<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />-->
     
-		<MauiIcon Include="Resources\AppIcon\quickprompticon3.svg" Color="#011F4B" />
+		<!--<MauiIcon Include="Resources\AppIcon\quicklogosplash.svg" Color="#011F4B" />-->
     
-		<MauiSplashScreen Include="Resources\Splash\quickpromptsplash.svg" Color="#011F4B" BaseSize="128,128" />
-		
-		
+		<MauiSplashScreen Include="Resources\Splash\qp.svg" Color="#011F4B" />
+    
+		<!--<MauiSplashScreen Include="Resources\Splash\quicklogosplash.svg" Color="#011F4B" BaseSize="328,328" />-->
+    
+		<!--<MauiSplashScreen Include="Resources\Splash\quickpromptsplash2.svg" Color="#011F4B" />
+    
+		<MauiSplashScreen Include="Resources\Splash\quickpromptsplash2.svg" />-->
+
+    <MauiIcon Include="Resources\AppIcon\quickprompticon3.svg" Color="#011F4B" />
 
 		<!-- Splash Screen -->
 		<!--<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />-->
@@ -92,10 +98,24 @@
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
+
+  <ItemGroup>
+    <AndroidResource Remove="Resources\Fonts\NewFolder\**" />
+    <Compile Remove="Resources\Fonts\NewFolder\**" />
+    <EmbeddedResource Remove="Resources\Fonts\NewFolder\**" />
+    <MauiCss Remove="Resources\Fonts\NewFolder\**" />
+    <MauiFont Remove="Resources\Fonts\NewFolder\**" />
+    <MauiXaml Remove="Resources\Fonts\NewFolder\**" />
+    <None Remove="Resources\Fonts\NewFolder\**" />
+  </ItemGroup>
+
 	<ItemGroup>
 	  <None Remove="appsettings.json" />
 	  <None Remove="Resources\AppIcon\quickprompticon2.svg" />
+	  <None Remove="Resources\Splash\designer.svg" />
+	  <None Remove="Resources\Splash\quicklogosplash.svg" />
 	  <None Remove="Resources\Splash\quickpromptsplash.svg" />
+	  <None Remove="Resources\Splash\quickpromptsplash2.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
