@@ -47,28 +47,23 @@ namespace QuickPrompt.Services
         {
             CrossMauiMTAdmob.Current.OnInterstitialLoaded += (sender, args) =>
             {
-                Console.WriteLine("Interstitial Ad Loaded.");
             };
 
             CrossMauiMTAdmob.Current.OnInterstitialFailedToLoad += (sender, args) =>
             {
-                Console.WriteLine($"Interstitial Ad Failed to Load: {args.ErrorMessage}");
             };
 
             CrossMauiMTAdmob.Current.OnInterstitialOpened += (sender, args) =>
             {
-                Console.WriteLine("Interstitial Ad Opened.");
             };
 
             CrossMauiMTAdmob.Current.OnInterstitialClosed += (sender, args) =>
             {
-                Console.WriteLine("Interstitial Ad Closed. Reloading...");
                 LoadInterstitialAd();
             };
 
             CrossMauiMTAdmob.Current.OnInterstitialFailedToShow += (sender, args) =>
             {
-                Console.WriteLine($"Interstitial Ad Failed to Show: {args.ErrorMessage}");
             };
         }
     }

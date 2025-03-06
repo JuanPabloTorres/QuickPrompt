@@ -1,10 +1,10 @@
 ﻿using QuickPrompt.ViewModels;
 
-namespace QuickPrompt
+namespace QuickPrompt.Pages
 {
     public partial class MainPage : ContentPage
     {
-        MainPageViewModel _viewModel;
+        private MainPageViewModel _viewModel;
 
         public MainPage(MainPageViewModel viewModel)
         {
@@ -12,13 +12,11 @@ namespace QuickPrompt
 
             _viewModel = viewModel;
 
-            this.BindingContext = viewModel;
+            BindingContext = viewModel;
         }
 
         protected override void OnAppearing()
         {
-            base.OnAppearing();
-
             _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
         }
     }

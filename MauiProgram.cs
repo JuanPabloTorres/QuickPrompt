@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 using Plugin.MauiMTAdmob;
-using QuickPrompt.CustomEntries;
+
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;

@@ -62,6 +62,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
         if (!string.IsNullOrWhiteSpace(PromptText))
         {
             await Clipboard.Default.SetTextAsync(PromptText);
+
             await AlertService.ShowAlert("Notification", AppMessagesEng.Prompts.PromptCopiedToClipboard);
         }
     }
@@ -86,7 +87,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
     }
 
     // ============================ MANEJO DE VARIABLES Y BRACES ============================
-
     private async void EncloseSelectedTextWithBraces()
     {
         if (!IsSelectionValid(PromptText, SelectionLength))
@@ -96,9 +96,9 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             return;
         }
 
-        var handler = new BraceTextHandler(PromptText);
+        var handler = new AngleBraceTextHandler(PromptText);
 
-        if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
+        if (handler.IsSurroundedByAngleBraces(CursorPosition, SelectionLength))
         {
             await HandleSelectedTextAsync(CursorPosition, SelectionLength);
 
@@ -107,19 +107,19 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
         string selectedText = PromptText.Substring(CursorPosition, SelectionLength);
 
-        if (BraceTextHandler.ContainsVariable($"{{{selectedText}}}", this.PromptText))
+        if (AngleBraceTextHandler.ContainsVariable($"<{selectedText}>", this.PromptText))
         {
-            var _nextVariableVersion = BraceTextHandler.GetNextVariableSuffixVersion(this.PromptText, selectedText);
+            var _nextVariableVersion = AngleBraceTextHandler.GetNextVariableSuffixVersion(this.PromptText, selectedText);
 
             // Agregar sufijo numérico para hacer el nombre único
             selectedText += _nextVariableVersion;
         }
 
-        handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
+        handler.UpdateText(CursorPosition, SelectionLength, $"<{selectedText}>");
 
         PromptText = handler.Text;
 
-        UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+        UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
     }
 
     public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
@@ -131,7 +131,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             return;
         }
 
-        var handler = new BraceTextHandler(PromptText);
+        var handler = new AngleBraceTextHandler(PromptText);
 
         if (!handler.IsSelectionValid(cursorPosition, selectionLength))
         {
@@ -140,20 +140,20 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             return;
         }
 
-        if (handler.IsSurroundedByBraces(cursorPosition, selectionLength))
+        if (handler.IsSurroundedByAngleBraces(cursorPosition, selectionLength))
         {
-            var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
+            var (startIndex, length) = handler.AdjustSelectionForAngleBraces(cursorPosition, selectionLength);
 
-            string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
+            string selectedText = handler.ExtractTextWithoutAngleBraces(startIndex, length);
 
             // Remover el sufijo "/n" si existe en la variable
-            selectedText = BraceTextHandler.RemoveVariableSuffix(selectedText);
+            selectedText = AngleBraceTextHandler.RemoveVariableSuffix(selectedText);
 
             handler.UpdateText(startIndex, length, selectedText);
 
             PromptText = handler.Text;
 
-            UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+            UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
         }
         else
         {

@@ -49,6 +49,11 @@ namespace QuickPrompt.ViewModels
         {
             ToggleSearchFlag(false);
 
+            if (IsAllSelected)
+            {
+                IsAllSelected = false;
+            }
+
             // Reiniciar la configuración inicial
             blockHandler.Reset();
 
@@ -153,7 +158,7 @@ namespace QuickPrompt.ViewModels
 
                 // Verificar si hay más datos por cargar
                 await CheckForMorePromptsAsync();
-            }, AppMessages.Prompts.PromptLoadError);
+            }, AppMessagesEng.Prompts.PromptLoadError);
         }
 
         // ======================= 🔍 FILTRAR PROMPTS =======================
@@ -291,7 +296,7 @@ namespace QuickPrompt.ViewModels
                     await CheckForMorePromptsAsync();
 
                     await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");
-                }, AppMessages.Prompts.PromptDeleteError);
+                }, AppMessagesEng.Prompts.PromptDeleteError);
             }
         }
 

@@ -16,8 +16,8 @@ namespace QuickPrompt.Tools
             if (string.IsNullOrWhiteSpace(text))
                 return "El texto del prompt no puede estar vacío.";
 
-            if (!text.Contains("{") || !text.Contains("}"))
-                return "El prompt debe contener al menos una variable (entre llaves) para poder guardarse.";
+            if (!text.Contains("<") || !text.Contains(">"))
+                return "El prompt debe contener al menos una variable (entre signos de menor y mayor) para poder guardarse.";
 
             return null; // No hay errores
         }
@@ -30,12 +30,10 @@ namespace QuickPrompt.Tools
             if (string.IsNullOrWhiteSpace(text))
                 return "The prompt text cannot be empty.";
 
-            if (!text.Contains("{") || !text.Contains("}"))
-                return "The prompt must contain at least one variable (enclosed in braces) to be saved.";
+            if (!text.Contains("<") || !text.Contains(">"))
+                return "The prompt must contain at least one variable (enclosed in angle brackets) to be saved.";
 
             return null; // No errors
         }
-
     }
-
 }

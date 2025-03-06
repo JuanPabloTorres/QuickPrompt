@@ -109,23 +109,32 @@ namespace QuickPrompt.ViewModels.Prompts
         [RelayCommand]
         private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
         {
-            if (selectedPrompt != null)
+            await ExecuteWithLoadingAsync(async () =>
             {
-                await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
+                if (selectedPrompt != null)
+                {
+                    await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
             {
                 { "selectedId", selectedPrompt.Id }
             });
-            }
+                }
+            }, AppMessagesEng.GenericError);
         }
 
         // ======================= 📌 SELECCIONAR UN PROMPT =======================
         [RelayCommand]
         private async Task SelectPrompt(PromptTemplate selectedPrompt)
         {
-            if (selectedPrompt != null)
+            await ExecuteWithLoadingAsync(async () =>
             {
-                await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={selectedPrompt.Id}", true);
-            }
+                if (selectedPrompt != null)
+                {
+                    await NavigateToAsync(nameof(PromptDetailsPage), new Dictionary<string, object>
+            {
+                { "selectedId", selectedPrompt.Id }
+            });
+                }
+            }, AppMessagesEng.GenericError);
         }
     }
 }

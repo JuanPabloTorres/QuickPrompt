@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseService, IChatGPTService _chatGPTService) : BaseViewModel(_databaseService), IQueryAttributable
+public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseService, IChatGPTService _chatGPTService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
 {
     // =========================== 🔹 PROPIEDADES OBSERVABLES ===========================
     [ObservableProperty] private string promptTitle;
@@ -50,7 +50,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
                 PromptID = prompt.Id;
 
-               var _savedVariables = prompt.Variables.Select(v => new VariableInput { Name = v.Key, Value = string.Empty });
+                var _savedVariables = prompt.Variables.Select(v => new VariableInput { Name = v.Key, Value = string.Empty });
 
                 // Inicializar variables con valores vacíos
                 Variables = new ObservableCollection<VariableInput>(_savedVariables);
@@ -93,7 +93,11 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             }
 
             FinalPrompt = GenerateFinalPrompt();
+
             IsShareButtonVisible = true; // Mostrar botón de compartir
+
+            // Mostrar anuncio intersticial después de guardar el prompt
+            await _adMobService.ShowInterstitialAdAsync();
 
             await AppShell.Current.DisplayAlert("Prompt Generated", FinalPrompt, "OK");
         }, AppMessagesEng.GenericError);
@@ -116,7 +120,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
         foreach (var variable in Variables)
         {
-            finalPromptBuilder.Replace($"{{{variable.Name}}}", variable.Value);
+            finalPromptBuilder.Replace($"<{variable.Name}>", variable.Value);
         }
         return finalPromptBuilder.ToString();
     }
@@ -137,6 +141,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         if (string.IsNullOrEmpty(this.PromptTitle) || string.IsNullOrEmpty(this.FinalPrompt))
         {
             await AlertService.ShowAlert("Error", "No prompt selected for sharing.");
+
             return;
         }
 
@@ -145,7 +150,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             {
                 await SharePromptService.SharePromptAsync(this.PromptTitle, this.FinalPrompt);
             },
-            "An error occurred while trying to share the prompt."
+            AppMessagesEng.Prompts.PromptSharedError
+
         );
     }
 
@@ -157,16 +163,21 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     [RelayCommand]
     private async Task NavigateToEditPrompt(Guid promptId)
     {
-        if (promptId == Guid.Empty)
-        {
-            await AppShell.Current.DisplayAlert("Error", "Invalid prompt ID.", "OK");
-            return;
-        }
+        await ExecuteWithLoadingAsync(
+          async () =>
+          {
+              if (promptId == Guid.Empty)
+              {
+                  //await AppShell.Current.DisplayAlert("Error", "Invalid prompt ID.", "OK");
+                  throw new Exception("Invalid prompt ID.");
+              }
 
-        await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
+              await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
         {
             { "selectedId", promptId }
         });
+          },
+          AppMessagesEng.GenericError);
     }
 
     /// <summary>

@@ -38,6 +38,11 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
     {
         ToggleSearchFlag(false);
 
+        if (IsAllSelected)
+        {
+            IsAllSelected = false;
+        }
+
         // Reiniciar la configuración inicial
         blockHandler.Reset();
 
@@ -140,7 +145,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
             // Verificar si hay más datos por cargar
             await CheckForMorePromptsAsync();
-        }, AppMessages.Prompts.PromptLoadError);
+        }, AppMessagesEng.Prompts.PromptLoadError);
     }
 
     // ======================= 🔍 FILTRAR PROMPTS =======================
@@ -273,7 +278,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
                 await CheckForMorePromptsAsync();
 
                 await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");
-            }, AppMessages.Prompts.PromptDeleteError);
+            }, AppMessagesEng.Prompts.PromptDeleteError);
         }
     }
 }

@@ -47,7 +47,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
                 this.PromptTemplate.Variables = ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
 
-                UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(prompt.Template));
+                UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(prompt.Template));
             }
             else
             {
@@ -83,6 +83,9 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             if (!ValidatePromptTemplate())
                 return;
 
+
+            _adMobService.LoadInterstitialAd();
+
             UpdatePromptVariables();
 
             await UpdatePromptChangesAsync();
@@ -99,11 +102,13 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     private bool ValidatePromptTemplate()
     {
         var validator = new PromptValidator();
+
         string validationError = validator.ValidateEn(PromptTemplate.Title, PromptTemplate.Template);
 
         if (!string.IsNullOrEmpty(validationError))
         {
             AppShell.Current.DisplayAlert("Error", validationError, "OK").ConfigureAwait(false);
+
             return false;
         }
 
@@ -134,7 +139,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
 
     /// <summary>
-    /// Elimina las llaves `{}` del texto seleccionado.
+    /// Elimina las llaves `<>` del texto seleccionado.
     /// </summary>
     private async Task RemoveBracesFromSelectedText()
     {
@@ -146,28 +151,30 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     /// </summary>
     public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
     {
-        var handler = new BraceTextHandler(this.PromptTemplate.Template);
+        var handler = new AngleBraceTextHandler(this.PromptTemplate.Template);
 
         if (handler.IsSelectionValid(cursorPosition, selectionLength))
         {
-            var (startIndex, length) = handler.AdjustSelectionForBraces(cursorPosition, selectionLength);
+            var (startIndex, length) = handler.AdjustSelectionForAngleBraces(cursorPosition, selectionLength);
 
-            string selectedText = handler.ExtractTextWithoutBraces(startIndex, length);
+            string selectedText = handler.ExtractTextWithoutAngleBraces(startIndex, length);
 
             // Remover el sufijo "/n" si existe en la variable
-            selectedText = BraceTextHandler.RemoveVariableSuffix(selectedText);
+            selectedText = AngleBraceTextHandler.RemoveVariableSuffix(selectedText);
 
             handler.UpdateText(startIndex, length, selectedText);
 
             this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
 
-            UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+            UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
         }
         else
         {
             await AlertService.ShowAlert("Warning", AppMessagesEng.Warnings.InvalidTextSelection);
         }
     }
+
+
 
     /// <summary>
     /// Convierte el texto seleccionado en una variable rodeada de `{}`.
@@ -187,7 +194,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
     private async void EncloseSelectedTextWithBraces()
     {
-        var handler = new BraceTextHandler(this.PromptTemplate.Template);
+        var handler = new AngleBraceTextHandler(this.PromptTemplate.Template);
 
         // Verificar si la selección es válida
         if (!handler.IsSelectionValid(CursorPosition, SelectionLength))
@@ -197,7 +204,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         }
 
         // Si ya está rodeado por llaves, eliminarlas
-        if (handler.IsSurroundedByBraces(CursorPosition, SelectionLength))
+        if (handler.IsSurroundedByAngleBraces(CursorPosition, SelectionLength))
         {
             await RemoveBracesFromSelectedText();
 
@@ -207,22 +214,24 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Extraer el texto seleccionado
         string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
 
-        if (BraceTextHandler.ContainsVariable($"{{{selectedText}}}", this.PromptTemplate.Template))
+      
+
+        if (AngleBraceTextHandler.ContainsVariable($"<{selectedText}>", this.PromptTemplate.Template))
         {
-            var _nextVariableVersion = BraceTextHandler.GetNextVariableSuffixVersion(this.PromptTemplate.Template, selectedText);
+            var _nextVariableVersion = AngleBraceTextHandler.GetNextVariableSuffixVersion(this.PromptTemplate.Template, selectedText);
 
             // Agregar sufijo numérico para hacer el nombre único
             selectedText += _nextVariableVersion;
         }
 
-        // Actualizar el texto con las llaves `{}` incluidas
-        handler.UpdateText(CursorPosition, SelectionLength, $"{{{selectedText}}}");
+        // Actualizar el texto con las llaves `<>` incluidas 
+        handler.UpdateText(CursorPosition, SelectionLength, $"<{selectedText}>");
 
         // Actualizar la plantilla con el nuevo texto
         this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
 
         // Actualizar el contador de variables
-        UpdateSelectedTextLabelCount(BraceTextHandler.CountWordsWithBraces(handler.Text));
+        UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
     }
 
     // ============================== 🔧 MÉTODO AUXILIAR PARA INICIALIZAR PROMPTS ==============================

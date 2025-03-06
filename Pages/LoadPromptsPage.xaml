@@ -4,9 +4,18 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-    Title="Prompts Saved"
     BackgroundColor="GhostWhite"
-    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
+    Shell.PresentationMode="Animated">
+
+    <Shell.TitleView>
+
+        <Label
+            FontFamily="Designer"
+            FontSize="18"
+            Text="Prompts Saved"
+            TextColor="{StaticResource PrimaryBlueDark}"
+            VerticalOptions="Center" />
+    </Shell.TitleView>
 
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
@@ -43,8 +52,6 @@
             <!--  Inserción del banner de AdMob  -->
             <views:AdmobBannerView />
 
-
-
             <!--  Entrada para el Título  -->
             <Border Style="{StaticResource InputBorderStyle}">
 
@@ -72,7 +79,7 @@
             </Border>
 
             <CollectionView
-                EmptyView="No Items Available"
+                EmptyView="{Binding EmptyViewText}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="None">
@@ -95,13 +102,11 @@
                         <!--  Línea divisoria  -->
                         <BoxView Style="{StaticResource DividerLineStyle}" />
                     </VerticalStackLayout>
-
                 </CollectionView.Header>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource CardStyle}">
-
 
                             <VerticalStackLayout>
 
@@ -115,7 +120,6 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
-
                                     </Grid.ColumnDefinitions>
 
                                     <VerticalStackLayout Grid.Row="0" Grid.Column="0">
@@ -143,14 +147,12 @@
                                         </Button.ImageSource>
                                     </Button>
 
-
                                     <!--  Título y Descripción  -->
                                     <VerticalStackLayout
                                         Grid.Row="1"
                                         Grid.ColumnSpan="2"
                                         HorizontalOptions="FillAndExpand"
                                         VerticalOptions="StartAndExpand">
-
 
                                         <!--<Label
                                             FontAttributes="Bold"
@@ -167,17 +169,7 @@
                                             Text="{Binding Prompt.Description}"
                                             TextColor="{StaticResource AppBlack}" />
                                     </VerticalStackLayout>
-
-
-
-
-
-
-
                                 </Grid>
-
-
-
 
                                 <HorizontalStackLayout HorizontalOptions="CenterAndExpand" Spacing="10">
                                     <Button
@@ -206,8 +198,6 @@
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
                                         </Button.ImageSource>
                                     </Button>
-
-
 
                                     <!--  CheckBox para seleccionar los prompts  -->
                                     <CheckBox
@@ -247,8 +237,6 @@
                             Color="{StaticResource AppBlack}" />
                     </Button.ImageSource>
                 </Button>
-
-
             </VerticalStackLayout>
 
             <!--  Indicador de Carga  -->

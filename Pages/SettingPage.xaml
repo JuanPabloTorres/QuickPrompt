@@ -3,23 +3,59 @@
     x:Class="QuickPrompt.Pages.SettingPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Setting"
-    BackgroundColor="GhostWhite"
-    Shell.TitleColor="{StaticResource PrimaryBlueDark}">
-    <TableView Intent="Settings">
-        <TableRoot>
-            <!--  Sección de Información  -->
-            <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
-                <ViewCell>
-                    <HorizontalStackLayout Padding="10">
-                        <Label
-                            FontAttributes="Bold"
-                            Style="{StaticResource VersionLabelStyle}"
-                            Text="Version:" />
-                        <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion, Mode=TwoWay}" />
-                    </HorizontalStackLayout>
-                </ViewCell>
-            </TableSection>
-        </TableRoot>
-    </TableView>
+    BackgroundColor="GhostWhite">
+
+    <Shell.TitleView>
+
+        <Label
+            FontFamily="Designer"
+            FontSize="18"
+            Text="Settings"
+            TextColor="{StaticResource PrimaryBlueDark}"
+            VerticalOptions="Center" />
+    </Shell.TitleView>
+
+    <VerticalStackLayout>
+
+        <TableView HorizontalOptions="FillAndExpand" Intent="Settings">
+            <TableRoot>
+
+                <!--  Sección para borrar la base de datos  -->
+                <TableSection Title="Database" TextColor="{StaticResource PrimaryBlueDark}">
+                    <ViewCell>
+                        <Button
+                            Command="{Binding RestoreDatabaseCommand}"
+                            Style="{StaticResource DatabaseActionButton}"
+                            Text="Restore Database">
+
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe92b;"
+                                    Color="{StaticResource White}" />
+                            </Button.ImageSource>
+                        </Button>
+                    </ViewCell>
+                </TableSection>
+
+                <!--  Sección de Información  -->
+                <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
+                    <ViewCell>
+                        <HorizontalStackLayout Padding="10" HorizontalOptions="CenterAndExpand">
+                            <Label
+                                FontAttributes="Bold"
+                                Style="{StaticResource VersionLabelStyle}"
+                                Text="Version:" />
+                            <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion, Mode=TwoWay}" />
+                        </HorizontalStackLayout>
+                    </ViewCell>
+                </TableSection>
+            </TableRoot>
+        </TableView>
+        <!--  Indicador de Carga  -->
+        <ActivityIndicator
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
+            Style="{StaticResource LoadingIndicatorStyle}" />
+    </VerticalStackLayout>
 </ContentPage>

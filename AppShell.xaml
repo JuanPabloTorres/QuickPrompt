@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:QuickPrompt"
     xmlns:pages="clr-namespace:QuickPrompt.Pages"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    Title="QuickPrompt"
+    Title="Quick Prompt"
     Shell.FlyoutBehavior="Disabled"
     Shell.PresentationMode="Animated"
     Shell.TabBarForegroundColor="{StaticResource PrimaryBlueDark}"
@@ -22,6 +22,7 @@
 
         <!--  Home Tab  -->
         <Tab Title="Quick">
+
             <Tab.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
@@ -39,12 +40,12 @@
             <Tab.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe147;"
+                    Glyph="&#xe145;"
                     Color="{StaticResource PrimaryBlueLight}" />
             </Tab.Icon>
             <ShellContent
                 Title="Create"
-                ContentTemplate="{DataTemplate local:MainPage}"
+                ContentTemplate="{DataTemplate pages:MainPage}"
                 Route="MainPage" />
         </Tab>
 

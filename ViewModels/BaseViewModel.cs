@@ -41,10 +41,13 @@ namespace QuickPrompt.ViewModels
         // ============================== 🌟 PROPIEDADES ==============================
 
         [ObservableProperty]
-        private string search;
+        public string emptyViewText = "No Prompts Available";
 
         [ObservableProperty]
-        private bool isAllSelected = false;
+        protected string search;
+
+        [ObservableProperty]
+        protected bool isAllSelected = false;
 
         protected string oldSearch;
 
@@ -145,15 +148,40 @@ namespace QuickPrompt.ViewModels
         /// <returns>
         /// Lista de variables encontradas.
         /// </returns>
+        //protected List<string> ExtractVariables(string promptText)
+        //{
+        //    var variables = new List<string>();
+
+        //    int startIndex = promptText.IndexOf('{');
+
+        //    while (startIndex != -1)
+        //    {
+        //        int endIndex = promptText.IndexOf('}', startIndex);
+
+        //        if (endIndex == -1) break;
+
+        //        string variable = promptText.Substring(startIndex + 1, endIndex - startIndex - 1);
+
+        //        if (!variables.Contains(variable))
+        //        {
+        //            variables.Add(variable);
+        //        }
+
+        //        startIndex = promptText.IndexOf('{', endIndex);
+        //    }
+
+        //    return variables;
+        //}
+
         protected List<string> ExtractVariables(string promptText)
         {
             var variables = new List<string>();
 
-            int startIndex = promptText.IndexOf('{');
+            int startIndex = promptText.IndexOf('<');
 
             while (startIndex != -1)
             {
-                int endIndex = promptText.IndexOf('}', startIndex);
+                int endIndex = promptText.IndexOf('>', startIndex);
 
                 if (endIndex == -1) break;
 
@@ -164,7 +192,7 @@ namespace QuickPrompt.ViewModels
                     variables.Add(variable);
                 }
 
-                startIndex = promptText.IndexOf('{', endIndex);
+                startIndex = promptText.IndexOf('<', endIndex);
             }
 
             return variables;

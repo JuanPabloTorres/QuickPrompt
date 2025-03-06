@@ -32,6 +32,8 @@ namespace QuickPrompt.Services
             await InsertDefaultPromptsAsync();
         }
 
+        
+
         /// <summary>
         /// Inserta prompts útiles por defecto si la base de datos está vacía.
         /// </summary>
@@ -49,7 +51,7 @@ namespace QuickPrompt.Services
                     Id = Guid.NewGuid(),
                     Title = "Daily Workout Plan",
                     Description = "Generate a structured workout plan for different fitness levels.",
-                    Template = "Create a {workout} plan for {fitness level} with a duration of {time} minutes.",
+                    Template = "Create a <workout> plan for <fitness level> with a duration of <time> minutes.",
                     Variables = new Dictionary<string, string>
                     {
                         { "workout", "Strength training" },
@@ -63,7 +65,7 @@ namespace QuickPrompt.Services
                     Id = Guid.NewGuid(),
                     Title = "Essay Outline Generator",
                     Description = "Provides an outline for an essay based on a given topic.",
-                    Template = "Create an essay outline on {topic} including introduction, main points, and conclusion.",
+                    Template = "Create an essay outline on <topic> including introduction, main points, and conclusion.",
                     Variables = new Dictionary<string, string>
                     {
                         { "topic", "Artificial Intelligence in Healthcare" }
@@ -75,7 +77,7 @@ namespace QuickPrompt.Services
                     Id = Guid.NewGuid(),
                     Title = "Travel Itinerary Planner",
                     Description = "Suggests an itinerary for a trip based on location and duration.",
-                    Template = "Plan a {days}-day trip to {destination}, including places to visit and activities.",
+                    Template = "Plan a <days>-day trip to <destination>, including places to visit and activities.",
                     Variables = new Dictionary<string, string>
                     {
                         { "days", "5" },
@@ -88,7 +90,7 @@ namespace QuickPrompt.Services
                     Id = Guid.NewGuid(),
                     Title = "Healthy Meal Plan",
                     Description = "Suggests a healthy meal plan based on dietary preference.",
-                    Template = "Create a {days}-day meal plan for a {diet} diet, including breakfast, lunch, and dinner.",
+                    Template = "Create a <days>-day meal plan for a <diet> diet, including breakfast, lunch, and dinner.",
                     Variables = new Dictionary<string, string>
                     {
                         { "days", "7" },
@@ -101,11 +103,51 @@ namespace QuickPrompt.Services
                     Id = Guid.NewGuid(),
                     Title = "Interview Question Generator",
                     Description = "Generates interview questions for a specific job role.",
-                    Template = "Generate interview questions for a {job role} position in {industry}.",
+                    Template = "Generate interview questions for a <job role> position in <industry>.",
                     Variables = new Dictionary<string, string>
                     {
                         { "job role", "Software Engineer" },
                         { "industry", "Technology" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Resume Summary Generator",
+                    Description = "Generates a professional summary for a resume based on key strengths.",
+                    Template = "Create a professional resume summary for <job role> highlighting <key strengths>.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "job role", "Project Manager" },
+                        { "key strengths", "Leadership, strategic planning, and problem-solving" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Product Description Writer",
+                    Description = "Generates a compelling product description based on features and target audience.",
+                    Template = "Write a compelling product description for <product name> focusing on <key features> for <target audience>.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "product name", "Smartphone X" },
+                        { "key features", "AI camera, long battery life, and fast charging" },
+                        { "target audience", "Tech enthusiasts" }
+                    },
+                    IsFavorite = true
+                },
+                new PromptTemplate
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Social Media Post Generator",
+                    Description = "Creates an engaging social media post based on topic and platform.",
+                    Template = "Generate a social media post about <topic> for <platform> with an engaging tone.",
+                    Variables = new Dictionary<string, string>
+                    {
+                        { "topic", "Sustainable living tips" },
+                        { "platform", "Instagram" }
                     },
                     IsFavorite = true
                 }
@@ -206,9 +248,15 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Actualiza el estado de favorito de un prompt en la base de datos.
         /// </summary>
-        /// <param name="id">El identificador único del prompt.</param>
-        /// <param name="isFavorite">Estado de favorito a establecer (true si es favorito, false si no lo es).</param>
-        /// <returns>True si la actualización fue exitosa, False en caso contrario.</returns>
+        /// <param name="id">
+        /// El identificador único del prompt.
+        /// </param>
+        /// <param name="isFavorite">
+        /// Estado de favorito a establecer (true si es favorito, false si no lo es).
+        /// </param>
+        /// <returns>
+        /// True si la actualización fue exitosa, False en caso contrario.
+        /// </returns>
         public async Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite)
         {
             // Obtener el prompt de la base de datos
@@ -227,7 +275,6 @@ namespace QuickPrompt.Services
 
             return rowsAffected > 0; // Retorna true si al menos una fila fue afectada
         }
-
 
         /// <summary>
         /// Obtiene todos los prompts marcados como favoritos.
@@ -273,6 +320,16 @@ namespace QuickPrompt.Services
                 query = query.Where(p => p.Title.ToLower().Contains(filter.ToLower()));
 
             return await query.CountAsync();
+        }
+
+        /// <summary>
+        /// Borra completamente la base de datos eliminando todas las tablas.
+        /// </summary>
+        public async Task RestoreDatabaseAsync()
+        {
+            await _database.DropTableAsync<PromptTemplate>();
+
+            await InitializeDatabaseAsync();
         }
     }
 }
