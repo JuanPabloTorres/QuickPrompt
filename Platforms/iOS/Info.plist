@@ -28,5 +28,11 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>CFBundleIdentifier</key>
+	<string></string>
+
+  <!-- 🔹 Configuración de Google AdMob -->
+  <key>GADApplicationIdentifier</key>
+  <string>ca-app-pub-6397442763590886~6154534752</string>
 </dict>
 </plist>

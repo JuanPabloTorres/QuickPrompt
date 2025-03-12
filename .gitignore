@@ -362,5 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Excluir archivos de configuración sensibles
+# Excluir archivos de configuraciï¿½n sensibles
 appsettings.json
+
+
+key.keystore

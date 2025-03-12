@@ -1,11 +1,15 @@
 ﻿using Android.App;
+using Android.OS;
 using Android.Runtime;
 using Android.Text;
 using Android.Views;
 using Android.Views.InputMethods;
 using AndroidX.AppCompat.Widget;
+using CommunityToolkit.Maui.Behaviors;
+using CommunityToolkit.Maui.Core.Platform;
 using Java.Lang;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
 
 namespace QuickPrompt
 {
@@ -43,7 +47,7 @@ namespace QuickPrompt
                 handler.PlatformView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
             });
 
-            
+          
 
         }
 

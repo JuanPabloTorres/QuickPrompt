@@ -393,7 +393,7 @@
 
     <!--
     <Style TargetType="TitleBar">
-    <Setter Property="MinimumHeightRequest" Value="32"/>
+    <Setter Property="MinimumHeightRequest" Value="32" />
     <Setter Property="VisualStateManager.VisualStateGroups">
     <VisualStateGroupList>
     <VisualStateGroup x:Name="TitleActiveStates">
@@ -445,5 +445,4 @@
         <Setter Property="UnselectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray950}}" />
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
-
 </ResourceDictionary>

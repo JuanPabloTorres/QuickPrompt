@@ -2,16 +2,12 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Hosting;
 using Plugin.MauiMTAdmob;
-
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.ViewModels;
 using System.Reflection;
-using System.Text.Json;
 
 namespace QuickPrompt
 {
@@ -63,10 +59,6 @@ namespace QuickPrompt
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons-Regular");
                     fonts.AddFont("Designer.otf", "Designer");
                 });
-
-            //var mauiApp = builder.Build();
-
-            //Ioc.Default.ConfigureServices(builder.Services.BuildServiceProvider());
         }
 
         private static void InitializeIoC(MauiApp mauiApp)
