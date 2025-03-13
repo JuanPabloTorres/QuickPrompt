@@ -1,17 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.tuempresa.quickprompt">
+
+  <!-- Permisos necesarios -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
   <application
-	android:allowBackup="true"
-	android:supportsRtl="true"
-	android:icon="@mipmap/quickprompticon3"
-	android:label="Quick Prompt">
+      android:allowBackup="true"
+      android:supportsRtl="true"
+      android:icon="@mipmap/quickprompticon3"
+      android:label="Quick Prompt">
 
     <!-- Google Mobile Ads App ID -->
     <meta-data
         android:name="com.google.android.gms.ads.APPLICATION_ID"
         android:value="ca-app-pub-6397442763590886~6154534752" />
+
+    <!-- Actividad principal con soporte para esquema URI -->
+    <activity android:name=".MainActivity"
+        android:exported="true"
+        android:launchMode="singleTask">
+
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <!-- Esquema de URI personalizado/No esta en uso. Se verificara en un futuro adelante. Si ves esto y te da curiosidad de su proposito preguntar a Juan P. Torres -->
+        <data android:scheme="quickprompt" />
+      </intent-filter>
+    </activity>
+
   </application>
-  <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

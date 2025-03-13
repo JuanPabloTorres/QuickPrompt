@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
@@ -72,6 +74,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         if (query.ContainsKey("selectedId") && Guid.TryParse(query["selectedId"]?.ToString(), out Guid id))
         {
             await LoadPromptAsync(id);
+
+            FinalPrompt = string.Empty;
         }
         else
         {
@@ -126,12 +130,52 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     }
 
     // =========================== 🔹 INTEGRACIÓN CON CHATGPT ===========================
-
     [RelayCommand]
     private async Task SendPromptToChatGPTAsync()
     {
-        await AppShell.Current.DisplayAlert("Notification", AppMessagesEng.Prompts.PromptDevelopmentMessage, "OK");
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            if (string.IsNullOrEmpty(this.FinalPrompt))
+            {
+                await AlertService.ShowAlert("Error", "No prompt generated.");
+
+                return;
+            }
+
+            // Show a Toast notification instead of DisplayAlert
+            var toast = Toast.Make("Opening ChatGPT...", ToastDuration.Short);
+
+            await toast.Show();
+
+            // Open ChatGPT in WebView with prompt
+            await Application.Current.MainPage.Navigation.PushAsync(new ChatGptPage(FinalPrompt));
+        });
     }
+
+    //[RelayCommand]
+    //private async Task SendPromptToChatGPTAsync()
+    //{
+    //    await ExecuteWithLoadingAsync(async () =>
+    //    {
+    //        if ( string.IsNullOrEmpty(this.FinalPrompt))
+    //        {
+    //            await AlertService.ShowAlert("Error", "No prompt Generated.");
+
+    //            return;
+    //        }
+
+    //        // Copiar el prompt al portapapeles
+    //        await Clipboard.Default.SetTextAsync(FinalPrompt);
+
+    //        // Show a Toast notification instead of DisplayAlert
+    //        var toast = Toast.Make("Prompt copied. Open ChatGPT and paste it.", ToastDuration.Short);
+
+    //        await toast.Show();
+
+    //        // Abrir ChatGPT en el navegador
+    //        await Launcher.Default.OpenAsync("https://chat.openai.com/");
+    //    });
+    //}
 
     // =========================== 🔹 COMPARTIR PROMPT ===========================
 

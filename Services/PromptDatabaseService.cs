@@ -184,18 +184,35 @@ namespace QuickPrompt.Services
             return prompt != null && await _database.DeleteAsync(prompt) > 0;
         }
 
+
+        /// <summary>
+        /// Elimina todos los prompts de la base de datos.
+        /// </summary>
+        public async Task<bool> DeleteAllPromptsAsync()
+        {
+            var prompts = await _database.Table<PromptTemplate>().ToListAsync();
+
+            return prompts.Any() && await _database.DeleteAllAsync<PromptTemplate>() > 0;
+        }
+
+
+
         /// <summary>
         /// Actualiza un prompt existente con nuevos valores.
         /// </summary>
         public async Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables)
         {
             var prompt = await GetPromptByIdAsync(id);
+
             if (prompt == null)
                 throw new KeyNotFoundException(AppMessagesEng.Prompts.PromptNotFound);
 
             prompt.Title = newTitle;
+
             prompt.Template = newTemplate;
+
             prompt.Description = newDescription;
+
             prompt.Variables = newVariables;
 
             return await _database.UpdateAsync(prompt);

@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Options;
 using QuickPrompt.Models;
 using QuickPrompt.ViewModels;
 using System;
@@ -16,9 +17,9 @@ public partial class AdmobBannerViewModel : BaseViewModel
     /// </summary>
     public string AdUnitId { get; private set; }
 
-    public AdmobBannerViewModel(AdMobSettings adMobSettings)
+    public AdmobBannerViewModel(IOptions<AdMobSettings> adMobSettings)
     {
-        _adMobSettings = adMobSettings ?? throw new ArgumentNullException(nameof(adMobSettings));
+        _adMobSettings = adMobSettings.Value ?? throw new ArgumentNullException(nameof(adMobSettings));
 
         AdUnitId = GetAdUnitId();
     }

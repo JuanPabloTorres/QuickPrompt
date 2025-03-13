@@ -269,12 +269,15 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
                 foreach (var prompt in SelectedPromptsToDelete.ToList())
                 {
                     await _databaseService.DeletePromptAsync(prompt.Prompt.Id);
+
                     Prompts.Remove(prompt);
+
                     SelectedPromptsToDelete.Remove(prompt);  // Asegurarse de limpiar la lista seleccionada
                 }
 
                 // Actualizar el BlockHandler y verificar si hay más datos
                 blockHandler.Data = Prompts;
+
                 await CheckForMorePromptsAsync();
 
                 await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");

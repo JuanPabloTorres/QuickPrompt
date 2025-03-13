@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Plugin.MauiMTAdmob;
 using QuickPrompt.Models;
 
@@ -12,9 +13,9 @@ namespace QuickPrompt.Services
     {
         private string _interstitialAdId; // Reemplázalo con tu ID real
 
-        public AdmobService(AdMobSettings adMobSettings)
+        public AdmobService(IOptions<AdMobSettings> adMobSettings)
         {
-            _interstitialAdId = adMobSettings.InterstitialAdId;
+            _interstitialAdId = adMobSettings.Value.InterstitialAdId;
 
             LoadInterstitialAd(); // Precargar el anuncio
         }

@@ -93,8 +93,7 @@
 
 
   <Target Name="CopyGoogleMobileAdsFramework" AfterTargets="Build">
-    <Copy SourceFiles="$(UserProfile)\.nuget\packages\mtadmob.ios.binding\11.2.0.1\lib\net8.0-ios18.0\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\GADMediatedUnifiedNativeAdNotificationSource.h"
-          DestinationFolder="$(OutputPath)\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\" />
+    <Copy SourceFiles="$(UserProfile)\.nuget\packages\mtadmob.ios.binding\11.2.0.1\lib\net8.0-ios18.0\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\GADMediatedUnifiedNativeAdNotificationSource.h" DestinationFolder="$(OutputPath)\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\" />
   </Target>
 
 
@@ -156,6 +155,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="Pages\ChatGptPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Pages\EditPromptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

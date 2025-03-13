@@ -98,16 +98,25 @@ namespace QuickPrompt
                 Version = appSettings["AppSettings:Version"] ?? "1.0.0", // Valor predeterminado si no se encuentra
             };
 
-            var adMobSettings = new AdMobSettings()
+            // 🔹 Registrar configuración de AdMob utilizando IOptions
+            builder.Services.Configure<AdMobSettings>(options =>
             {
-                InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"],
-                Android = appSettings["AdMobSettings:Android"],
-                iOs = appSettings["AdMobSettings:iOs"],
-            };
+                options.InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"] ?? string.Empty;
+                options.Android = appSettings["AdMobSettings:Android"] ?? string.Empty;
+                options.iOs = appSettings["AdMobSettings:iOs"] ?? string.Empty;
+            });
+
+            //var adMobSettings = new AdMobSettings()
+            //{
+            //    InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"],
+            //    Android = appSettings["AdMobSettings:Android"],
+            //    iOs = appSettings["AdMobSettings:iOs"],
+            //};
+
+            //builder.Services.AddSingleton(adMobSettings);
 
             builder.Services.AddSingleton(appSettingsModel);
 
-            builder.Services.AddSingleton(adMobSettings);
 
             builder.Services.AddSingleton<AdmobService>();
         }
@@ -115,19 +124,21 @@ namespace QuickPrompt
         // Registra los ViewModels en el contenedor de dependencias
         private static void RegisterViewModels(MauiAppBuilder builder)
         {
+            // ViewModels que necesitan recrearse en cada navegación
             builder.Services.AddTransient<MainPageViewModel>();
-
-            builder.Services.AddTransient<LoadPromptsPageViewModel>();
-
-            builder.Services.AddTransient<PromptDetailsPageViewModel>();
-
-            builder.Services.AddTransient<EditPromptPageViewModel>();
-
-            builder.Services.AddTransient<QuickPromptViewModel>();
 
             builder.Services.AddTransient<SettingViewModel>();
 
-            builder.Services.AddTransient<AdmobBannerViewModel>();
+            // ViewModels que deben mantener su estado dentro de una sesión
+            builder.Services.AddScoped<LoadPromptsPageViewModel>();
+
+            builder.Services.AddScoped<PromptDetailsPageViewModel>();
+
+            builder.Services.AddScoped<EditPromptPageViewModel>();
+
+            builder.Services.AddScoped<QuickPromptViewModel>();
+
+            builder.Services.AddScoped<AdmobBannerViewModel>();
         }
 
         // Registra las páginas en el contenedor de dependencias
@@ -141,7 +152,7 @@ namespace QuickPrompt
 
             builder.Services.AddTransient<SettingPage>();
 
-            builder.Services.AddTransient<QuickPromptPage>();
+            builder.Services.AddScoped<QuickPromptPage>();
         }
 
         // Configura las rutas para la navegación

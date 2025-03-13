@@ -23,8 +23,6 @@
         <!--  Home Tab  -->
         <Tab Title="Quick">
 
-
-
             <Tab.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"

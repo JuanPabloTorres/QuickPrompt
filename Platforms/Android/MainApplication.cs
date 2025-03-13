@@ -46,18 +46,8 @@ namespace QuickPrompt
 
                 handler.PlatformView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
             });
-
-          
-
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
-
-      
-    
-
     }
-
- 
- 
 }
