@@ -7,9 +7,10 @@
     <!--  Google AdMob Banner  -->
     <controls:MTAdView
         x:Name="AdmobBanner"
+        Margin="10"
         AdsId="{Binding AdUnitId}"
         HeightRequest="{OnPlatform Android=50,
                                    iOS=50}"
-        HorizontalOptions="Center"
-        VerticalOptions="End" />
+        HorizontalOptions="FillAndExpand"
+        VerticalOptions="FillAndExpand" />
 </ContentView>

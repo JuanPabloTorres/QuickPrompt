@@ -142,20 +142,124 @@
                 </Button.ImageSource>
             </Button>
 
-            <Button
+
+            <!--<Button
+                BackgroundColor="#00A67E"
                 Command="{Binding SendPromptToChatGPTCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource PrimaryButtonStyle}"
                 Text="Send To ChatGPT"
+                TextColor="White"
                 VerticalOptions="End">
 
                 <Button.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe163;"
-                        Color="{StaticResource AppBlack}" />
+                        Glyph="&#xeadb;"
+                        Color="White" />
                 </Button.ImageSource>
             </Button>
+
+            <Button
+                BackgroundColor="#4796E3"
+                Command="{Binding SendPromptToGeminiCommand}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Text="Send To Gemini"
+                TextColor="White"
+                VerticalOptions="End">
+
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xeadb;"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
+
+            <Button
+                BackgroundColor="{StaticResource AppBlack}"
+                Command="{Binding SendPromptToGrokCommand}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Text="Send To Grok"
+                TextColor="White"
+                VerticalOptions="End">
+
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xeadb;"
+                        Color="{StaticResource White}" />
+                </Button.ImageSource>
+            </Button>-->
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
+                <!--  Botón 1: ChatGPT  -->
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    BackgroundColor="#00A67E"
+                    Command="{Binding SendPromptToChatGPTCommand}"
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="Send To ChatGPT"
+                    TextColor="White"
+                    VerticalOptions="End">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xeadb;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Botón 2: Gemini  -->
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    BackgroundColor="#4796E3"
+                    Command="{Binding SendPromptToGeminiCommand}"
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="Send To Gemini"
+                    TextColor="White"
+                    VerticalOptions="End">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xeadb;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Botón 3: Grok  -->
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    BackgroundColor="{StaticResource AppBlack}"
+                    Command="{Binding SendPromptToGrokCommand}"
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Text="Send To Grok"
+                    TextColor="White"
+                    VerticalOptions="End">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xeadb;"
+                            Color="{StaticResource White}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Espacio reservado o botón extra  -->
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    IsVisible="False" />
+            </Grid>
+
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator

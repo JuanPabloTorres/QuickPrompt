@@ -53,7 +53,7 @@
         <VerticalStackLayout Padding="10">
 
             <!--  Google AdMob Banner  -->
-            <views:AdmobBannerView />
+            <views:AdmobBannerView  />
 
             <!--  Entrada para el Título  -->
             <Border Style="{StaticResource InputBorderStyle}">

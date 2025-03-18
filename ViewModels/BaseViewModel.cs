@@ -125,7 +125,7 @@ namespace QuickPrompt.ViewModels
         /// Comando para regresar a la página anterior.
         /// </summary>
         [RelayCommand]
-        protected async Task GoBackAsync() => await NavigateToAsync("..");
+        protected async Task GoBackAsync() => await Shell.Current.Navigation.PopAsync();
 
         /// <summary>
         /// Muestra un mensaje de éxito y regresa a la pantalla anterior.

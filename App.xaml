@@ -52,15 +52,7 @@
                 <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
                 <Setter Property="StrokeThickness" Value="1.5" />
 
-                <Setter Property="Shadow">
-                    <Setter.Value>
-                        <Shadow
-                            Brush="{StaticResource AppBlack}"
-                            Opacity="0.2"
-                            Radius="8"
-                            Offset="3,3" />
-                    </Setter.Value>
-                </Setter>
+
             </Style>
 
             <!--  Estilo para bordes de entradas de texto  -->

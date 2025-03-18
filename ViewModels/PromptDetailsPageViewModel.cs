@@ -103,7 +103,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             // Mostrar anuncio intersticial después de guardar el prompt
             await _adMobService.ShowInterstitialAdAsync();
 
-            await AppShell.Current.DisplayAlert("Prompt Generated", FinalPrompt, "OK");
+          
         }, AppMessagesEng.GenericError);
     }
 
@@ -129,7 +129,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         return finalPromptBuilder.ToString();
     }
 
-    // =========================== 🔹 INTEGRACIÓN CON CHATGPT ===========================
+    // =========================== 🔹 INTEGRACIÓN CON AI ===========================
     [RelayCommand]
     private async Task SendPromptToChatGPTAsync()
     {
@@ -152,32 +152,51 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         });
     }
 
-    //[RelayCommand]
-    //private async Task SendPromptToChatGPTAsync()
-    //{
-    //    await ExecuteWithLoadingAsync(async () =>
-    //    {
-    //        if ( string.IsNullOrEmpty(this.FinalPrompt))
-    //        {
-    //            await AlertService.ShowAlert("Error", "No prompt Generated.");
+    [RelayCommand]
+    private async Task SendPromptToGeminiAsync()
+    {
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            if (string.IsNullOrEmpty(this.FinalPrompt))
+            {
+                await AlertService.ShowAlert("Error", "No prompt generated.");
 
-    //            return;
-    //        }
+                return;
+            }
 
-    //        // Copiar el prompt al portapapeles
-    //        await Clipboard.Default.SetTextAsync(FinalPrompt);
+            // Show a Toast notification instead of DisplayAlert
+            var toast = Toast.Make("Opening Gemini...", ToastDuration.Short);
 
-    //        // Show a Toast notification instead of DisplayAlert
-    //        var toast = Toast.Make("Prompt copied. Open ChatGPT and paste it.", ToastDuration.Short);
+            await toast.Show();
 
-    //        await toast.Show();
+            // Open ChatGPT in WebView with prompt
+            await Application.Current.MainPage.Navigation.PushAsync(new GeminiPage(FinalPrompt));
+        });
+    }
 
-    //        // Abrir ChatGPT en el navegador
-    //        await Launcher.Default.OpenAsync("https://chat.openai.com/");
-    //    });
-    //}
+    [RelayCommand]
+    private async Task SendPromptToGrokAsync()
+    {
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            if (string.IsNullOrEmpty(this.FinalPrompt))
+            {
+                await AlertService.ShowAlert("Error", "No prompt generated.");
 
-    // =========================== 🔹 COMPARTIR PROMPT ===========================
+                return;
+            }
+
+            // Show a Toast notification instead of DisplayAlert
+            var toast = Toast.Make("Opening Gemini...", ToastDuration.Short);
+
+            await toast.Show();
+
+            // Open ChatGPT in WebView with prompt
+            await Application.Current.MainPage.Navigation.PushAsync(new GrokPage(FinalPrompt));
+        });
+    }
+
+
 
     [RelayCommand]
     protected async Task SharePromptAsync()
