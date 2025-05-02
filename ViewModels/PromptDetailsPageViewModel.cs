@@ -187,7 +187,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             }
 
             // Show a Toast notification instead of DisplayAlert
-            var toast = Toast.Make("Opening Gemini...", ToastDuration.Short);
+            var toast = Toast.Make("Opening Grok...", ToastDuration.Short);
 
             await toast.Show();
 

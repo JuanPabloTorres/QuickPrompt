@@ -373,8 +373,8 @@
             <Style x:Key="DividerLineStyle" TargetType="BoxView">
                 <Setter Property="Margin" Value="0,5" />
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
-                <Setter Property="HeightRequest" Value="1" />
-                <Setter Property="HorizontalOptions" Value="FillAndExpand" />
+                <Setter Property="HeightRequest" Value="0.1" />
+                <Setter Property="HorizontalOptions" Value="Fill" />
             </Style>
 
             <!--  Estilo para el Indicador de Carga  -->

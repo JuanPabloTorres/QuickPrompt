@@ -32,8 +32,6 @@ namespace QuickPrompt.Services
             await InsertDefaultPromptsAsync();
         }
 
-        
-
         /// <summary>
         /// Inserta prompts útiles por defecto si la base de datos está vacía.
         /// </summary>
@@ -150,7 +148,74 @@ namespace QuickPrompt.Services
                         { "platform", "Instagram" }
                     },
                     IsFavorite = true
-                }
+                },
+                new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Sports Player Analysis",
+    Description = "Provides a performance analysis of a specific athlete.",
+    Template = "Analyze the recent performance of <playerName> in <sport> including stats, strengths, and areas to improve.",
+    Variables = new Dictionary<string, string>
+    {
+        { "playerName", "LeBron James" },
+        { "sport", "basketball" }
+    },
+    IsFavorite = true
+},
+                new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Medical Symptom Explanation",
+    Description = "Explains a medical symptom in layman's terms.",
+    Template = "Explain what it means when someone experiences <symptom> and suggest possible causes.",
+    Variables = new Dictionary<string, string>
+    {
+        { "symptom", "chest pain" }
+    },
+    IsFavorite = true
+},
+                new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Educational Topic Summary",
+    Description = "Summarizes a complex educational topic in simple terms.",
+    Template = "Summarize the topic of <topicName> for a <gradeLevel> student.",
+    Variables = new Dictionary<string, string>
+    {
+        { "topicName", "photosynthesis" },
+        { "gradeLevel", "6th grade" }
+    },
+    IsFavorite = true
+},
+                new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Tech Concept Explainer",
+    Description = "Explains a tech concept in a simplified manner.",
+    Template = "Explain the concept of <concept> in simple terms with an example.",
+    Variables = new Dictionary<string, string>
+    {
+        { "concept", "blockchain" }
+    },
+    IsFavorite = true
+},
+                new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Quick Recipe Generator",
+    Description = "Generates a simple recipe based on ingredients.",
+    Template = "Give me a quick recipe using <ingredient1> and <ingredient2> that can be made in under 30 minutes.",
+    Variables = new Dictionary<string, string>
+    {
+        { "ingredient1", "chicken" },
+        { "ingredient2", "broccoli" }
+    },
+    IsFavorite = true
+}
+
+
+
+
             };
 
             await _database.InsertAllAsync(defaultPrompts);
@@ -184,7 +249,6 @@ namespace QuickPrompt.Services
             return prompt != null && await _database.DeleteAsync(prompt) > 0;
         }
 
-
         /// <summary>
         /// Elimina todos los prompts de la base de datos.
         /// </summary>
@@ -194,8 +258,6 @@ namespace QuickPrompt.Services
 
             return prompts.Any() && await _database.DeleteAllAsync<PromptTemplate>() > 0;
         }
-
-
 
         /// <summary>
         /// Actualiza un prompt existente con nuevos valores.
