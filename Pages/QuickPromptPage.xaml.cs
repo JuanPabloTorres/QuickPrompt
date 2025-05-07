@@ -18,8 +18,6 @@ public partial class QuickPromptPage : ContentPage
 
     protected override async void OnAppearing()
     {
-        //SetBannerId();
-
         if (_viewModel.blockHandler.IsInitialBlockIndex())
         {
             await this._viewModel.LoadInitialPrompts();

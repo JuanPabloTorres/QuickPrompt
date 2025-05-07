@@ -21,7 +21,7 @@ namespace QuickPrompt
                 Preferences.Set("HasSeenGuide", true);
 
                 // Esperar a que se cargue el Shell completamente
-                await Task.Delay(500);
+                await Task.Delay(200);
 
                 await GoToAsync($"/{nameof(GuidePage)}");
             }
