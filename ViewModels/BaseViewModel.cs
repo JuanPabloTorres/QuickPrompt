@@ -4,6 +4,7 @@ using QuickPrompt.Models;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
+using QuickPrompt.Views;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,6 +78,7 @@ namespace QuickPrompt.ViewModels
             try
             {
                 IsLoading = true;
+
                 await action();
             }
             catch (Exception ex)
@@ -89,6 +91,34 @@ namespace QuickPrompt.ViewModels
                 IsLoading = false;
             }
         }
+
+        public async Task RunWithLoaderAndErrorHandlingAsync(
+    ReusableLoadingOverlay loader,
+    Func<Task> action,
+    string loadingMessage = "Cargando...",
+    string errorMessage = "Ocurrió un error. Intenta nuevamente.")
+        {
+            try
+            {
+                loader.Message = loadingMessage;
+                loader.IsVisible = true;
+
+                await action(); // Ejecuta la tarea principal
+            }
+            catch (Exception ex)
+            {
+                // Muestra alerta de error
+                await Application.Current.MainPage.DisplayAlert("Error", errorMessage, "OK");
+
+                // Puedes loguear el error si deseas
+                System.Diagnostics.Debug.WriteLine($"[ERROR] {ex.Message}");
+            }
+            finally
+            {
+                loader.IsVisible = false;
+            }
+        }
+
 
         /// <summary>
         /// Navega a una nueva página con parámetros opcionales.

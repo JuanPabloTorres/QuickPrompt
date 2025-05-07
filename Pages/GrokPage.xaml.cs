@@ -6,28 +6,35 @@ public partial class GrokPage : ContentPage
 
     public GrokPage(string finalPrompt)
     {
-		InitializeComponent();
+        InitializeComponent();
 
         FinalPrompt = finalPrompt;
     }
 
+    private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
+    {
+        LoadingOverlay.IsVisible = true;
+    }
+
     private async void OnWebViewNavigated(object sender, WebNavigatedEventArgs e)
     {
-        string script = $@"
+        if (e.Result == WebNavigationResult.Success)
+        {
+            string script = $@"
 (function() {{
     let attempt = 0;
     let interval = setInterval(() => {{
         let editor = document.querySelector('textarea[aria-label=""Ask Grok anything""]'); // Buscar por elemento
-        
+
         if (editor) {{
             let currentText = editor.innerText || editor.textContent;
-            
+
             if (!currentText.includes(`{FinalPrompt}`)) {{
                 editor.focus();
 
                 // Insertar el texto simulando una entrada de usuario
                 document.execCommand('insertText', false, `{FinalPrompt}`);
-                
+
                 // Disparar el evento 'input' para que la página detecte el cambio
                 editor.dispatchEvent(new Event('input', {{ bubbles: true }}));
             }}
@@ -41,14 +48,9 @@ public partial class GrokPage : ContentPage
 }})();
 ";
 
+            await GrokWebView.EvaluateJavaScriptAsync(script);
+        }
 
-
-
-
-
-
-
-        await GrokWebView.EvaluateJavaScriptAsync(script);
-
+        LoadingOverlay.IsVisible = false;
     }
 }

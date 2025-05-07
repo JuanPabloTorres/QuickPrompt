@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
     BackgroundColor="WhiteSmoke"
     Shell.PresentationMode="Animated">
 
@@ -15,7 +16,6 @@
             Text="Create"
             TextColor="{StaticResource PrimaryBlueDark}"
             VerticalOptions="Center" />
-
     </Shell.TitleView>
 
     <!--  Barra de herramientas  -->
@@ -73,25 +73,34 @@
                 Click to Clear Text
             </ToolTipProperties.Text>
         </ToolbarItem>
-
-
     </ContentPage.ToolbarItems>
 
     <ScrollView>
 
-        <VerticalStackLayout
+        <Grid
             Padding="20"
-            HorizontalOptions="Fill"
-            Spacing="20">
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+            RowSpacing="10">
+
+            <!--  Overlay de carga  -->
+            <views:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                Grid.Row="0"
+                Grid.RowSpan="5"
+                IsVisible="{Binding IsLoading}"
+                Message="Loading..." />
 
             <!--  Título  -->
-            <Label Style="{StaticResource TitleLabelStyle}" Text="Prompt Management" />
+            <Label
+                Grid.Row="0"
+                Style="{StaticResource TitleLabelStyle}"
+                Text="Prompt Management" />
 
             <!--  Línea divisoria  -->
-            <BoxView Style="{StaticResource DividerLineStyle}" />
+            <BoxView Grid.Row="1" Style="{StaticResource DividerLineStyle}" />
 
             <!--  Entrada para el Título  -->
-            <Border Style="{StaticResource InputBorderStyle}">
+            <Border Grid.Row="2" Style="{StaticResource InputBorderStyle}">
                 <Entry
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     Placeholder="Type Title..."
@@ -100,7 +109,7 @@
             </Border>
 
             <!--  Entrada para la Descripción  -->
-            <Border Style="{StaticResource InputBorderStyle}">
+            <Border Grid.Row="3" Style="{StaticResource InputBorderStyle}">
                 <Editor
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     Style="{StaticResource InputEditorStyle}"
@@ -108,7 +117,7 @@
             </Border>
 
             <!--  Editor para el Prompt  -->
-            <Border Style="{StaticResource InputBorderStyle}">
+            <Border Grid.Row="4" Style="{StaticResource InputBorderStyle}">
                 <Editor
                     CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
@@ -116,20 +125,6 @@
                     Style="{StaticResource PromptEditorStyle}"
                     Text="{Binding PromptText}" />
             </Border>
-
-            <!--  Línea divisoria  -->
-            <BoxView Style="{StaticResource DividerLineStyle}" />
-
-            <!--  Texto seleccionado  -->
-            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding SelectedTextLabelCount}" />
-
-
-
-            <!--  Indicador de Carga  -->
-            <ActivityIndicator
-                IsRunning="{Binding IsLoading}"
-                IsVisible="{Binding IsLoading}"
-                Style="{StaticResource LoadingIndicatorStyle}" />
-        </VerticalStackLayout>
+        </Grid>
     </ScrollView>
 </ContentPage>

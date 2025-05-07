@@ -194,7 +194,7 @@
             <Style x:Key="LoadMoreButtonStyle" TargetType="Button">
                 <Setter Property="HorizontalOptions" Value="Fill" />
                 <Setter Property="Text" Value="More" />
-                <Setter Property="Margin" Value="12" />
+                <Setter Property="Margin" Value="15" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="TextTransform" Value="Uppercase" />
                 <Setter Property="FontFamily" Value="12" />
@@ -381,7 +381,7 @@
             <Style x:Key="LoadingIndicatorStyle" TargetType="ActivityIndicator">
                 <Setter Property="HeightRequest" Value="50" />
                 <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="Color" Value="{StaticResource PrimaryTeal}" />
+                <Setter Property="Color" Value="{StaticResource PrimaryRed}" />
             </Style>
 
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />

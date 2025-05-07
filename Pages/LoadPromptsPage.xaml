@@ -47,13 +47,24 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
-        <VerticalStackLayout Padding="10">
+        <Grid Padding="10" RowDefinitions="Auto,Auto,*,Auto">
+
+            <!--  Overlay de carga  -->
+            <views:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                Grid.Row="0"
+                Grid.RowSpan="4"
+                IsVisible="{Binding IsLoading}"
+                Message="Loading..." />
 
             <!--  Inserción del banner de AdMob  -->
-            <views:AdmobBannerView />
+            <views:AdmobBannerView Grid.Row="0" />
 
             <!--  Entrada para el Título  -->
-            <Border Style="{StaticResource InputBorderStyle}">
+            <Border
+                Grid.Row="1"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource InputBorderStyle}">
 
                 <Grid ColumnDefinitions="*, Auto" HorizontalOptions="Fill">
                     <!--  Campo de entrada de texto  -->
@@ -79,6 +90,7 @@
             </Border>
 
             <CollectionView
+                Grid.Row="2"
                 EmptyView="{Binding EmptyViewText}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
@@ -218,28 +230,21 @@
                 </CollectionView.Footer>
             </CollectionView>
 
-            <VerticalStackLayout>
-                <Button
-                    Command="{Binding LoadMorePromptsCommand}"
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    IsVisible="{Binding IsMoreDataAvailable}"
-                    Style="{StaticResource LoadMoreButtonStyle}"
-                    Text="More">
+            <Button
+                Grid.Row="3"
+                Command="{Binding LoadMorePromptsCommand}"
+                IsEnabled="{Binding IsMoreDataAvailable}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Style="{StaticResource LoadMoreButtonStyle}"
+                Text="More">
 
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xead0;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
-            </VerticalStackLayout>
-
-            <!--  Indicador de Carga  -->
-            <ActivityIndicator
-                IsRunning="{Binding IsLoading}"
-                IsVisible="{Binding IsLoading}"
-                Style="{StaticResource LoadingIndicatorStyle}" />
-        </VerticalStackLayout>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xead0;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
+        </Grid>
     </ScrollView>
 </ContentPage>

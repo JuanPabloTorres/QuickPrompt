@@ -11,11 +11,17 @@ public partial class GeminiPage : ContentPage
         FinalPrompt = finalPrompt;
 	}
 
+    private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
+    {
+        LoadingOverlay.IsVisible = true;
+    }
+
     private async void OnWebViewNavigated(object sender, WebNavigatedEventArgs e)
     {
 
-
-        string script = $@"
+        if (e.Result == WebNavigationResult.Success)
+        {
+            string script = $@"
 (function() {{
     let attempt = 0;
     let interval = setInterval(() => {{
@@ -44,7 +50,10 @@ public partial class GeminiPage : ContentPage
 ";
 
 
-        await GeminiWebView.EvaluateJavaScriptAsync(script);
+            await GeminiWebView.EvaluateJavaScriptAsync(script);
+        }
+
+        LoadingOverlay.IsVisible = false;
     }
 
 
