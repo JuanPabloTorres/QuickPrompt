@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.Pages.GuidePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Quick Prompt Guide"
+    Routing.Route="GuidePage">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="25">
+
+            <HorizontalStackLayout HorizontalOptions="Center">
+
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="28"
+                    HorizontalOptions="Center"
+                    Text="📘 Welcome to Quick Prompt"
+                    TextColor="#0A84FF" />
+            </HorizontalStackLayout>
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
+            <Label
+                FontSize="16"
+                Text="QuickPrompt helps you create, organize and customize AI prompts using dynamic variables like &lt;topic&gt;, &lt;tone&gt;, or &lt;goal&gt; to improve how you interact with GPT, Gemini or Grok."
+                TextColor="Black" />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔹 Step 1: Create or Choose a Prompt"
+                TextColor="#0A84FF" />
+
+            <Label
+                FontSize="15"
+                Text="You can start by choosing a pre-made prompt from the library or create your own from scratch. A prompt is simply a message or instruction you give to an AI."
+                TextColor="Black" />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔹 Step 2: Add Dynamic Variables"
+                TextColor="#0A84FF" />
+
+            <Label
+                FontSize="15"
+                Text="Use angle brackets to mark the parts of the prompt you want to personalize. For example: &lt;product_name&gt;, &lt;audience_type&gt;, or &lt;style&gt;."
+                TextColor="Black" />
+
+            <Label
+                FontSize="15"
+                Text="This makes your prompt reusable for different scenarios without rewriting it."
+                TextColor="Gray" />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔹 Step 3: Fill in the Fields"
+                TextColor="#0A84FF" />
+
+            <Label FontSize="15" Text="Once you've written or selected a prompt with variables, tap 'Generate'. You'll be asked to enter values for each field, like:" />
+
+            <Border
+                Padding="15"
+                BackgroundColor="#F0F0F0"
+                Stroke="#DDDDDD"
+                StrokeShape="RoundRectangle 10"
+                StrokeThickness="1">
+                <VerticalStackLayout>
+                    <Label
+                        FontSize="14"
+                        Text="• &lt;product_name&gt; → QuickPrompt"
+                        TextColor="Black" />
+                    <Label
+                        FontSize="14"
+                        Text="• &lt;audience_type&gt; → AI enthusiasts"
+                        TextColor="Black" />
+                    <Label
+                        FontSize="14"
+                        Text="• &lt;style&gt; → Friendly tone"
+                        TextColor="Black" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔹 Step 4: Use Your Prompt"
+                TextColor="#0A84FF" />
+
+            <Label FontSize="15" Text="After filling in the variables, your prompt will be ready to copy and paste directly into GPT, Gemini, or Grok." />
+
+            <Label
+                FontSize="15"
+                Text="This helps you generate consistent and high-quality outputs every time."
+                TextColor="Gray" />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔹 Step 5: Save Your Favorites"
+                TextColor="#0A84FF" />
+
+            <Label FontSize="15" Text="You can tap the lightning icon to save your most used prompts and access them quickly whenever you need them." />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🔍 Full Example:"
+                TextColor="#0A84FF" />
+
+            <Border
+                Padding="15"
+                BackgroundColor="#F6F6F6"
+                Stroke="#CCCCCC"
+                StrokeShape="RoundRectangle 10"
+                StrokeThickness="1">
+                <VerticalStackLayout>
+                    <Label
+                        FontSize="14"
+                        Text="Prompt: Write a product description for &lt;product_name&gt; targeting &lt;audience_type&gt; using a &lt;style&gt; tone."
+                        TextColor="#333" />
+                    <Label
+                        Margin="0,5,0,0"
+                        FontSize="14"
+                        Text="Result: Write a product description for QuickPrompt targeting AI enthusiasts using a friendly tone."
+                        TextColor="#555" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                Text="🚀 Ready to Create?"
+                TextColor="#0A84FF" />
+
+            <Label FontSize="15" Text="Ready to create your first smart prompt? Tap below to start building and customizing your own." />
+
+            <Button
+                Margin="12"
+                Padding="12"
+                BackgroundColor="#0A84FF"
+                Clicked="OnNavigateToCreatePrompt"
+                CornerRadius="10"
+                Text="⚡ Go to Create"
+                TextColor="White" />
+
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

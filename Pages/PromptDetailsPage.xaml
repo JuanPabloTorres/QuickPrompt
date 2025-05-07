@@ -62,7 +62,7 @@
         <VerticalStackLayout
             Padding="10"
             Spacing="8"
-            VerticalOptions="FillAndExpand">
+            VerticalOptions="Fill">
             <Label
                 HorizontalOptions="Center"
                 Style="{StaticResource TitleLabelStyle}"
@@ -72,7 +72,7 @@
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
             <Label
-                HorizontalOptions="CenterAndExpand"
+                HorizontalOptions="Center"
                 Style="{StaticResource SubtitleLabelStyle}"
                 Text="{Binding Description}" />
 
@@ -132,7 +132,7 @@
                 Command="{Binding GeneratePromptCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource DetailButtonStyle}"
-                Text="Generate Prompt">
+                Text="Generate Prompt ">
 
                 <Button.ImageSource>
                     <FontImageSource
@@ -154,7 +154,7 @@
                 Command="{Binding SendPromptToChatGPTCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource PrimaryButtonStyle}"
-                Text="ChatGPT"
+                Text="Chat GPT"
                 TextColor="White"
                 VerticalOptions="End">
                 <Button.ImageSource>

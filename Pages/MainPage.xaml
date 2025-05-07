@@ -81,7 +81,7 @@
 
         <VerticalStackLayout
             Padding="20"
-            HorizontalOptions="FillAndExpand"
+            HorizontalOptions="Fill"
             Spacing="20">
 
             <!--  Título  -->
@@ -102,7 +102,6 @@
             <!--  Entrada para la Descripción  -->
             <Border Style="{StaticResource InputBorderStyle}">
                 <Editor
-                 
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     Style="{StaticResource InputEditorStyle}"
                     Text="{Binding PromptDescription}" />

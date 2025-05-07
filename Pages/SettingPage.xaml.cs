@@ -10,4 +10,11 @@ public partial class SettingPage : ContentPage
 
 		this.BindingContext = settingViewModel;
 	}
+
+    private async void OnGuideTapped(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync($"/{nameof(GuidePage)}");
+    }
+
+
 }

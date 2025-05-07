@@ -17,8 +17,21 @@
 
     <VerticalStackLayout>
 
-        <TableView HorizontalOptions="FillAndExpand" Intent="Settings">
+        <TableView HorizontalOptions="Fill" Intent="Settings">
             <TableRoot>
+
+                <!--  Sección para la guia del usuario  -->
+                <TableSection Title="User Guide" TextColor="{StaticResource PrimaryBlueDark}">
+                    <ViewCell Tapped="OnGuideTapped">
+                        <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
+                            <Label
+                                FontAttributes="Bold"
+                                Text="Getting Started with QuickPrompt"
+                                TextColor="{StaticResource AppBlack}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </ViewCell>
+                </TableSection>
 
                 <!--  Sección para borrar la base de datos  -->
                 <TableSection Title="Database" TextColor="{StaticResource PrimaryBlueDark}">
@@ -41,7 +54,7 @@
                 <!--  Sección de Información  -->
                 <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
                     <ViewCell>
-                        <HorizontalStackLayout Padding="10" HorizontalOptions="CenterAndExpand">
+                        <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
                             <Label
                                 FontAttributes="Bold"
                                 Style="{StaticResource VersionLabelStyle}"
@@ -50,6 +63,8 @@
                         </HorizontalStackLayout>
                     </ViewCell>
                 </TableSection>
+
+
             </TableRoot>
         </TableView>
         <!--  Indicador de Carga  -->

@@ -13,13 +13,8 @@ public partial class QuickPromptPage : ContentPage
     {
         InitializeComponent();
 
-       
-
-      
-
         BindingContext = _viewModel = viewModel;
     }
-
 
     protected override async void OnAppearing()
     {
