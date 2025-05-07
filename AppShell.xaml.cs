@@ -8,12 +8,9 @@ namespace QuickPrompt
         {
             InitializeComponent();
 
-
             // Mostrar la guía solo la primera vez
             ShowGuideIfFirstLaunch();
         }
-
-     
 
         private async void ShowGuideIfFirstLaunch()
         {
