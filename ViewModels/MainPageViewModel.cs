@@ -4,6 +4,7 @@ using QuickPrompt.Models;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -184,4 +185,120 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
         UpdateSelectedTextLabelCount(0);
     }
+
+    [RelayCommand]
+    private async Task ImportPrompt()
+    {
+        //await ExecuteWithLoadingAsync(async () =>
+        //{
+        //    var result = await FilePicker.PickAsync(new PickOptions
+        //    {
+        //        PickerTitle = "Import Prompt",
+        //        FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+        //    {
+        //        { DevicePlatform.iOS, new[] { "public.text" } },
+        //        { DevicePlatform.Android, new[] { "text/plain" } },
+        //        { DevicePlatform.WinUI, new[] { ".json", ".txt" } }
+        //    })
+        //    });
+
+        //    if (result is null)
+        //        return;
+
+        //    var json = await File.ReadAllTextAsync(result.FullPath);
+
+        //    var data = JsonSerializer.Deserialize<ImportablePrompt>(json);
+
+        //    if (data is null || string.IsNullOrWhiteSpace(data.Template))
+        //    {
+        //        await AlertService.ShowAlert("Error", "Invalid or empty prompt file.");
+
+        //        return;
+        //    }
+
+        //    // Asigna los valores al área de creación
+        //    PromptTitle = data.Title ?? string.Empty;
+
+        //    PromptDescription = data.Description ?? string.Empty;
+
+        //    PromptText = data.Template;
+
+        //    UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
+
+        //    await AlertService.ShowAlert("Success", "Prompt imported successfully.");
+        //}, AppMessagesEng.GenericError);
+
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            var result = await FilePicker.PickAsync(new PickOptions
+            {
+                PickerTitle = "Import Prompt",
+                FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+        {
+            { DevicePlatform.iOS, new[] { "public.text" } },
+            { DevicePlatform.Android, new[] { "text/plain" } },
+            { DevicePlatform.WinUI, new[] { ".json", ".txt" } }
+        })
+            });
+
+            if (result is null)
+                return;
+
+            // Validar extensión del archivo
+            if (!result.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
+                !result.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                await AlertService.ShowAlert("Error", "Only .json or .txt files are supported.");
+                return;
+            }
+
+            string json;
+            try
+            {
+                json = await File.ReadAllTextAsync(result.FullPath);
+            }
+            catch (Exception readEx)
+            {
+                await AlertService.ShowAlert("Error", $"Failed to read file: {readEx.Message}");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(json) || json.Length < 20)
+            {
+                await AlertService.ShowAlert("Error", "The selected file is empty or invalid.");
+                return;
+            }
+
+            ImportablePrompt? data;
+            try
+            {
+                data = JsonSerializer.Deserialize<ImportablePrompt>(json);
+            }
+            catch (Exception deserializationEx)
+            {
+                await AlertService.ShowAlert("Error", $"The file format is incorrect: {deserializationEx.Message}");
+                return;
+            }
+
+            if (data is null ||
+                string.IsNullOrWhiteSpace(data.Title) ||
+                string.IsNullOrWhiteSpace(data.Template) ||
+                !AngleBraceTextHandler.ContainsAngleBraces(data.Template))
+            {
+                await AlertService.ShowAlert("Error", "The file does not contain a valid prompt.");
+                return;
+            }
+
+            // Asignar los valores
+            PromptTitle = data.Title.Trim();
+            PromptDescription = string.IsNullOrWhiteSpace(data.Description) ? "N/A" : data.Description.Trim();
+            PromptText = data.Template;
+
+            UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
+
+            await AlertService.ShowAlert("Success", "Prompt imported successfully.");
+        }, AppMessagesEng.GenericError);
+
+    }
+
 }

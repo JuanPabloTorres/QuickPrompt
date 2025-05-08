@@ -172,5 +172,18 @@ namespace QuickPrompt.Tools
 
             return Regex.Replace(variable, @"/\d+$", "");
         }
+
+        /// <summary>
+        /// Verifica si el texto contiene al menos una variable con signos de ángulo &lt; &gt;.
+        /// </summary>
+        public static bool ContainsAngleBraces(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            return text.Contains('<') && text.Contains('>') &&
+                   Regex.IsMatch(text, @"<[^<>]+>");
+        }
+
     }
 }

@@ -60,6 +60,20 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
+        <!--  Import Json  -->
+        <ToolbarItem Command="{Binding ImportPromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe9fc;"
+                    Color="{StaticResource PrimaryBlueDark}" />
+                <!--  Color asociado al botón Copiar  -->
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Import Json
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
         <!--  Botón de Copiar  -->
         <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
