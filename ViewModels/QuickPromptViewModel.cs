@@ -19,7 +19,6 @@ namespace QuickPrompt.ViewModels
     public partial class QuickPromptViewModel : BaseViewModel
     {
         // ======================= 📌 PROPIEDADES =======================
-
         public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();   // Lista de prompts seleccionados para eliminar
 
         public BlockHandler<PromptTemplateViewModel> blockHandler = new();
@@ -293,7 +292,16 @@ namespace QuickPrompt.ViewModels
 
                     // Actualizar el BlockHandler y verificar si hay más datos
                     blockHandler.Data = Prompts;
+
                     await CheckForMorePromptsAsync();
+
+                    // Verificar si hay más datos disponibles
+                    if (IsMoreDataAvailable)
+                    {
+                        //blockHandler.NextBlock();
+
+                        await LoadInitialPrompts();
+                    }
 
                     await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");
                 }, AppMessagesEng.Prompts.PromptDeleteError);

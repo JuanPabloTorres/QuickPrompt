@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels.Prompts
@@ -20,16 +21,13 @@ namespace QuickPrompt.ViewModels.Prompts
 
         public Action<PromptTemplateViewModel> onRemoveFavorite;
 
-        public Action<string,PromptTemplate> onSelectToNavigate;
+        public Action<string, PromptTemplate> onSelectToNavigate;
 
-        [ObservableProperty]
-        private PromptTemplate prompt;
+        [ObservableProperty] private PromptTemplate prompt;
 
-        [ObservableProperty]
-        private bool isSelected;
+        [ObservableProperty] private bool isSelected;
 
-        [ObservableProperty]
-        private bool isFavorite;
+        [ObservableProperty] private bool isFavorite;
 
         private readonly PromptDatabaseService promptDatabaseService;
 
@@ -37,8 +35,8 @@ namespace QuickPrompt.ViewModels.Prompts
             PromptTemplate prompt,
             PromptDatabaseService promptDatabaseService,
             Action<PromptTemplateViewModel> onSelectToDelete,
-            Action<PromptTemplateViewModel> onItemToDelete, 
-            Action<string,PromptTemplate> onSelectToNavigate)
+            Action<PromptTemplateViewModel> onItemToDelete,
+            Action<string, PromptTemplate> onSelectToNavigate)
         {
             Prompt = prompt;
 
@@ -57,7 +55,7 @@ namespace QuickPrompt.ViewModels.Prompts
           PromptTemplate prompt,
           PromptDatabaseService promptDatabaseService,
           Action<PromptTemplateViewModel> onSelectToDelete,
-          Action<PromptTemplateViewModel> onItemToDelete, 
+          Action<PromptTemplateViewModel> onItemToDelete,
           Action<PromptTemplateViewModel> onRemoveFavorite
          )
         {
@@ -72,8 +70,6 @@ namespace QuickPrompt.ViewModels.Prompts
             this.onItemToDelete = onItemToDelete;
 
             this.onRemoveFavorite = onRemoveFavorite;
-
-        
         }
 
         public PromptTemplateViewModel(PromptTemplate prompt)
@@ -116,35 +112,24 @@ namespace QuickPrompt.ViewModels.Prompts
 
         // ======================= ✏️ EDITAR UN PROMPT =======================
         [RelayCommand]
-        private  void NavigateToEditPrompt(PromptTemplate selectedPrompt)
+        private void NavigateToEditPrompt(PromptTemplate selectedPrompt)
         {
-            //await ExecuteWithLoadingAsync(async () =>
-            //{
-            //    if (selectedPrompt != null)
-            //    {
-            //        await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-            //{
-            //    { "selectedId", selectedPrompt.Id }
-            //});
-            //    }
-            //}, AppMessagesEng.GenericError);
-
-            onSelectToNavigate.Invoke(nameof(EditPromptPage),selectedPrompt);
+            onSelectToNavigate.Invoke(nameof(EditPromptPage), selectedPrompt);
         }
 
         // ======================= 📌 SELECCIONAR UN PROMPT =======================
         [RelayCommand]
-        private async Task SelectPrompt(PromptTemplate selectedPrompt)
+        private void SelectPrompt(PromptTemplate selectedPrompt)
+        {
+            onSelectToNavigate.Invoke(nameof(PromptDetailsPage), selectedPrompt);
+        }
+
+        [RelayCommand]
+        public async Task ExportPrompt(PromptTemplate prompt)
         {
             await ExecuteWithLoadingAsync(async () =>
             {
-                if (selectedPrompt != null)
-                {
-                    await NavigateToAsync(nameof(PromptDetailsPage), new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
-                }
+                await SharePromptService.SharePromptAsync(prompt);
             }, AppMessagesEng.GenericError);
         }
     }

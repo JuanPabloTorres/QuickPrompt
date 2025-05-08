@@ -26,11 +26,12 @@
             <Color x:Key="AppBlack">#242124</Color>
 
             <Style x:Key="baseBtn" TargetType="Button">
-                <Setter Property="HeightRequest" Value="50" />
-                <Setter Property="FontSize" Value="16" />
-                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="HeightRequest" Value="40" />
+                <Setter Property="WidthRequest" Value="40" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="CornerRadius" Value="30" />
                 <Setter Property="Padding" Value="10,5" />
-                <Setter Property="Margin" Value="5" />
+                <Setter Property="Margin" Value="4" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
                 <Setter Property="Shadow">
@@ -38,7 +39,7 @@
                         <Shadow
                             Brush="{StaticResource AppBlack}"
                             Opacity="0.3"
-                            Radius="10"
+                            Radius="8"
                             Offset="5,5" />
                     </Setter.Value>
                 </Setter>
@@ -197,14 +198,14 @@
                         <Shadow
                             Brush="{StaticResource AppBlack}"
                             Opacity="0.3"
-                            Radius="10"
+                            Radius="8"
                             Offset="5,5" />
                     </Setter.Value>
                 </Setter>
             </Style>
 
             <!--  Estilo para el botón de "Cargar Más"  -->
-            <Style x:Key="LoadMoreButtonStyle" TargetType="Button">
+            <Style x:Key="YellowButtonStyle" TargetType="Button">
                 <Setter Property="HorizontalOptions" Value="Fill" />
                 <Setter Property="Text" Value="More" />
                 <Setter Property="Margin" Value="15" />

@@ -144,7 +144,7 @@
                                     </Button>
                                 </Grid>
 
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="15">
                                     <Button
                                         Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
@@ -166,6 +166,15 @@
                                     <Button Command="{Binding ItemToDeleteCommand}" Style="{StaticResource CriticalButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Command="{Binding ExportPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        Style="{StaticResource DetailButtonStyle}">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe80d;" />
                                         </Button.ImageSource>
                                     </Button>
 
@@ -194,7 +203,7 @@
                 Grid.Row="3"
                 Command="{Binding LoadMorePromptsCommand}"
                 IsEnabled="{Binding IsMoreDataAvailable}"
-                Style="{StaticResource LoadMoreButtonStyle}"
+                Style="{StaticResource YellowButtonStyle}"
                 Text="More">
 
                 <Button.IsVisible>

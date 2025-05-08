@@ -128,7 +128,7 @@
             <Button
                 Command="{Binding GeneratePromptCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource DetailButtonStyle}"
+                Style="{StaticResource YellowButtonStyle}"
                 Text="Generate Prompt ">
 
                 <Button.ImageSource>
@@ -146,7 +146,7 @@
                 BackgroundColor="{StaticResource AppBlack}"
                 Command="{Binding SendPromptToChatGPTCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource PrimaryButtonStyle}"
+                Style="{StaticResource YellowButtonStyle}"
                 Text="Chat GPT"
                 TextColor="White"
                 VerticalOptions="End">
@@ -165,7 +165,7 @@
                 BackgroundColor="{StaticResource AppBlack}"
                 Command="{Binding SendPromptToGeminiCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource PrimaryButtonStyle}"
+                Style="{StaticResource YellowButtonStyle}"
                 Text="Gemini"
                 TextColor="White"
                 VerticalOptions="End">
@@ -184,7 +184,7 @@
                 BackgroundColor="{StaticResource AppBlack}"
                 Command="{Binding SendPromptToGrokCommand}"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource PrimaryButtonStyle}"
+                Style="{StaticResource YellowButtonStyle}"
                 Text="Grok"
                 TextColor="White"
                 VerticalOptions="End">
