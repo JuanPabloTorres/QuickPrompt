@@ -10,7 +10,7 @@ public partial class EditPromptPage : ContentPage
     {
         InitializeComponent();
 
-        _viewModel = viewModel; 
+        _viewModel = viewModel;
 
         BindingContext = viewModel;
     }
@@ -18,5 +18,10 @@ public partial class EditPromptPage : ContentPage
     protected override void OnAppearing()
     {
         _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
+    }
+
+    private async void OnBackClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("..");
     }
 }

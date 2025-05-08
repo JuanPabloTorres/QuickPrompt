@@ -27,9 +27,12 @@ namespace QuickPrompt.Services
         /// </summary>
         private async Task InitializeDatabaseAsync()
         {
-            await _database.CreateTableAsync<PromptTemplate>();
+            if (!DatabaseExists())
+            {
+                await _database.CreateTableAsync<PromptTemplate>();
 
-            await InsertDefaultPromptsAsync();
+                await InsertDefaultPromptsAsync();
+            }
         }
 
         /// <summary>
@@ -212,10 +215,6 @@ namespace QuickPrompt.Services
     },
     IsFavorite = true
 }
-
-
-
-
             };
 
             await _database.InsertAllAsync(defaultPrompts);
@@ -406,9 +405,35 @@ namespace QuickPrompt.Services
         /// </summary>
         public async Task RestoreDatabaseAsync()
         {
-            await _database.DropTableAsync<PromptTemplate>();
+            // Cierra cualquier operación pendiente antes de borrar
+            await _database.CloseAsync();
+
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+
+            if (File.Exists(dbPath))
+                File.Delete(dbPath);
+
+            // Recrear la instancia de conexión y reiniciar base de datos
+            var newConnection = new SQLiteAsyncConnection(dbPath);
+
+            //await _database.DropTableAsync<PromptTemplate>();
 
             await InitializeDatabaseAsync();
+
+            //// Reasignar la nueva conexión a la instancia
+            //typeof(PromptDatabaseService)
+            //    .GetField("_database", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            //    ?.SetValue(this, newConnection);
+        }
+
+        /// <summary>
+        /// Verifica si el archivo de base de datos ya existe en el dispositivo.
+        /// </summary>
+        public static bool DatabaseExists()
+        {
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+
+            return File.Exists(dbPath);
         }
     }
 }

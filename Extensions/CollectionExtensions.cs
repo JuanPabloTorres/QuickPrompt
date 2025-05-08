@@ -26,12 +26,14 @@ public static class CollectionExtensions
         this IEnumerable<PromptTemplate> prompts,
         PromptDatabaseService promptDatabaseService,
         Action<PromptTemplateViewModel> onSelectToDelete,
-        Action<PromptTemplateViewModel> onItemToDelete)
+        Action<PromptTemplateViewModel> onItemToDelete,
+          Action<string, PromptTemplate> onSelectToNavigate)
     {
         return new ObservableCollection<PromptTemplateViewModel>(prompts.Select(p =>
         new PromptTemplateViewModel(p,
         promptDatabaseService,
         onSelectToDelete,
-        onItemToDelete)));
+        onItemToDelete,
+        onSelectToNavigate)));
     }
 }

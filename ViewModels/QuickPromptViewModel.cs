@@ -146,7 +146,7 @@ namespace QuickPrompt.ViewModels
                 if (promptList.Any())
                 {
                     // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
+                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync, NavigateTo));
 
                     Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -211,7 +211,7 @@ namespace QuickPrompt.ViewModels
                 if (promptList.Any())
                 {
                     // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync));
+                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync,NavigateTo));
 
                     Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 

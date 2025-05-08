@@ -9,7 +9,12 @@
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            var window = new Window
+            {
+                Page = new AppShell() // ← Aquí especificas el Shell como la página raíz
+            };
+
+            return window;
         }
     }
 }

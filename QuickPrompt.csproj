@@ -192,6 +192,9 @@
     <MauiXaml Update="Views\ReusableLoadingOverlay.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Views\TitleHeader.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
   </ItemGroup>
 
   <ItemGroup>

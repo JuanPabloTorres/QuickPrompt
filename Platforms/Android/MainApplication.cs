@@ -10,6 +10,7 @@ using CommunityToolkit.Maui.Core.Platform;
 using Java.Lang;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
+using AndroidToolbar = AndroidX.AppCompat.Widget.Toolbar;
 
 namespace QuickPrompt
 {

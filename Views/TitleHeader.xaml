@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="QuickPrompt.Views.TitleHeader"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:QuickPrompt.Views">
+
+
+    <Grid ColumnDefinitions="Auto,*">
+        <Button
+            x:Name="BackButton"
+            Grid.Column="0"
+            Padding="0,0,20,0"
+            BackgroundColor="Transparent"
+            Clicked="OnBackClicked"
+            Command="{Binding BackCommand, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
+            IsVisible="{Binding ShowBackButton, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
+            Text=""
+            VerticalOptions="Center">
+            <Button.ImageSource>
+                <FontImageSource
+                    FontFamily="{Binding FontFamily, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
+                    Glyph="{Binding Glyph, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
+                    Color="{StaticResource PrimaryBlueDark}" />
+            </Button.ImageSource>
+        </Button>
+
+        <Label
+            Grid.Column="1"
+            FontFamily="Designer"
+            FontSize="18"
+            HorizontalOptions="Start"
+            Text="{Binding Title, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
+            TextColor="{StaticResource PrimaryBlueDark}"
+            VerticalOptions="Center" />
+    </Grid>
+</ContentView>

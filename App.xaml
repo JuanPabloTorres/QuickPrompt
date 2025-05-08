@@ -9,6 +9,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
@@ -50,7 +51,19 @@
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
                 <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
-                <Setter Property="StrokeThickness" Value="1.5" />
+                <Setter Property="StrokeThickness" Value="0.15" />
+
+
+            </Style>
+
+            <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
+            <Style x:Key="loadingBorderStyle" TargetType="Border">
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
+                <Setter Property="StrokeThickness" Value="0.15" />
 
 
             </Style>
@@ -393,6 +406,19 @@
             <converters:BooleanToColorConverter x:Key="BooleanToColorConverter" />
 
             <converters:FinalPromptVisibilityConverter x:Key="FinalPromptVisibilityConverter" />
+
+            <converters:IsButtonVisibleConverter x:Key="IsButtonVisibleConverter" />
+
+            <BackButtonBehavior x:Key="CustomBackButtonBehavior">
+
+                <BackButtonBehavior.IconOverride>
+
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe5e0;"
+                        Color="Black" />
+                </BackButtonBehavior.IconOverride>
+            </BackButtonBehavior>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

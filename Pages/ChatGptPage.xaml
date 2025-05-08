@@ -20,7 +20,7 @@
             Source="https://chat.openai.com/" />
 
         <!--  Loading Overlay Layer  -->
-           <view:ReusableLoadingOverlay
+        <view:ReusableLoadingOverlay
             x:Name="LoadingOverlay"
             IsVisible="False"
             Message="Loading ChatGPT..." />

@@ -20,6 +20,8 @@ namespace QuickPrompt.ViewModels.Prompts
 
         public Action<PromptTemplateViewModel> onRemoveFavorite;
 
+        public Action<string,PromptTemplate> onSelectToNavigate;
+
         [ObservableProperty]
         private PromptTemplate prompt;
 
@@ -35,7 +37,8 @@ namespace QuickPrompt.ViewModels.Prompts
             PromptTemplate prompt,
             PromptDatabaseService promptDatabaseService,
             Action<PromptTemplateViewModel> onSelectToDelete,
-            Action<PromptTemplateViewModel> onItemToDelete)
+            Action<PromptTemplateViewModel> onItemToDelete, 
+            Action<string,PromptTemplate> onSelectToNavigate)
         {
             Prompt = prompt;
 
@@ -46,13 +49,17 @@ namespace QuickPrompt.ViewModels.Prompts
             this.onSelectToDelete = onSelectToDelete;
 
             this.onItemToDelete = onItemToDelete;
+
+            this.onSelectToNavigate = onSelectToNavigate;
         }
 
         public PromptTemplateViewModel(
           PromptTemplate prompt,
           PromptDatabaseService promptDatabaseService,
           Action<PromptTemplateViewModel> onSelectToDelete,
-          Action<PromptTemplateViewModel> onItemToDelete, Action<PromptTemplateViewModel> onRemoveFavorite)
+          Action<PromptTemplateViewModel> onItemToDelete, 
+          Action<PromptTemplateViewModel> onRemoveFavorite
+         )
         {
             Prompt = prompt;
 
@@ -65,6 +72,8 @@ namespace QuickPrompt.ViewModels.Prompts
             this.onItemToDelete = onItemToDelete;
 
             this.onRemoveFavorite = onRemoveFavorite;
+
+        
         }
 
         public PromptTemplateViewModel(PromptTemplate prompt)
@@ -107,18 +116,20 @@ namespace QuickPrompt.ViewModels.Prompts
 
         // ======================= ✏️ EDITAR UN PROMPT =======================
         [RelayCommand]
-        private async Task NavigateToEditPrompt(PromptTemplate selectedPrompt)
+        private  void NavigateToEditPrompt(PromptTemplate selectedPrompt)
         {
-            await ExecuteWithLoadingAsync(async () =>
-            {
-                if (selectedPrompt != null)
-                {
-                    await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
-                }
-            }, AppMessagesEng.GenericError);
+            //await ExecuteWithLoadingAsync(async () =>
+            //{
+            //    if (selectedPrompt != null)
+            //    {
+            //        await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
+            //{
+            //    { "selectedId", selectedPrompt.Id }
+            //});
+            //    }
+            //}, AppMessagesEng.GenericError);
+
+            onSelectToNavigate.Invoke(nameof(EditPromptPage),selectedPrompt);
         }
 
         // ======================= 📌 SELECCIONAR UN PROMPT =======================

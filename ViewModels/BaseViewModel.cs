@@ -15,6 +15,31 @@ namespace QuickPrompt.ViewModels
 {
     public abstract partial class BaseViewModel : ObservableObject
     {
+        // ============================== 🌟 PROPIEDADES ==============================
+        [ObservableProperty]
+        public string emptyViewText = "No Prompts Available";
+
+        [ObservableProperty]
+        protected string search;
+
+        [ObservableProperty]
+        protected bool isAllSelected = false;
+
+        protected string oldSearch;
+
+        /// <summary>
+        /// Controla el estado de carga de la aplicación.
+        /// </summary>
+        [ObservableProperty] private bool isLoading;
+
+        /// <summary>
+        /// Etiqueta que muestra el conteo de variables seleccionadas.
+        /// </summary>
+        [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
+
+        protected bool IsNavigatedPage => Shell.Current.Navigation.NavigationStack.Count > 1;
+
+
         protected BaseViewModel()
         {
         }
@@ -39,28 +64,7 @@ namespace QuickPrompt.ViewModels
 
         protected AdmobService _adMobService;
 
-        // ============================== 🌟 PROPIEDADES ==============================
-
-        [ObservableProperty]
-        public string emptyViewText = "No Prompts Available";
-
-        [ObservableProperty]
-        protected string search;
-
-        [ObservableProperty]
-        protected bool isAllSelected = false;
-
-        protected string oldSearch;
-
-        /// <summary>
-        /// Controla el estado de carga de la aplicación.
-        /// </summary>
-        [ObservableProperty] private bool isLoading;
-
-        /// <summary>
-        /// Etiqueta que muestra el conteo de variables seleccionadas.
-        /// </summary>
-        [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
+    
 
         // ============================== 🚀 MÉTODOS PRINCIPALES ==============================
 
@@ -92,11 +96,7 @@ namespace QuickPrompt.ViewModels
             }
         }
 
-        public async Task RunWithLoaderAndErrorHandlingAsync(
-    ReusableLoadingOverlay loader,
-    Func<Task> action,
-    string loadingMessage = "Cargando...",
-    string errorMessage = "Ocurrió un error. Intenta nuevamente.")
+        public async Task RunWithLoaderAndErrorHandlingAsync(ReusableLoadingOverlay loader, Func<Task> action, string loadingMessage = "Cargando...", string errorMessage = "Ocurrió un error. Intenta nuevamente.")
         {
             try
             {
@@ -108,7 +108,7 @@ namespace QuickPrompt.ViewModels
             catch (Exception ex)
             {
                 // Muestra alerta de error
-                await Application.Current.MainPage.DisplayAlert("Error", errorMessage, "OK");
+                await Shell.Current.DisplayAlert("Error", errorMessage, "OK");
 
                 // Puedes loguear el error si deseas
                 System.Diagnostics.Debug.WriteLine($"[ERROR] {ex.Message}");
@@ -118,7 +118,6 @@ namespace QuickPrompt.ViewModels
                 loader.IsVisible = false;
             }
         }
-
 
         /// <summary>
         /// Navega a una nueva página con parámetros opcionales.
@@ -167,42 +166,7 @@ namespace QuickPrompt.ViewModels
             await GoBackAsync();
         }
 
-        // ============================== 🛠 MÉTODOS AUXILIARES ==============================
-
-        /// <summary>
-        /// Extrae variables encerradas entre llaves `{}` dentro de un texto.
-        /// </summary>
-        /// <param name="text">
-        /// Texto a analizar.
-        /// </param>
-        /// <returns>
-        /// Lista de variables encontradas.
-        /// </returns>
-        //protected List<string> ExtractVariables(string promptText)
-        //{
-        //    var variables = new List<string>();
-
-        //    int startIndex = promptText.IndexOf('{');
-
-        //    while (startIndex != -1)
-        //    {
-        //        int endIndex = promptText.IndexOf('}', startIndex);
-
-        //        if (endIndex == -1) break;
-
-        //        string variable = promptText.Substring(startIndex + 1, endIndex - startIndex - 1);
-
-        //        if (!variables.Contains(variable))
-        //        {
-        //            variables.Add(variable);
-        //        }
-
-        //        startIndex = promptText.IndexOf('{', endIndex);
-        //    }
-
-        //    return variables;
-        //}
-
+        // ============================== 🛠 MÉTODOS AUXILIARES ============================== 
         protected List<string> ExtractVariables(string promptText)
         {
             var variables = new List<string>();
@@ -282,6 +246,26 @@ namespace QuickPrompt.ViewModels
             _adMobService.LoadInterstitialAd();  // Precargar el anuncio intersticial
 
             _adMobService.SetupAdEvents();       // Configurar eventos de AdMob
+        }
+
+        protected async void NavigateTo(string page, PromptTemplate selectedPrompt)
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                if (selectedPrompt != null)
+                {
+                    await NavigateToAsync(page, new Dictionary<string, object>
+            {
+                { "selectedId", selectedPrompt.Id }
+            });
+                }
+            }, AppMessagesEng.GenericError);
+        }
+
+        [RelayCommand]
+        public async Task MyBack()
+        {
+            await Shell.Current.Navigation.PopAsync();
         }
     }
 }

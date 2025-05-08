@@ -115,11 +115,8 @@
                     <DataTemplate>
                         <Border Style="{StaticResource CardStyle}">
                             <VerticalStackLayout>
-                                <Grid Padding="5" ColumnDefinitions="Auto,*,Auto">
-                                    <VerticalStackLayout
-                                        Grid.Column="1"
-                                        HorizontalOptions="End"
-                                        VerticalOptions="Start">
+                                <Grid Padding="5" ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout Grid.Column="0">
                                         <Label
                                             FontAttributes="Bold"
                                             FontSize="20"
@@ -134,7 +131,7 @@
                                     </VerticalStackLayout>
 
                                     <Button
-                                        Grid.Column="2"
+                                        Grid.Column="1"
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=ToggleFavoriteCommand}"
                                         CommandParameter="{Binding .}"
                                         Style="{StaticResource FavoriteButtonStyle}">
@@ -147,7 +144,7 @@
                                     </Button>
                                 </Grid>
 
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
                                     <Button
                                         Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
@@ -197,9 +194,15 @@
                 Grid.Row="3"
                 Command="{Binding LoadMorePromptsCommand}"
                 IsEnabled="{Binding IsMoreDataAvailable}"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource LoadMoreButtonStyle}"
                 Text="More">
+
+                <Button.IsVisible>
+                    <MultiBinding Converter="{StaticResource IsButtonVisibleConverter}">
+                        <Binding Path="IsLoading" />
+                        <Binding Path="Prompts.Count" />
+                    </MultiBinding>
+                </Button.IsVisible>
                 <Button.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"

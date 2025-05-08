@@ -133,7 +133,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -147,6 +147,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             await CheckForMorePromptsAsync();
         }, AppMessagesEng.Prompts.PromptLoadError);
     }
+   
 
     // ======================= 🔍 FILTRAR PROMPTS =======================
     [RelayCommand]
@@ -200,7 +201,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             if (promptList.Any())
             {
                 // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync));
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
 
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -254,6 +255,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
         if (!SelectedPromptsToDelete.Any())
         {
             await AppShell.Current.DisplayAlert("Notification", "No items selected for deletion.", "OK");
+
             return;
         }
 
@@ -280,7 +282,16 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
                 await CheckForMorePromptsAsync();
 
+                // Verificar si hay más datos disponibles
+                if (IsMoreDataAvailable)
+                {
+                    //blockHandler.NextBlock();
+
+                    await LoadInitialPrompts();
+                }
+
                 await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");
+
             }, AppMessagesEng.Prompts.PromptDeleteError);
         }
     }

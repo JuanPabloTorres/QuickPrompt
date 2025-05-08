@@ -3,18 +3,20 @@
     x:Class="QuickPrompt.Pages.PromptDetailsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
     BackgroundColor="GhostWhite"
     Shell.PresentationMode="Animated">
 
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
+
     <Shell.TitleView>
-
-        <Label
-            FontFamily="Designer"
-            FontSize="18"
-            Text="Prompt Details"
-            TextColor="{StaticResource PrimaryBlueDark}"
-            VerticalOptions="Center" />
-
+        <views:TitleHeader
+            Title="Prompt Designer"
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5e0;"
+            ShowBackButton="True" />
     </Shell.TitleView>
 
     <ContentPage.ToolbarItems>
@@ -76,8 +78,6 @@
                 Style="{StaticResource SubtitleLabelStyle}"
                 Text="{Binding Description}" />
 
-
-
             <!--  Label para el Prompt  -->
             <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding PromptText}" />
 
@@ -112,10 +112,7 @@
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
-
                     </CollectionView>
-
-
                 </VerticalStackLayout>
             </ScrollView>
 
@@ -141,10 +138,6 @@
                         Color="{StaticResource TextLight}" />
                 </Button.ImageSource>
             </Button>
-
-
-
-
 
             <!--  Botón 1: ChatGPT  -->
             <Button
@@ -209,8 +202,6 @@
                 Grid.Column="1"
                 BackgroundColor="Transparent"
                 IsVisible="False" />
-
-
 
             <!--  Indicador de Carga  -->
             <ActivityIndicator
