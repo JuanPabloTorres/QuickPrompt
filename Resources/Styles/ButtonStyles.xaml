@@ -115,7 +115,7 @@
     <Style x:Key="YellowButtonStyle" TargetType="Button">
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="Text" Value="More" />
-        <Setter Property="Margin" Value="15" />
+        <Setter Property="Margin" Value="10,5,10,5" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextTransform" Value="Uppercase" />
         <Setter Property="FontFamily" Value="12" />

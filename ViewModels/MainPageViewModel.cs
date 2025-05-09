@@ -50,7 +50,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
 
@@ -267,7 +267,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
             UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptImportedSuccess);
         }, AppMessagesEng.GenericError);

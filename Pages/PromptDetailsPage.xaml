@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:models="clr-namespace:QuickPrompt.Models"
+    xmlns:view="clr-namespace:QuickPrompt.Views"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     x:Name="promptDetailsPage"
     BackgroundColor="GhostWhite"
@@ -86,7 +87,7 @@
             <ScrollView>
                 <VerticalStackLayout>
                     <Label
-                        Margin="0,10,0,0"
+                        Margin="8"
                         FontAttributes="Bold"
                         FontSize="20"
                         Text="Complete the variables:"
@@ -127,7 +128,6 @@
                                                 ItemsSource="{Binding Suggestions}"
                                                 SelectionMode="None">
 
-
                                                 <CollectionView.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Style="{StaticResource SuggestionChipBorderStyle}">
@@ -143,27 +143,14 @@
                                                     </DataTemplate>
                                                 </CollectionView.ItemTemplate>
                                             </CollectionView>
-
                                         </VerticalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-
-
-
                 </VerticalStackLayout>
             </ScrollView>
-
-            <Label
-                Margin="0,10,0,0"
-                FontAttributes="Italic"
-                FontSize="18"
-                HorizontalOptions="Center"
-                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
-                Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
-                TextColor="{StaticResource AppBlack}" />
 
             <Button
                 Command="{Binding GeneratePromptCommand}"
@@ -179,17 +166,42 @@
                 </Button.ImageSource>
             </Button>
 
+            <Label
+                Margin="10"
+                FontAttributes="Italic"
+                FontSize="15"
+                HorizontalOptions="Start"
+                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
+                Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
+                TextColor="{StaticResource AppBlack}" />
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
+            <Label
+                Margin="0,0,0,10"
+                FontAttributes="Italic"
+                FontSize="14"
+                HorizontalOptions="Center"
+                IsVisible="{Binding ShowPromptActions}"
+                Text="Click on your preferred AI platform to view the generated prompt in action."
+                TextColor="{StaticResource AppBlack}" />
+
+
+
+
             <!--  Botón 1: ChatGPT  -->
             <Button
                 Grid.Row="0"
                 Grid.Column="0"
-                BackgroundColor="{StaticResource AppBlack}"
+                BackgroundColor="{StaticResource PrimaryBlueDark}"
                 Command="{Binding SendPromptToChatGPTCommand}"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                IsVisible="{Binding ShowPromptActions}"
                 Style="{StaticResource YellowButtonStyle}"
                 Text="Chat GPT"
                 TextColor="White"
                 VerticalOptions="End">
+
                 <Button.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"
@@ -202,9 +214,9 @@
             <Button
                 Grid.Row="0"
                 Grid.Column="1"
-                BackgroundColor="{StaticResource AppBlack}"
+                BackgroundColor="{StaticResource PrimaryBlueDark}"
                 Command="{Binding SendPromptToGeminiCommand}"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                IsVisible="{Binding ShowPromptActions}"
                 Style="{StaticResource YellowButtonStyle}"
                 Text="Gemini"
                 TextColor="White"
@@ -221,9 +233,9 @@
             <Button
                 Grid.Row="1"
                 Grid.Column="0"
-                BackgroundColor="{StaticResource AppBlack}"
+                BackgroundColor="{StaticResource PrimaryBlueDark}"
                 Command="{Binding SendPromptToGrokCommand}"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                IsVisible="{Binding ShowPromptActions}"
                 Style="{StaticResource YellowButtonStyle}"
                 Text="Grok"
                 TextColor="White"
@@ -236,18 +248,13 @@
                 </Button.ImageSource>
             </Button>
 
-            <!--  Espacio reservado o botón extra  -->
-            <Button
-                Grid.Row="1"
-                Grid.Column="1"
-                BackgroundColor="Transparent"
-                IsVisible="False" />
-
-            <!--  Indicador de Carga  -->
-            <ActivityIndicator
-                IsRunning="{Binding IsLoading}"
+            <!--  Overlay de carga  -->
+            <view:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                Grid.Row="0"
+                Grid.RowSpan="4"
                 IsVisible="{Binding IsLoading}"
-                Style="{StaticResource LoadingIndicatorStyle}" />
+                Message="Loading..." />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

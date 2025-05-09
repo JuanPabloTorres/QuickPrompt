@@ -13,8 +13,6 @@
 
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
 
-                <ResourceDictionary Source="Resources/Styles/Converters.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/Borders.xaml" />
 
                 <ResourceDictionary Source="Resources/Styles/ButtonStyles.xaml" />
@@ -24,9 +22,9 @@
                 <ResourceDictionary Source="Resources/Styles/EntryEditorStyles.xaml" />
 
                 <ResourceDictionary Source="Resources/Styles/VisualElementsStyles.xaml" />
+
+                <ResourceDictionary Source="Resources/Styles/Converters.xaml" />
             </ResourceDictionary.MergedDictionaries>
-
-
         </ResourceDictionary>
     </Application.Resources>
 </Application>

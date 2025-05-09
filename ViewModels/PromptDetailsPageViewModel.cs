@@ -75,9 +75,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         {
             await LoadPromptAsync(id);
 
-            FinalPrompt = string.Empty;
-
-            UpdateShareButtonVisibility();
+            Clear();
         }
         else
         {
@@ -106,7 +104,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
                     PromptVariableCache.SaveValue(variable.Name!, variable.Value);
             }
 
-            IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir
+            UpdateVisibility(); // Mostrar botón de compartir
 
             // Mostrar anuncio intersticial después de guardar el prompt
             await _adMobService.ShowInterstitialAdAsync();
@@ -160,7 +158,12 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         await SendPromptToAsync(nameof(GrokPage), "Grok", PromptID, FinalPrompt);
     }
 
-    private void UpdateShareButtonVisibility() => IsShareButtonVisible = !string.IsNullOrWhiteSpace(FinalPrompt);
+    private void UpdateVisibility()
+    {
+        IsShareButtonVisible = !string.IsNullOrWhiteSpace(FinalPrompt);
+
+        ShowPromptActions = !string.IsNullOrWhiteSpace(FinalPrompt);
+    }
 
     [RelayCommand]
     private void SelectSuggestion(VariableSuggestionSelection selection)
@@ -225,9 +228,9 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     /// Comando para limpiar los campos de entrada de texto del prompt.
     /// </summary>
     [RelayCommand]
-    private void ClearText() => ClearPromptInputs();
+    private void ClearText() => Clear();
 
-    private void ClearPromptInputs()
+    private void Clear()
     {
         if (Variables.All(v => string.IsNullOrEmpty(v.Value)))
         {
@@ -241,6 +244,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
         this.FinalPrompt = string.Empty;
 
-        this.IsShareButtonVisible = !string.IsNullOrEmpty(this.FinalPrompt);
+        UpdateVisibility();
     }
 }

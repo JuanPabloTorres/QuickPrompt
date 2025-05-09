@@ -18,4 +18,6 @@
     <converters:IsButtonVisibleConverter x:Key="IsButtonVisibleConverter" />
 
     <converters:IsFocusedAndHasSuggestionsConverter x:Key="IsFocusedAndHasSuggestionsConverter" />
+
+    <converters:FinalPromptAndNotLoadingConverter x:Key="FinalPromptAndNotLoadingConverter " />
 </ResourceDictionary>

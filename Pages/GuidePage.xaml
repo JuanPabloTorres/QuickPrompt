@@ -3,8 +3,20 @@
     x:Class="QuickPrompt.Pages.GuidePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Quick Prompt Guide"
+    xmlns:view="clr-namespace:QuickPrompt.Views"
     Routing.Route="GuidePage">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
+
+    <Shell.TitleView>
+        <view:TitleHeader
+            Title="Quick Prompt Guide"
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5cd;"
+            ShowBackButton="True" />
+    </Shell.TitleView>
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="25">
@@ -13,7 +25,7 @@
 
                 <Label
                     FontAttributes="Bold"
-                    FontSize="28"
+                    FontSize="24"
                     HorizontalOptions="Center"
                     LineBreakMode="WordWrap"
                     Text="📘 Welcome to Quick Prompt"

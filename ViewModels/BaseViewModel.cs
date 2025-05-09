@@ -32,15 +32,14 @@ namespace QuickPrompt.ViewModels
         /// <summary>
         /// Controla el estado de carga de la aplicación.
         /// </summary>
-        [ObservableProperty] private bool isLoading;
+        [ObservableProperty] public bool isLoading;
 
         /// <summary>
         /// Etiqueta que muestra el conteo de variables seleccionadas.
         /// </summary>
         [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
 
-        protected bool IsNavigatedPage => Shell.Current.Navigation.NavigationStack.Count > 1;
-
+        [ObservableProperty] private bool showPromptActions;
 
         protected BaseViewModel()
         {
@@ -65,8 +64,6 @@ namespace QuickPrompt.ViewModels
         protected PromptDatabaseService _databaseService;
 
         protected AdmobService _adMobService;
-
-    
 
         // ============================== 🚀 MÉTODOS PRINCIPALES ==============================
 
@@ -168,7 +165,7 @@ namespace QuickPrompt.ViewModels
             await GoBackAsync();
         }
 
-        // ============================== 🛠 MÉTODOS AUXILIARES ============================== 
+        // ============================== 🛠 MÉTODOS AUXILIARES ==============================
         protected List<string> ExtractVariables(string promptText)
         {
             var variables = new List<string>();
@@ -270,7 +267,7 @@ namespace QuickPrompt.ViewModels
             await Shell.Current.GoToAsync("..");
         }
 
-        protected async Task SendPromptToAsync(string pageName, string toastMessage, Guid promptID,string finalPrompt)
+        protected async Task SendPromptToAsync(string pageName, string toastMessage, Guid promptID, string finalPrompt)
         {
             await ExecuteWithLoadingAsync(async () =>
             {
