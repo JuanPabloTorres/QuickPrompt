@@ -1,20 +1,21 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.Controls;
+using QuickPrompt.ViewModels;
 using System;
 
 namespace QuickPrompt.Pages;
 
-public partial class ChatGptPage : ContentPage
+public partial class ChatGptPage : ContentPage, IQueryAttributable
 {
-    public string FinalPrompt { get; set; }
+    private readonly AiWebViewPageViewModel viewModel;
 
-    public ChatGptPage(string prompt)
+    public ChatGptPage(AiWebViewPageViewModel vm)
     {
         InitializeComponent();
 
-        FinalPrompt = prompt;
+        viewModel = vm;
 
-        BindingContext = this; // ?? Esto es lo importante
+        BindingContext = viewModel;
     }
 
     private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
@@ -36,10 +37,10 @@ public partial class ChatGptPage : ContentPage
         if (textarea) {{
             let currentText = textarea.innerText || textarea.textContent;
 
-            if (!currentText.includes(`{FinalPrompt}`)) {{
+            if (!currentText.includes(`{viewModel.FinalPrompt}`)) {{
                 textarea.focus();
 
-                document.execCommand('insertText', false, `{FinalPrompt}`);
+                document.execCommand('insertText', false, `{viewModel.FinalPrompt}`);
 
                 // Disparar evento de input para que la página detecte el cambio
                 textarea.dispatchEvent(new Event('input', {{ bubbles: true }}));
@@ -60,9 +61,8 @@ public partial class ChatGptPage : ContentPage
         LoadingOverlay.IsVisible = false;
     }
 
-    [RelayCommand]
-    public async Task MyBack()
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        await Shell.Current.Navigation.PopAsync();
+        viewModel.ApplyQueryAttributes(query);
     }
 }

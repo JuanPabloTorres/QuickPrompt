@@ -139,6 +139,9 @@ namespace QuickPrompt
             builder.Services.AddScoped<QuickPromptViewModel>();
 
             builder.Services.AddScoped<AdmobBannerViewModel>();
+
+            builder.Services.AddTransient<AiWebViewPageViewModel>();
+
         }
 
         // Registra las páginas en el contenedor de dependencias
@@ -164,6 +167,12 @@ namespace QuickPrompt
 
             Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));           
 
+            Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
+           
+            Routing.RegisterRoute(nameof(ChatGptPage), typeof(ChatGptPage));
+           
+            Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
+            
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
 
         }

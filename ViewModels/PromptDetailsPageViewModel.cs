@@ -108,8 +108,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
             // Mostrar anuncio intersticial después de guardar el prompt
             await _adMobService.ShowInterstitialAdAsync();
-
-          
         }, AppMessagesEng.GenericError);
     }
 
@@ -137,71 +135,32 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
     // =========================== 🔹 INTEGRACIÓN CON AI ===========================
     [RelayCommand]
-    private async Task SendPromptToChatGPTAsync()
-    {
-        await ExecuteWithLoadingAsync(async () =>
-        {
-            if (string.IsNullOrEmpty(this.FinalPrompt))
-            {
-                await AlertService.ShowAlert("Error", "No prompt generated.");
-
-                return;
-            }
-
-            // Show a Toast notification instead of DisplayAlert
-            var toast = Toast.Make("Opening ChatGPT...", ToastDuration.Short);
-
-            await toast.Show();
-
-            // Open ChatGPT in WebView with prompt
-            await Shell.Current.Navigation.PushAsync(new ChatGptPage(FinalPrompt));
-        });
-    }
+    private Task SendPromptToChatGPTAsync() => SendPromptToAsync(nameof(ChatGptPage), "ChatGPT");
 
     [RelayCommand]
-    private async Task SendPromptToGeminiAsync()
-    {
-        await ExecuteWithLoadingAsync(async () =>
-        {
-            if (string.IsNullOrEmpty(this.FinalPrompt))
-            {
-                await AlertService.ShowAlert("Error", "No prompt generated.");
-
-                return;
-            }
-
-            // Show a Toast notification instead of DisplayAlert
-            var toast = Toast.Make("Opening Gemini...", ToastDuration.Short);
-
-            await toast.Show();
-
-            // Open ChatGPT in WebView with prompt
-            await Shell.Current.Navigation.PushAsync(new GeminiPage(FinalPrompt));
-        });
-    }
+    private Task SendPromptToGeminiAsync() => SendPromptToAsync(nameof(GeminiPage), "Gemini");
 
     [RelayCommand]
-    private async Task SendPromptToGrokAsync()
+    private Task SendPromptToGrokAsync() => SendPromptToAsync(nameof(GrokPage), "Grok");
+
+    private async Task SendPromptToAsync(string pageName, string toastMessage)
     {
         await ExecuteWithLoadingAsync(async () =>
         {
-            if (string.IsNullOrEmpty(this.FinalPrompt))
+            if (string.IsNullOrWhiteSpace(FinalPrompt))
             {
                 await AlertService.ShowAlert("Error", "No prompt generated.");
-
                 return;
             }
 
-            // Show a Toast notification instead of DisplayAlert
-            var toast = Toast.Make("Opening Grok...", ToastDuration.Short);
-
+            var toast = Toast.Make($"Opening {toastMessage}...", ToastDuration.Short);
             await toast.Show();
 
-            // Open ChatGPT in WebView with prompt
-            await Shell.Current.Navigation.PushAsync(new GrokPage(FinalPrompt));
-
-            //await Shell.Current.GoToAsync($"{nameof(GrokPage)}?prompt={Uri.EscapeDataString(FinalPrompt)}");
-
+            await NavigateToAsync(pageName, new Dictionary<string, object>
+        {
+            { "TemplateId", PromptID },
+            { "FinalPrompt", FinalPrompt }
+        });
         });
     }
 
@@ -218,9 +177,6 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             variable.Value = selection.SuggestedValue;
         }
     }
-
-
-
 
     [RelayCommand]
     protected async Task SharePromptAsync()
@@ -290,4 +246,3 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         this.IsShareButtonVisible = !string.IsNullOrEmpty(this.FinalPrompt);
     }
 }
-

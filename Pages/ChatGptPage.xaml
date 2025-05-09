@@ -12,9 +12,8 @@
     <Shell.TitleView>
         <view:TitleHeader
             Title="Chat GPT"
-            
             BackCommand="{Binding MyBackCommand}"
-            Glyph="&#xe5e0;"
+            Glyph="&#xe5cd;"
             ShowBackButton="True" />
     </Shell.TitleView>
 

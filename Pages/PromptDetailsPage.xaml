@@ -112,7 +112,12 @@
                                                 Placeholder="Enter value here..."
                                                 Style="{StaticResource VariableInputEntryStyle}"
                                                 Text="{Binding Value}"
-                                                Unfocused="OnEntryUnfocused" />
+                                                Unfocused="OnEntryUnfocused">
+
+                                                <Entry.GestureRecognizers>
+                                                    <TapGestureRecognizer Tapped="OnEntryTapped" />
+                                                </Entry.GestureRecognizers>
+                                            </Entry>
 
                                             <!--  Sugerencias desde caché  -->
                                             <CollectionView
@@ -122,12 +127,7 @@
                                                 ItemsSource="{Binding Suggestions}"
                                                 SelectionMode="None">
 
-                                                <!--<CollectionView.IsVisible>
-                                                    <MultiBinding Converter="{StaticResource IsFocusedAndHasSuggestionsConverter}">
-                                                        <Binding Path="IsFocused" />
-                                                        <Binding Path="Suggestions.Count" />
-                                                    </MultiBinding>
-                                                </CollectionView.IsVisible>-->
+
                                                 <CollectionView.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Style="{StaticResource SuggestionChipBorderStyle}">
@@ -152,67 +152,7 @@
                     </CollectionView>
 
 
-                    <!--<CollectionView
-                        Margin="5"
-                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                        ItemsSource="{Binding Variables}">
-                        <CollectionView.ItemTemplate>
-                    -->
-                    <!--<DataTemplate>
-                                <VerticalStackLayout Padding="4" Spacing="5">
-                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
 
-                    -->
-                    <!--  Entrada para el Título  -->
-                    <!--
-                                    <Border Style="{StaticResource InputBorderStyle2}">
-                                        <VerticalStackLayout>
-
-                                            <Entry Style="{StaticResource VariableInputEntryStyle}" Text="{Binding Value}" />
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </VerticalStackLayout>
-                            </DataTemplate>-->
-                    <!--
-
-                            <DataTemplate>
-                                <VerticalStackLayout Padding="4" Spacing="5">
-                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
-
-                                    <Border Style="{StaticResource InputBorderStyle2}">
-                                        <VerticalStackLayout Spacing="4">
-                                            <Entry
-                                                Placeholder="Enter value..."
-                                                Style="{StaticResource VariableInputEntryStyle}"
-                                                Text="{Binding Value}" />
-
-                    -->
-                    <!--  Sugerencias desde caché  -->
-                    <!--
-                                            <CollectionView
-                                                HeightRequest="100"
-                                                IsVisible="{Binding Suggestions.Count, Converter={StaticResource GreaterThanZeroConverter}}"
-                                                ItemsSource="{Binding Suggestions}"
-                                                SelectionMode="Single">
-                                                <CollectionView.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Label
-                                                            Padding="6"
-                                                            Text="{Binding .}"
-                                                            TextColor="Gray">
-                                                            <Label.GestureRecognizers>
-                                                                <TapGestureRecognizer Command="{Binding BindingContext.SelectSuggestionCommand, Source={x:Reference promptDetailsPage}}" CommandParameter="{Binding .}" />
-                                                            </Label.GestureRecognizers>
-                                                        </Label>
-                                                    </DataTemplate>
-                                                </CollectionView.ItemTemplate>
-                                            </CollectionView>
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </VerticalStackLayout>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>-->
                 </VerticalStackLayout>
             </ScrollView>
 

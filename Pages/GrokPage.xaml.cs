@@ -1,18 +1,19 @@
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.ViewModels;
 
 namespace QuickPrompt.Pages;
 
-public partial class GrokPage : ContentPage
+public partial class GrokPage : ContentPage,IQueryAttributable
 {
-    public string FinalPrompt { get; set; }
+    private readonly AiWebViewPageViewModel viewModel;
 
-    public GrokPage(string finalPrompt)
+    public GrokPage(AiWebViewPageViewModel vm)
     {
         InitializeComponent();
 
-        FinalPrompt = finalPrompt;
+        viewModel = vm;
 
-        BindingContext = this; // ?? Esto es lo importante
+        BindingContext = viewModel;
     }
 
     private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
@@ -35,11 +36,11 @@ public partial class GrokPage : ContentPage
         if (editor) {{
             let currentText = editor.innerText || editor.textContent;
 
-            if (!currentText.includes(`{FinalPrompt}`)) {{
+            if (!currentText.includes(`{viewModel.FinalPrompt}`)) {{
                 editor.focus();
 
                 // Insertar el texto simulando una entrada de usuario
-                document.execCommand('insertText', false, `{FinalPrompt}`);
+                document.execCommand('insertText', false, `{viewModel.FinalPrompt}`);
 
                 // Disparar el evento 'input' para que la página detecte el cambio
                 editor.dispatchEvent(new Event('input', {{ bubbles: true }}));
@@ -60,9 +61,9 @@ public partial class GrokPage : ContentPage
         LoadingOverlay.IsVisible = false;
     }
 
-    [RelayCommand]
-    public async Task MyBack()
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        await Shell.Current.Navigation.PopAsync();
+        viewModel.ApplyQueryAttributes(query);
     }
 }

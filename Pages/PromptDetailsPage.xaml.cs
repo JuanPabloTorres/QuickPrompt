@@ -34,4 +34,11 @@ public partial class PromptDetailsPage : ContentPage
             variable.IsFocused = false;
     }
 
+    private void OnEntryTapped(object sender, TappedEventArgs e)
+    {
+        if (sender is Entry entry && entry.BindingContext is VariableInput variable)
+        {
+            variable.ForceShowSuggestions();
+        }
+    }
 }

@@ -14,7 +14,6 @@
             BackgroundColor="Transparent"
             Clicked="OnBackClicked"
             Command="{Binding BackCommand, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
-            IsVisible="{Binding ShowBackButton, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
             Text=""
             VerticalOptions="Center">
             <Button.ImageSource>

@@ -43,5 +43,14 @@ namespace QuickPrompt.Models
             // Opcional: si el valor cambia manualmente, puedes refrescar visibilidad también
             OnPropertyChanged(nameof(ShowSuggestions));
         }
+
+        public void ForceShowSuggestions()
+        {
+            IsFocused = false;
+
+            IsFocused = true;
+        }
+
+
     }
 }

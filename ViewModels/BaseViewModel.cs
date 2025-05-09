@@ -265,7 +265,7 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         public async Task MyBack()
         {
-            await Shell.Current.Navigation.PopAsync();
+            await Shell.Current.GoToAsync("..");
         }
     }
 }

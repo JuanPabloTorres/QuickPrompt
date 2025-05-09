@@ -51,6 +51,7 @@ namespace QuickPrompt.Tools
         public static List<string> GetSuggestions(string variable)
         {
             var cache = LoadCache();
+
             return cache.TryGetValue(variable, out var list) ? list : new();
         }
 
