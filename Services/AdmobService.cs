@@ -67,5 +67,30 @@ namespace QuickPrompt.Services
             {
             };
         }
+
+        public async Task ShowInterstitialAdAndWaitAsync()
+        {
+            if (!CrossMauiMTAdmob.Current.IsInterstitialLoaded())
+                return;
+
+            var tcs = new TaskCompletionSource<bool>();
+
+            EventHandler handler = null!;
+            handler = (s, e) =>
+            {
+                CrossMauiMTAdmob.Current.OnInterstitialClosed -= handler;
+                tcs.TrySetResult(true);
+            };
+
+            CrossMauiMTAdmob.Current.OnInterstitialClosed += handler;
+
+            CrossMauiMTAdmob.Current.ShowInterstitial();
+
+            LoadInterstitialAd();
+
+            await tcs.Task;
+        }
+
+
     }
 }

@@ -7,6 +7,7 @@ using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.ViewModels;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
 
 namespace QuickPrompt
@@ -51,6 +52,7 @@ namespace QuickPrompt
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
                 .UseMauiMTAdmob()  // Habilitar logs
+                .UseSkiaSharp()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

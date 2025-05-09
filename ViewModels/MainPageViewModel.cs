@@ -47,12 +47,21 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
             ClearPromptInputs();
 
-            // Mostrar anuncio intersticial después de guardar el prompt
-            await _adMobService.ShowInterstitialAdAsync();
+            // Espera a que termine el anuncio antes de continuar
+            //await _adMobService.ShowInterstitialAdAsync();
 
-            await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
+            // ✅ Espera que el anuncio se cierre
+            await _adMobService.ShowInterstitialAdAndWaitAsync();
+
+            await GenericToolBox.ShowLottieMessageAsync("FolderComplete.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+
+            //await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
         }, AppMessagesEng.Prompts.PromptSaveError);
+
     }
+
+  
+
 
     [RelayCommand]
     private void ClearText() => ClearPromptInputs();
@@ -202,28 +211,24 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
         //    })
         //    });
 
-        //    if (result is null)
-        //        return;
+        // if (result is null) return;
 
-        //    var json = await File.ReadAllTextAsync(result.FullPath);
+        // var json = await File.ReadAllTextAsync(result.FullPath);
 
-        //    var data = JsonSerializer.Deserialize<ImportablePrompt>(json);
+        // var data = JsonSerializer.Deserialize<ImportablePrompt>(json);
 
-        //    if (data is null || string.IsNullOrWhiteSpace(data.Template))
-        //    {
-        //        await AlertService.ShowAlert("Error", "Invalid or empty prompt file.");
+        // if (data is null || string.IsNullOrWhiteSpace(data.Template)) { await
+        // AlertService.ShowAlert("Error", "Invalid or empty prompt file.");
 
-        //        return;
-        //    }
+        // return; }
 
-        //    // Asigna los valores al área de creación
-        //    PromptTitle = data.Title ?? string.Empty;
+        // // Asigna los valores al área de creación PromptTitle = data.Title ?? string.Empty;
 
-        //    PromptDescription = data.Description ?? string.Empty;
+        // PromptDescription = data.Description ?? string.Empty;
 
-        //    PromptText = data.Template;
+        // PromptText = data.Template;
 
-        //    UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
+        // UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
 
         //    await AlertService.ShowAlert("Success", "Prompt imported successfully.");
         //}, AppMessagesEng.GenericError);
@@ -298,7 +303,5 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
             await AlertService.ShowAlert("Success", "Prompt imported successfully.");
         }, AppMessagesEng.GenericError);
-
     }
-
 }

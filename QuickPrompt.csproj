@@ -154,6 +154,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Plugin.MauiMTAdmob" Version="2.0.0.5" />
+    <PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.1" />
   </ItemGroup>
@@ -186,6 +187,9 @@
     <MauiXaml Update="Pages\SettingPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="PopUps\LottieMessagePopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Views\AdmobBannerView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
@@ -216,7 +220,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="PopUps\" />
     <Folder Include="Resources\Images\" />
   </ItemGroup>
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CommunityToolkit.Maui.Views;
+using QuickPrompt.PopUps;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +17,13 @@ namespace QuickPrompt.Tools
                 input = input.Replace(c, '_');
             }
             return input.Trim();
+        }
+
+        public static async Task ShowLottieMessageAsync(string lottieFile, string message, int delay = 2000)
+        {
+            var popup = new LottieMessagePopup(lottieFile, message, delay);
+
+            await Shell.Current.CurrentPage.ShowPopupAsync(popup);
         }
 
     }

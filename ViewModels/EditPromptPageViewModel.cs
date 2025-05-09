@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService,AdmobService admobService) : BaseViewModel(_databaseService,admobService), IQueryAttributable
+public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
 {
     // ============================== 🌟 PROPIEDADES ==============================
 
@@ -80,19 +80,21 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     {
         await ExecuteWithLoadingAsync(async () =>
         {
+            _adMobService.LoadInterstitialAd();
+
             if (!ValidatePromptTemplate())
                 return;
-
-
-            _adMobService.LoadInterstitialAd();
 
             UpdatePromptVariables();
 
             await UpdatePromptChangesAsync();
 
-            await _adMobService.ShowInterstitialAdAsync();
+            // ✅ Espera que el anuncio se cierre
+            await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await NotifySuccessAndNavigateBack();
+            await GenericToolBox.ShowLottieMessageAsync("FolderComplete.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+
+            await GoBackAsync();
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
@@ -138,9 +140,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
 
     // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
 
-    /// <summary>
-    /// Elimina las llaves `<>` del texto seleccionado.
-    /// </summary>
+    /// <summary> Elimina las llaves `<>` del texto seleccionado. </summary>
     private async Task RemoveBracesFromSelectedText()
     {
         await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
@@ -173,8 +173,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             await AlertService.ShowAlert("Warning", AppMessagesEng.Warnings.InvalidTextSelection);
         }
     }
-
-
 
     /// <summary>
     /// Convierte el texto seleccionado en una variable rodeada de `{}`.
@@ -214,8 +212,6 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
         // Extraer el texto seleccionado
         string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
 
-      
-
         if (AngleBraceTextHandler.ContainsVariable($"<{selectedText}>", this.PromptTemplate.Template))
         {
             var _nextVariableVersion = AngleBraceTextHandler.GetNextVariableSuffixVersion(this.PromptTemplate.Template, selectedText);
@@ -224,7 +220,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             selectedText += _nextVariableVersion;
         }
 
-        // Actualizar el texto con las llaves `<>` incluidas 
+        // Actualizar el texto con las llaves `<>` incluidas
         handler.UpdateText(CursorPosition, SelectionLength, $"<{selectedText}>");
 
         // Actualizar la plantilla con el nuevo texto
