@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    x:Class="QuickPrompt.Resources.Styles.Borders"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Margin" Value="10" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
+        <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
+        <Setter Property="StrokeThickness" Value="0.15" />
+
+
+    </Style>
+
+    <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
+    <Style x:Key="loadingBorderStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
+        <Setter Property="StrokeThickness" Value="0.15" />
+
+
+    </Style>
+
+    <!--  Estilo para bordes de entradas de texto  -->
+    <Style x:Key="InputBorderStyle" TargetType="Border">
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="5" />
+    </Style>
+    <!--  Estilo para el Border de entrada  -->
+    <Style x:Key="InputBorderStyle2" TargetType="Border">
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+        <Setter Property="StrokeThickness" Value="0.7" />
+    </Style>
+
+    <Style x:Key="SuggestionChipBorderStyle" TargetType="Border">
+        <Setter Property="Stroke" Value="{StaticResource PrimaryBlueLight}" />
+        <Setter Property="StrokeThickness" Value="0.5" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="5" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="popUpBorder" TargetType="Border">
+        <Setter Property="Margin" Value="5" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="WidthRequest" Value="300" />
+        <Setter Property="HeightRequest" Value="380" />
+        <Setter Property="Background" Value="White" />
+        <Setter Property="Shadow" Value="{StaticResource MyShadow}" />
+        <Setter Property="Stroke" Value="{StaticResource White}" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="10,10,10,10" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="StrokeThickness" Value="2" />
+    </Style>
+</ResourceDictionary>

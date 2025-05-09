@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Services;
@@ -266,6 +268,27 @@ namespace QuickPrompt.ViewModels
         public async Task MyBack()
         {
             await Shell.Current.GoToAsync("..");
+        }
+
+        protected async Task SendPromptToAsync(string pageName, string toastMessage, Guid promptID,string finalPrompt)
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                if (string.IsNullOrWhiteSpace(finalPrompt))
+                {
+                    await AlertService.ShowAlert("Error", "No prompt generated.");
+                    return;
+                }
+
+                var toast = Toast.Make($"Opening {toastMessage}...", ToastDuration.Short);
+                await toast.Show();
+
+                await NavigateToAsync(pageName, new Dictionary<string, object>
+        {
+            { "TemplateId", promptID },
+            { "FinalPrompt", finalPrompt }
+        });
+            });
         }
     }
 }

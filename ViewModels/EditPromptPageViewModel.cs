@@ -92,7 +92,9 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await GenericToolBox.ShowLottieMessageAsync("FolderComplete.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+            await Task.Delay(1000);
+
+            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
 
             await GoBackAsync();
         }, AppMessagesEng.Prompts.PromptSaveError);

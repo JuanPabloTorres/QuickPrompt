@@ -76,6 +76,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             await LoadPromptAsync(id);
 
             FinalPrompt = string.Empty;
+
+            UpdateShareButtonVisibility();
         }
         else
         {
@@ -104,7 +106,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
                     PromptVariableCache.SaveValue(variable.Name!, variable.Value);
             }
 
-            IsShareButtonVisible = true; // Mostrar botón de compartir
+            IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir
 
             // Mostrar anuncio intersticial después de guardar el prompt
             await _adMobService.ShowInterstitialAdAsync();
@@ -135,34 +137,30 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
     // =========================== 🔹 INTEGRACIÓN CON AI ===========================
     [RelayCommand]
-    private Task SendPromptToChatGPTAsync() => SendPromptToAsync(nameof(ChatGptPage), "ChatGPT");
-
-    [RelayCommand]
-    private Task SendPromptToGeminiAsync() => SendPromptToAsync(nameof(GeminiPage), "Gemini");
-
-    [RelayCommand]
-    private Task SendPromptToGrokAsync() => SendPromptToAsync(nameof(GrokPage), "Grok");
-
-    private async Task SendPromptToAsync(string pageName, string toastMessage)
+    private async Task SendPromptToChatGPTAsync()
     {
-        await ExecuteWithLoadingAsync(async () =>
-        {
-            if (string.IsNullOrWhiteSpace(FinalPrompt))
-            {
-                await AlertService.ShowAlert("Error", "No prompt generated.");
-                return;
-            }
+        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a ChatGPT
 
-            var toast = Toast.Make($"Opening {toastMessage}...", ToastDuration.Short);
-            await toast.Show();
-
-            await NavigateToAsync(pageName, new Dictionary<string, object>
-        {
-            { "TemplateId", PromptID },
-            { "FinalPrompt", FinalPrompt }
-        });
-        });
+        await SendPromptToAsync(nameof(ChatGptPage), "ChatGPT", PromptID, FinalPrompt);
     }
+
+    [RelayCommand]
+    private async Task SendPromptToGeminiAsync()
+    {
+        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Gemini
+
+        await SendPromptToAsync(nameof(GeminiPage), "Gemini", PromptID, FinalPrompt);
+    }
+
+    [RelayCommand]
+    private async Task SendPromptToGrokAsync()
+    {
+        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Grok
+
+        await SendPromptToAsync(nameof(GrokPage), "Grok", PromptID, FinalPrompt);
+    }
+
+    private void UpdateShareButtonVisibility() => IsShareButtonVisible = !string.IsNullOrWhiteSpace(FinalPrompt);
 
     [RelayCommand]
     private void SelectSuggestion(VariableSuggestionSelection selection)

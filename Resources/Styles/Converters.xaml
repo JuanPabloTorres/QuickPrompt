@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    x:Class="QuickPrompt.Resources.Styles.Converters"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:QuickPrompt.Converters">
+
+    <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+
+    <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
+
+    <converters:BooleanToStarIconConverter x:Key="BooleanToStarIconConverter" />
+
+    <converters:BooleanToColorConverter x:Key="BooleanToColorConverter" />
+
+    <converters:FinalPromptVisibilityConverter x:Key="FinalPromptVisibilityConverter" />
+
+    <converters:IsButtonVisibleConverter x:Key="IsButtonVisibleConverter" />
+
+    <converters:IsFocusedAndHasSuggestionsConverter x:Key="IsFocusedAndHasSuggestionsConverter" />
+</ResourceDictionary>

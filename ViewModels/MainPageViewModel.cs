@@ -47,21 +47,16 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
             ClearPromptInputs();
 
-            // Espera a que termine el anuncio antes de continuar
-            //await _adMobService.ShowInterstitialAdAsync();
-
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await GenericToolBox.ShowLottieMessageAsync("FolderComplete.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+            await Task.Delay(1000);
+
+            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
 
             //await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
         }, AppMessagesEng.Prompts.PromptSaveError);
-
     }
-
-  
-
 
     [RelayCommand]
     private void ClearText() => ClearPromptInputs();
@@ -198,41 +193,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
     [RelayCommand]
     private async Task ImportPrompt()
     {
-        //await ExecuteWithLoadingAsync(async () =>
-        //{
-        //    var result = await FilePicker.PickAsync(new PickOptions
-        //    {
-        //        PickerTitle = "Import Prompt",
-        //        FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
-        //    {
-        //        { DevicePlatform.iOS, new[] { "public.text" } },
-        //        { DevicePlatform.Android, new[] { "text/plain" } },
-        //        { DevicePlatform.WinUI, new[] { ".json", ".txt" } }
-        //    })
-        //    });
-
-        // if (result is null) return;
-
-        // var json = await File.ReadAllTextAsync(result.FullPath);
-
-        // var data = JsonSerializer.Deserialize<ImportablePrompt>(json);
-
-        // if (data is null || string.IsNullOrWhiteSpace(data.Template)) { await
-        // AlertService.ShowAlert("Error", "Invalid or empty prompt file.");
-
-        // return; }
-
-        // // Asigna los valores al área de creación PromptTitle = data.Title ?? string.Empty;
-
-        // PromptDescription = data.Description ?? string.Empty;
-
-        // PromptText = data.Template;
-
-        // UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
-
-        //    await AlertService.ShowAlert("Success", "Prompt imported successfully.");
-        //}, AppMessagesEng.GenericError);
-
         await ExecuteWithLoadingAsync(async () =>
         {
             var result = await FilePicker.PickAsync(new PickOptions
@@ -258,6 +218,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             }
 
             string json;
+
             try
             {
                 json = await File.ReadAllTextAsync(result.FullPath);
@@ -275,6 +236,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             }
 
             ImportablePrompt? data;
+
             try
             {
                 data = JsonSerializer.Deserialize<ImportablePrompt>(json);
@@ -282,6 +244,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             catch (Exception deserializationEx)
             {
                 await AlertService.ShowAlert("Error", $"The file format is incorrect: {deserializationEx.Message}");
+
                 return;
             }
 
@@ -291,17 +254,22 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
                 !AngleBraceTextHandler.ContainsAngleBraces(data.Template))
             {
                 await AlertService.ShowAlert("Error", "The file does not contain a valid prompt.");
+
                 return;
             }
 
             // Asignar los valores
             PromptTitle = data.Title.Trim();
+
             PromptDescription = string.IsNullOrWhiteSpace(data.Description) ? "N/A" : data.Description.Trim();
+
             PromptText = data.Template;
 
             UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
 
-            await AlertService.ShowAlert("Success", "Prompt imported successfully.");
+            await Task.Delay(1000);
+
+            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptImportedSuccess);
         }, AppMessagesEng.GenericError);
     }
 }

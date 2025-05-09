@@ -53,6 +53,8 @@ namespace QuickPrompt.Tools
             public const string PromptVariableIsTheSameThanOther = "The selected variable is already in use within the prompt.";
 
             public const string PromptSharedError = "An error occurred while trying to share the prompt.";
+
+            public const string PromptImportedSuccess = " The prompt has been imported successfully.";
         }
 
         // **Warning Messages**
