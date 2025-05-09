@@ -41,6 +41,10 @@ namespace QuickPrompt.ViewModels
 
         [ObservableProperty] private bool showPromptActions;
 
+        protected PromptDatabaseService _databaseService;
+
+        protected AdmobService _adMobService;
+
         protected BaseViewModel()
         {
         }
@@ -60,10 +64,6 @@ namespace QuickPrompt.ViewModels
         protected BaseViewModel(AppSettings appSettings)
         {
         }
-
-        protected PromptDatabaseService _databaseService;
-
-        protected AdmobService _adMobService;
 
         // ============================== 🚀 MÉTODOS PRINCIPALES ==============================
 

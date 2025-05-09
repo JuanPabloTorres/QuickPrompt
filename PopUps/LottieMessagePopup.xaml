@@ -10,7 +10,7 @@
     <Border
         HeightRequest="240"
         Style="{StaticResource popUpBorder}"
-        WidthRequest="240">
+        WidthRequest="200">
 
         <Grid Padding="12" BackgroundColor="White">
             <VerticalStackLayout

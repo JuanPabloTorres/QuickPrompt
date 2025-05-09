@@ -55,6 +55,8 @@ namespace QuickPrompt.Tools
             public const string PromptSharedError = "An error occurred while trying to share the prompt.";
 
             public const string PromptImportedSuccess = " The prompt has been imported successfully.";
+
+            public const string PromptsDeletedSuccess = "The selected prompts have been deleted successfully.";
         }
 
         // **Warning Messages**

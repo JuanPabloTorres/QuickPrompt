@@ -257,7 +257,9 @@ namespace QuickPrompt.ViewModels
 
                     await CheckForMorePromptsAsync();
 
-                    await AppShell.Current.DisplayAlert("Success", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.", "OK");
+                    await Task.Delay(2000);
+
+                    await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
                 }, AppMessagesEng.Prompts.PromptDeleteError);
             }
         }
@@ -303,7 +305,9 @@ namespace QuickPrompt.ViewModels
                         await LoadInitialPrompts();
                     }
 
-                    await AppShell.Current.DisplayAlert("Success", "Selected prompts have been deleted.", "OK");
+                    await Task.Delay(2000);
+
+                    await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
                 }, AppMessagesEng.Prompts.PromptDeleteError);
             }
         }
