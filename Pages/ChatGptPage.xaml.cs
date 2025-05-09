@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.Controls;
 using System;
 
@@ -12,6 +13,8 @@ public partial class ChatGptPage : ContentPage
         InitializeComponent();
 
         FinalPrompt = prompt;
+
+        BindingContext = this; // ?? Esto es lo importante
     }
 
     private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
@@ -45,9 +48,9 @@ public partial class ChatGptPage : ContentPage
             clearInterval(interval); // Detener el intervalo cuando se complete
         }}
 
-        if (attempt > 3) clearInterval(interval); // Evitar bucles infinitos
+        if (attempt > 15) clearInterval(interval); // Evitar bucles infinitos
         attempt++;
-    }}, 100); // Intentar cada 100ms hasta que la página termine de cargar
+    }}, 500); // Intentar cada 100ms hasta que la página termine de cargar
 }})();
 ";
 
@@ -55,5 +58,11 @@ public partial class ChatGptPage : ContentPage
         }
 
         LoadingOverlay.IsVisible = false;
+    }
+
+    [RelayCommand]
+    public async Task MyBack()
+    {
+        await Shell.Current.Navigation.PopAsync();
     }
 }

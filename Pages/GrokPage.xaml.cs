@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Input;
+
 namespace QuickPrompt.Pages;
 
 public partial class GrokPage : ContentPage
@@ -9,6 +11,8 @@ public partial class GrokPage : ContentPage
         InitializeComponent();
 
         FinalPrompt = finalPrompt;
+
+        BindingContext = this; // ?? Esto es lo importante
     }
 
     private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
@@ -24,7 +28,9 @@ public partial class GrokPage : ContentPage
 (function() {{
     let attempt = 0;
     let interval = setInterval(() => {{
-        let editor = document.querySelector('textarea[aria-label=""Ask Grok anything""]'); // Buscar por elemento
+
+        // Seleccionar cualquier <textarea> visible
+        let editor = document.querySelector('textarea');
 
         if (editor) {{
             let currentText = editor.innerText || editor.textContent;
@@ -42,7 +48,7 @@ public partial class GrokPage : ContentPage
             clearInterval(interval); // Detener el intervalo cuando se complete
         }}
 
-        if (attempt > 10) clearInterval(interval); // Evitar bucles infinitos
+        if (attempt > 15) clearInterval(interval); // Evitar bucles infinitos
         attempt++;
     }}, 500); // Intentar cada 500ms hasta que la página termine de cargar
 }})();
@@ -52,5 +58,11 @@ public partial class GrokPage : ContentPage
         }
 
         LoadingOverlay.IsVisible = false;
+    }
+
+    [RelayCommand]
+    public async Task MyBack()
+    {
+        await Shell.Current.Navigation.PopAsync();
     }
 }

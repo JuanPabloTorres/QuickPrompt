@@ -148,7 +148,7 @@
                                     </Button>
                                 </Grid>
 
-                                <HorizontalStackLayout HorizontalOptions="Center" Spacing="15">
+                                <!--<HorizontalStackLayout HorizontalOptions="Center" Spacing="15">
                                     <Button
                                         Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
@@ -188,7 +188,68 @@
                                         Scale="1.5"
                                         VerticalOptions="Center"
                                         Color="{StaticResource PrimaryRed}" />
-                                </HorizontalStackLayout>
+                                </HorizontalStackLayout>-->
+
+                                <Grid
+                                    Padding="10,5"
+                                    ColumnDefinitions="*,*,*,*,Auto"
+                                    ColumnSpacing="10"
+                                    RowDefinitions="Auto"
+                                    VerticalOptions="Center">
+
+                                    <Button
+                                        Grid.Column="0"
+                                        Command="{Binding SelectPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        FlexLayout.Basis="25%"
+                                        Style="{StaticResource PrimaryButtonStyle}">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Grid.Column="1"
+                                        Command="{Binding NavigateToEditPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        FlexLayout.Basis="25%"
+                                        Style="{StaticResource WarningButtonStyle}">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Grid.Column="2"
+                                        Command="{Binding ItemToDeleteCommand}"
+                                        FlexLayout.Basis="25%"
+                                        Style="{StaticResource CriticalButtonStyle}">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <Button
+                                        Grid.Column="3"
+                                        Command="{Binding ExportPromptCommand}"
+                                        CommandParameter="{Binding Prompt}"
+                                        FlexLayout.Basis="25%"
+                                        Style="{StaticResource DetailButtonStyle}">
+                                        <Button.ImageSource>
+                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe80d;" />
+                                        </Button.ImageSource>
+                                    </Button>
+
+                                    <CheckBox
+                                        Grid.Column="4"
+                                        FlexLayout.Basis="25%"
+                                        HorizontalOptions="End"
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        Scale="1.5"
+                                        VerticalOptions="Center"
+                                        Color="{StaticResource PrimaryRed}" />
+                                </Grid>
+
                             </VerticalStackLayout>
                         </Border>
 

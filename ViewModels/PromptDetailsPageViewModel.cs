@@ -98,6 +98,12 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
             FinalPrompt = GenerateFinalPrompt();
 
+            foreach (var variable in Variables)
+            {
+                if (!string.IsNullOrWhiteSpace(variable.Value))
+                    PromptVariableCache.SaveValue(variable.Name!, variable.Value);
+            }
+
             IsShareButtonVisible = true; // Mostrar botón de compartir
 
             // Mostrar anuncio intersticial después de guardar el prompt
@@ -148,7 +154,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             await toast.Show();
 
             // Open ChatGPT in WebView with prompt
-            await Application.Current.MainPage.Navigation.PushAsync(new ChatGptPage(FinalPrompt));
+            await Shell.Current.Navigation.PushAsync(new ChatGptPage(FinalPrompt));
         });
     }
 
@@ -170,7 +176,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             await toast.Show();
 
             // Open ChatGPT in WebView with prompt
-            await Application.Current.MainPage.Navigation.PushAsync(new GeminiPage(FinalPrompt));
+            await Shell.Current.Navigation.PushAsync(new GeminiPage(FinalPrompt));
         });
     }
 
@@ -192,9 +198,27 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             await toast.Show();
 
             // Open ChatGPT in WebView with prompt
-            await Application.Current.MainPage.Navigation.PushAsync(new GrokPage(FinalPrompt));
+            await Shell.Current.Navigation.PushAsync(new GrokPage(FinalPrompt));
+
+            //await Shell.Current.GoToAsync($"{nameof(GrokPage)}?prompt={Uri.EscapeDataString(FinalPrompt)}");
+
         });
     }
+
+    [RelayCommand]
+    private void SelectSuggestion(VariableSuggestionSelection selection)
+    {
+        if (string.IsNullOrWhiteSpace(selection?.VariableName) || string.IsNullOrWhiteSpace(selection.SuggestedValue))
+            return;
+
+        var variable = Variables.FirstOrDefault(v => v.Name == selection.VariableName);
+
+        if (variable != null)
+        {
+            variable.Value = selection.SuggestedValue;
+        }
+    }
+
 
 
 
@@ -267,11 +291,3 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     }
 }
 
-public partial class VariableInput : ObservableObject
-{
-    [ObservableProperty]
-    private string? name;
-
-    [ObservableProperty]
-    private string? value;
-}

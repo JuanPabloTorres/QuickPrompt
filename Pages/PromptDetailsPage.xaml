@@ -3,7 +3,9 @@
     x:Class="QuickPrompt.Pages.PromptDetailsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:models="clr-namespace:QuickPrompt.Models"
     xmlns:views="clr-namespace:QuickPrompt.Views"
+    x:Name="promptDetailsPage"
     BackgroundColor="GhostWhite"
     Shell.PresentationMode="Animated">
 
@@ -94,6 +96,7 @@
                     <BoxView Style="{StaticResource DividerLineStyle}" />
 
                     <CollectionView
+                        x:Name="VariablesCollection"
                         Margin="5"
                         IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                         ItemsSource="{Binding Variables}">
@@ -102,7 +105,66 @@
                                 <VerticalStackLayout Padding="4" Spacing="5">
                                     <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
 
-                                    <!--  Entrada para el Título  -->
+                                    <Border Style="{StaticResource InputBorderStyle2}">
+                                        <VerticalStackLayout Spacing="4">
+                                            <Entry
+                                                Focused="OnEntryFocused"
+                                                Placeholder="Enter value here..."
+                                                Style="{StaticResource VariableInputEntryStyle}"
+                                                Text="{Binding Value}"
+                                                Unfocused="OnEntryUnfocused" />
+
+                                            <!--  Sugerencias desde caché  -->
+                                            <CollectionView
+                                                Margin="0,4"
+                                                IsVisible="{Binding ShowSuggestions}"
+                                                ItemsLayout="HorizontalList"
+                                                ItemsSource="{Binding Suggestions}"
+                                                SelectionMode="None">
+
+                                                <!--<CollectionView.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource IsFocusedAndHasSuggestionsConverter}">
+                                                        <Binding Path="IsFocused" />
+                                                        <Binding Path="Suggestions.Count" />
+                                                    </MultiBinding>
+                                                </CollectionView.IsVisible>-->
+                                                <CollectionView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Style="{StaticResource SuggestionChipBorderStyle}">
+                                                            <Label
+                                                                Style="{StaticResource SuggestionChipLabelStyle}"
+                                                                Text="{Binding .}"
+                                                                TextColor="Gray">
+                                                                <Label.GestureRecognizers>
+                                                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" CommandParameter="{Binding .}" />
+                                                                </Label.GestureRecognizers>
+                                                            </Label>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </CollectionView.ItemTemplate>
+                                            </CollectionView>
+
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+
+                    <!--<CollectionView
+                        Margin="5"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        ItemsSource="{Binding Variables}">
+                        <CollectionView.ItemTemplate>
+                    -->
+                    <!--<DataTemplate>
+                                <VerticalStackLayout Padding="4" Spacing="5">
+                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
+
+                    -->
+                    <!--  Entrada para el Título  -->
+                    <!--
                                     <Border Style="{StaticResource InputBorderStyle2}">
                                         <VerticalStackLayout>
 
@@ -110,9 +172,47 @@
                                         </VerticalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>
+                            </DataTemplate>-->
+                    <!--
+
+                            <DataTemplate>
+                                <VerticalStackLayout Padding="4" Spacing="5">
+                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
+
+                                    <Border Style="{StaticResource InputBorderStyle2}">
+                                        <VerticalStackLayout Spacing="4">
+                                            <Entry
+                                                Placeholder="Enter value..."
+                                                Style="{StaticResource VariableInputEntryStyle}"
+                                                Text="{Binding Value}" />
+
+                    -->
+                    <!--  Sugerencias desde caché  -->
+                    <!--
+                                            <CollectionView
+                                                HeightRequest="100"
+                                                IsVisible="{Binding Suggestions.Count, Converter={StaticResource GreaterThanZeroConverter}}"
+                                                ItemsSource="{Binding Suggestions}"
+                                                SelectionMode="Single">
+                                                <CollectionView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Label
+                                                            Padding="6"
+                                                            Text="{Binding .}"
+                                                            TextColor="Gray">
+                                                            <Label.GestureRecognizers>
+                                                                <TapGestureRecognizer Command="{Binding BindingContext.SelectSuggestionCommand, Source={x:Reference promptDetailsPage}}" CommandParameter="{Binding .}" />
+                                                            </Label.GestureRecognizers>
+                                                        </Label>
+                                                    </DataTemplate>
+                                                </CollectionView.ItemTemplate>
+                                            </CollectionView>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
-                    </CollectionView>
+                    </CollectionView>-->
                 </VerticalStackLayout>
             </ScrollView>
 

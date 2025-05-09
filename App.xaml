@@ -79,10 +79,10 @@
             </Style>
             <!--  Estilo para el Border de entrada  -->
             <Style x:Key="InputBorderStyle2" TargetType="Border">
-                <Setter Property="Padding" Value="10" />
+                <Setter Property="Padding" Value="5" />
                 <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
-                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="StrokeThickness" Value="0.7" />
             </Style>
 
             <!--  Estilo para el Entry dentro del Border  -->
@@ -398,6 +398,28 @@
                 <Setter Property="Color" Value="{StaticResource PrimaryRed}" />
             </Style>
 
+            <Style x:Key="SuggestionChipBorderStyle" TargetType="Border">
+                <Setter Property="Stroke" Value="{StaticResource PrimaryBlueLight}" />
+                <Setter Property="StrokeThickness" Value="0.5" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Padding" Value="4" />
+                <Setter Property="Margin" Value="4" />
+                <Setter Property="StrokeShape">
+                    <Setter.Value>
+                        <RoundRectangle CornerRadius="5" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SuggestionChipLabelStyle" TargetType="Label">
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+
+
+
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
 
             <converters:SelectedPromptsVisibilityConverter x:Key="SelectedPromptsVisibilityConverter" />
@@ -410,16 +432,9 @@
 
             <converters:IsButtonVisibleConverter x:Key="IsButtonVisibleConverter" />
 
-            <BackButtonBehavior x:Key="CustomBackButtonBehavior">
+            <converters:IsFocusedAndHasSuggestionsConverter x:Key="IsFocusedAndHasSuggestionsConverter" />
 
-                <BackButtonBehavior.IconOverride>
 
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe5e0;"
-                        Color="Black" />
-                </BackButtonBehavior.IconOverride>
-            </BackButtonBehavior>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

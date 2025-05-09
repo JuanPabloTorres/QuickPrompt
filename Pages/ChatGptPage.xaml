@@ -3,15 +3,22 @@
     x:Class="QuickPrompt.Pages.ChatGptPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:view="clr-namespace:QuickPrompt.Views"
-    Title="Chat GPT">
+    xmlns:view="clr-namespace:QuickPrompt.Views">
 
-    <!--<WebView
-        x:Name="ChatGptWebView"
-        Navigated="OnWebViewNavigated"
-        Source="https://chat.openai.com/" />-->
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
 
-    <Grid>
+    <Shell.TitleView>
+        <view:TitleHeader
+            Title="Chat GPT"
+            
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5e0;"
+            ShowBackButton="True" />
+    </Shell.TitleView>
+
+    <Grid Padding="10">
         <!--  WebView  -->
         <WebView
             x:Name="ChatGptWebView"
@@ -24,8 +31,5 @@
             x:Name="LoadingOverlay"
             IsVisible="False"
             Message="Loading ChatGPT..." />
-
     </Grid>
-
-
 </ContentPage>

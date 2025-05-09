@@ -1,4 +1,6 @@
-﻿namespace QuickPrompt
+﻿using QuickPrompt.Services;
+
+namespace QuickPrompt
 {
     public partial class App : Application
     {
@@ -15,6 +17,11 @@
             };
 
             return window;
+        }
+
+        protected override void OnStart()
+        {
+            PromptCacheCleanupService.RunCleanupIfDue();
         }
     }
 }

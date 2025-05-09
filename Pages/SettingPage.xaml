@@ -55,16 +55,11 @@
                 <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
                     <ViewCell>
                         <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
-                            <Label
-                                FontAttributes="Bold"
-                                Style="{StaticResource VersionLabelStyle}"
-                                Text="Version:" />
+
                             <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion, Mode=TwoWay}" />
                         </HorizontalStackLayout>
                     </ViewCell>
                 </TableSection>
-
-
             </TableRoot>
         </TableView>
         <!--  Indicador de Carga  -->

@@ -162,9 +162,10 @@ namespace QuickPrompt
 
             Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
 
-            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));
+            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));           
 
-            Routing.RegisterRoute("createPromptPage", typeof(MainPage));
+            Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
+
         }
     }
 }

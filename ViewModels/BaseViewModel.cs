@@ -17,7 +17,7 @@ namespace QuickPrompt.ViewModels
     {
         // ============================== 🌟 PROPIEDADES ==============================
         [ObservableProperty]
-        public string emptyViewText = "No Prompts Available";
+        public string emptyViewText = "No Prompts Available ";
 
         [ObservableProperty]
         protected string search;

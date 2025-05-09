@@ -15,6 +15,7 @@
                     FontAttributes="Bold"
                     FontSize="28"
                     HorizontalOptions="Center"
+                    LineBreakMode="WordWrap"
                     Text="📘 Welcome to Quick Prompt"
                     TextColor="#0A84FF" />
             </HorizontalStackLayout>

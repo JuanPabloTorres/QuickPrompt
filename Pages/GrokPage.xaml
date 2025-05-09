@@ -3,17 +3,21 @@
     x:Class="QuickPrompt.Pages.GrokPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:view="clr-namespace:QuickPrompt.Views"
-    Title="Grok">
-    <!--  WebView para cargar Grok  -->
-    <!--<WebView
-        x:Name="GrokWebView"
-        HorizontalOptions="FillAndExpand"
-        Navigated="OnWebViewNavigated"
-        Source="https://grok.com/"
-        VerticalOptions="FillAndExpand" />-->
+    xmlns:view="clr-namespace:QuickPrompt.Views">
 
-    <Grid>
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
+
+    <Shell.TitleView>
+        <view:TitleHeader
+            Title="Chat GPT"
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5e0;"
+            ShowBackButton="True" />
+    </Shell.TitleView>
+
+    <Grid Padding="10">
         <!--  WebView  -->
         <WebView
             x:Name="GrokWebView"
