@@ -1,19 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using SQLite;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.Models
 {
-    public class PromptTemplate
+    public class PromptTemplate : BaseModel
     {
-        [PrimaryKey]
-        public Guid Id { get; set; } = Guid.NewGuid();  // ID único generado automáticamente
-
         public string Title { get; set; }  // Título del prompt
 
         public string Template { get; set; }  // Prompt con variables dinámicas

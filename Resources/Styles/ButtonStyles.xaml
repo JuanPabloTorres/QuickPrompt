@@ -26,10 +26,20 @@
 
     <!--  Estilo para el botón de búsqueda  -->
     <Style x:Key="SearchButtonStyle" TargetType="Button">
-        <Setter Property="HorizontalOptions" Value="End" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="White" />
+
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow
+                    Brush="{StaticResource AppBlack}"
+                    Opacity="0.3"
+                    Radius="8"
+                    Offset="5,5" />
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!--  Botón Principal  -->
@@ -189,4 +199,17 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <Style x:Key="FilterButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource White}" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="HeightRequest" Value="45" />
+        <Setter Property="BorderColor" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="BorderWidth" Value="1" />
+    </Style>
+
 </ResourceDictionary>

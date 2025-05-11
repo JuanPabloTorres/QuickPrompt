@@ -48,20 +48,6 @@
                 Route="Create" />
         </Tab>
 
-        <!--  Saved Prompts Tab  -->
-        <Tab Title="Prompts">
-            <Tab.Icon>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe0ee;"
-                    Color="{StaticResource PrimaryBlueLight}" />
-            </Tab.Icon>
-            <ShellContent
-                Title="Prompts"
-                ContentTemplate="{DataTemplate pages:LoadPromptsPage}"
-                Route="LoadPromptsPage" />
-        </Tab>
-
         <!--  Configurations Tab  -->
         <Tab Title="Settings">
             <Tab.Icon>

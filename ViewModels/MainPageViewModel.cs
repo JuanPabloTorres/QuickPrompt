@@ -50,8 +50,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await Task.Delay(2000);
-
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
 
             //await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
@@ -175,7 +173,8 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             Title = PromptTitle,
             Template = PromptText,
             Description = string.IsNullOrWhiteSpace(PromptDescription) ? "N/A" : PromptDescription,
-            Variables = ExtractVariables(PromptText).ToDictionary(v => v, v => string.Empty)
+            Variables = ExtractVariables(PromptText).ToDictionary(v => v, v => string.Empty),
+            CreatedAt = DateTime.UtcNow,
         };
     }
 
@@ -266,8 +265,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             PromptText = data.Template;
 
             UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(PromptText));
-
-            await Task.Delay(2000);
 
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptImportedSuccess);
         }, AppMessagesEng.GenericError);

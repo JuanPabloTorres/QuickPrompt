@@ -23,6 +23,8 @@ namespace QuickPrompt.Tools
 
         public const string DatabaseUpdateError = "An error occurred while updating the database. Please try again later."; // NEW
 
+        public const string DatabaseRestore = "Database has been restore.";
+
         // **Messages Related to Prompts**
         public static class Prompts
         {
@@ -70,7 +72,7 @@ namespace QuickPrompt.Tools
 
             public const string InvalidTextSelection = "Please select a valid text.";
 
-            public const string EmptySearch = "Please type a search before continue.";
+            public const string EmptySearch = "Please type a filter before continue.";
         }
     }
 }

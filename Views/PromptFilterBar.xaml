@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="QuickPrompt.Views.PromptFilterBar"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:enums="clr-namespace:QuickPrompt.Tools"
+    x:Name="Root"
+    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+
+    <VerticalStackLayout Spacing="8">
+        <!--  Filtro de fecha  -->
+        <ScrollView HorizontalScrollBarVisibility="Never" Orientation="Horizontal">
+            <HorizontalStackLayout
+                Padding="10"
+                HorizontalOptions="Center"
+                Spacing="12">
+
+                <!--  Favorites  -->
+                <Button
+                    Command="{Binding SelectFilterCommand}"
+                    CommandParameter="{x:Static enums:Filters.Favorites}"
+                    Style="{StaticResource FilterButtonStyle}"
+                    Text="Favorites"
+                    TextColor="{StaticResource AppBlack}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe3e7;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+                <!--  Non-Favorites  -->
+                <Button
+                    Command="{Binding SelectFilterCommand}"
+                    CommandParameter="{x:Static enums:Filters.NonFavorites}"
+                    Style="{StaticResource FilterButtonStyle}"
+                    Text="Others"
+                    TextColor="{StaticResource AppBlack}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe3e6;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Today  -->
+                <Button
+                    Command="{Binding SelectFilterCommand}"
+                    CommandParameter="{x:Static enums:Filters.Today}"
+                    Style="{StaticResource FilterButtonStyle}"
+                    Text="Today"
+                    TextColor="{StaticResource AppBlack}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe8df;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Last 7 Days  -->
+                <Button
+                    Command="{Binding SelectFilterCommand}"
+                    CommandParameter="{x:Static enums:Filters.Last7Days}"
+                    Style="{StaticResource FilterButtonStyle}"
+                    Text="7 Days"
+                    TextColor="{StaticResource AppBlack}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe916;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  All  -->
+                <Button
+                    Command="{Binding SelectFilterCommand}"
+                    CommandParameter="{x:Static enums:Filters.All}"
+                    Style="{StaticResource FilterButtonStyle}"
+                    Text="All"
+                    TextColor="{StaticResource AppBlack}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe8ef;"
+                            Color="{StaticResource AppBlack}" />
+                    </Button.ImageSource>
+                </Button>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!--  Búsqueda por texto  -->
+        <Border Style="{StaticResource InputBorderStyle}">
+            <Grid ColumnDefinitions="*, Auto">
+                <Entry
+                    Grid.Column="0"
+                    Placeholder="Search..."
+                    Style="{StaticResource SearchEntryStyle}"
+                    Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}" />
+            </Grid>
+        </Border>
+
+        <Button
+            Grid.Column="1"
+            Command="{Binding SearchCommand, Source={x:Reference Root}}"
+            Style="{StaticResource SearchButtonStyle}">
+            <Button.ImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe8b6;"
+                    Color="{StaticResource White}" />
+            </Button.ImageSource>
+        </Button>
+    </VerticalStackLayout>
+</ContentView>

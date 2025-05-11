@@ -18,16 +18,18 @@ namespace QuickPrompt.ViewModels
     public abstract partial class BaseViewModel : ObservableObject
     {
         // ============================== 🌟 PROPIEDADES ==============================
-        [ObservableProperty]
-        public string emptyViewText = "No Prompts Available ";
+        [ObservableProperty] public string emptyViewText = "No Prompts Available ";
 
-        [ObservableProperty]
-        protected string search;
+        [ObservableProperty] protected string search;
 
-        [ObservableProperty]
-        protected bool isAllSelected = false;
+        [ObservableProperty]protected Filters selectedDateFilter = Filters.All;
+
+
+        [ObservableProperty] protected bool isAllSelected = false;
 
         protected string oldSearch;
+
+        protected Filters oldDateFilter;
 
         /// <summary>
         /// Controla el estado de carga de la aplicación.

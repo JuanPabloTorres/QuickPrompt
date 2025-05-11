@@ -25,26 +25,92 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
         /// </summary>
+        //private async Task InitializeDatabaseAsync()
+        //{
+        //    if (!DatabaseExists())
+        //    {
+        //        await _database.CreateTableAsync<PromptTemplate>();
+
+        //        await InsertDefaultPromptsAsync();
+        //    }
+        //}
+
+        //private async Task InitializeDatabaseAsync()
+        //{
+        //    // Intenta crear tabla si no existe
+        //    await _database.CreateTableAsync<PromptTemplate>();
+
+        // // Agrega columnas nuevas si no existen (esto es seguro, no borra datos) await
+        // _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN CreatedAt TEXT DEFAULT ''");
+
+        // await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN UpdatedAt TEXT
+        // DEFAULT ''");
+
+        // await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN IsDeleted INTEGER
+        // DEFAULT 0");
+
+        // // Actualiza valores nulos con timestamps válidos await _database.ExecuteAsync("UPDATE
+        // PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
+
+        // await _database.ExecuteAsync("UPDATE PromptTemplate SET UpdatedAt = datetime('now') WHERE
+        // UpdatedAt IS NULL OR UpdatedAt = ''");
+
+        //    if (!DatabaseExists())
+        //        await InsertDefaultPromptsAsync();
+        //}
+
         private async Task InitializeDatabaseAsync()
         {
-            if (!DatabaseExists())
-            {
-                await _database.CreateTableAsync<PromptTemplate>();
+            // Crear tabla si no existe
+            await _database.CreateTableAsync<PromptTemplate>();
 
-                await InsertDefaultPromptsAsync();
+            // Verificar columnas y agregarlas si faltan
+            var tableInfo = await _database.GetTableInfoAsync(nameof(PromptTemplate));
+
+            if (!tableInfo.Any(c => c.Name == "CreatedAt"))
+                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN CreatedAt TEXT DEFAULT ''");
+
+            if (!tableInfo.Any(c => c.Name == "UpdatedAt"))
+                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN UpdatedAt TEXT DEFAULT ''");
+
+            if (!tableInfo.Any(c => c.Name == "IsDeleted"))
+                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN IsDeleted INTEGER DEFAULT 0");
+
+            // Actualiza valores nulos con timestamps válidos
+            await _database.ExecuteAsync("UPDATE PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
+
+            await _database.ExecuteAsync("UPDATE PromptTemplate SET UpdatedAt = datetime('now') WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
+
+            // Si la base de datos existe y no tiene los datos iniciales, insertarlos
+            if (DatabaseExists())
+            {
+                int count = await _database.Table<PromptTemplate>().CountAsync();
+
+                // Si no hay datos, insertar los prompts por defecto
+                if (count == 0)
+                    await InsertDefaultPromptsAsync();
             }
+        }
+
+        private async Task InsertDefaultPromptsAsync()
+        {
+            var existingTitles = (await _database.Table<PromptTemplate>().ToListAsync())
+                                 .Select(p => p.Title)
+                                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var promptsToInsert = GetDefaultPrompts()
+                .Where(p => !existingTitles.Contains(p.Title))
+                .ToList();
+
+            if (promptsToInsert.Count > 0)
+                await _database.InsertAllAsync(promptsToInsert);
         }
 
         /// <summary>
         /// Inserta prompts útiles por defecto si la base de datos está vacía.
         /// </summary>
-        private async Task InsertDefaultPromptsAsync()
+        private List<PromptTemplate> GetDefaultPrompts()
         {
-            int existingCount = await _database.Table<PromptTemplate>().CountAsync();
-
-            if (existingCount > 0)
-                return; // No agregar si ya hay prompts en la base de datos
-
             var defaultPrompts = new List<PromptTemplate>
             {
                 new PromptTemplate
@@ -59,7 +125,8 @@ namespace QuickPrompt.Services
                         { "fitness level", "Beginner" },
                         { "time", "30" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -71,7 +138,8 @@ namespace QuickPrompt.Services
                     {
                         { "topic", "Artificial Intelligence in Healthcare" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -84,7 +152,8 @@ namespace QuickPrompt.Services
                         { "days", "5" },
                         { "destination", "Paris" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -97,7 +166,8 @@ namespace QuickPrompt.Services
                         { "days", "7" },
                         { "diet", "Vegan" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -110,7 +180,8 @@ namespace QuickPrompt.Services
                         { "job role", "Software Engineer" },
                         { "industry", "Technology" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -123,7 +194,8 @@ namespace QuickPrompt.Services
                         { "job role", "Project Manager" },
                         { "key strengths", "Leadership, strategic planning, and problem-solving" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -137,7 +209,8 @@ namespace QuickPrompt.Services
                         { "key features", "AI camera, long battery life, and fast charging" },
                         { "target audience", "Tech enthusiasts" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
                 {
@@ -150,7 +223,8 @@ namespace QuickPrompt.Services
                         { "topic", "Sustainable living tips" },
                         { "platform", "Instagram" }
                     },
-                    IsFavorite = true
+                    IsFavorite = true,
+                    CreatedAt = DateTime.UtcNow
                 },
                 new PromptTemplate
 {
@@ -163,7 +237,8 @@ namespace QuickPrompt.Services
         { "playerName", "LeBron James" },
         { "sport", "basketball" }
     },
-    IsFavorite = true
+    IsFavorite = true,
+    CreatedAt = DateTime.UtcNow
 },
                 new PromptTemplate
 {
@@ -175,7 +250,8 @@ namespace QuickPrompt.Services
     {
         { "symptom", "chest pain" }
     },
-    IsFavorite = true
+    IsFavorite = true,
+    CreatedAt = DateTime.UtcNow
 },
                 new PromptTemplate
 {
@@ -188,7 +264,8 @@ namespace QuickPrompt.Services
         { "topicName", "photosynthesis" },
         { "gradeLevel", "6th grade" }
     },
-    IsFavorite = true
+    IsFavorite = true,
+    CreatedAt = DateTime.UtcNow
 },
                 new PromptTemplate
 {
@@ -200,7 +277,8 @@ namespace QuickPrompt.Services
     {
         { "concept", "blockchain" }
     },
-    IsFavorite = true
+    IsFavorite = true,
+    CreatedAt = DateTime.UtcNow
 },
                 new PromptTemplate
 {
@@ -213,11 +291,12 @@ namespace QuickPrompt.Services
         { "ingredient1", "chicken" },
         { "ingredient2", "broccoli" }
     },
-    IsFavorite = true
+    IsFavorite = true,
+    CreatedAt = DateTime.UtcNow
 }
             };
 
-            await _database.InsertAllAsync(defaultPrompts);
+            return defaultPrompts;
         }
 
         // =============================== 🔹 OPERACIONES CRUD PRINCIPALES ===============================
@@ -292,34 +371,66 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Obtiene los prompts con paginación y opcionalmente aplica un filtro.
         /// </summary>
-        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, string filter = "")
+        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter= Filters.All, string filterText = "")
         {
-            return GetPromptsByFilterAsync(offset, limit, filter, onlyFavorites: false);
+            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter);
         }
 
         /// <summary>
         /// Obtiene los prompts favoritos con paginación y opcionalmente aplica un filtro.
         /// </summary>
-        public Task<List<PromptTemplate>> GetFavoritesPromptsByBlockAsync(int offset, int limit, string filter = "")
+        public Task<List<PromptTemplate>> GetFavoritesPromptsByBlockAsync(int offset, int limit, Filters dateFilter= Filters.All, string filterText = "")
         {
-            return GetPromptsByFilterAsync(offset, limit, filter, onlyFavorites: true);
+            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter);
         }
 
         /// <summary>
         /// Obtiene los prompts según el filtro y el estado de favoritos.
         /// </summary>
-        private async Task<List<PromptTemplate>> GetPromptsByFilterAsync(int offset, int limit, string filter, bool onlyFavorites)
+        private async Task<List<PromptTemplate>> GetPromptsByFilterAsync(int offset, int limit, string filterText, Filters filter)
         {
-            var query = _database.Table<PromptTemplate>();
+            // Obtener todos los prompts de forma asincrónica
+            var allPrompts = await _database.Table<PromptTemplate>().ToListAsync();
 
-            if (onlyFavorites)
-                query = query.Where(p => p.IsFavorite);
+            // Aplicar filtro de fecha si corresponde
+           
+                DateTime today = DateTime.Today;
 
-            if (!string.IsNullOrWhiteSpace(filter))
-                query = query.Where(p => p.Title.ToLower().Contains(filter.ToLower()));
+                DateTime end = today.AddDays(1); // Exclusivo para el día siguiente
 
-            return await query.Skip(offset).Take(limit).ToListAsync();
+                allPrompts = filter switch
+                {
+                    Filters.Today => allPrompts
+                        .Where(p => p.CreatedAt >= today && p.CreatedAt < end)
+                        .ToList(),
+
+                    Filters.Last7Days => allPrompts
+                        .Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end)
+                        .ToList(),
+
+                    Filters.Favorites=> allPrompts
+                        .Where(p => p.IsFavorite)
+                        .ToList(),
+
+                    Filters.NonFavorites => allPrompts.Where(p => !p.IsFavorite).ToList(),
+
+                    _ => allPrompts // "All" o cualquier otro valor no filtra
+                };
+            
+
+            // Aplicar filtro de texto si se proporciona
+            if (!string.IsNullOrWhiteSpace(filterText))
+            {
+                string lowerFilter = filterText.ToLower();
+                allPrompts = allPrompts
+                    .Where(p => p.Title?.ToLower().Contains(lowerFilter) == true)
+                    .ToList();
+            }
+
+            // Paginación
+            return allPrompts.Skip(offset).Take(limit).ToList();
         }
+
 
         // =============================== 🔹 OPERACIONES SOBRE FAVORITOS ===============================
 
@@ -382,7 +493,7 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Obtiene la cantidad total de prompts favoritos que coinciden con un filtro.
         /// </summary>
-        public Task<int> GetFavoriteTotalPromptsCountAsync(string filter) => GetTotalCountAsync(filter, onlyFavorites: true);
+        public Task<int> GetFavoriteTotalPromptsCountAsync(string filterText, Filters dateFilter) => GetTotalCountAsync(dateFilter, filterText);
 
         /// <summary>
         /// Método genérico para contar la cantidad de prompts con filtro y favoritos.
@@ -400,6 +511,38 @@ namespace QuickPrompt.Services
             return await query.CountAsync();
         }
 
+        private async Task<int> GetTotalCountAsync(Filters dateFilter, string filterText = null )
+        {
+            // Cargar todos los datos y aplicar filtros en memoria para evitar problemas con funciones no soportadas en SQLite
+            var prompts = await _database.Table<PromptTemplate>().ToListAsync();
+
+            // Filtrado por fecha
+          
+                DateTime today = DateTime.Today;
+                DateTime end = today.AddDays(1); // Fin del día actual
+
+                prompts = dateFilter switch
+                {
+                    Filters.Today => prompts.Where(p => p.CreatedAt >= today && p.CreatedAt < end).ToList(),
+                    Filters.Last7Days => prompts.Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end).ToList(),
+                    Filters.Favorites => prompts.Where(p => p.IsFavorite).ToList(),
+                    Filters.NonFavorites => prompts.Where(p => !p.IsFavorite).ToList(),
+
+                    _ => prompts
+                };
+            
+
+            // Filtrado por texto
+            if (!string.IsNullOrWhiteSpace(filterText))
+            {
+                string lowerFilter = filterText.ToLower();
+                prompts = prompts.Where(p => p.Title?.ToLower().Contains(lowerFilter) == true).ToList();
+            }
+
+            return prompts.Count;
+        }
+
+
         /// <summary>
         /// Borra completamente la base de datos eliminando todas las tablas.
         /// </summary>
@@ -416,14 +559,7 @@ namespace QuickPrompt.Services
             // Recrear la instancia de conexión y reiniciar base de datos
             var newConnection = new SQLiteAsyncConnection(dbPath);
 
-            //await _database.DropTableAsync<PromptTemplate>();
-
             await InitializeDatabaseAsync();
-
-            //// Reasignar la nueva conexión a la instancia
-            //typeof(PromptDatabaseService)
-            //    .GetField("_database", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            //    ?.SetValue(this, newConnection);
         }
 
         /// <summary>

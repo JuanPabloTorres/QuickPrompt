@@ -24,7 +24,7 @@ public partial class QuickPromptPage : ContentPage
         }
         else
         {
-            await this._viewModel.CheckForMorePromptsAsync(this._viewModel.GetSearchValue());
+            await this._viewModel.CheckForMorePromptsAsync(this._viewModel.GetFilterValue(),this._viewModel.GetSearchValue());
         }
     }
 

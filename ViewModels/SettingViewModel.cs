@@ -39,9 +39,7 @@ public partial class SettingViewModel : BaseViewModel
             {
                 await _databaseService.RestoreDatabaseAsync();
 
-                //await App.Current.MainPage.DisplayAlert("Éxito", "La base de datos ha sido eliminada.", "OK");
-
-                await AppShell.Current.DisplayAlert("Success", "Database has been restore.", "OK");
+                await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.DatabaseRestore);
             }
         }, AppMessagesEng.GenericError);
     }

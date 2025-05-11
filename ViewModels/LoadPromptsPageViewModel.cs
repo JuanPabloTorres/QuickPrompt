@@ -128,7 +128,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             int batchSize = Math.Min(BlockHandler<PromptTemplateViewModel>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
 
             // Cargar el bloque de prompts
-            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize);
+            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter);
 
             if (promptList.Any())
             {
@@ -147,7 +147,6 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             await CheckForMorePromptsAsync();
         }, AppMessagesEng.Prompts.PromptLoadError);
     }
-   
 
     // ======================= 🔍 FILTRAR PROMPTS =======================
     [RelayCommand]
@@ -185,8 +184,6 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
                 this.Prompts.Clear();
             }
 
-            //this.oldSearch = this.Search;
-
             await UpdateTotalPromptsCountAsync(this.Search);
 
             // Calcular el desplazamiento y ajustarlo para evitar duplicados
@@ -196,7 +193,7 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
             int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
 
             // Cargar el bloque de prompts
-            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, this.Search);
+            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize,this.SelectedDateFilter, this.Search);
 
             if (promptList.Any())
             {
@@ -245,8 +242,6 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
 
                 //await AppShell.Current.DisplayAlert("Success", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.", "OK");
 
-                await Task.Delay(2000);
-
                 await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
             }, AppMessagesEng.Prompts.PromptDeleteError);
         }
@@ -289,15 +284,10 @@ public partial class LoadPromptsPageViewModel : BaseViewModel
                 // Verificar si hay más datos disponibles
                 if (IsMoreDataAvailable)
                 {
-                    //blockHandler.NextBlock();
-
                     await LoadInitialPrompts();
                 }
 
-                await Task.Delay(2000);
-
                 await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
-
             }, AppMessagesEng.Prompts.PromptDeleteError);
         }
     }

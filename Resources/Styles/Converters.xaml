@@ -20,4 +20,8 @@
     <converters:IsFocusedAndHasSuggestionsConverter x:Key="IsFocusedAndHasSuggestionsConverter" />
 
     <converters:FinalPromptAndNotLoadingConverter x:Key="FinalPromptAndNotLoadingConverter " />
+
+    <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
+
+    <converters:FilterToColorConverter x:Key="FilterToColorConverter" />
 </ResourceDictionary>

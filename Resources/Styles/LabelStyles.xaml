@@ -4,7 +4,6 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-
     <!--  Estilo Base para Labels  -->
     <Style x:Key="BaseLabelStyle" TargetType="Label">
         <Setter Property="FontSize" Value="16" />
@@ -42,21 +41,6 @@
         <Setter Property="TextTransform" Value="Uppercase" />
         <Setter Property="HorizontalOptions" Value="Center" />
         <Setter Property="TextColor" Value="{StaticResource PrimaryBlueDark}" />
-    </Style>
-
-
-
-
-
-    <!--  Estilo para campos de entrada de texto  -->
-    <Style x:Key="SearchEntryStyle" TargetType="Entry">
-        <Setter Property="BackgroundColor" Value="WhiteSmoke" />
-        <Setter Property="FontSize" Value="18" />
-        <Setter Property="FontAttributes" Value="Italic" />
-        <Setter Property="HorizontalOptions" Value="Fill" />
-        <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
-        <Setter Property="Placeholder" Value="Search by title..." />
     </Style>
 
     <!--  Estilo para Subtítulos  -->

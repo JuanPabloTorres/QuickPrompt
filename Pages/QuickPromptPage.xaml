@@ -64,30 +64,11 @@
             <!--  Google AdMob  -->
             <views:AdmobBannerView Grid.Row="0" />
 
-            <!--  Search Bar  -->
-            <Border
+            <views:PromptFilterBar
                 Grid.Row="1"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                Style="{StaticResource InputBorderStyle}">
-                <Grid ColumnDefinitions="*, Auto">
-                    <Entry
-                        Grid.Column="0"
-                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                        Style="{StaticResource SearchEntryStyle}"
-                        Text="{Binding Search}" />
-                    <Button
-                        Grid.Column="1"
-                        Command="{Binding FilterPromptsCommand}"
-                        Style="{StaticResource SearchButtonStyle}">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xe8b6;"
-                                Color="{StaticResource AppBlack}" />
-                        </Button.ImageSource>
-                    </Button>
-                </Grid>
-            </Border>
+                SearchCommand="{Binding FilterPromptsCommand}"
+                SearchText="{Binding Search}"
+                SelectedFilter="{Binding SelectedDateFilter}" />
 
             <!--  Lista de Prompts  -->
             <CollectionView
@@ -143,8 +124,6 @@
                                         </Button.ImageSource>
                                     </Button>
                                 </Grid>
-
-
 
                                 <Grid
                                     Padding="10,5"

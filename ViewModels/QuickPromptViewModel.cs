@@ -62,6 +62,8 @@ namespace QuickPrompt.ViewModels
 
             Search = string.Empty;
 
+            SelectedDateFilter = Filters.All;
+
             // Actualizar el total de prompts y cargar el primer bloque
             await LoadPromptsAsync();
         }
@@ -79,6 +81,11 @@ namespace QuickPrompt.ViewModels
             return Search;
         }
 
+        public Filters GetFilterValue()
+        {
+            return selectedDateFilter;
+        }
+
         /// <summary>
         /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si
         /// se proporciona.
@@ -86,18 +93,18 @@ namespace QuickPrompt.ViewModels
         /// <param name="filter">
         /// Texto opcional para filtrar los prompts.
         /// </param>
-        public async Task UpdateTotalPromptsCountAsync(string filter = null)
+        public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string filter = null)
         {
             // Obtener el total de prompts de la base de datos, con o sin filtro
-            blockHandler.CountInDB = string.IsNullOrEmpty(filter) ? await _databaseService.GetFavoriteTotalPromptsCountAsync() : await _databaseService.GetFavoriteTotalPromptsCountAsync(filter);
+            blockHandler.CountInDB = await _databaseService.GetFavoriteTotalPromptsCountAsync(filter, dateFilter);
         }
 
         /// <summary>
         /// Verifica si hay más datos disponibles para cargar y actualiza la propiedad correspondiente.
         /// </summary>
-        public async Task CheckForMorePromptsAsync(string filter = null)
+        public async Task CheckForMorePromptsAsync(Filters dateFilter = Filters.All, string filter = null)
         {
-            await UpdateTotalPromptsCountAsync(filter);
+            await UpdateTotalPromptsCountAsync(dateFilter, filter);
 
             // Asignar directamente si hay más datos disponibles
             IsMoreDataAvailable = blockHandler.HasMoreData();
@@ -121,7 +128,9 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         public async Task LoadMorePrompts()
         {
-            await (string.IsNullOrWhiteSpace(Search) ? LoadPromptsAsync() : FilterPromptsAsync());
+            //await (string.IsNullOrWhiteSpace(Search) ? LoadPromptsAsync() : FilterPromptsAsync());
+
+            await FilterPromptsAsync();
         }
 
         /// <summary>
@@ -145,7 +154,7 @@ namespace QuickPrompt.ViewModels
                 if (promptList.Any())
                 {
                     // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync, NavigateTo));
+                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
 
                     Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -166,37 +175,35 @@ namespace QuickPrompt.ViewModels
         {
             await ExecuteWithLoadingAsync(async () =>
             {
-                if (string.IsNullOrEmpty(this.Search))
+                // Validación: al menos un criterio debe estar presente
+                bool isSearchEmpty = string.IsNullOrWhiteSpace(Search);
+                bool isFilterDefault = SelectedDateFilter == Filters.All;
+
+                if (isSearchEmpty && isFilterDefault)
                 {
                     await AppShell.Current.DisplayAlert("Error", AppMessagesEng.Warnings.EmptySearch, "OK");
-
                     return;
                 }
 
-                if (!IsSearchFlag)
-                {
-                    if (string.IsNullOrEmpty(this.oldSearch))
-                    {
-                        this.oldSearch = this.Search;
-                    }
+                // Verificar si cambió la búsqueda o el filtro
+                bool searchChanged = !string.Equals(oldSearch, Search, StringComparison.OrdinalIgnoreCase);
 
-                    ToggleSearchFlag(true);
+                bool filterChanged = oldDateFilter != SelectedDateFilter;
 
-                    blockHandler.Reset();
-
-                    this.Prompts.Clear();
-                }
-
-                if (this.oldSearch != this.Search)
+                // Reiniciar búsqueda si es necesario
+                if (!IsSearchFlag || searchChanged || filterChanged)
                 {
                     ToggleSearchFlag(true);
 
                     blockHandler.Reset();
+                    Prompts.Clear();
 
-                    this.Prompts.Clear();
+                    oldSearch = Search;
+                    oldDateFilter = SelectedDateFilter;
                 }
 
-                await UpdateTotalPromptsCountAsync(this.Search);
+                // Actualizar conteo total según los filtros actuales
+                await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search);
 
                 // Calcular el desplazamiento y ajustarlo para evitar duplicados
                 int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
@@ -205,12 +212,12 @@ namespace QuickPrompt.ViewModels
                 int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
 
                 // Cargar el bloque de prompts
-                var promptList = await _databaseService.GetFavoritesPromptsByBlockAsync(toSkip, batchSize, this.Search);
+                var promptList = await _databaseService.GetFavoritesPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search);
 
                 if (promptList.Any())
                 {
                     // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection,DeletePromptAsync,NavigateTo));
+                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
 
                     Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
 
@@ -221,11 +228,9 @@ namespace QuickPrompt.ViewModels
                 }
 
                 // Verificar si hay más datos por cargar
-                await CheckForMorePromptsAsync(this.Search);
+                await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search);
             }, AppMessagesEng.Prompts.PromptLoadError);
         }
-
-      
 
         // ======================= 🔄 REFRESCAR PROMPTS =======================
         [RelayCommand]
@@ -234,10 +239,8 @@ namespace QuickPrompt.ViewModels
             await LoadInitialPrompts();
         }
 
-       
-
         // ======================= ❌ ELIMINAR UN PROMPT =======================
-      
+
         public override async void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
         {
             if (selectedPrompt == null) return;
@@ -256,8 +259,6 @@ namespace QuickPrompt.ViewModels
                     Prompts.Remove(selectedPrompt);
 
                     await CheckForMorePromptsAsync();
-
-                    await Task.Delay(2000);
 
                     await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
                 }, AppMessagesEng.Prompts.PromptDeleteError);
@@ -305,8 +306,6 @@ namespace QuickPrompt.ViewModels
                         await LoadInitialPrompts();
                     }
 
-                    await Task.Delay(2000);
-
                     await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
                 }, AppMessagesEng.Prompts.PromptDeleteError);
             }
@@ -326,10 +325,23 @@ namespace QuickPrompt.ViewModels
 
             await _databaseService.UpdateFavoriteStatusAsync(prompt.Prompt.Id, prompt.IsFavorite);
 
-            if (!prompt.IsFavorite)
+            if (!prompt.IsFavorite && SelectedDateFilter == Filters.Favorites)
             {
                 Prompts.Remove(prompt);
             }
+
+            if (prompt.IsFavorite && SelectedDateFilter == Filters.NonFavorites)
+            {
+                Prompts.Remove(prompt);
+            }
+        }
+
+        [RelayCommand]
+        private void SelectFilter(Filters filter)
+        {
+            SelectedDateFilter = filter;
+
+            FilterPromptsCommand.Execute(null);
         }
     }
 }
