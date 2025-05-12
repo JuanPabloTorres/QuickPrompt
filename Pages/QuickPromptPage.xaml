@@ -80,7 +80,7 @@
 
                 <CollectionView.Header>
                     <VerticalStackLayout>
-                        <Label Style="{StaticResource TitleLabelStyle}" Text="Prompts Favorites " />
+                        <Label Style="{StaticResource TitleLabelStyle}" Text="My Prompts: " />
                         <HorizontalStackLayout HorizontalOptions="End">
                             <Label Style="{StaticResource SelectAllLabelStyle}" Text="Select All " />
                             <CheckBox
@@ -136,7 +136,6 @@
                                         Grid.Column="0"
                                         Command="{Binding SelectPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
-                                        FlexLayout.Basis="25%"
                                         Style="{StaticResource PrimaryButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
@@ -147,7 +146,6 @@
                                         Grid.Column="1"
                                         Command="{Binding NavigateToEditPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
-                                        FlexLayout.Basis="25%"
                                         Style="{StaticResource WarningButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
@@ -157,7 +155,6 @@
                                     <Button
                                         Grid.Column="2"
                                         Command="{Binding ItemToDeleteCommand}"
-                                        FlexLayout.Basis="25%"
                                         Style="{StaticResource CriticalButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
@@ -168,7 +165,6 @@
                                         Grid.Column="3"
                                         Command="{Binding ExportPromptCommand}"
                                         CommandParameter="{Binding Prompt}"
-                                        FlexLayout.Basis="25%"
                                         Style="{StaticResource DetailButtonStyle}">
                                         <Button.ImageSource>
                                             <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe80d;" />
@@ -191,7 +187,9 @@
 
                 <CollectionView.Footer>
                     <VerticalStackLayout>
+
                         <BoxView Style="{StaticResource DividerLineStyle}" />
+
                         <Label Style="{StaticResource TotalCountLabelStyle}" Text="{Binding Prompts.Count, StringFormat='Total: {0} '}" />
                     </VerticalStackLayout>
                 </CollectionView.Footer>

@@ -9,94 +9,160 @@
 
     <VerticalStackLayout Spacing="8">
         <!--  Filtro de fecha  -->
-        <ScrollView HorizontalScrollBarVisibility="Never" Orientation="Horizontal">
-            <HorizontalStackLayout
-                Padding="10"
-                HorizontalOptions="Center"
-                Spacing="12">
 
-                <!--  Favorites  -->
-                <Button
-                    Command="{Binding SelectFilterCommand}"
-                    CommandParameter="{x:Static enums:Filters.Favorites}"
-                    Style="{StaticResource FilterButtonStyle}"
-                    Text="Favorites"
-                    TextColor="{StaticResource AppBlack}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe3e7;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
-                <!--  Non-Favorites  -->
-                <Button
-                    Command="{Binding SelectFilterCommand}"
-                    CommandParameter="{x:Static enums:Filters.NonFavorites}"
-                    Style="{StaticResource FilterButtonStyle}"
-                    Text="Others"
-                    TextColor="{StaticResource AppBlack}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe3e6;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
+        <Grid
+            ColumnDefinitions="*,*"
+            ColumnSpacing="5"
+            HorizontalOptions="Fill"
+            RowDefinitions="*,*,*"
+            RowSpacing="5">
 
-                <!--  Today  -->
-                <Button
-                    Command="{Binding SelectFilterCommand}"
-                    CommandParameter="{x:Static enums:Filters.Today}"
-                    Style="{StaticResource FilterButtonStyle}"
-                    Text="Today"
-                    TextColor="{StaticResource AppBlack}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe8df;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
+            <!--  Favorites  -->
+            <Button
+                Grid.Row="0"
+                Grid.Column="0"
+                Command="{Binding SelectFilterCommand}"
+                CommandParameter="{x:Static enums:Filters.Favorites}"
+                Style="{StaticResource FilterButtonStyle}"
+                Text="Favorites"
+                TextColor="{StaticResource AppBlack}">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedDateFilter}"
+                        TargetType="Button"
+                        Value="{x:Static enums:Filters.Favorites}">
+                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BorderColor" Value="Gray" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe3e7;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
+            <!--  Non-Favorites  -->
+            <Button
+                Grid.Row="0"
+                Grid.Column="1"
+                Command="{Binding SelectFilterCommand}"
+                CommandParameter="{x:Static enums:Filters.NonFavorites}"
+                Style="{StaticResource FilterButtonStyle}"
+                Text="Not Favorites"
+                TextColor="{StaticResource AppBlack}">
 
-                <!--  Last 7 Days  -->
-                <Button
-                    Command="{Binding SelectFilterCommand}"
-                    CommandParameter="{x:Static enums:Filters.Last7Days}"
-                    Style="{StaticResource FilterButtonStyle}"
-                    Text="7 Days"
-                    TextColor="{StaticResource AppBlack}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe916;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedDateFilter}"
+                        TargetType="Button"
+                        Value="{x:Static enums:Filters.NonFavorites}">
+                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BorderColor" Value="Gray" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe3e6;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
 
-                <!--  All  -->
-                <Button
-                    Command="{Binding SelectFilterCommand}"
-                    CommandParameter="{x:Static enums:Filters.All}"
-                    Style="{StaticResource FilterButtonStyle}"
-                    Text="All"
-                    TextColor="{StaticResource AppBlack}">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe8ef;"
-                            Color="{StaticResource AppBlack}" />
-                    </Button.ImageSource>
-                </Button>
-            </HorizontalStackLayout>
-        </ScrollView>
+            <!--  Today  -->
+            <Button
+                Grid.Row="1"
+                Grid.Column="0"
+                Command="{Binding SelectFilterCommand}"
+                CommandParameter="{x:Static enums:Filters.Today}"
+                Style="{StaticResource FilterButtonStyle}"
+                Text="Today"
+                TextColor="{StaticResource AppBlack}">
+
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedDateFilter}"
+                        TargetType="Button"
+                        Value="{x:Static enums:Filters.Today}">
+                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BorderColor" Value="Gray" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe8df;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
+
+            <!--  Last 7 Days  -->
+            <Button
+                Grid.Row="1"
+                Grid.Column="1"
+                Command="{Binding SelectFilterCommand}"
+                CommandParameter="{x:Static enums:Filters.Last7Days}"
+                Style="{StaticResource FilterButtonStyle}"
+                Text="7 Days"
+                TextColor="{StaticResource AppBlack}">
+
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedDateFilter}"
+                        TargetType="Button"
+                        Value="{x:Static enums:Filters.Last7Days}">
+                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BorderColor" Value="Gray" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe916;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
+
+            <!--  All  -->
+            <Button
+                Grid.Row="2"
+                Grid.ColumnSpan="2"
+                Command="{Binding SelectFilterCommand}"
+                CommandParameter="{x:Static enums:Filters.All}"
+                Style="{StaticResource FilterButtonStyle}"
+                Text="All"
+                TextColor="{StaticResource AppBlack}">
+
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedDateFilter}"
+                        TargetType="Button"
+                        Value="{x:Static enums:Filters.All}">
+                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BorderColor" Value="Gray" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe8ef;"
+                        Color="{StaticResource AppBlack}" />
+                </Button.ImageSource>
+            </Button>
+        </Grid>
+
 
         <!--  Búsqueda por texto  -->
         <Border Style="{StaticResource InputBorderStyle}">
             <Grid ColumnDefinitions="*, Auto">
                 <Entry
                     Grid.Column="0"
-                    Placeholder="Search..."
+                    Placeholder="Type your search here..."
                     Style="{StaticResource SearchEntryStyle}"
                     Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}" />
             </Grid>

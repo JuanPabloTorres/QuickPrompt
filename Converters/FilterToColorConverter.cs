@@ -12,6 +12,7 @@ namespace QuickPrompt.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var currentFilter = value?.ToString();
+
             var buttonFilter = parameter?.ToString();
 
             return currentFilter == buttonFilter ? Colors.DarkBlue : Colors.LightGray;

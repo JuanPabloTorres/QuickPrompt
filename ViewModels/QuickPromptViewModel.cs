@@ -21,18 +21,14 @@ namespace QuickPrompt.ViewModels
         // ======================= 📌 PROPIEDADES =======================
         public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();   // Lista de prompts seleccionados para eliminar
 
+        [ObservableProperty] private ObservableCollection<PromptTemplateViewModel> prompts = new();  // Inicializamos la lista vacía
+
         public BlockHandler<PromptTemplateViewModel> blockHandler = new();
-
-        [ObservableProperty]
-        private ObservableCollection<PromptTemplateViewModel> prompts = new();  // Inicializamos la lista vacía
-
-        [ObservableProperty]
-        private string search;
-
-        [ObservableProperty]
-        private bool isMoreDataAvailable = true;  // Para indicar si hay más datos disponibles
-
         public bool IsSearchFlag { get; set; }
+
+        [ObservableProperty] private string search;
+
+        [ObservableProperty] private bool isMoreDataAvailable = true;  // Para indicar si hay más datos disponibles
 
         private readonly PromptDatabaseService _databaseService;
 
@@ -90,9 +86,6 @@ namespace QuickPrompt.ViewModels
         /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si
         /// se proporciona.
         /// </summary>
-        /// <param name="filter">
-        /// Texto opcional para filtrar los prompts.
-        /// </param>
         public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string filter = null)
         {
             // Obtener el total de prompts de la base de datos, con o sin filtro
@@ -128,9 +121,19 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         public async Task LoadMorePrompts()
         {
-            //await (string.IsNullOrWhiteSpace(Search) ? LoadPromptsAsync() : FilterPromptsAsync());
+            // Validación: al menos un criterio debe estar presente
+            bool isSearchEmpty = string.IsNullOrWhiteSpace(Search);
 
-            await FilterPromptsAsync();
+            bool isFilterEmpty = SelectedDateFilter == Filters.None;
+
+            if (isSearchEmpty || isFilterEmpty)
+            {
+                await LoadPromptsAsync();
+            }
+            else
+            {
+                await FilterPromptsAsync();
+            }
         }
 
         /// <summary>
@@ -140,32 +143,7 @@ namespace QuickPrompt.ViewModels
         {
             await ExecuteWithLoadingAsync(async () =>
             {
-                await UpdateTotalPromptsCountAsync();
-
-                // Calcular el desplazamiento y ajustarlo para evitar duplicados
-                int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
-
-                // Calcular el tamaño del lote sin exceder los datos disponibles
-                int batchSize = Math.Min(BlockHandler<PromptTemplateViewModel>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
-
-                // Cargar el bloque de prompts
-                var promptList = await _databaseService.GetFavoritesPromptsByBlockAsync(toSkip, batchSize);
-
-                if (promptList.Any())
-                {
-                    // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
-
-                    Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
-
-                    // Actualizar los datos en el BlockHandler y avanzar al siguiente bloque
-                    blockHandler.Data = Prompts;
-
-                    blockHandler.NextBlock();
-                }
-
-                // Verificar si hay más datos por cargar
-                await CheckForMorePromptsAsync();
+                await BlockDataHandler();
             }, AppMessagesEng.Prompts.PromptLoadError);
         }
 
@@ -175,16 +153,6 @@ namespace QuickPrompt.ViewModels
         {
             await ExecuteWithLoadingAsync(async () =>
             {
-                // Validación: al menos un criterio debe estar presente
-                bool isSearchEmpty = string.IsNullOrWhiteSpace(Search);
-                bool isFilterDefault = SelectedDateFilter == Filters.All;
-
-                if (isSearchEmpty && isFilterDefault)
-                {
-                    await AppShell.Current.DisplayAlert("Error", AppMessagesEng.Warnings.EmptySearch, "OK");
-                    return;
-                }
-
                 // Verificar si cambió la búsqueda o el filtro
                 bool searchChanged = !string.Equals(oldSearch, Search, StringComparison.OrdinalIgnoreCase);
 
@@ -196,40 +164,47 @@ namespace QuickPrompt.ViewModels
                     ToggleSearchFlag(true);
 
                     blockHandler.Reset();
+
                     Prompts.Clear();
 
                     oldSearch = Search;
+
                     oldDateFilter = SelectedDateFilter;
                 }
 
-                // Actualizar conteo total según los filtros actuales
-                await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search);
-
-                // Calcular el desplazamiento y ajustarlo para evitar duplicados
-                int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
-
-                // Calcular el tamaño del lote sin exceder los datos disponibles
-                int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
-
-                // Cargar el bloque de prompts
-                var promptList = await _databaseService.GetFavoritesPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search);
-
-                if (promptList.Any())
-                {
-                    // Agregar los nuevos prompts y ordenar la colección
-                    Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
-
-                    Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
-
-                    // Actualizar los datos en el BlockHandler y avanzar al siguiente bloque
-                    blockHandler.Data = Prompts;
-
-                    blockHandler.NextBlock();
-                }
-
-                // Verificar si hay más datos por cargar
-                await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search);
+                await BlockDataHandler();
             }, AppMessagesEng.Prompts.PromptLoadError);
+        }
+
+        private async Task BlockDataHandler()
+        {
+            // Actualizar conteo total según los filtros actuales
+            await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search);
+
+            // Calcular el desplazamiento y ajustarlo para evitar duplicados
+            int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
+
+            // Calcular el tamaño del lote sin exceder los datos disponibles
+            int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
+
+            // Cargar el bloque de prompts
+            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search);
+
+            if (promptList.Any())
+            {
+                // Agregar los nuevos prompts y ordenar la colección
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
+
+                Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
+
+                // Actualizar los datos en el BlockHandler y avanzar al siguiente bloque
+                blockHandler.Data = Prompts;
+
+                blockHandler.NextBlock();
+            }
+
+            // Verificar si hay más datos por cargar
+            await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search);
         }
 
         // ======================= 🔄 REFRESCAR PROMPTS =======================

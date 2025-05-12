@@ -31,7 +31,25 @@
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </ViewCell>
+                    <!--  Enlace a políticas y detalles  -->
+                    <ViewCell>
+                        <ViewCell.View>
+                            <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
+                                <Label
+                                    FontAttributes="Bold"
+                                    Text="View Privacy Policy and App Information"
+                                    TextColor="{StaticResource AppBlack}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding OpenGuideLinkCommand}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </HorizontalStackLayout>
+                        </ViewCell.View>
+                    </ViewCell>
                 </TableSection>
+
+
+
 
                 <!--  Sección para borrar la base de datos  -->
                 <TableSection Title="Database" TextColor="{StaticResource PrimaryBlueDark}">

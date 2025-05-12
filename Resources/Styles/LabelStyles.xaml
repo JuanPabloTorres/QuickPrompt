@@ -24,7 +24,7 @@
     <!--  Estilo para etiquetas de conteo de prompts  -->
     <Style x:Key="TotalCountLabelStyle" TargetType="Label">
         <Setter Property="FontAttributes" Value="Italic" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="18" />
         <Setter Property="HorizontalOptions" Value="End" />
         <Setter Property="TextTransform" Value="Uppercase" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />

@@ -371,15 +371,7 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Obtiene los prompts con paginación y opcionalmente aplica un filtro.
         /// </summary>
-        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter= Filters.All, string filterText = "")
-        {
-            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter);
-        }
-
-        /// <summary>
-        /// Obtiene los prompts favoritos con paginación y opcionalmente aplica un filtro.
-        /// </summary>
-        public Task<List<PromptTemplate>> GetFavoritesPromptsByBlockAsync(int offset, int limit, Filters dateFilter= Filters.All, string filterText = "")
+        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter = Filters.All, string filterText = "")
         {
             return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter);
         }
@@ -393,30 +385,29 @@ namespace QuickPrompt.Services
             var allPrompts = await _database.Table<PromptTemplate>().ToListAsync();
 
             // Aplicar filtro de fecha si corresponde
-           
-                DateTime today = DateTime.Today;
 
-                DateTime end = today.AddDays(1); // Exclusivo para el día siguiente
+            DateTime today = DateTime.Today;
 
-                allPrompts = filter switch
-                {
-                    Filters.Today => allPrompts
-                        .Where(p => p.CreatedAt >= today && p.CreatedAt < end)
-                        .ToList(),
+            DateTime end = today.AddDays(1); // Exclusivo para el día siguiente
 
-                    Filters.Last7Days => allPrompts
-                        .Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end)
-                        .ToList(),
+            allPrompts = filter switch
+            {
+                Filters.Today => allPrompts
+                    .Where(p => p.CreatedAt >= today && p.CreatedAt < end)
+                    .ToList(),
 
-                    Filters.Favorites=> allPrompts
-                        .Where(p => p.IsFavorite)
-                        .ToList(),
+                Filters.Last7Days => allPrompts
+                    .Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end)
+                    .ToList(),
 
-                    Filters.NonFavorites => allPrompts.Where(p => !p.IsFavorite).ToList(),
+                Filters.Favorites => allPrompts
+                    .Where(p => p.IsFavorite)
+                    .ToList(),
 
-                    _ => allPrompts // "All" o cualquier otro valor no filtra
-                };
-            
+                Filters.NonFavorites => allPrompts.Where(p => !p.IsFavorite).ToList(),
+
+                _ => allPrompts // "All" o cualquier otro valor no filtra
+            };
 
             // Aplicar filtro de texto si se proporciona
             if (!string.IsNullOrWhiteSpace(filterText))
@@ -430,7 +421,6 @@ namespace QuickPrompt.Services
             // Paginación
             return allPrompts.Skip(offset).Take(limit).ToList();
         }
-
 
         // =============================== 🔹 OPERACIONES SOBRE FAVORITOS ===============================
 
@@ -511,26 +501,26 @@ namespace QuickPrompt.Services
             return await query.CountAsync();
         }
 
-        private async Task<int> GetTotalCountAsync(Filters dateFilter, string filterText = null )
+        private async Task<int> GetTotalCountAsync(Filters dateFilter, string filterText = null)
         {
-            // Cargar todos los datos y aplicar filtros en memoria para evitar problemas con funciones no soportadas en SQLite
+            // Cargar todos los datos y aplicar filtros en memoria para evitar problemas con
+            // funciones no soportadas en SQLite
             var prompts = await _database.Table<PromptTemplate>().ToListAsync();
 
             // Filtrado por fecha
-          
-                DateTime today = DateTime.Today;
-                DateTime end = today.AddDays(1); // Fin del día actual
 
-                prompts = dateFilter switch
-                {
-                    Filters.Today => prompts.Where(p => p.CreatedAt >= today && p.CreatedAt < end).ToList(),
-                    Filters.Last7Days => prompts.Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end).ToList(),
-                    Filters.Favorites => prompts.Where(p => p.IsFavorite).ToList(),
-                    Filters.NonFavorites => prompts.Where(p => !p.IsFavorite).ToList(),
+            DateTime today = DateTime.Today;
+            DateTime end = today.AddDays(1); // Fin del día actual
 
-                    _ => prompts
-                };
-            
+            prompts = dateFilter switch
+            {
+                Filters.Today => prompts.Where(p => p.CreatedAt >= today && p.CreatedAt < end).ToList(),
+                Filters.Last7Days => prompts.Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end).ToList(),
+                Filters.Favorites => prompts.Where(p => p.IsFavorite).ToList(),
+                Filters.NonFavorites => prompts.Where(p => !p.IsFavorite).ToList(),
+
+                _ => prompts
+            };
 
             // Filtrado por texto
             if (!string.IsNullOrWhiteSpace(filterText))
@@ -541,7 +531,6 @@ namespace QuickPrompt.Services
 
             return prompts.Count;
         }
-
 
         /// <summary>
         /// Borra completamente la base de datos eliminando todas las tablas.

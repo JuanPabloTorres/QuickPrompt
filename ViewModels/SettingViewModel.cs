@@ -43,4 +43,17 @@ public partial class SettingViewModel : BaseViewModel
             }
         }, AppMessagesEng.GenericError);
     }
+
+    [RelayCommand]
+    private async Task OpenGuideLinkAsync()
+    {
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            var uri = new Uri("https://estjuanpablotorres.wixsite.com/quickprompt");
+
+        await Launcher.Default.OpenAsync(uri);
+
+        }, AppMessagesEng.GenericError);
+    }
+
 }

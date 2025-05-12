@@ -24,6 +24,7 @@ namespace QuickPrompt.Tools
         Favorites,
         NonFavorites,
         Today,
-        Last7Days
+        Last7Days,
+        None
     }
 }
