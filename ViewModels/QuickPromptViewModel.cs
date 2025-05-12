@@ -282,6 +282,8 @@ namespace QuickPrompt.ViewModels
                     }
 
                     await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
+
+                    this.IsAllSelected = false;
                 }, AppMessagesEng.Prompts.PromptDeleteError);
             }
         }

@@ -31,7 +31,7 @@
                         Binding="{Binding SelectedDateFilter}"
                         TargetType="Button"
                         Value="{x:Static enums:Filters.Favorites}">
-                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BackgroundColor" Value="LightGray" />
                         <Setter Property="BorderColor" Value="Gray" />
                         <Setter Property="TextColor" Value="White" />
                     </DataTrigger>
@@ -58,7 +58,7 @@
                         Binding="{Binding SelectedDateFilter}"
                         TargetType="Button"
                         Value="{x:Static enums:Filters.NonFavorites}">
-                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BackgroundColor" Value="LightGray" />
                         <Setter Property="BorderColor" Value="Gray" />
                         <Setter Property="TextColor" Value="White" />
                     </DataTrigger>
@@ -86,7 +86,7 @@
                         Binding="{Binding SelectedDateFilter}"
                         TargetType="Button"
                         Value="{x:Static enums:Filters.Today}">
-                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BackgroundColor" Value="LightGray" />
                         <Setter Property="BorderColor" Value="Gray" />
                         <Setter Property="TextColor" Value="White" />
                     </DataTrigger>
@@ -106,7 +106,7 @@
                 Command="{Binding SelectFilterCommand}"
                 CommandParameter="{x:Static enums:Filters.Last7Days}"
                 Style="{StaticResource FilterButtonStyle}"
-                Text="7 Days"
+                Text="Last 7 Days"
                 TextColor="{StaticResource AppBlack}">
 
                 <Button.Triggers>
@@ -114,7 +114,7 @@
                         Binding="{Binding SelectedDateFilter}"
                         TargetType="Button"
                         Value="{x:Static enums:Filters.Last7Days}">
-                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BackgroundColor" Value="LightGray" />
                         <Setter Property="BorderColor" Value="Gray" />
                         <Setter Property="TextColor" Value="White" />
                     </DataTrigger>
@@ -142,7 +142,7 @@
                         Binding="{Binding SelectedDateFilter}"
                         TargetType="Button"
                         Value="{x:Static enums:Filters.All}">
-                        <Setter Property="BackgroundColor" Value="Gray" />
+                        <Setter Property="BackgroundColor" Value="LightGray" />
                         <Setter Property="BorderColor" Value="Gray" />
                         <Setter Property="TextColor" Value="White" />
                     </DataTrigger>

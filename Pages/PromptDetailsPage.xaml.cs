@@ -20,6 +20,8 @@ public partial class PromptDetailsPage : ContentPage
     {
         base.OnAppearing();
 
+        _viewModel.Clear();
+
         _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
     }
 

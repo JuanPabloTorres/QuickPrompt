@@ -93,8 +93,12 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
             if (!AreVariablesFilled())
             {
                 await AppShell.Current.DisplayAlert("Error", AppMessagesEng.Prompts.PromptVariablesError, "OK");
+
                 return;
             }
+
+            // Mostrar anuncio intersticial después de guardar el prompt
+            await _adMobService.ShowInterstitialAdAsync();
 
             FinalPrompt = GenerateFinalPrompt();
 
@@ -106,8 +110,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
             UpdateVisibility(); // Mostrar botón de compartir
 
-            // Mostrar anuncio intersticial después de guardar el prompt
-            await _adMobService.ShowInterstitialAdAsync();
+         
         }, AppMessagesEng.GenericError);
     }
 
@@ -164,6 +167,8 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
 
         ShowPromptActions = !string.IsNullOrWhiteSpace(FinalPrompt);
     }
+
+   
 
     [RelayCommand]
     private void SelectSuggestion(VariableSuggestionSelection selection)
@@ -230,7 +235,7 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
     [RelayCommand]
     private void ClearText() => Clear();
 
-    private void Clear()
+    public void Clear()
     {
         if (Variables.All(v => string.IsNullOrEmpty(v.Value)))
         {

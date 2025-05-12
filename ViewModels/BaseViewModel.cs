@@ -22,26 +22,19 @@ namespace QuickPrompt.ViewModels
 
         [ObservableProperty] protected string search;
 
-        [ObservableProperty]protected Filters selectedDateFilter = Filters.All;
-
+        [ObservableProperty] protected Filters selectedDateFilter = Filters.All;
 
         [ObservableProperty] protected bool isAllSelected = false;
+
+        [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
+
+        [ObservableProperty] private bool showPromptActions;
+
+        [ObservableProperty] public bool isLoading;
 
         protected string oldSearch;
 
         protected Filters oldDateFilter;
-
-        /// <summary>
-        /// Controla el estado de carga de la aplicación.
-        /// </summary>
-        [ObservableProperty] public bool isLoading;
-
-        /// <summary>
-        /// Etiqueta que muestra el conteo de variables seleccionadas.
-        /// </summary>
-        [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
-
-        [ObservableProperty] private bool showPromptActions;
 
         protected PromptDatabaseService _databaseService;
 
