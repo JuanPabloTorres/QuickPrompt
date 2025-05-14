@@ -76,6 +76,7 @@ namespace QuickPrompt.Pages
 
             // Animación rápida: achica y vuelve a tamaño
             await FloatingButton.ScaleTo(0.85, 100, Easing.CubicOut);
+
             await FloatingButton.ScaleTo(1.0, 100, Easing.CubicIn);
 
             // Ejecutar comando
