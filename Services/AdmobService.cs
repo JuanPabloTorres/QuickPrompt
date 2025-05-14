@@ -25,6 +25,7 @@ namespace QuickPrompt.Services
         /// </summary>
         public void LoadInterstitialAd()
         {
+        
             CrossMauiMTAdmob.Current.LoadInterstitial(_interstitialAdId);
         }
 

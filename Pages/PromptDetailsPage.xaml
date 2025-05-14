@@ -65,32 +65,49 @@
     <ScrollView>
 
         <VerticalStackLayout
-            Padding="10"
-            Spacing="8"
+            Padding="20"
+            Spacing="15"
             VerticalOptions="Fill">
+
+            <!--  Título Principal  -->
             <Label
+                FontAttributes="Bold"
+                FontSize="24"
                 HorizontalOptions="Center"
-                Style="{StaticResource TitleLabelStyle}"
-                Text="{Binding PromptTitle}" />
+                Text="{Binding PromptTitle}"
+                TextColor="{StaticResource PrimaryBlueDark}" />
 
             <!--  Línea divisoria  -->
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
+            <!--  Descripción  -->
             <Label
+                FontSize="16"
                 HorizontalOptions="Center"
-                Style="{StaticResource SubtitleLabelStyle}"
-                Text="{Binding Description}" />
+                Text="{Binding Description}"
+                TextColor="{StaticResource PrimaryBlueLight}" />
 
-            <!--  Label para el Prompt  -->
-            <Label Style="{StaticResource SubtitleLabelStyle}" Text="{Binding PromptText}" />
+            <!--  Prompt Principal  -->
+            <Border
+                Padding="12"
+                BackgroundColor="#F6F6F6"
+                Stroke="#DDDDDD"
+                StrokeShape="RoundRectangle 8"
+                StrokeThickness="1">
+
+                <Label
+                    FontSize="16"
+                    Text="{Binding PromptText}"
+                    TextColor="{StaticResource PrimaryBlueLight}" />
+            </Border>
 
             <ScrollView>
                 <VerticalStackLayout>
                     <Label
-                        Margin="8"
+                        Margin="0,10,0,0"
                         FontAttributes="Bold"
                         FontSize="20"
-                        Text="Complete the variables:"
+                        Text="Complete the Variables:"
                         TextColor="{StaticResource AppBlack}" />
 
                     <!--  Línea divisoria  -->
@@ -98,53 +115,56 @@
 
                     <CollectionView
                         x:Name="VariablesCollection"
-                        Margin="5"
-                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        Margin="0,5"
                         ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <VerticalStackLayout Padding="4" Spacing="5">
-                                    <Label Style="{StaticResource VaribleTitleLabelStyle}" Text="{Binding Name}" />
+                                <VerticalStackLayout Padding="6" Spacing="6">
 
-                                    <Border Style="{StaticResource InputBorderStyle2}">
-                                        <VerticalStackLayout Spacing="4">
-                                            <Entry
-                                                Focused="OnEntryFocused"
-                                                Placeholder="Enter value here..."
-                                                Style="{StaticResource VariableInputEntryStyle}"
-                                                Text="{Binding Value}"
-                                                Unfocused="OnEntryUnfocused">
+                                    <Label
+                                        FontAttributes="Bold"
+                                        FontSize="16"
+                                        Text="{Binding Name}"
+                                        TextColor="{StaticResource PrimaryBlueDark}" />
 
-                                                <Entry.GestureRecognizers>
-                                                    <TapGestureRecognizer Tapped="OnEntryTapped" />
-                                                </Entry.GestureRecognizers>
-                                            </Entry>
+                                    <Border Style="{StaticResource InputBorderStyle}">
+                                        <Entry
+                                            Focused="OnEntryFocused"
+                                            Placeholder="Enter value here..."
+                                            Style="{StaticResource VariableInputEntryStyle}"
+                                            Text="{Binding Value}"
+                                            Unfocused="OnEntryUnfocused">
 
-                                            <!--  Sugerencias desde caché  -->
-                                            <CollectionView
-                                                Margin="0,4"
-                                                IsVisible="{Binding ShowSuggestions}"
-                                                ItemsLayout="HorizontalList"
-                                                ItemsSource="{Binding Suggestions}"
-                                                SelectionMode="None">
-
-                                                <CollectionView.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border Style="{StaticResource SuggestionChipBorderStyle}">
-                                                            <Label
-                                                                Style="{StaticResource SuggestionChipLabelStyle}"
-                                                                Text="{Binding .}"
-                                                                TextColor="Gray">
-                                                                <Label.GestureRecognizers>
-                                                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" CommandParameter="{Binding .}" />
-                                                                </Label.GestureRecognizers>
-                                                            </Label>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </CollectionView.ItemTemplate>
-                                            </CollectionView>
-                                        </VerticalStackLayout>
+                                            <Entry.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnEntryTapped" />
+                                            </Entry.GestureRecognizers>
+                                        </Entry>
                                     </Border>
+
+                                    <!--  Sugerencias desde caché  -->
+                                    <CollectionView
+                                        Margin="0,4"
+                                        IsVisible="{Binding ShowSuggestions}"
+                                        ItemsLayout="HorizontalList"
+                                        ItemsSource="{Binding Suggestions}"
+                                        SelectionMode="None">
+
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource SuggestionChipBorderStyle}">
+                                                    <Label
+                                                        Style="{StaticResource SuggestionChipLabelStyle}"
+                                                        Text="{Binding .}"
+                                                        TextColor="Gray">
+                                                        <Label.GestureRecognizers>
+                                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" CommandParameter="{Binding .}" />
+                                                        </Label.GestureRecognizers>
+                                                    </Label>
+                                                </Border>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -152,109 +172,101 @@
                 </VerticalStackLayout>
             </ScrollView>
 
+            <!--  Botón Generar Prompt  -->
             <Button
                 Command="{Binding GeneratePromptCommand}"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 Style="{StaticResource YellowButtonStyle}"
-                Text="Generate Prompt ">
-
+                Text="Generate Prompt"
+                TextColor="White">
                 <Button.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"
                         Glyph="&#xe26c;"
-                        Color="{StaticResource TextLight}" />
+                        Color="White" />
                 </Button.ImageSource>
             </Button>
 
+            <!--  Prompt Generado  -->
             <Label
-                Margin="10"
+                Margin="0,10"
                 FontAttributes="Italic"
                 FontSize="15"
-                HorizontalOptions="Start"
                 IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
-                Text="{Binding FinalPrompt, StringFormat='Prompt Generated: {0}'}"
+                LineBreakMode="WordWrap"
+                Text="{Binding FinalPrompt, StringFormat='Complete Prompt Generated: {0}'}"
                 TextColor="{StaticResource AppBlack}" />
 
             <!--  Línea divisoria  -->
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
+            <!--  Instrucciones finales  -->
             <Label
-                Margin="0,0,0,10"
-                FontAttributes="Italic"
-                FontSize="14"
+                Margin="0,0,0,5"
+                FontSize="16"
                 HorizontalOptions="Center"
                 IsVisible="{Binding ShowPromptActions}"
-                Text="Click on your preferred AI platform to view the generated prompt in action."
+                Text="Select an AI to use your prompt:"
                 TextColor="{StaticResource AppBlack}" />
 
-
-
-
-            <!--  Botón 1: ChatGPT  -->
-            <Button
-                Grid.Row="0"
-                Grid.Column="0"
-                BackgroundColor="{StaticResource PrimaryBlueDark}"
-                Command="{Binding SendPromptToChatGPTCommand}"
+            <!--  Botones AI en layout horizontal  -->
+            <!--  Botones AI en layout responsive  -->
+            <FlexLayout
+                AlignItems="Center"
+                Direction="Row"
+                HorizontalOptions="Center"
                 IsVisible="{Binding ShowPromptActions}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="Chat GPT"
-                TextColor="White"
-                VerticalOptions="End">
+                JustifyContent="Center"
+                Wrap="Wrap">
 
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xeadb;"
-                        Color="White" />
-                </Button.ImageSource>
-            </Button>
+                <Button
+                    Command="{Binding SendPromptToChatGPTCommand}"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="ChatGPT"
+                    TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
 
-            <!--  Botón 2: Gemini  -->
-            <Button
-                Grid.Row="0"
-                Grid.Column="1"
-                BackgroundColor="{StaticResource PrimaryBlueDark}"
-                Command="{Binding SendPromptToGeminiCommand}"
-                IsVisible="{Binding ShowPromptActions}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="Gemini"
-                TextColor="White"
-                VerticalOptions="End">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xeadb;"
-                        Color="White" />
-                </Button.ImageSource>
-            </Button>
+                <Button
+                    Command="{Binding SendPromptToGeminiCommand}"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Gemini"
+                    TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
 
-            <!--  Botón 3: Grok  -->
-            <Button
-                Grid.Row="1"
-                Grid.Column="0"
-                BackgroundColor="{StaticResource PrimaryBlueDark}"
-                Command="{Binding SendPromptToGrokCommand}"
-                IsVisible="{Binding ShowPromptActions}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="Grok"
-                TextColor="White"
-                VerticalOptions="End">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xeadb;"
-                        Color="{StaticResource White}" />
-                </Button.ImageSource>
-            </Button>
+                <Button
+                    Command="{Binding SendPromptToGrokCommand}"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Grok"
+                    TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+            </FlexLayout>
+
 
             <!--  Overlay de carga  -->
             <view:ReusableLoadingOverlay
                 x:Name="LoadingOverlay"
-                Grid.Row="0"
-                Grid.RowSpan="4"
                 IsVisible="{Binding IsLoading}"
                 Message="Loading..." />
+
         </VerticalStackLayout>
+
     </ScrollView>
 </ContentPage>

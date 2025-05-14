@@ -71,7 +71,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
     }
 
     [RelayCommand]
-    private async Task CreateVariableAsync()
+    public async Task CreateVariable()
     {
         if (IsSelectionValid(PromptText, SelectionLength))
         {
@@ -174,7 +174,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
             Template = PromptText,
             Description = string.IsNullOrWhiteSpace(PromptDescription) ? "N/A" : PromptDescription,
             Variables = ExtractVariables(PromptText).ToDictionary(v => v, v => string.Empty),
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
         };
     }
 

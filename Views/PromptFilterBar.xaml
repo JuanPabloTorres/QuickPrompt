@@ -7,17 +7,22 @@
     x:Name="Root"
     IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
 
-    <VerticalStackLayout Spacing="8">
-        <!--  Filtro de fecha  -->
+    <VerticalStackLayout Spacing="12">
 
+        <!--  Título de filtros  -->
+        <Label
+            HorizontalOptions="Start"
+            Style="{StaticResource TitleLabelStyle}"
+            Text="Filters:" />
+
+        <!--  Contenedor de botones de filtros  -->
         <Grid
             ColumnDefinitions="*,*"
-            ColumnSpacing="5"
-            HorizontalOptions="Fill"
-            RowDefinitions="*,*,*"
-            RowSpacing="5">
+            ColumnSpacing="10"
+            RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="10">
 
-            <!--  Favorites  -->
+            <!--  Primera fila: Favorites / Not Favorites  -->
             <Button
                 Grid.Row="0"
                 Grid.Column="0"
@@ -43,7 +48,7 @@
                         Color="{StaticResource AppBlack}" />
                 </Button.ImageSource>
             </Button>
-            <!--  Non-Favorites  -->
+
             <Button
                 Grid.Row="0"
                 Grid.Column="1"
@@ -52,7 +57,6 @@
                 Style="{StaticResource FilterButtonStyle}"
                 Text="Not Favorites"
                 TextColor="{StaticResource AppBlack}">
-
                 <Button.Triggers>
                     <DataTrigger
                         Binding="{Binding SelectedDateFilter}"
@@ -71,7 +75,7 @@
                 </Button.ImageSource>
             </Button>
 
-            <!--  Today  -->
+            <!--  Segunda fila: Today / Last 7 Days  -->
             <Button
                 Grid.Row="1"
                 Grid.Column="0"
@@ -80,7 +84,6 @@
                 Style="{StaticResource FilterButtonStyle}"
                 Text="Today"
                 TextColor="{StaticResource AppBlack}">
-
                 <Button.Triggers>
                     <DataTrigger
                         Binding="{Binding SelectedDateFilter}"
@@ -99,7 +102,6 @@
                 </Button.ImageSource>
             </Button>
 
-            <!--  Last 7 Days  -->
             <Button
                 Grid.Row="1"
                 Grid.Column="1"
@@ -108,7 +110,6 @@
                 Style="{StaticResource FilterButtonStyle}"
                 Text="Last 7 Days"
                 TextColor="{StaticResource AppBlack}">
-
                 <Button.Triggers>
                     <DataTrigger
                         Binding="{Binding SelectedDateFilter}"
@@ -127,7 +128,7 @@
                 </Button.ImageSource>
             </Button>
 
-            <!--  All  -->
+            <!--  Tercera fila: All  -->
             <Button
                 Grid.Row="2"
                 Grid.ColumnSpan="2"
@@ -136,7 +137,6 @@
                 Style="{StaticResource FilterButtonStyle}"
                 Text="All"
                 TextColor="{StaticResource AppBlack}">
-
                 <Button.Triggers>
                     <DataTrigger
                         Binding="{Binding SelectedDateFilter}"
@@ -154,30 +154,31 @@
                         Color="{StaticResource AppBlack}" />
                 </Button.ImageSource>
             </Button>
+
         </Grid>
 
-
-        <!--  Búsqueda por texto  -->
-        <Border Style="{StaticResource InputBorderStyle}">
-            <Grid ColumnDefinitions="*, Auto">
+        <!--  Campo de búsqueda  -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
+            <Border Grid.Column="0" Style="{StaticResource InputBorderStyle}">
                 <Entry
-                    Grid.Column="0"
                     Placeholder="Type your search here..."
                     Style="{StaticResource SearchEntryStyle}"
                     Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}" />
-            </Grid>
-        </Border>
+            </Border>
 
-        <Button
-            Grid.Column="1"
-            Command="{Binding SearchCommand, Source={x:Reference Root}}"
-            Style="{StaticResource SearchButtonStyle}">
-            <Button.ImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe8b6;"
-                    Color="{StaticResource White}" />
-            </Button.ImageSource>
-        </Button>
+            <Button
+                Grid.Column="1"
+                Command="{Binding SearchCommand, Source={x:Reference Root}}"
+                Style="{StaticResource SearchButtonStyle}">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe8b6;"
+                        Color="{StaticResource White}" />
+                </Button.ImageSource>
+            </Button>
+        </Grid>
+
     </VerticalStackLayout>
+
 </ContentView>

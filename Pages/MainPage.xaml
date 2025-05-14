@@ -33,19 +33,6 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
-        <!--  Botón de Crear Variable  -->
-        <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe86f;"
-                    Color="{StaticResource PrimaryBlueDark}" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Click to Create a Variable
-            </ToolTipProperties.Text>
-        </ToolbarItem>
-
         <!--  Botón de Copiar  -->
         <ToolbarItem Command="{Binding CopyToClipboardCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
@@ -74,6 +61,19 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
+        <!--  Botón para resetear posición del botón flotante  -->
+        <ToolbarItem Clicked="ResetFloatingButtonPosition">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe8aa;"
+                    Color="{StaticResource PrimaryBlueDark}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Reset Floating Button Position
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
         <!--  Botón de Copiar  -->
         <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
@@ -89,56 +89,119 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <ScrollView>
+    <AbsoluteLayout>
 
-        <Grid
-            Padding="20"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-            RowSpacing="10">
+        <!--  Contenido Principal Scrollable  -->
+        <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
+            <Grid
+                Padding="20"
+                RowDefinitions="Auto,Auto,Auto,Auto,*,*"
+                RowSpacing="10">
 
-            <!--  Overlay de carga  -->
-            <views:ReusableLoadingOverlay
-                x:Name="LoadingOverlay"
-                Grid.Row="0"
-                Grid.RowSpan="5"
-                IsVisible="{Binding IsLoading}"
-                Message="Loading..." />
+                <!--  Overlay de carga  -->
+                <views:ReusableLoadingOverlay
+                    x:Name="LoadingOverlay"
+                    Grid.Row="0"
+                    Grid.RowSpan="6"
+                    IsVisible="{Binding IsLoading}"
+                    Message="Loading..." />
 
-            <!--  Título  -->
-            <Label
-                Grid.Row="0"
-                Style="{StaticResource TitleLabelStyle}"
-                Text="Prompt Management" />
+                <!--  Título principal  -->
+                <Label
+                    Grid.Row="0"
+                    Style="{StaticResource TitleLabelStyle}"
+                    Text="Prompt Management " />
 
-            <!--  Línea divisoria  -->
-            <BoxView Grid.Row="1" Style="{StaticResource DividerLineStyle}" />
+                <!--  Explicación breve  -->
+                <Label
+                    Grid.Row="1"
+                    FontSize="14"
+                    Text="Create your prompt by completing the title, description, and main prompt below. You can insert variables using the floating &lt;&gt; button."
+                    TextColor="Gray" />
 
-            <!--  Entrada para el Título  -->
-            <Border Grid.Row="2" Style="{StaticResource InputBorderStyle}">
-                <Entry
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Placeholder="Type Title..."
-                    Style="{StaticResource InputEntryStyle}"
-                    Text="{Binding PromptTitle}" />
-            </Border>
+                <!--  Línea divisoria  -->
+                <BoxView Grid.Row="2" Style="{StaticResource DividerLineStyle}" />
 
-            <!--  Entrada para la Descripción  -->
-            <Border Grid.Row="3" Style="{StaticResource InputBorderStyle}">
-                <Editor
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    Style="{StaticResource InputEditorStyle}"
-                    Text="{Binding PromptDescription}" />
-            </Border>
+                <!--  Campo: Title  -->
 
-            <!--  Editor para el Prompt  -->
-            <Border Grid.Row="4" Style="{StaticResource InputBorderStyle}">
-                <Editor
-                    CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                    Style="{StaticResource PromptEditorStyle}"
-                    Text="{Binding PromptText}" />
-            </Border>
-        </Grid>
-    </ScrollView>
+                <VerticalStackLayout Grid.Row="3">
+
+                    <Label
+                        Grid.Row="3"
+                        HorizontalOptions="Start"
+                        Style="{StaticResource TitleLabelStyle}"
+                        Text="Title " />
+                    <Border Grid.Row="3" Style="{StaticResource InputBorderStyle}">
+                        <Entry
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            Placeholder="Example: Blog Post Generator"
+                            Style="{StaticResource InputEntryStyle}"
+                            Text="{Binding PromptTitle}" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!--  Campo: Description  -->
+
+                <VerticalStackLayout Grid.Row="4">
+
+                    <Label
+                        Grid.Row="4"
+                        FontSize="14"
+                        HorizontalOptions="Start"
+                        Style="{StaticResource TitleLabelStyle}"
+                        Text="Description (optional) " />
+                    <Border Grid.Row="4" Style="{StaticResource InputBorderStyle}">
+                        <Editor
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            Placeholder="Short explanation of what this prompt does..."
+                            Style="{StaticResource InputEditorStyle}"
+                            Text="{Binding PromptDescription}" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!--  Campo: Prompt  -->
+                <VerticalStackLayout Grid.Row="5">
+
+                    <Label
+                        Grid.Row="5"
+                        HorizontalOptions="Start"
+                        Style="{StaticResource TitleLabelStyle}"
+                        Text="Prompt Template " />
+                    <Border Grid.Row="5" Style="{StaticResource InputBorderStyle}">
+                        <Editor
+                            CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            Placeholder="Example: Generate a message for &lt;recipient&gt; about &lt;subject&gt;"
+                            SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                            Style="{StaticResource PromptEditorStyle}"
+                            Text="{Binding PromptText}" />
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+        </ScrollView>
+
+        <!--  Botón flotante  -->
+        <Button
+            x:Name="FloatingButton"
+            Margin="20"
+            AbsoluteLayout.LayoutBounds="0,0,50,50"
+            AbsoluteLayout.LayoutFlags="None"
+            Command="{Binding CreateVariableCommand}"
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+            Style="{StaticResource FloatingButtonStyle}">
+
+            <Button.GestureRecognizers>
+                <PanGestureRecognizer PanUpdated="OnPanUpdated" />
+                <TapGestureRecognizer Tapped="OnFloatingButtonTapped" />
+            </Button.GestureRecognizers>
+
+            <Button.ImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe86f;"
+                    Color="{StaticResource White}" />
+            </Button.ImageSource>
+        </Button>
+    </AbsoluteLayout>
 </ContentPage>

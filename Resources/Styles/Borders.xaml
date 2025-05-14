@@ -11,7 +11,7 @@
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
-        <Setter Property="StrokeThickness" Value="0.15" />
+        <Setter Property="StrokeThickness" Value="1" />
 
 
     </Style>
@@ -23,7 +23,7 @@
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
-        <Setter Property="StrokeThickness" Value="0.15" />
+        <Setter Property="StrokeThickness" Value="1" />
 
 
     </Style>
@@ -41,7 +41,7 @@
         <Setter Property="Padding" Value="5" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
-        <Setter Property="StrokeThickness" Value="0.7" />
+        <Setter Property="StrokeThickness" Value="1" />
     </Style>
 
     <Style x:Key="SuggestionChipBorderStyle" TargetType="Border">

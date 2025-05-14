@@ -126,7 +126,7 @@ namespace QuickPrompt.Services
                         { "time", "30" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -139,7 +139,7 @@ namespace QuickPrompt.Services
                         { "topic", "Artificial Intelligence in Healthcare" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -153,7 +153,7 @@ namespace QuickPrompt.Services
                         { "destination", "Paris" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -167,7 +167,7 @@ namespace QuickPrompt.Services
                         { "diet", "Vegan" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -181,7 +181,7 @@ namespace QuickPrompt.Services
                         { "industry", "Technology" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -195,7 +195,7 @@ namespace QuickPrompt.Services
                         { "key strengths", "Leadership, strategic planning, and problem-solving" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -210,7 +210,7 @@ namespace QuickPrompt.Services
                         { "target audience", "Tech enthusiasts" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
                 {
@@ -224,7 +224,7 @@ namespace QuickPrompt.Services
                         { "platform", "Instagram" }
                     },
                     IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PromptTemplate
 {
@@ -238,7 +238,7 @@ namespace QuickPrompt.Services
         { "sport", "basketball" }
     },
     IsFavorite = true,
-    CreatedAt = DateTime.UtcNow
+    CreatedAt = DateTime.Now
 },
                 new PromptTemplate
 {
@@ -251,7 +251,7 @@ namespace QuickPrompt.Services
         { "symptom", "chest pain" }
     },
     IsFavorite = true,
-    CreatedAt = DateTime.UtcNow
+    CreatedAt = DateTime.Now
 },
                 new PromptTemplate
 {
@@ -265,7 +265,7 @@ namespace QuickPrompt.Services
         { "gradeLevel", "6th grade" }
     },
     IsFavorite = true,
-    CreatedAt = DateTime.UtcNow
+    CreatedAt = DateTime.Now
 },
                 new PromptTemplate
 {
@@ -278,7 +278,7 @@ namespace QuickPrompt.Services
         { "concept", "blockchain" }
     },
     IsFavorite = true,
-    CreatedAt = DateTime.UtcNow
+    CreatedAt = DateTime.Now
 },
                 new PromptTemplate
 {
@@ -292,7 +292,7 @@ namespace QuickPrompt.Services
         { "ingredient2", "broccoli" }
     },
     IsFavorite = true,
-    CreatedAt = DateTime.UtcNow
+    CreatedAt = DateTime.Now
 }
             };
 

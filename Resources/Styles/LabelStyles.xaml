@@ -35,7 +35,7 @@
         x:Key="TitleLabelStyle"
         BasedOn="{StaticResource BaseLabelStyle}"
         TargetType="Label">
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="18" />
         <Setter Property="FontAttributes" Value="Italic" />
         <Setter Property="FontFamily" Value="Designer" />
         <Setter Property="TextTransform" Value="Uppercase" />

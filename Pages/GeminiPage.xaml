@@ -3,7 +3,8 @@
     x:Class="QuickPrompt.Pages.GeminiPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:view="clr-namespace:QuickPrompt.Views">
+    xmlns:view="clr-namespace:QuickPrompt.Views"
+    BackgroundColor="WhiteSmoke">
 
     <Shell.BackButtonBehavior>
         <BackButtonBehavior IsVisible="False" />
@@ -18,7 +19,7 @@
     </Shell.TitleView>
 
 
-    <Grid Padding="10">
+    <Grid>
         <!--  WebView  -->
         <WebView
             x:Name="GeminiWebView"
@@ -30,6 +31,7 @@
         <!--  Loading Overlay Layer  -->
         <view:ReusableLoadingOverlay
             x:Name="LoadingOverlay"
+            Padding="10"
             IsVisible="False"
             Message="Loading Gemini..." />
     </Grid>
