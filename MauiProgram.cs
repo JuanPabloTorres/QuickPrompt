@@ -176,6 +176,10 @@ namespace QuickPrompt
             Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
             
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
+           
+            Routing.RegisterRoute(nameof(MistralChatPage), typeof(MistralChatPage));
+
+            Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
 
         }
     }

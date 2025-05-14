@@ -161,6 +161,21 @@ public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseS
         await SendPromptToAsync(nameof(GrokPage), "Grok", PromptID, FinalPrompt);
     }
 
+    [RelayCommand]
+    private async Task SendPromptToMistralAsync()
+    {
+        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Grok
+
+        await SendPromptToAsync(nameof(MistralChatPage), "Mistral AI", PromptID, FinalPrompt);
+    }
+
+    [RelayCommand]
+    private async Task SendPromptToCopilotAsync()
+    {
+        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Grok
+
+        await SendPromptToAsync(nameof(CopilotChatPage), "Copilot", PromptID, FinalPrompt);
+    }
     private void UpdateVisibility()
     {
         IsShareButtonVisible = !string.IsNullOrWhiteSpace(FinalPrompt);

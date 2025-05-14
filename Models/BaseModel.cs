@@ -1,4 +1,5 @@
-﻿using SQLite;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.Models
 {
-    public class BaseModel
+    public class BaseModel:ObservableObject
     {
         [PrimaryKey]
         public Guid Id { get; set; } = Guid.NewGuid();  // ID único generado automáticamente

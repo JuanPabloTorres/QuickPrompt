@@ -185,5 +185,30 @@ namespace QuickPrompt.Tools
                    Regex.IsMatch(text, @"<[^<>]+>");
         }
 
+        public static List<string> ExtractVariables(string promptText)
+        {
+            var variables = new List<string>();
+
+            int startIndex = promptText.IndexOf('<');
+
+            while (startIndex != -1)
+            {
+                int endIndex = promptText.IndexOf('>', startIndex);
+
+                if (endIndex == -1) break;
+
+                string variable = promptText.Substring(startIndex + 1, endIndex - startIndex - 1);
+
+                if (!variables.Contains(variable))
+                {
+                    variables.Add(variable);
+                }
+
+                startIndex = promptText.IndexOf('<', endIndex);
+            }
+
+            return variables;
+        }
+
     }
 }

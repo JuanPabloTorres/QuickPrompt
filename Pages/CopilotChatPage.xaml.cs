@@ -1,15 +1,12 @@
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.Controls;
 using QuickPrompt.ViewModels;
-using System;
 
 namespace QuickPrompt.Pages;
 
-public partial class ChatGptPage : ContentPage, IQueryAttributable
+public partial class CopilotChatPage : ContentPage, IQueryAttributable
 {
     private readonly AiWebViewPageViewModel viewModel;
 
-    public ChatGptPage(AiWebViewPageViewModel vm)
+    public CopilotChatPage(AiWebViewPageViewModel vm)
     {
         InitializeComponent();
 
@@ -32,7 +29,7 @@ public partial class ChatGptPage : ContentPage, IQueryAttributable
     let attempt = 0;
 
     let interval = setInterval(() => {{
-      let textarea = document.getElementById('prompt-textarea');
+        let textarea = document.getElementById('userInput');
 
         if (textarea) {{
             let currentText = textarea.innerText || textarea.textContent;
@@ -55,7 +52,7 @@ public partial class ChatGptPage : ContentPage, IQueryAttributable
 }})();
 ";
 
-            await ChatGptWebView.EvaluateJavaScriptAsync(script);
+            await CopilotWebView.EvaluateJavaScriptAsync(script);
         }
 
         LoadingOverlay.IsVisible = false;

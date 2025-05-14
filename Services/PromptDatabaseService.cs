@@ -25,40 +25,6 @@ namespace QuickPrompt.Services
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
         /// </summary>
-        //private async Task InitializeDatabaseAsync()
-        //{
-        //    if (!DatabaseExists())
-        //    {
-        //        await _database.CreateTableAsync<PromptTemplate>();
-
-        //        await InsertDefaultPromptsAsync();
-        //    }
-        //}
-
-        //private async Task InitializeDatabaseAsync()
-        //{
-        //    // Intenta crear tabla si no existe
-        //    await _database.CreateTableAsync<PromptTemplate>();
-
-        // // Agrega columnas nuevas si no existen (esto es seguro, no borra datos) await
-        // _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN CreatedAt TEXT DEFAULT ''");
-
-        // await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN UpdatedAt TEXT
-        // DEFAULT ''");
-
-        // await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN IsDeleted INTEGER
-        // DEFAULT 0");
-
-        // // Actualiza valores nulos con timestamps válidos await _database.ExecuteAsync("UPDATE
-        // PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
-
-        // await _database.ExecuteAsync("UPDATE PromptTemplate SET UpdatedAt = datetime('now') WHERE
-        // UpdatedAt IS NULL OR UpdatedAt = ''");
-
-        //    if (!DatabaseExists())
-        //        await InsertDefaultPromptsAsync();
-        //}
-
         private async Task InitializeDatabaseAsync()
         {
             // Crear tabla si no existe
@@ -293,7 +259,136 @@ namespace QuickPrompt.Services
     },
     IsFavorite = true,
     CreatedAt = DateTime.Now
+},new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Business Pitch Creator",
+    Description = "Generates a short pitch for a startup idea.",
+    Template = "Create a 1-minute pitch for a startup focused on <industry> solving <problem> for <target audience>.",
+    Variables = new Dictionary<string, string>
+    {
+        { "industry", "health tech" },
+        { "problem", "access to remote consultations" },
+        { "target audience", "rural patients" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "YouTube Video Script",
+    Description = "Creates an engaging script for a YouTube video.",
+    Template = "Write a YouTube script for a video about <topic> with an <tone> tone, lasting about <duration> minutes.",
+    Variables = new Dictionary<string, string>
+    {
+        { "topic", "How to use ChatGPT for research" },
+        { "tone", "educational" },
+        { "duration", "10" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Personal Budget Plan",
+    Description = "Creates a monthly budget based on income and goals.",
+    Template = "Generate a monthly budget plan for someone earning <income> with a goal to save for <goal>.",
+    Variables = new Dictionary<string, string>
+    {
+        { "income", "$3000" },
+        { "goal", "a new laptop" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Job Application Email",
+    Description = "Writes a professional email to apply for a job.",
+    Template = "Write a job application email for a <position> role at <company>, highlighting <keySkill>.",
+    Variables = new Dictionary<string, string>
+    {
+        { "position", "UX Designer" },
+        { "company", "Spotify" },
+        { "keySkill", "user-centered design" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Motivational Quote Generator",
+    Description = "Generates a unique motivational quote based on a theme.",
+    Template = "Create an original motivational quote about <theme>.",
+    Variables = new Dictionary<string, string>
+    {
+        { "theme", "resilience" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Event Invitation Text",
+    Description = "Creates a short invitation message for an event.",
+    Template = "Write a friendly invitation message for a <eventType> happening on <date> at <location>.",
+    Variables = new Dictionary<string, string>
+    {
+        { "eventType", "birthday party" },
+        { "date", "July 22" },
+        { "location", "Sunset Park" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Weekly Reflection Prompt",
+    Description = "Helps users reflect on their week with guided questions.",
+    Template = "Reflect on your week: What went well in <area>, what was challenging, and what will you improve?",
+    Variables = new Dictionary<string, string>
+    {
+        { "area", "work" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},
+new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Creative Story Starter",
+    Description = "Gives an opening line for a creative short story.",
+    Template = "Start a story with this setting: <setting> and a character named <character> who has a secret.",
+    Variables = new Dictionary<string, string>
+    {
+        { "setting", "a forgotten village in the mountains" },
+        { "character", "Lena" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
+},new PromptTemplate
+{
+    Id = Guid.NewGuid(),
+    Title = "Language Translator",
+    Description = "Translates a phrase or sentence into the desired target language.",
+    Template = "Translate the following text from <source language> to <target language>: <text>",
+    Variables = new Dictionary<string, string>
+    {
+        { "source language", "English" },
+        { "target language", "Spanish" },
+        { "text", "Good morning, how are you?" }
+    },
+    IsFavorite = true,
+    CreatedAt = DateTime.Now
 }
+
+
             };
 
             return defaultPrompts;

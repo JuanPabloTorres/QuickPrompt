@@ -51,7 +51,7 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
-        <Grid Padding="10" RowDefinitions="Auto,Auto,*,Auto">
+        <Grid Padding="10" RowDefinitions="*,Auto,Auto,Auto">
 
             <!--  Overlay de carga  -->
             <view:ReusableLoadingOverlay
@@ -62,21 +62,28 @@
                 Message="Loading..." />
 
             <!--  Google AdMob  -->
-            <views:AdmobBannerView Grid.Row="0" />
+            <views:AdmobBannerView Grid.Row="1" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
+
 
             <views:PromptFilterBar
-                Grid.Row="1"
+                Grid.Row="2"
                 SearchCommand="{Binding FilterPromptsCommand}"
                 SearchText="{Binding Search}"
                 SelectedFilter="{Binding SelectedDateFilter}" />
 
             <!--  Lista de Prompts  -->
             <CollectionView
-                Grid.Row="2"
-                EmptyView="{Binding EmptyViewText}"
+                Grid.Row="3"
                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsSource="{Binding Prompts}"
                 SelectionMode="None">
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center">
+
+                        <Label Style="{StaticResource TitleLabelStyle}" Text="{Binding EmptyViewText}" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
 
                 <CollectionView.Header>
 
@@ -252,27 +259,7 @@
                 </CollectionView.Footer>
             </CollectionView>
 
-            <!--  Botón para cargar más  -->
-            <!--<Button
-                Grid.Row="3"
-                Command="{Binding LoadMorePromptsCommand}"
-                IsEnabled="{Binding IsMoreDataAvailable}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="More">
 
-                <Button.IsVisible>
-                    <MultiBinding Converter="{StaticResource IsButtonVisibleConverter}">
-                        <Binding Path="IsLoading" />
-                        <Binding Path="Prompts.Count" />
-                    </MultiBinding>
-                </Button.IsVisible>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xead0;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>-->
         </Grid>
     </ScrollView>
 </ContentPage>

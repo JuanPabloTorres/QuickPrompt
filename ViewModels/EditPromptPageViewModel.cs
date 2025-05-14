@@ -45,7 +45,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             {
                 this.PromptTemplate = prompt;
 
-                this.PromptTemplate.Variables = ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
+                this.PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
 
                 UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(prompt.Template));
             }
@@ -122,7 +122,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
     /// </summary>
     private void UpdatePromptVariables()
     {
-        PromptTemplate.Variables = ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
+        PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
     }
 
     /// <summary>
@@ -243,7 +243,7 @@ public partial class EditPromptPageViewModel(PromptDatabaseService _databaseServ
             Template = newTemplate,
             Title = existingPrompt.Title,
             Description = existingPrompt.Description,
-            Variables = ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
+            Variables = AngleBraceTextHandler.ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
     }
 }

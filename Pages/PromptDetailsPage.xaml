@@ -164,7 +164,6 @@
                                             </DataTemplate>
                                         </CollectionView.ItemTemplate>
                                     </CollectionView>
-
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
@@ -208,7 +207,6 @@
                 Text="Select an AI to use your prompt:"
                 TextColor="{StaticResource AppBlack}" />
 
-            <!--  Botones AI en layout horizontal  -->
             <!--  Botones AI en layout responsive  -->
             <FlexLayout
                 AlignItems="Center"
@@ -257,16 +255,25 @@
                     </Button.ImageSource>
                 </Button>
 
+                <Button
+                    Command="{Binding SendPromptToCopilotCommand}"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Copilot "
+                    TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
             </FlexLayout>
-
 
             <!--  Overlay de carga  -->
             <view:ReusableLoadingOverlay
                 x:Name="LoadingOverlay"
                 IsVisible="{Binding IsLoading}"
                 Message="Loading..." />
-
         </VerticalStackLayout>
-
     </ScrollView>
 </ContentPage>

@@ -5,6 +5,7 @@ using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -22,6 +23,8 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
     [ObservableProperty] private string promptTitle;
 
     [ObservableProperty] private string promptDescription;
+
+ 
 
     // ============================ COMANDOS ============================
 
@@ -41,7 +44,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
                 return;
             }
 
-            var newPrompt = CreatePromptTemplate();
+            var newPrompt = PromptTemplate.CreatePromptTemplate(PromptTitle, PromptDescription, PromptText);
 
             await _databaseService.SavePromptAsync(newPrompt);
 
@@ -166,18 +169,6 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
     // ============================ MANEJO DE PROMPT ============================
 
-    private PromptTemplate CreatePromptTemplate()
-    {
-        return new PromptTemplate
-        {
-            Title = PromptTitle,
-            Template = PromptText,
-            Description = string.IsNullOrWhiteSpace(PromptDescription) ? "N/A" : PromptDescription,
-            Variables = ExtractVariables(PromptText).ToDictionary(v => v, v => string.Empty),
-            CreatedAt = DateTime.Now,
-        };
-    }
-
     private void ClearPromptInputs()
     {
         PromptTitle = string.Empty;
@@ -185,6 +176,8 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
         PromptDescription = string.Empty;
 
         PromptText = string.Empty;
+
+        IsVisualModeActive = false; // Forzar regreso al modo texto
 
         UpdateSelectedTextLabelCount(0);
     }

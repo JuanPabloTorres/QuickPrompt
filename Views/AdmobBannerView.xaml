@@ -9,8 +9,6 @@
         x:Name="AdmobBanner"
         Margin="10"
         AdsId="{Binding AdUnitId}"
-        HeightRequest="{OnPlatform Android=50,
-                                   iOS=50}"
-        HorizontalOptions="FillAndExpand"
-        VerticalOptions="FillAndExpand" />
+        HorizontalOptions="Fill"
+        VerticalOptions="Fill" />
 </ContentView>

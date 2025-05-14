@@ -24,4 +24,7 @@
     <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
 
     <converters:FilterToColorConverter x:Key="FilterToColorConverter" />
+
+    <converters:PromptReadyToShowConverter x:Key="PromptReadyToShowConverter" />
+
 </ResourceDictionary>

@@ -95,7 +95,7 @@
         <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
             <Grid
                 Padding="20"
-                RowDefinitions="Auto,Auto,Auto,Auto,*,*"
+                RowDefinitions="Auto,Auto,Auto,Auto,*,*,Auto"
                 RowSpacing="10">
 
                 <!--  Overlay de carga  -->
@@ -169,16 +169,95 @@
                         Text="Prompt Template " />
                     <Border Grid.Row="5" Style="{StaticResource InputBorderStyle}">
                         <Editor
+                            x:Name="PromptRawEditor"
                             CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}"
                             Placeholder="Example: Generate a message for &lt;recipient&gt; about &lt;subject&gt;"
                             SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
                             Style="{StaticResource PromptEditorStyle}"
                             Text="{Binding PromptText}" />
                     </Border>
                 </VerticalStackLayout>
-            </Grid>
 
+                <VerticalStackLayout
+                    Grid.Row="6"
+                    Padding="10,5"
+                    Spacing="8">
+
+                    <!--  Condición para mostrar el bloque  -->
+                    <VerticalStackLayout.IsVisible>
+                        <MultiBinding Converter="{StaticResource PromptReadyToShowConverter}">
+                            <Binding Path="IsLoading" />
+                            <Binding Path="PromptText" />
+                        </MultiBinding>
+                    </VerticalStackLayout.IsVisible>
+
+                    <!--  Guía inicial para el usuario  -->
+                    <Label
+                        Margin="0,5,0,10"
+                        FontSize="13"
+                        HorizontalTextAlignment="Center"
+                        LineBreakMode="WordWrap"
+                        Text="💡 Switch between visual and text modes to edit your prompt. Tap any &lt;variable&gt; chip to rename it."
+                        TextColor="Gray" />
+
+                    <!--  Botones de modo  -->
+                    <HorizontalStackLayout
+                        Margin="0,5,0,10"
+                        HorizontalOptions="Center"
+                        Spacing="20">
+
+                        <Button
+                            Clicked="SwitchToEditor"
+                            Style="{StaticResource YellowButtonStyle}"
+                            Text="Text Mode">
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe5d8;"
+                                    Color="Black" />
+                            </Button.ImageSource>
+                        </Button>
+
+                        <Button
+                            Clicked="SwitchToChips"
+                            Style="{StaticResource YellowButtonStyle}"
+                            Text="Visual Mode">
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe5db;"
+                                    Color="Black" />
+                            </Button.ImageSource>
+                        </Button>
+                    </HorizontalStackLayout>
+
+                    <!--  Contenedor de chips dentro de ScrollView que sí funciona  -->
+                    <ScrollView VerticalOptions="Fill">
+                        <VerticalStackLayout Padding="5" Spacing="5">
+                            <FlexLayout
+                                x:Name="PromptChipContainer"
+                                AlignItems="Center"
+                                BackgroundColor="WhiteSmoke"
+                                Direction="Row"
+                                IsVisible="{Binding IsVisualModeActive}"
+                                JustifyContent="Start"
+                                Style="{StaticResource InputBorderStyle}"
+                                Wrap="Wrap" />
+                        </VerticalStackLayout>
+                    </ScrollView>
+
+                    <!--  Consejo visual debajo del contenedor  -->
+                    <Label
+                        x:Name="ChipHintLabel"
+                        Margin="0,5,0,0"
+                        FontSize="12"
+                        HorizontalTextAlignment="Center"
+                        Text="💡 Tap on a variable chip (like &lt;topic&gt;) to edit its name."
+                        TextColor="Gray" />
+                </VerticalStackLayout>
+            </Grid>
         </ScrollView>
 
         <!--  Botón flotante  -->

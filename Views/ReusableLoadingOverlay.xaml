@@ -5,41 +5,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="Root"
     IsVisible="{Binding IsVisible, Source={x:Reference Root}}">
-    <Border
-        BackgroundColor="#66000000"
-        InputTransparent="False"
-        IsVisible="{Binding IsLoading}"
-        StrokeThickness="0"
-        Style="{StaticResource loadingBorderStyle}"
-        ZIndex="1000">
+    <Border Style="{StaticResource loadingBorderStyle}">
 
-        <Grid BackgroundColor="Transparent" InputTransparent="False">
-
+        <Grid BackgroundColor="#80000000" InputTransparent="False">
             <VerticalStackLayout
-                Padding="24"
-                BackgroundColor="White"
-                HeightRequest="150"
                 HorizontalOptions="Center"
-             
-                Spacing="16"
-                VerticalOptions="Center"
-                WidthRequest="200">
-
-                <ActivityIndicator
-                    HeightRequest="36"
-                    IsRunning="True"
-                    Style="{StaticResource LoadingIndicatorStyle}"
-                    WidthRequest="36"
-                    Color="{StaticResource PrimaryBlueDark}" />
-
+                Spacing="10"
+                VerticalOptions="Center">
+                <ActivityIndicator IsRunning="True" Style="{StaticResource LoadingIndicatorStyle}" />
                 <Label
                     x:Name="MessageLabel"
-                    FontAttributes="Bold"
-                    FontSize="16"
+                    FontSize="14"
                     HorizontalOptions="Center"
-                    HorizontalTextAlignment="Center"
                     Text="Loading..."
-                    TextColor="Black" />
+                    TextColor="White" />
             </VerticalStackLayout>
         </Grid>
     </Border>

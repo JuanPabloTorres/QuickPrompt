@@ -163,6 +163,9 @@
     <MauiXaml Update="Pages\ChatGptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Pages\CopilotChatPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Pages\EditPromptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
@@ -176,6 +179,9 @@
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\LoadPromptsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\MistralChatPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\PromptDetailsPage.xaml">
