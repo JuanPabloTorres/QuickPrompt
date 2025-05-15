@@ -193,7 +193,7 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
                 FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
         {
             { DevicePlatform.iOS, new[] { "public.text" } },
-            { DevicePlatform.Android, new[] { "text/plain" } },
+            { DevicePlatform.Android, new[] { "text/plain",".json" } },
             { DevicePlatform.WinUI, new[] { ".json", ".txt" } }
         })
             });
