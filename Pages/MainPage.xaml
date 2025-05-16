@@ -171,7 +171,7 @@
                             Title="Select category"
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                             ItemDisplayBinding="{Binding .}"
-                            ItemsSource="{Binding CategoryList}"
+                            ItemsSource="{Binding Categories}"
                             SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
                             Style="{StaticResource InputEntryStyle}" />
                     </Border>

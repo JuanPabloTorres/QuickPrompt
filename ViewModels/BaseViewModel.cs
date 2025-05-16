@@ -1,14 +1,18 @@
 ﻿using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.Extensions;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
 using QuickPrompt.Views;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,9 +38,17 @@ namespace QuickPrompt.ViewModels
 
         [ObservableProperty] private bool isVisualModeActive;
 
+        [ObservableProperty] protected ObservableCollection<string> categories = new ObservableCollection<string>(Enum.GetNames(typeof(PromptCategory)).ToObservableCollection());
+
+        [ObservableProperty] protected string selectedCategory;
+
         protected string oldSearch;
 
+        protected string oldSelectCategory;
+
         protected Filters oldDateFilter;
+
+        protected PromptCategory promptCategory;
 
         protected PromptDatabaseService _databaseService;
 
@@ -163,7 +175,6 @@ namespace QuickPrompt.ViewModels
         }
 
         // ============================== 🛠 MÉTODOS AUXILIARES ==============================
-     
 
         /// <summary>
         /// Actualiza el contador de palabras seleccionadas y su etiqueta.

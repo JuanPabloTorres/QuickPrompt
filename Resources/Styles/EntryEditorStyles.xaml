@@ -10,12 +10,22 @@
         <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Keyboard" Value="Text" />
         <Setter Property="IsSpellCheckEnabled" Value="True" />
-
         <Setter Property="ClearButtonVisibility" Value="WhileEditing" />
-
         <Setter Property="Placeholder" Value="Prompt Title" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
         <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <!--  Estilo para el Entry dentro del Border  -->
+    <Style x:Key="InputPickerStyle" TargetType="Picker">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
+        <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="FontAttributes" Value="Italic" />
+        <Setter Property="FontFamily" Value="Roboto" />
+        <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
     <!--  Estilo para el Editor de texto  -->
@@ -52,7 +62,9 @@
     <!--  Estilo para campos de entrada de texto  -->
     <Style x:Key="SearchEntryStyle" TargetType="Entry">
         <Setter Property="BackgroundColor" Value="WhiteSmoke" />
-        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="IsSpellCheckEnabled" Value="True" />
+        <Setter Property="ClearButtonVisibility" Value="WhileEditing" />
         <Setter Property="FontAttributes" Value="Italic" />
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Center" />

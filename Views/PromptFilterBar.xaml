@@ -160,10 +160,11 @@
         <Border Style="{StaticResource InputBorderStyle}">
             <Picker
                 Title="Filter by category"
-                HorizontalOptions="Fill"
-                ItemsSource="{Binding Categories}"
-                SelectedItem="{Binding SelectedCategory}" />
+                ItemsSource="{Binding Categories, Source={x:Reference Root}}"
+                SelectedItem="{Binding SelectedCategory, Source={x:Reference Root}, Mode=TwoWay}"
+                Style="{StaticResource InputPickerStyle}" />
         </Border>
+
 
 
         <!--  Campo de búsqueda  -->

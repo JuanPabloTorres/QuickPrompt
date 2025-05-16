@@ -27,4 +27,7 @@
 
     <converters:PromptReadyToShowConverter x:Key="PromptReadyToShowConverter" />
 
+    <converters:CategoryToDisplayNameConverter x:Key="CategoryToDisplayNameConverter" />
+
+
 </ResourceDictionary>

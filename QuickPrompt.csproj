@@ -178,9 +178,6 @@
     <MauiXaml Update="Pages\GuidePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
-    <MauiXaml Update="Pages\LoadPromptsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
     <MauiXaml Update="Pages\MistralChatPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

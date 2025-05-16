@@ -64,11 +64,12 @@
             <!--  Google AdMob  -->
             <views:AdmobBannerView Grid.Row="1" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
 
-
             <views:PromptFilterBar
                 Grid.Row="2"
+                Categories="{Binding Categories}"
                 SearchCommand="{Binding FilterPromptsCommand}"
                 SearchText="{Binding Search}"
+                SelectedCategory="{Binding SelectedCategory}"
                 SelectedFilter="{Binding SelectedDateFilter}" />
 
             <!--  Lista de Prompts  -->
@@ -119,11 +120,8 @@
 
                         <!--  Línea divisoria  -->
                         <BoxView Style="{StaticResource DividerLineStyle}" />
-
                     </VerticalStackLayout>
-
                 </CollectionView.Header>
-
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -163,7 +161,7 @@
                                     FontAttributes="Bold"
                                     FontSize="13"
                                     HorizontalOptions="Start"
-                                    Text="{Binding Prompt.Category}"
+                                    Text="{Binding Prompt.Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
                                     TextColor="White"
                                     VerticalOptions="Center" />
 
@@ -224,13 +222,10 @@
                                         ToolTipProperties.Text="Select"
                                         VerticalOptions="Center"
                                         Color="{StaticResource PrimaryRed}" />
-
                                 </HorizontalStackLayout>
-
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
-
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.Footer>
@@ -267,12 +262,9 @@
                                     Color="{StaticResource AppBlack}" />
                             </Button.ImageSource>
                         </Button>
-
                     </VerticalStackLayout>
                 </CollectionView.Footer>
             </CollectionView>
-
-
         </Grid>
     </ScrollView>
 </ContentPage>

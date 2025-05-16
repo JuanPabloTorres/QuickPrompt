@@ -119,7 +119,6 @@ namespace QuickPrompt
 
             builder.Services.AddSingleton(appSettingsModel);
 
-
             builder.Services.AddSingleton<AdmobService>();
         }
 
@@ -131,9 +130,6 @@ namespace QuickPrompt
 
             builder.Services.AddTransient<SettingViewModel>();
 
-            // ViewModels que deben mantener su estado dentro de una sesión
-            builder.Services.AddScoped<LoadPromptsPageViewModel>();
-
             builder.Services.AddScoped<PromptDetailsPageViewModel>();
 
             builder.Services.AddScoped<EditPromptPageViewModel>();
@@ -143,7 +139,6 @@ namespace QuickPrompt
             builder.Services.AddScoped<AdmobBannerViewModel>();
 
             builder.Services.AddTransient<AiWebViewPageViewModel>();
-
         }
 
         // Registra las páginas en el contenedor de dependencias
@@ -167,20 +162,19 @@ namespace QuickPrompt
 
             Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
 
-            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));           
+            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));
 
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-           
+
             Routing.RegisterRoute(nameof(ChatGptPage), typeof(ChatGptPage));
-           
+
             Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
-            
+
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-           
+
             Routing.RegisterRoute(nameof(MistralChatPage), typeof(MistralChatPage));
 
             Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
-
         }
     }
 }

@@ -3,34 +3,30 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Extensions;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
     public partial class QuickPromptViewModel : BaseViewModel
     {
         // ======================= 📌 PROPIEDADES =======================
+        private readonly PromptDatabaseService _databaseService;
+
         public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();   // Lista de prompts seleccionados para eliminar
 
         [ObservableProperty] private ObservableCollection<PromptTemplateViewModel> prompts = new();  // Inicializamos la lista vacía
 
-        public BlockHandler<PromptTemplateViewModel> blockHandler = new();
-        public bool IsSearchFlag { get; set; }
-
-        [ObservableProperty] private string search;
+        [ObservableProperty] private string? search;
 
         [ObservableProperty] private bool isMoreDataAvailable = true;  // Para indicar si hay más datos disponibles
 
-        private readonly PromptDatabaseService _databaseService;
+        public BlockHandler<PromptTemplateViewModel> blockHandler = new();
+        public bool IsSearchFlag { get; set; }
 
         // Constructor primario con la lógica de inicialización
         public QuickPromptViewModel(PromptDatabaseService _databaseService)
@@ -57,6 +53,8 @@ namespace QuickPrompt.ViewModels
             SelectedPromptsToDelete.Clear();
 
             Search = string.Empty;
+
+            SelectedCategory = string.Empty;
 
             SelectedDateFilter = Filters.All;
 
@@ -86,18 +84,18 @@ namespace QuickPrompt.ViewModels
         /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si
         /// se proporciona.
         /// </summary>
-        public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string filter = null)
+        public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string filter = null, string category = null)
         {
             // Obtener el total de prompts de la base de datos, con o sin filtro
-            blockHandler.CountInDB = await _databaseService.GetFavoriteTotalPromptsCountAsync(filter, dateFilter);
+            blockHandler.CountInDB = await _databaseService.GetTotalPromptsCountAsync(filter, dateFilter, category);
         }
 
         /// <summary>
         /// Verifica si hay más datos disponibles para cargar y actualiza la propiedad correspondiente.
         /// </summary>
-        public async Task CheckForMorePromptsAsync(Filters dateFilter = Filters.All, string filter = null)
+        public async Task CheckForMorePromptsAsync(Filters dateFilter = Filters.All, string filter = null, string category = null)
         {
-            await UpdateTotalPromptsCountAsync(dateFilter, filter);
+            await UpdateTotalPromptsCountAsync(dateFilter, filter, category);
 
             // Asignar directamente si hay más datos disponibles
             IsMoreDataAvailable = blockHandler.HasMoreData();
@@ -126,7 +124,9 @@ namespace QuickPrompt.ViewModels
 
             bool isFilterEmpty = SelectedDateFilter == Filters.None;
 
-            if (isSearchEmpty || isFilterEmpty)
+            bool isSelectedCategoryEmpty = string.IsNullOrEmpty(SelectedCategory);
+
+            if (isSearchEmpty || isFilterEmpty || isSelectedCategoryEmpty)
             {
                 await LoadPromptsAsync();
             }
@@ -158,8 +158,10 @@ namespace QuickPrompt.ViewModels
 
                 bool filterChanged = oldDateFilter != SelectedDateFilter;
 
+                bool categoryChange = oldSelectCategory != SelectedCategory;
+
                 // Reiniciar búsqueda si es necesario
-                if (!IsSearchFlag || searchChanged || filterChanged)
+                if (!IsSearchFlag || searchChanged || filterChanged || categoryChange)
                 {
                     ToggleSearchFlag(true);
 
@@ -170,6 +172,8 @@ namespace QuickPrompt.ViewModels
                     oldSearch = Search;
 
                     oldDateFilter = SelectedDateFilter;
+
+                    oldSelectCategory = Enum.TryParse<PromptCategory>(SelectedCategory?.ToString(), out var category) ? category.ToString() : PromptCategory.General.ToString();
                 }
 
                 await BlockDataHandler();
@@ -179,7 +183,7 @@ namespace QuickPrompt.ViewModels
         private async Task BlockDataHandler()
         {
             // Actualizar conteo total según los filtros actuales
-            await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search);
+            await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search, SelectedCategory);
 
             // Calcular el desplazamiento y ajustarlo para evitar duplicados
             int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
@@ -188,7 +192,7 @@ namespace QuickPrompt.ViewModels
             int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
 
             // Cargar el bloque de prompts
-            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search);
+            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search, SelectedCategory);
 
             if (promptList.Any())
             {
@@ -204,7 +208,7 @@ namespace QuickPrompt.ViewModels
             }
 
             // Verificar si hay más datos por cargar
-            await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search);
+            await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
         }
 
         // ======================= 🔄 REFRESCAR PROMPTS =======================

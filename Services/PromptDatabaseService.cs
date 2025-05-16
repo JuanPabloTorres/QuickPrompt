@@ -482,15 +482,15 @@ new PromptTemplate
         /// <summary>
         /// Obtiene los prompts con paginación y opcionalmente aplica un filtro.
         /// </summary>
-        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter = Filters.All, string filterText = "")
+        public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter = Filters.All, string filterText = "", string selectedCategory = null)
         {
-            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter);
+            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter,selectedCategory);
         }
 
         /// <summary>
         /// Obtiene los prompts según el filtro y el estado de favoritos.
         /// </summary>
-        private async Task<List<PromptTemplate>> GetPromptsByFilterAsync(int offset, int limit, string filterText, Filters filter)
+        private async Task<List<PromptTemplate>> GetPromptsByFilterAsync(int offset, int limit, string filterText, Filters filter, string selectedCategory)
         {
             // Obtener todos los prompts de forma asincrónica
             var allPrompts = await _database.Table<PromptTemplate>().ToListAsync();
@@ -527,6 +527,15 @@ new PromptTemplate
                 allPrompts = allPrompts
                     .Where(p => p.Title?.ToLower().Contains(lowerFilter) == true)
                     .ToList();
+            }
+
+            // ✅ Filtrado por categoría
+            if (!string.IsNullOrWhiteSpace(selectedCategory) && selectedCategory != "All")
+            {
+                if (Enum.TryParse<PromptCategory>(selectedCategory, out var parsedCategory))
+                {
+                    allPrompts = allPrompts.Where(p => p.Category == parsedCategory).ToList();
+                }
             }
 
             // Paginación
@@ -566,35 +575,12 @@ new PromptTemplate
             return rowsAffected > 0; // Retorna true si al menos una fila fue afectada
         }
 
-        /// <summary>
-        /// Obtiene todos los prompts marcados como favoritos.
-        /// </summary>
-        public async Task<IEnumerable<PromptTemplate>> GetFavoritePromptsAsync()
-        {
-            return await _database.Table<PromptTemplate>().Where(p => p.IsFavorite).ToListAsync();
-        }
-
         // =============================== 🔹 OBTENER CONTADOR DE PROMPTS ===============================
-
-        /// <summary>
-        /// Obtiene la cantidad total de prompts almacenados en la base de datos.
-        /// </summary>
-        public Task<int> GetTotalPromptsCountAsync() => GetTotalCountAsync("", onlyFavorites: false);
-
-        /// <summary>
-        /// Obtiene la cantidad total de prompts que coinciden con un filtro.
-        /// </summary>
-        public Task<int> GetTotalPromptsCountAsync(string filter) => GetTotalCountAsync(filter, onlyFavorites: false);
-
-        /// <summary>
-        /// Obtiene la cantidad total de prompts favoritos almacenados.
-        /// </summary>
-        public Task<int> GetFavoriteTotalPromptsCountAsync() => GetTotalCountAsync("", onlyFavorites: true);
 
         /// <summary>
         /// Obtiene la cantidad total de prompts favoritos que coinciden con un filtro.
         /// </summary>
-        public Task<int> GetFavoriteTotalPromptsCountAsync(string filterText, Filters dateFilter) => GetTotalCountAsync(dateFilter, filterText);
+        public Task<int> GetTotalPromptsCountAsync(string filterText, Filters dateFilter, string category) => GetTotalCountAsync(dateFilter, filterText, category);
 
         /// <summary>
         /// Método genérico para contar la cantidad de prompts con filtro y favoritos.
@@ -612,7 +598,7 @@ new PromptTemplate
             return await query.CountAsync();
         }
 
-        private async Task<int> GetTotalCountAsync(Filters dateFilter, string filterText = null)
+        private async Task<int> GetTotalCountAsync(Filters filterType, string filterText = null, string category = null)
         {
             // Cargar todos los datos y aplicar filtros en memoria para evitar problemas con
             // funciones no soportadas en SQLite
@@ -621,9 +607,10 @@ new PromptTemplate
             // Filtrado por fecha
 
             DateTime today = DateTime.Today;
+
             DateTime end = today.AddDays(1); // Fin del día actual
 
-            prompts = dateFilter switch
+            prompts = filterType switch
             {
                 Filters.Today => prompts.Where(p => p.CreatedAt >= today && p.CreatedAt < end).ToList(),
                 Filters.Last7Days => prompts.Where(p => p.CreatedAt >= today.AddDays(-7) && p.CreatedAt < end).ToList(),
@@ -637,7 +624,17 @@ new PromptTemplate
             if (!string.IsNullOrWhiteSpace(filterText))
             {
                 string lowerFilter = filterText.ToLower();
+
                 prompts = prompts.Where(p => p.Title?.ToLower().Contains(lowerFilter) == true).ToList();
+            }
+
+            // ✅ Filtrado por categoría
+            if (!string.IsNullOrWhiteSpace(category) && category != "All")
+            {
+                if (Enum.TryParse<PromptCategory>(category, out var parsedCategory))
+                {
+                    prompts = prompts.Where(p => p.Category == parsedCategory).ToList();
+                }
             }
 
             return prompts.Count;
