@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.Pages.ExternalAiPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="WhiteSmoke"
+    Routing.Route="AIWeb">
+
+    <Shell.TitleView>
+        <Grid>
+            <Label
+                FontFamily="Designer"
+                FontSize="18"
+                Text="AI Web Access"
+                TextColor="{StaticResource PrimaryBlueDark}"
+                VerticalOptions="Center" />
+        </Grid>
+    </Shell.TitleView>
+
+    <Grid RowDefinitions="Auto, *">
+
+        <!--  Contenedor de botones con Border  -->
+
+
+        <ScrollView
+            Grid.Row="0"
+            HorizontalScrollBarVisibility="Never"
+            Orientation="Horizontal">
+            <HorizontalStackLayout
+                Grid.Row="0"
+                Spacing="14"
+                VerticalOptions="Center">
+
+                <!--  Botón: ChatGPT  -->
+                <Button
+                    Clicked="OnChatGptClicked"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="ChatGPT">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Botón: Gemini  -->
+                <Button
+                    Clicked="OnGeminiClicked"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Gemini">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Botón: Grok  -->
+                <Button
+                    Clicked="OnGrokClicked"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Grok">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!--  Botón: Copilot  -->
+                <Button
+                    Clicked="OnCopilotClicked"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Copilot">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+            </HorizontalStackLayout>
+        </ScrollView>
+
+
+        <!--  WebView + Carga  -->
+        <Grid Grid.Row="1">
+            <WebView
+                x:Name="ExternalAiWebView"
+                Navigated="OnNavigated"
+                Navigating="OnNavigating"
+                Source="about:blank" />
+
+            <ActivityIndicator
+                x:Name="LoadingIndicator"
+                HeightRequest="48"
+                HorizontalOptions="Center"
+                IsRunning="True"
+                IsVisible="False"
+                VerticalOptions="Center"
+                WidthRequest="48"
+                Color="Gray" />
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

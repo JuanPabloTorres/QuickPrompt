@@ -169,6 +169,9 @@
     <MauiXaml Update="Pages\EditPromptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Pages\ExternalAiPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Pages\GeminiPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

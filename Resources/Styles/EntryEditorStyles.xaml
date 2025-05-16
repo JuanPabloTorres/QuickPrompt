@@ -19,14 +19,19 @@
     <!--  Estilo para el Entry dentro del Border  -->
     <Style x:Key="InputPickerStyle" TargetType="Picker">
         <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontFamily" Value="Roboto" />
+        <Setter Property="FontAttributes" Value="None" />
         <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
         <Setter Property="HorizontalOptions" Value="Fill" />
-        <Setter Property="HorizontalTextAlignment" Value="Center" />
-        <Setter Property="FontAttributes" Value="Italic" />
-        <Setter Property="FontFamily" Value="Roboto" />
         <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Start" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="CharacterSpacing" Value="0.25" />
+
     </Style>
+
 
     <!--  Estilo para el Editor de texto  -->
     <Style x:Key="PromptEditorStyle" TargetType="Editor">
