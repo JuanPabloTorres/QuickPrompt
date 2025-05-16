@@ -31,11 +31,11 @@
             <ShellContent
                 Title="Quick Prompt"
                 ContentTemplate="{DataTemplate pages:QuickPromptPage}"
-                Route="QPages" />
+                Route="Quick" />
         </Tab>
 
         <!--  Home Tab  -->
-        <Tab Title="AI Web">
+        <Tab Title="AI">
 
             <Tab.Icon>
                 <FontImageSource

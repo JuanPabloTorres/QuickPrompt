@@ -5,6 +5,9 @@ public partial class ExternalAiPage : ContentPage
     public ExternalAiPage()
     {
         InitializeComponent();
+
+        // Página predeterminada al cargar la vista
+        ExternalAiWebView.Source = "https://chat.openai.com/";
     }
 
     private void OnNavigating(object sender, WebNavigatingEventArgs e)

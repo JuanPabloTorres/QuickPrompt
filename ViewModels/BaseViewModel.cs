@@ -142,21 +142,17 @@ namespace QuickPrompt.ViewModels
         /// </param>
         protected async Task NavigateToAsync(string route, IDictionary<string, object>? parameters = null, bool animate = false)
         {
-            try
+            await ExecuteWithLoadingAsync(async () =>
             {
                 if (parameters is not null && parameters.Any())
                 {
-                    var query = string.Join("&", parameters.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value.ToString()!)}"));
-
-                    route = $"{route}?{query}";
+                    await Shell.Current.GoToAsync(route, animate, parameters);
                 }
-
-                await Shell.Current.GoToAsync(route, animate);
-            }
-            catch (Exception ex)
-            {
-                await AppShell.Current.DisplayAlert("Navigation Error", $"Could not navigate to the page: {ex.Message}", "OK");
-            }
+                else
+                {
+                    await Shell.Current.GoToAsync(route, animate);
+                }
+            });
         }
 
         /// <summary>
@@ -248,9 +244,12 @@ namespace QuickPrompt.ViewModels
         }
 
         [RelayCommand]
-        public async Task MyBack()
+        public virtual async Task MyBack()
         {
-            await Shell.Current.GoToAsync("..");
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                await Shell.Current.GoToAsync("..");
+            });
         }
 
         protected async Task SendPromptToAsync(string pageName, string toastMessage, Guid promptID, string finalPrompt)

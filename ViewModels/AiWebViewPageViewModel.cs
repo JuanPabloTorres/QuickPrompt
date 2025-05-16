@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.Pages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,27 +9,18 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
-
-    public partial class AiWebViewPageViewModel : ObservableObject
+    public partial class AiWebViewPageViewModel : BaseViewModel
     {
-        [ObservableProperty]
-        private string finalPrompt = string.Empty;
+        [ObservableProperty] private string finalPrompt = string.Empty;
 
-        [ObservableProperty]
-        private Guid templateId;
+        [ObservableProperty] private Guid templateId;
 
-        [ObservableProperty]
-        private bool isLoading;
-
-        [RelayCommand]
-        public async Task MyBackAsync()
+        public override async Task MyBack()
         {
-            //await Shell.Current.GoToAsync("..");
-
-            await Shell.Current.GoToAsync("..", new Dictionary<string, object>
-{
-    { "selectedId", templateId }
-});
+            await Shell.Current.GoToAsync(nameof(PromptDetailsPage), new Dictionary<string, object>
+            {
+                { "selectedId", templateId }
+            });
         }
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)

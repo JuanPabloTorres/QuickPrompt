@@ -94,8 +94,6 @@ namespace QuickPrompt
             // 🧠 Repositorio de Prompts usando el patrón Repository
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
 
-            builder.Services.AddSingleton<PromptDatabaseService>();
-
             builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
 
             // Registrar configuración de versión como servicio
@@ -111,15 +109,6 @@ namespace QuickPrompt
                 options.Android = appSettings["AdMobSettings:Android"] ?? string.Empty;
                 options.iOs = appSettings["AdMobSettings:iOs"] ?? string.Empty;
             });
-
-            //var adMobSettings = new AdMobSettings()
-            //{
-            //    InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"],
-            //    Android = appSettings["AdMobSettings:Android"],
-            //    iOs = appSettings["AdMobSettings:iOs"],
-            //};
-
-            //builder.Services.AddSingleton(adMobSettings);
 
             builder.Services.AddSingleton(appSettingsModel);
 
@@ -175,8 +164,6 @@ namespace QuickPrompt
             Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
 
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-
-            Routing.RegisterRoute(nameof(MistralChatPage), typeof(MistralChatPage));
 
             Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
         }

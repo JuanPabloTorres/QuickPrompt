@@ -3,6 +3,7 @@
     x:Class="QuickPrompt.Pages.ExternalAiPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:view="clr-namespace:QuickPrompt.Views"
     BackgroundColor="WhiteSmoke"
     Routing.Route="AIWeb">
 
@@ -20,7 +21,6 @@
     <Grid RowDefinitions="Auto, *">
 
         <!--  Contenedor de botones con Border  -->
-
 
         <ScrollView
             Grid.Row="0"
@@ -82,10 +82,8 @@
                             Color="White" />
                     </Button.ImageSource>
                 </Button>
-
             </HorizontalStackLayout>
         </ScrollView>
-
 
         <!--  WebView + Carga  -->
         <Grid Grid.Row="1">
@@ -94,18 +92,14 @@
                 Navigated="OnNavigated"
                 Navigating="OnNavigating"
                 Source="about:blank" />
-
-            <ActivityIndicator
-                x:Name="LoadingIndicator"
-                HeightRequest="48"
-                HorizontalOptions="Center"
-                IsRunning="True"
-                IsVisible="False"
-                VerticalOptions="Center"
-                WidthRequest="48"
-                Color="Gray" />
         </Grid>
 
+        <!--  Overlay de carga  -->
+        <view:ReusableLoadingOverlay
+            x:Name="LoadingIndicator"
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            IsVisible="False"
+            Message="Loading..." />
     </Grid>
-
 </ContentPage>
