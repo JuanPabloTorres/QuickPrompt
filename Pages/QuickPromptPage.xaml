@@ -153,6 +153,20 @@
                                     </Button>
                                 </Grid>
 
+                                <!--  Categoría del Prompt  -->
+                                <Label
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2"
+                                    Margin="0,2,0,0"
+                                    Padding="6,2"
+                                    BackgroundColor="{StaticResource PrimaryRed}"
+                                    FontAttributes="Bold"
+                                    FontSize="13"
+                                    HorizontalOptions="Start"
+                                    Text="{Binding Prompt.Category}"
+                                    TextColor="White"
+                                    VerticalOptions="Center" />
+
                                 <!--  Divider Line  -->
                                 <BoxView Style="{StaticResource DividerLineStyle}" />
 
@@ -220,7 +234,7 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.Footer>
-                    <VerticalStackLayout Padding="10" Spacing="12">
+                    <VerticalStackLayout Padding="10" Spacing="8">
 
                         <!--  Línea divisoria  -->
                         <BoxView Style="{StaticResource DividerLineStyle}" />
@@ -233,7 +247,6 @@
 
                         <!--  Botón cargar más  -->
                         <Button
-                            Padding="12,6"
                             Command="{Binding LoadMorePromptsCommand}"
                             HorizontalOptions="Center"
                             IsEnabled="{Binding IsMoreDataAvailable}"

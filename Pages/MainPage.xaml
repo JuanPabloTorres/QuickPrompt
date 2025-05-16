@@ -95,14 +95,14 @@
         <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
             <Grid
                 Padding="20"
-                RowDefinitions="Auto,Auto,Auto,Auto,*,*,Auto"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto"
                 RowSpacing="10">
 
                 <!--  Overlay de carga  -->
                 <views:ReusableLoadingOverlay
                     x:Name="LoadingOverlay"
                     Grid.Row="0"
-                    Grid.RowSpan="6"
+                    Grid.RowSpan="8"
                     IsVisible="{Binding IsLoading}"
                     Message="Loading..." />
 
@@ -159,8 +159,27 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <!--  Campo: Prompt  -->
+                <!--  Campo: Categoría  -->
                 <VerticalStackLayout Grid.Row="5">
+                    <Label
+                        HorizontalOptions="Start"
+                        Style="{StaticResource TitleLabelStyle}"
+                        Text="Category" />
+
+                    <Border Style="{StaticResource InputBorderStyle}">
+                        <Picker
+                            Title="Select category"
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            ItemDisplayBinding="{Binding .}"
+                            ItemsSource="{Binding CategoryList}"
+                            SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                            Style="{StaticResource InputEntryStyle}" />
+                    </Border>
+                </VerticalStackLayout>
+
+
+                <!--  Campo: Prompt  -->
+                <VerticalStackLayout Grid.Row="6">
 
                     <Label
                         Grid.Row="5"
@@ -181,7 +200,7 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout
-                    Grid.Row="6"
+                    Grid.Row="7"
                     Padding="10,5"
                     Spacing="8">
 

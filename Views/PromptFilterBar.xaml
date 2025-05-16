@@ -157,6 +157,15 @@
 
         </Grid>
 
+        <Border Style="{StaticResource InputBorderStyle}">
+            <Picker
+                Title="Filter by category"
+                HorizontalOptions="Fill"
+                ItemsSource="{Binding Categories}"
+                SelectedItem="{Binding SelectedCategory}" />
+        </Border>
+
+
         <!--  Campo de búsqueda  -->
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
             <Border Grid.Column="0" Style="{StaticResource InputBorderStyle}">

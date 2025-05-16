@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Tools;
 using SQLite;
 
@@ -11,6 +12,9 @@ namespace QuickPrompt.Models
 
         [ObservableProperty] public string template;  // Prompt con variables dinámicas
         public string Description { get; set; }  // Descripción del prompt
+
+        [ObservableProperty]
+        public PromptCategory category = PromptCategory.General;
 
         // Variables serializadas en formato JSON Serialización de las variables como JSON para
         // guardarlas en SQLite
@@ -25,7 +29,7 @@ namespace QuickPrompt.Models
 
         public bool IsFavorite { get; set; }
 
-        public static PromptTemplate CreatePromptTemplate(string title,string description,string promptText)
+        public static PromptTemplate CreatePromptTemplate(string title, string description, string promptText,PromptCategory category= PromptCategory.General)
         {
             return new PromptTemplate
             {
@@ -34,6 +38,7 @@ namespace QuickPrompt.Models
                 Description = string.IsNullOrWhiteSpace(description) ? "N/A" : description,
                 Variables = AngleBraceTextHandler.ExtractVariables(promptText).ToDictionary(v => v, v => string.Empty),
                 CreatedAt = DateTime.Now,
+                Category=category,
             };
         }
     }

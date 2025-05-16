@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Storage;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Tools;
 using SQLite;
 using System.Collections.Generic;
@@ -42,6 +43,9 @@ namespace QuickPrompt.Services
             if (!tableInfo.Any(c => c.Name == "IsDeleted"))
                 await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN IsDeleted INTEGER DEFAULT 0");
 
+            if (!tableInfo.Any(c => c.Name == "Category"))
+                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN Category TEXT");
+
             // Actualiza valores nulos con timestamps válidos
             await _database.ExecuteAsync("UPDATE PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
 
@@ -55,6 +59,20 @@ namespace QuickPrompt.Services
                 // Si no hay datos, insertar los prompts por defecto
                 if (count == 0)
                     await InsertDefaultPromptsAsync();
+
+                if (count > 0)
+                {
+                    var prompts = await _database.Table<PromptTemplate>().ToListAsync();
+
+                    foreach (var prompt in prompts)
+                    {
+                        if (prompt.Category == 0 || !Enum.IsDefined(typeof(PromptCategory), prompt.Category))
+                        {
+                            prompt.Category = PromptCategory.General;
+                            await _database.UpdateAsync(prompt);
+                        }
+                    }
+                }
             }
         }
 
@@ -387,8 +405,6 @@ new PromptTemplate
     IsFavorite = true,
     CreatedAt = DateTime.Now
 }
-
-
             };
 
             return defaultPrompts;

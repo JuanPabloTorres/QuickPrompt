@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
@@ -24,7 +25,11 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
 
     [ObservableProperty] private string promptDescription;
 
- 
+    [ObservableProperty] private PromptCategory promptCategory = PromptCategory.General;
+
+    [ObservableProperty] private string  selectedCategory;
+
+    public List<string> CategoryList { get; } = Enum.GetNames(typeof(PromptCategory)).ToList();
 
     // ============================ COMANDOS ============================
 
@@ -44,7 +49,9 @@ public partial class MainPageViewModel(PromptDatabaseService promptDatabaseServi
                 return;
             }
 
-            var newPrompt = PromptTemplate.CreatePromptTemplate(PromptTitle, PromptDescription, PromptText);
+            var _category = Enum.TryParse(typeof(PromptCategory), SelectedCategory.ToString(), out var category) ? (PromptCategory)category : PromptCategory.General;
+
+            var newPrompt = PromptTemplate.CreatePromptTemplate(PromptTitle, PromptDescription, PromptText,_category);
 
             await _databaseService.SavePromptAsync(newPrompt);
 
