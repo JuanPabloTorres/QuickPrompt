@@ -1,5 +1,6 @@
 ﻿using QuickPrompt.Models;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.ViewModels.Prompts;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ public static class CollectionExtensions
 
     public static ObservableCollection<PromptTemplateViewModel> ToViewModelObservableCollection(
         this IEnumerable<PromptTemplate> prompts,
-        PromptDatabaseService promptDatabaseService,
+        IPromptRepository promptDatabaseService,
         Action<PromptTemplateViewModel> onSelectToDelete,
         Action<PromptTemplateViewModel> onItemToDelete,
           Action<string, PromptTemplate> onSelectToNavigate)

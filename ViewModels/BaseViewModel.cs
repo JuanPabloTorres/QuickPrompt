@@ -7,6 +7,7 @@ using QuickPrompt.Extensions;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
 using QuickPrompt.Views;
@@ -50,7 +51,7 @@ namespace QuickPrompt.ViewModels
 
         protected PromptCategory promptCategory;
 
-        protected PromptDatabaseService _databaseService;
+        protected IPromptRepository _databaseService;
 
         protected AdmobService _adMobService;
 
@@ -58,12 +59,12 @@ namespace QuickPrompt.ViewModels
         {
         }
 
-        protected BaseViewModel(PromptDatabaseService promptDatabaseService)
+        protected BaseViewModel(IPromptRepository promptDatabaseService)
         {
             this._databaseService = promptDatabaseService;
         }
 
-        protected BaseViewModel(PromptDatabaseService promptDatabaseService, AdmobService admobService)
+        protected BaseViewModel(IPromptRepository promptDatabaseService, AdmobService admobService)
         {
             this._databaseService = promptDatabaseService;
 

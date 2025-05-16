@@ -23,7 +23,12 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         public async Task MyBackAsync()
         {
-            await Shell.Current.GoToAsync("..");
+            //await Shell.Current.GoToAsync("..");
+
+            await Shell.Current.GoToAsync("..", new Dictionary<string, object>
+{
+    { "selectedId", templateId }
+});
         }
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)

@@ -6,6 +6,7 @@ using Plugin.MauiMTAdmob;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.ViewModels;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
@@ -89,6 +90,9 @@ namespace QuickPrompt
         private static void RegisterServices(MauiAppBuilder builder, IConfiguration appSettings)
         {
             var apiKey = appSettings["GPTApiKeys:Key1"];
+
+            // 🧠 Repositorio de Prompts usando el patrón Repository
+            builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
 
             builder.Services.AddSingleton<PromptDatabaseService>();
 

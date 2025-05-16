@@ -6,6 +6,7 @@ using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
 using System.Collections.ObjectModel;
@@ -15,7 +16,7 @@ namespace QuickPrompt.ViewModels
     public partial class QuickPromptViewModel : BaseViewModel
     {
         // ======================= 📌 PROPIEDADES =======================
-        private readonly PromptDatabaseService _databaseService;
+        private readonly IPromptRepository _databaseService;
 
         public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();   // Lista de prompts seleccionados para eliminar
 
@@ -29,7 +30,7 @@ namespace QuickPrompt.ViewModels
         public bool IsSearchFlag { get; set; }
 
         // Constructor primario con la lógica de inicialización
-        public QuickPromptViewModel(PromptDatabaseService _databaseService)
+        public QuickPromptViewModel(IPromptRepository _databaseService)
         {
             this._databaseService = _databaseService;
         }

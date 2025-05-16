@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class PromptDetailsPageViewModel(PromptDatabaseService _databaseService, IChatGPTService _chatGPTService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
+public partial class PromptDetailsPageViewModel(IPromptRepository _databaseService, IChatGPTService _chatGPTService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
 {
     // =========================== 🔹 PROPIEDADES OBSERVABLES ===========================
     [ObservableProperty] private string promptTitle;

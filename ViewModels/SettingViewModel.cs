@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 
 namespace QuickPrompt.ViewModels;
@@ -20,7 +21,7 @@ public partial class SettingViewModel : BaseViewModel
     /// <param name="appSettings">
     /// Instancia de la configuración de la aplicación.
     /// </param>
-    public SettingViewModel(AppSettings appSettings, PromptDatabaseService databaseService) : base(databaseService)
+    public SettingViewModel(AppSettings appSettings, IPromptRepository databaseService) : base(databaseService)
     {
         appVersion = appSettings?.Version ?? "Unknown Version"; // Evita valores nulos
     }

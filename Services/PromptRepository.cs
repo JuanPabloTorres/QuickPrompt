@@ -1,32 +1,41 @@
-﻿using Microsoft.Maui.Storage;
-using QuickPrompt.Models;
+﻿using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using SQLite;
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace QuickPrompt.Services
 {
-    public class PromptDatabaseService
+    // Repository Implementation
+    public class PromptRepository : IPromptRepository
     {
         private readonly SQLiteAsyncConnection _database;
 
-        public PromptDatabaseService()
+        public PromptRepository(string dbPath)
+        {
+            _database = new SQLiteAsyncConnection(dbPath);
+
+            Task.Run(async () => await InitializeDatabaseAsync());
+        }
+
+        public PromptRepository()
         {
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
 
             _database = new SQLiteAsyncConnection(dbPath);
-            // Llamar a la inicialización de la base de datos de manera asíncrona
+
             Task.Run(async () => await InitializeDatabaseAsync());
         }
 
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
         /// </summary>
-        private async Task InitializeDatabaseAsync()
+        public async Task InitializeDatabaseAsync()
         {
             // Crear tabla si no existe
             await _database.CreateTableAsync<PromptTemplate>();
@@ -76,7 +85,7 @@ namespace QuickPrompt.Services
             }
         }
 
-        private async Task InsertDefaultPromptsAsync()
+        public async Task InsertDefaultPromptsAsync()
         {
             var existingTitles = (await _database.Table<PromptTemplate>().ToListAsync())
                                  .Select(p => p.Title)
@@ -484,7 +493,7 @@ new PromptTemplate
         /// </summary>
         public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter = Filters.All, string filterText = "", string selectedCategory = null)
         {
-            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter,selectedCategory);
+            return GetPromptsByFilterAsync(offset, limit, filterText, dateFilter, selectedCategory);
         }
 
         /// <summary>
@@ -547,7 +556,7 @@ new PromptTemplate
         /// <summary>
         /// Actualiza el estado de favorito de un prompt en la base de datos.
         /// </summary>
-       
+
         public async Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite)
         {
             // Obtener el prompt de la base de datos
@@ -573,8 +582,6 @@ new PromptTemplate
         /// Obtiene la cantidad total de prompts favoritos que coinciden con un filtro.
         /// </summary>
         public Task<int> GetTotalPromptsCountAsync(string filterText, Filters dateFilter, string category) => GetTotalCountAsync(dateFilter, filterText, category);
-
-    
 
         private async Task<int> GetTotalCountAsync(Filters filterType, string filterText = null, string category = null)
         {

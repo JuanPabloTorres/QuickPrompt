@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
 using System.Text.Json;
@@ -12,7 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class MainPageViewModel(PromptDatabaseService promptDatabaseService, AdmobService admobService) : BaseViewModel(promptDatabaseService, admobService: admobService)
+public partial class MainPageViewModel(IPromptRepository promptDatabaseService, AdmobService admobService) : BaseViewModel(promptDatabaseService, admobService: admobService)
 {
     // ============================ PROPIEDADES Y VARIABLES ============================
     [ObservableProperty] private int cursorPosition;

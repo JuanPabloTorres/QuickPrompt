@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using System;
 using System.Collections.Generic;
@@ -29,11 +30,11 @@ namespace QuickPrompt.ViewModels.Prompts
 
         [ObservableProperty] private bool isFavorite;
 
-        private readonly PromptDatabaseService promptDatabaseService;
+        private readonly IPromptRepository promptDatabaseService;
 
         public PromptTemplateViewModel(
             PromptTemplate prompt,
-            PromptDatabaseService promptDatabaseService,
+            IPromptRepository promptDatabaseService,
             Action<PromptTemplateViewModel> onSelectToDelete,
             Action<PromptTemplateViewModel> onItemToDelete,
             Action<string, PromptTemplate> onSelectToNavigate)
@@ -53,7 +54,7 @@ namespace QuickPrompt.ViewModels.Prompts
 
         public PromptTemplateViewModel(
           PromptTemplate prompt,
-          PromptDatabaseService promptDatabaseService,
+          IPromptRepository promptDatabaseService,
           Action<PromptTemplateViewModel> onSelectToDelete,
           Action<PromptTemplateViewModel> onItemToDelete,
           Action<PromptTemplateViewModel> onRemoveFavorite

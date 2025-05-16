@@ -2,12 +2,13 @@
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Services;
+using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class EditPromptPageViewModel(PromptDatabaseService _databaseService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
+public partial class EditPromptPageViewModel(IPromptRepository _databaseService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
 {
     // ============================== 🌟 PROPIEDADES ==============================
 
