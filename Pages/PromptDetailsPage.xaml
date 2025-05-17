@@ -208,7 +208,7 @@
                 TextColor="{StaticResource AppBlack}" />
 
             <!--  Botones AI en layout responsive  -->
-            <FlexLayout
+            <!--<FlexLayout
                 AlignItems="Center"
                 Direction="Row"
                 HorizontalOptions="Center"
@@ -260,6 +260,89 @@
                     Style="{StaticResource AiButtonStyle}"
                     Text="Copilot "
                     TextColor="White">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+            </FlexLayout>-->
+
+            <FlexLayout
+                AlignItems="Center"
+                Direction="Row"
+                HorizontalOptions="Center"
+                IsVisible="{Binding ShowPromptActions}"
+                JustifyContent="Center"
+                Wrap="Wrap">
+
+                <Button
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="GPT"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
+                    </Button.CommandParameter>
+
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <Button
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Gemini"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="GeminiPage" ToolName="Gemini" />
+                    </Button.CommandParameter>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <Button
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Grok"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
+                    </Button.CommandParameter>
+
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <Button
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Copilot"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="CopilotChatPage" ToolName="Copilot" />
+                    </Button.CommandParameter>
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"

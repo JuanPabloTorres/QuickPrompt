@@ -22,68 +22,98 @@
 
         <!--  Contenedor de botones con Border  -->
 
-        <ScrollView
-            Grid.Row="0"
-            HorizontalScrollBarVisibility="Never"
-            Orientation="Horizontal">
-            <HorizontalStackLayout
+
+
+        <VerticalStackLayout Grid.Row="0">
+            <ScrollView
                 Grid.Row="0"
-                Spacing="14"
-                VerticalOptions="Center">
+                HorizontalScrollBarVisibility="Never"
+                Orientation="Horizontal">
+                <HorizontalStackLayout Grid.Row="0" VerticalOptions="Center">
 
-                <!--  Botón: ChatGPT  -->
-                <Button
-                    Clicked="OnChatGptClicked"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="ChatGPT">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="White" />
-                    </Button.ImageSource>
-                </Button>
+                    <!--  Botón: ChatGPT  -->
+                    <Button
+                        Clicked="OnChatGptClicked"
+                        Style="{StaticResource AiButtonStyle}"
+                        Text="ChatGPT">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xf06c;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
 
-                <!--  Botón: Gemini  -->
-                <Button
-                    Clicked="OnGeminiClicked"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Gemini">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="White" />
-                    </Button.ImageSource>
-                </Button>
+                    <!--  Botón: Gemini  -->
+                    <Button
+                        Clicked="OnGeminiClicked"
+                        Style="{StaticResource AiButtonStyle}"
+                        Text="Gemini">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xf06c;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
 
-                <!--  Botón: Grok  -->
-                <Button
-                    Clicked="OnGrokClicked"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Grok">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="White" />
-                    </Button.ImageSource>
-                </Button>
+                    <!--  Botón: Grok  -->
+                    <Button
+                        Clicked="OnGrokClicked"
+                        Style="{StaticResource AiButtonStyle}"
+                        Text="Grok">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xf06c;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
 
-                <!--  Botón: Copilot  -->
-                <Button
-                    Clicked="OnCopilotClicked"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Copilot">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="White" />
-                    </Button.ImageSource>
-                </Button>
-            </HorizontalStackLayout>
-        </ScrollView>
+                    <!--  Botón: Copilot  -->
+                    <Button
+                        Clicked="OnCopilotClicked"
+                        Style="{StaticResource AiButtonStyle}"
+                        Text="Copilot">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xf06c;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
+                </HorizontalStackLayout>
+            </ScrollView>
+
+
+
+            <CollectionView
+                x:Name="FinalPromptsCollection"
+                BackgroundColor="Transparent"
+                ItemsLayout="HorizontalList"
+                ItemsSource="{Binding FinalPrompts}"
+                SelectionChanged="OnFinalPromptSelected"
+                SelectionMode="Single">
+
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardStyleText}">
+                            <Label
+                                FontSize="12"
+                                HorizontalTextAlignment="Center"
+                                LineBreakMode="TailTruncation"
+                                MaxLines="5"
+                                Text="{Binding .}"
+                                TextColor="Black"
+                                WidthRequest="170" />
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+
 
         <!--  WebView + Carga  -->
         <Grid Grid.Row="1">

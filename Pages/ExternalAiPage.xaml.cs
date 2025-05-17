@@ -1,13 +1,27 @@
+using QuickPrompt.Tools;
+using QuickPrompt.ViewModels;
+
 namespace QuickPrompt.Pages;
 
 public partial class ExternalAiPage : ContentPage
 {
-    public ExternalAiPage()
+    private AiLauncherViewModel _aiLauncherViewModel;
+
+    public ExternalAiPage(AiLauncherViewModel aiLauncherViewModel)
     {
         InitializeComponent();
 
+        _aiLauncherViewModel = aiLauncherViewModel;
+
+        BindingContext = _aiLauncherViewModel;
+
         // Página predeterminada al cargar la vista
         ExternalAiWebView.Source = "https://chat.openai.com/";
+    }
+
+    protected override async void OnAppearing()
+    {
+        await _aiLauncherViewModel.LoadFinalPrompts();
     }
 
     private void OnNavigating(object sender, WebNavigatingEventArgs e)
@@ -35,8 +49,30 @@ public partial class ExternalAiPage : ContentPage
         ExternalAiWebView.Source = "https://grok.com/";
     }
 
+  
+
+  
+
     private void OnCopilotClicked(object sender, EventArgs e)
     {
         ExternalAiWebView.Source = "https://copilot.microsoft.com/chats/Wt2qDSvnmnFtgZVr6RQRc/";
     }
+
+    private async void OnFinalPromptSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is string selectedPrompt && !string.IsNullOrWhiteSpace(selectedPrompt))
+        {
+            string script = JsInjectionTool.GenerateClearPromptScript();
+
+            await ExternalAiWebView.EvaluateJavaScriptAsync(script);
+
+            string script =JsInjectionTool.GenerateInsertPromptScript(selectedPrompt); // Usa tu método ya creado
+
+            await ExternalAiWebView.EvaluateJavaScriptAsync(script);
+
+            // Opcional: limpiar selección visual
+            FinalPromptsCollection.SelectedItem = null;
+        }
+    }
+
 }

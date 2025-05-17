@@ -17,9 +17,12 @@ namespace QuickPrompt.ViewModels
 
         public override async Task MyBack()
         {
-            await Shell.Current.GoToAsync(nameof(PromptDetailsPage), new Dictionary<string, object>
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                await Shell.Current.GoToAsync(nameof(PromptDetailsPage), new Dictionary<string, object>
             {
                 { "selectedId", templateId }
+            });
             });
         }
 

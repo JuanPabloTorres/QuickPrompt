@@ -94,6 +94,8 @@ namespace QuickPrompt
             // 🧠 Repositorio de Prompts usando el patrón Repository
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
 
+            builder.Services.AddSingleton<IFinalPromptRepository, FinalPromptRepository>();
+
             builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
 
             // Registrar configuración de versión como servicio
@@ -132,6 +134,9 @@ namespace QuickPrompt
             builder.Services.AddScoped<AdmobBannerViewModel>();
 
             builder.Services.AddTransient<AiWebViewPageViewModel>();
+            
+            builder.Services.AddTransient<AiLauncherViewModel>();
+
         }
 
         // Registra las páginas en el contenedor de dependencias

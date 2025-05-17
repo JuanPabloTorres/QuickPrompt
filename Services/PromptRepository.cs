@@ -78,6 +78,7 @@ namespace QuickPrompt.Services
                         if (prompt.Category == 0 || !Enum.IsDefined(typeof(PromptCategory), prompt.Category))
                         {
                             prompt.Category = PromptCategory.General;
+
                             await _database.UpdateAsync(prompt);
                         }
                     }

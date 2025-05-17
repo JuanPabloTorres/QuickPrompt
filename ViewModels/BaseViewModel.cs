@@ -53,6 +53,8 @@ namespace QuickPrompt.ViewModels
 
         protected IPromptRepository _databaseService;
 
+        protected IFinalPromptRepository _finalPromptRepository;
+
         protected AdmobService _adMobService;
 
         protected BaseViewModel()
@@ -67,6 +69,15 @@ namespace QuickPrompt.ViewModels
         protected BaseViewModel(IPromptRepository promptDatabaseService, AdmobService admobService)
         {
             this._databaseService = promptDatabaseService;
+
+            this._adMobService = admobService;
+        }
+
+        protected BaseViewModel(IPromptRepository promptDatabaseService,IFinalPromptRepository finalPromptRepository, AdmobService admobService)
+        {
+            this._databaseService = promptDatabaseService;
+
+            this._finalPromptRepository = finalPromptRepository;
 
             this._adMobService = admobService;
         }

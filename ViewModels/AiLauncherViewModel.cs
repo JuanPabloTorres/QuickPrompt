@@ -1,37 +1,34 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Maui.Core.Extensions;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.Extensions;
+using QuickPrompt.Services.ServiceInterfaces;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
-    public partial class AiLauncherViewModel : ObservableObject
+    public partial class AiLauncherViewModel(IFinalPromptRepository finalPromptRepository) : BaseViewModel
     {
-        [RelayCommand]
-        private async Task SendPromptToChatGPT()
+       public ObservableCollection<string> FinalPrompts { get; set; } = new();
+
+        public async Task LoadFinalPrompts()
         {
-            await Shell.Current.GoToAsync("ExternalAiPage?url=https://chat.openai.com/");
+            await ExecuteWithLoadingAsync(async () => { 
+            
+            
+                var prompt = await finalPromptRepository.GetAllAsync();
+
+                FinalPrompts.AddRange(prompt.Select(s => s.CompletedText).ToObservableCollection());
+
+
+            });
         }
 
-        [RelayCommand]
-        private async Task SendPromptToGemini()
-        {
-            await Shell.Current.GoToAsync("ExternalAiPage?url=https://gemini.google.com/");
-        }
-
-        [RelayCommand]
-        private async Task SendPromptToGrok()
-        {
-            await Shell.Current.GoToAsync("ExternalAiPage?url=https://grok.com/");
-        }
-
-        [RelayCommand]
-        private async Task SendPromptToCopilot()
-        {
-            await Shell.Current.GoToAsync("ExternalAiPage?url=https://copilot.microsoft.com/chats/Wt2qDSvnmnFtgZVr6RQRc/");
-        }
+       
     }
 }

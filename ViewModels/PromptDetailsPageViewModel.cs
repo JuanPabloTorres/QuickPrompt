@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class PromptDetailsPageViewModel(IPromptRepository _databaseService, IChatGPTService _chatGPTService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
+public partial class PromptDetailsPageViewModel(IPromptRepository _databaseService, IFinalPromptRepository _finalPromptRepository, AdmobService admobService) : BaseViewModel(_databaseService, _finalPromptRepository, admobService), IQueryAttributable
 {
     // =========================== 🔹 PROPIEDADES OBSERVABLES ===========================
     [ObservableProperty] private string promptTitle;
@@ -110,6 +110,23 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
             }
 
             UpdateVisibility(); // Mostrar botón de compartir
+
+            var _finalPrompt = new FinalPrompt
+            {
+                SourcePromptId = PromptID,
+                CompletedText = FinalPrompt,
+            };
+
+            var savedFinalPrompt = await _finalPromptRepository.SaveAsync(_finalPrompt);
+
+            bool isInsertedFinalPrompt = savedFinalPrompt > 0;
+
+            if (isInsertedFinalPrompt)
+            {
+                var toast = Toast.Make($"Final Prompt Inserted...", ToastDuration.Short);
+
+                await toast.Show();
+            }
         }, AppMessagesEng.GenericError);
     }
 
@@ -137,35 +154,12 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
 
     // =========================== 🔹 INTEGRACIÓN CON AI ===========================
     [RelayCommand]
-    private async Task SendPromptToChatGPTAsync()
+    private async Task SendPromptToAsync(NavigationParams param)
     {
-        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a ChatGPT
-
-        await SendPromptToAsync(nameof(ChatGptPage), "ChatGPT", PromptID, FinalPrompt);
-    }
-
-    [RelayCommand]
-    private async Task SendPromptToGeminiAsync()
-    {
-        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Gemini
-
-        await SendPromptToAsync(nameof(GeminiPage), "Gemini", PromptID, FinalPrompt);
-    }
-
-    [RelayCommand]
-    private async Task SendPromptToGrokAsync()
-    {
-        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Grok
-
-        await SendPromptToAsync(nameof(GrokPage), "Grok", PromptID, FinalPrompt);
-    }
-
-    [RelayCommand]
-    private async Task SendPromptToCopilotAsync()
-    {
-        IsShareButtonVisible = !string.IsNullOrEmpty(FinalPrompt); // Mostrar botón de compartir // Ocultar botón de compartir al enviar a Grok
-
-        await SendPromptToAsync(nameof(CopilotChatPage), "Copilot", PromptID, FinalPrompt);
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            await SendPromptToAsync(param.PageName, param.ToolName, PromptID, FinalPrompt);
+        });
     }
 
     private void UpdateVisibility()
@@ -261,7 +255,6 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
     {
         await ExecuteWithLoadingAsync(async () =>
         {
-
             await Shell.Current.GoToAsync("//Quick");
         });
     }
