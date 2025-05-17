@@ -49,10 +49,6 @@ public partial class ExternalAiPage : ContentPage
         ExternalAiWebView.Source = "https://grok.com/";
     }
 
-  
-
-  
-
     private void OnCopilotClicked(object sender, EventArgs e)
     {
         ExternalAiWebView.Source = "https://copilot.microsoft.com/chats/Wt2qDSvnmnFtgZVr6RQRc/";
@@ -62,17 +58,16 @@ public partial class ExternalAiPage : ContentPage
     {
         if (e.CurrentSelection.FirstOrDefault() is string selectedPrompt && !string.IsNullOrWhiteSpace(selectedPrompt))
         {
-            string script = JsInjectionTool.GenerateClearPromptScript();
+            string _cleanScript = JsInjectionTool.GenerateClearPromptScript();
 
-            await ExternalAiWebView.EvaluateJavaScriptAsync(script);
+            await ExternalAiWebView.EvaluateJavaScriptAsync(_cleanScript);
 
-            string script =JsInjectionTool.GenerateInsertPromptScript(selectedPrompt); // Usa tu método ya creado
+            string _insertTextToBoxScript = JsInjectionTool.GenerateInsertPromptScript(selectedPrompt); // Usa tu método ya creado
 
-            await ExternalAiWebView.EvaluateJavaScriptAsync(script);
+            await ExternalAiWebView.EvaluateJavaScriptAsync(_insertTextToBoxScript);
 
             // Opcional: limpiar selección visual
             FinalPromptsCollection.SelectedItem = null;
         }
     }
-
 }

@@ -15,7 +15,7 @@
             <Label
                 FontFamily="Designer"
                 FontSize="18"
-                Text="Quick Prompt"
+                Text="Quick Prompt "
                 TextColor="{StaticResource PrimaryBlueDark}"
                 VerticalOptions="Center" />
         </Grid>
@@ -98,7 +98,7 @@
                             <Label
                                 Grid.Column="0"
                                 Style="{StaticResource TitleLabelStyle}"
-                                Text="🧠 My Prompts"
+                                Text="🧠 My Prompts "
                                 VerticalOptions="Center" />
 
                             <!--  Select All toggle  -->
@@ -238,7 +238,7 @@
                         <Label
                             HorizontalOptions="Center"
                             Style="{StaticResource TotalCountLabelStyle}"
-                            Text="{Binding Prompts.Count, StringFormat='Total: {0} prompts'}" />
+                            Text="{Binding Prompts.Count, StringFormat='Total: {0} prompts '}" />
 
                         <!--  Botón cargar más  -->
                         <Button

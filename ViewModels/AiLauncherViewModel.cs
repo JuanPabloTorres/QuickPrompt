@@ -14,21 +14,24 @@ namespace QuickPrompt.ViewModels
 {
     public partial class AiLauncherViewModel(IFinalPromptRepository finalPromptRepository) : BaseViewModel
     {
-       public ObservableCollection<string> FinalPrompts { get; set; } = new();
+        public ObservableCollection<string> FinalPrompts { get; set; } = new();
 
         public async Task LoadFinalPrompts()
         {
-            await ExecuteWithLoadingAsync(async () => { 
-            
-            
-                var prompt = await finalPromptRepository.GetAllAsync();
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                var prompts = await finalPromptRepository.GetAllAsync();
 
-                FinalPrompts.AddRange(prompt.Select(s => s.CompletedText).ToObservableCollection());
+                if (prompts is null || !prompts.Any())
+                    return;
 
+                var newPrompts = prompts.DistinctBy(v => v.CompletedText).Select(s => s.CompletedText).ToHashSet().ToList();
 
+                if (newPrompts.Any())
+                {
+                    FinalPrompts.AddRange(newPrompts);
+                }
             });
         }
-
-       
     }
 }

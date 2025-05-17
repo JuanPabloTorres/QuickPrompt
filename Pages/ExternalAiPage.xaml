@@ -22,9 +22,7 @@
 
         <!--  Contenedor de botones con Border  -->
 
-
-
-        <VerticalStackLayout Grid.Row="0">
+        <VerticalStackLayout Grid.Row="0" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ScrollView
                 Grid.Row="0"
                 HorizontalScrollBarVisibility="Never"
@@ -85,35 +83,41 @@
                 </HorizontalStackLayout>
             </ScrollView>
 
-
-
             <CollectionView
                 x:Name="FinalPromptsCollection"
                 BackgroundColor="Transparent"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                 ItemsLayout="HorizontalList"
                 ItemsSource="{Binding FinalPrompts}"
                 SelectionChanged="OnFinalPromptSelected"
                 SelectionMode="Single">
 
-
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
+
                         <Border Style="{StaticResource CardStyleText}">
-                            <Label
-                                FontSize="12"
-                                HorizontalTextAlignment="Center"
-                                LineBreakMode="TailTruncation"
-                                MaxLines="5"
-                                Text="{Binding .}"
-                                TextColor="Black"
-                                WidthRequest="170" />
+
+                            <VerticalStackLayout>
+                                <Label
+                                    FontSize="12"
+                                    HeightRequest="50"
+                                    HorizontalTextAlignment="Center"
+                                    LineBreakMode="WordWrap"
+                                    MaxLines="5"
+                                    Text="{Binding .}"
+                                    TextColor="{StaticResource AppBlack}"
+                                    VerticalOptions="Center"
+                                    WidthRequest="180" />
+
+                            </VerticalStackLayout>
+
+
                         </Border>
+
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
         </VerticalStackLayout>
-
 
         <!--  WebView + Carga  -->
         <Grid Grid.Row="1">
@@ -129,6 +133,7 @@
             x:Name="LoadingIndicator"
             Grid.Row="0"
             Grid.RowSpan="2"
+            Padding="5"
             IsVisible="False"
             Message="Loading..." />
     </Grid>

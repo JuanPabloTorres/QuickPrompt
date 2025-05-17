@@ -21,7 +21,7 @@ public partial class SettingViewModel : BaseViewModel
     /// <param name="appSettings">
     /// Instancia de la configuración de la aplicación.
     /// </param>
-    public SettingViewModel(AppSettings appSettings, IPromptRepository databaseService) : base(databaseService)
+    public SettingViewModel(AppSettings appSettings, IPromptRepository databaseService, IFinalPromptRepository finalPromptRepository) : base(databaseService, finalPromptRepository)
     {
         appVersion = appSettings?.Version ?? "Unknown Version"; // Evita valores nulos
     }
@@ -32,16 +32,28 @@ public partial class SettingViewModel : BaseViewModel
     [RelayCommand]
     private async Task RestoreDatabaseAsync()
     {
+      
+
         await ExecuteWithLoadingAsync(async () =>
         {
-            bool confirm = await AppShell.Current.DisplayAlert("Confirmation", "Are you sure you want to restore all data?", "Yes", "No");
+            bool confirm = await AppShell.Current.DisplayAlert(
+          AppMessagesEng.ConfirmationTitle,
+          AppMessagesEng.RestoreConfirmationMessage,
+          AppMessagesEng.Yes,
+          AppMessagesEng.No);
 
-            if (confirm)
-            {
-                await _databaseService.RestoreDatabaseAsync();
+            if (!confirm)
+                return;
 
-                await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.DatabaseRestore);
-            }
+            var restoreDatabaseTask = _databaseService.RestoreDatabaseAsync();
+
+            var restorePromptTask = _finalPromptRepository.RestoreDatabaseAsync();
+
+            await Task.WhenAll(restoreDatabaseTask, restorePromptTask);
+
+            await GenericToolBox.ShowLottieMessageAsync(
+                "CompleteAnimation.json",
+                AppMessagesEng.DatabaseRestore);
         }, AppMessagesEng.GenericError);
     }
 
@@ -52,9 +64,7 @@ public partial class SettingViewModel : BaseViewModel
         {
             var uri = new Uri("https://estjuanpablotorres.wixsite.com/quickprompt");
 
-        await Launcher.Default.OpenAsync(uri);
-
+            await Launcher.Default.OpenAsync(uri);
         }, AppMessagesEng.GenericError);
     }
-
 }

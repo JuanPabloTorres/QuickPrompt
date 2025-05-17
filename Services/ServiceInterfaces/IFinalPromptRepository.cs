@@ -10,11 +10,19 @@ namespace QuickPrompt.Services.ServiceInterfaces
     public interface IFinalPromptRepository
     {
         Task InitializeDatabaseAsync();
+
         Task<List<FinalPrompt>> GetAllAsync();
+
         Task<FinalPrompt> GetByIdAsync(Guid id);
+
         Task<int> SaveAsync(FinalPrompt prompt);
+
         Task<bool> DeleteAsync(Guid id);
+
         Task<bool> DeleteAllAsync();
+
         Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite);
+
+        Task RestoreDatabaseAsync();
     }
 }

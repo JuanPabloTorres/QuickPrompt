@@ -25,6 +25,14 @@ namespace QuickPrompt.Tools
 
         public const string DatabaseRestore = "Database has been restore.";
 
+        public const string ConfirmationTitle = "Confirm Action";
+
+        public const string RestoreConfirmationMessage = "Are you sure you want to restore the database? This action will overwrite all current data.";
+
+        public const string Yes = "Yes";
+
+        public const string No = "No";
+
         // **Messages Related to Prompts**
         public static class Prompts
         {

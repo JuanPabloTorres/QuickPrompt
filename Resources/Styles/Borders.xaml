@@ -18,12 +18,14 @@
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
     <Style x:Key="CardStyleText" TargetType="Border">
-        <Setter Property="Margin" Value="5" />
-        <Setter Property="Padding" Value="5" />
-        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 2" />
         <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="VerticalOptions" Value="Center" />
+
 
 
     </Style>

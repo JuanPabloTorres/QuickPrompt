@@ -20,6 +20,22 @@
     <TabBar>
 
         <!--  Home Tab  -->
+        <Tab Title="AI">
+
+            <Tab.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xf06c;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </Tab.Icon>
+            <ShellContent
+                Title="AI Web"
+                ContentTemplate="{DataTemplate pages:ExternalAiPage}"
+                Route="AIWeb" />
+        </Tab>
+
+
+        <!--  Quick Tab  -->
         <Tab Title="Quick">
 
             <Tab.Icon>
@@ -34,20 +50,6 @@
                 Route="Quick" />
         </Tab>
 
-        <!--  Home Tab  -->
-        <Tab Title="AI">
-
-            <Tab.Icon>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xf06c;"
-                    Color="{StaticResource PrimaryBlueLight}" />
-            </Tab.Icon>
-            <ShellContent
-                Title="AI Web"
-                ContentTemplate="{DataTemplate pages:ExternalAiPage}"
-                Route="AIWeb" />
-        </Tab>
 
         <!--  Create Tab  -->
         <Tab Title="Create">

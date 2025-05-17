@@ -13,7 +13,7 @@
         <Label
             HorizontalOptions="Start"
             Style="{StaticResource TitleLabelStyle}"
-            Text="Filters:" />
+            Text="Filters: " />
 
         <!--  Contenedor de botones de filtros  -->
         <Grid

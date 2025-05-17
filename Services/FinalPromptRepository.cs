@@ -53,7 +53,7 @@ namespace QuickPrompt.Services
         public async Task<List<FinalPrompt>> GetAllAsync()
         {
             return await _database.Table<FinalPrompt>()
-                .OrderByDescending(p => p.CreatedAt)
+                .OrderBy(p => p.CreatedAt)
                 .ToListAsync();
         }
 
@@ -98,6 +98,22 @@ namespace QuickPrompt.Services
 
             prompt.IsFavorite = isFavorite;
             return await _database.UpdateAsync(prompt) > 0;
+        }
+
+        public async Task RestoreDatabaseAsync()
+        {
+            // Cierra cualquier operación pendiente antes de borrar
+            await _database.CloseAsync();
+
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+
+            if (File.Exists(dbPath))
+                File.Delete(dbPath);
+
+            // Recrear la instancia de conexión y reiniciar base de datos
+            var newConnection = new SQLiteAsyncConnection(dbPath);
+
+            await InitializeDatabaseAsync();
         }
     }
 }
