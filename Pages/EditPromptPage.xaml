@@ -122,6 +122,7 @@
                     <Border Grid.Row="4" Style="{StaticResource InputBorderStyle}">
                         <Editor
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}"
                             Placeholder="Short explanation of what this prompt does..."
                             Style="{StaticResource InputEditorStyle}"
                             Text="{Binding PromptTemplate.Description}" />

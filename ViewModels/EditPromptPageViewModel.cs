@@ -37,6 +37,8 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
             {
                 await LoadPromptAsync(promptId);
+
+                IsVisualModeActive = false;
             }
         });
     }

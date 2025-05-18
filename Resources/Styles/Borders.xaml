@@ -12,8 +12,6 @@
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
         <Setter Property="StrokeThickness" Value="1" />
-
-
     </Style>
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
@@ -25,22 +23,14 @@
         <Setter Property="StrokeShape" Value="RoundRectangle 2" />
         <Setter Property="StrokeThickness" Value="1" />
         <Setter Property="VerticalOptions" Value="Center" />
-
-
-
     </Style>
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
     <Style x:Key="loadingBorderStyle" TargetType="Border">
         <Setter Property="Margin" Value="0" />
         <Setter Property="Padding" Value="0" />
-
         <Setter Property="BackgroundColor" Value="LightGray" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
-
-
-
-
     </Style>
 
     <!--  Estilo para bordes de entradas de texto  -->

@@ -7,7 +7,7 @@
     xmlns:pages="clr-namespace:QuickPrompt.Pages"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="Quick Prompt"
-    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarHasShadow="True"
     Shell.TabBarForegroundColor="{StaticResource PrimaryBlueDark}"
     Shell.TabBarTitleColor="{StaticResource PrimaryBlueDark}"
     Shell.TabBarUnselectedColor="{StaticResource PrimaryTeal}">
