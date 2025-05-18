@@ -23,7 +23,7 @@ namespace QuickPrompt.Services.ServiceInterfaces
 
         Task<bool> DeleteAllPromptsAsync();
 
-        Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory);
+        Task<PromptTemplate> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory);
 
         Task<List<PromptTemplate>> GetAllPromptsAsync();
 

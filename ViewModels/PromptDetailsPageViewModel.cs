@@ -3,6 +3,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
@@ -23,6 +24,8 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
     [ObservableProperty] private string promptText;
 
     [ObservableProperty] private string description;
+    
+    [ObservableProperty] private PromptCategory category;
 
     [ObservableProperty] private string finalPrompt;
 
@@ -52,6 +55,8 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
                 PromptText = prompt.Template;
 
                 PromptID = prompt.Id;
+
+                Category = prompt.Category;
 
                 var _savedVariables = prompt.Variables.Select(v => new VariableInput { Name = v.Key, Value = string.Empty });
 

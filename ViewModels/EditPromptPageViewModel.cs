@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
+using QuickPrompt.Tools.Messages;
 using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
@@ -22,10 +24,6 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
     [ObservableProperty] private string promptText;
 
     [ObservableProperty] public string selectedCategory;
-
-
-
-
 
     // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
 
@@ -109,9 +107,7 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
 
             await GoBackAsync();
 
-            MessagingCenter.Send(this, MessagingKeys.PromptUpdate, this.promptTemplate);
-
-
+            WeakReferenceMessenger.Default.Send(new UpdatedPromptMessage(promptTemplate));
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
@@ -147,16 +143,20 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
     /// </summary>
     private async Task UpdatePromptChangesAsync()
     {
-
         var _category = Enum.TryParse(typeof(PromptCategory), SelectedCategory.ToString(), out var category) ? (PromptCategory)category : PromptCategory.General;
 
-        await _databaseService.UpdatePromptAsync(
-            PromptTemplate.Id,
-            PromptTemplate.Title,
-            PromptTemplate.Template,
-            PromptTemplate.Description,
-            PromptTemplate.Variables,
-            _category);
+        var _updatedResponse = await _databaseService.UpdatePromptAsync(
+              PromptTemplate.Id,
+              PromptTemplate.Title,
+              PromptTemplate.Template,
+              PromptTemplate.Description,
+              PromptTemplate.Variables,
+              _category);
+
+        if (_updatedResponse != null)
+        {
+            this.promptTemplate = _updatedResponse;
+        }
     }
 
     // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
@@ -267,6 +267,4 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             Variables = AngleBraceTextHandler.ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
     }
-
-  
 }

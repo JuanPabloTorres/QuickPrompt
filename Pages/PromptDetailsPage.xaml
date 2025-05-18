@@ -77,6 +77,18 @@
                 Text="{Binding PromptTitle}"
                 TextColor="{StaticResource PrimaryBlueDark}" />
 
+            <!--  Categoría del Prompt  -->
+            <Label
+                Margin="0,2,0,0"
+                Padding="6,2"
+                BackgroundColor="{StaticResource PrimaryRed}"
+                FontAttributes="Bold"
+                FontSize="13"
+                HorizontalOptions="Start"
+                Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
+                TextColor="White"
+                VerticalOptions="Center" />
+
             <!--  Línea divisoria  -->
             <BoxView Style="{StaticResource DividerLineStyle}" />
 
@@ -208,67 +220,6 @@
                 TextColor="{StaticResource AppBlack}" />
 
             <!--  Botones AI en layout responsive  -->
-            <!--<FlexLayout
-                AlignItems="Center"
-                Direction="Row"
-                HorizontalOptions="Center"
-                IsVisible="{Binding ShowPromptActions}"
-                JustifyContent="Center"
-                Wrap="Wrap">
-
-                <Button
-                    Command="{Binding SendPromptToChatGPTCommand}"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="ChatGPT"
-                    TextColor="White">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
-
-                <Button
-                    Command="{Binding SendPromptToGeminiCommand}"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Gemini"
-                    TextColor="White">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
-
-                <Button
-                    Command="{Binding SendPromptToGrokCommand}"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Grok"
-                    TextColor="White">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
-
-                <Button
-                    Command="{Binding SendPromptToCopilotCommand}"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Copilot "
-                    TextColor="White">
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
-            </FlexLayout>-->
-
             <FlexLayout
                 AlignItems="Center"
                 Direction="Row"

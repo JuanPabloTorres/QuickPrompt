@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using QuickPrompt.Extensions;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
@@ -8,6 +9,7 @@ using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
+using QuickPrompt.Tools.Messages;
 using QuickPrompt.ViewModels.Prompts;
 using System.Collections.ObjectModel;
 
@@ -29,15 +31,41 @@ namespace QuickPrompt.ViewModels
         public BlockHandler<PromptTemplateViewModel> blockHandler = new();
         public bool IsSearchFlag { get; set; }
 
-        [ObservableProperty] public string selectedCategory;
+        [ObservableProperty] public string selectedCategory = string.Empty;
 
         // Constructor primario con la lógica de inicialización
         public QuickPromptViewModel(IPromptRepository _databaseService)
         {
             this._databaseService = _databaseService;
-        }
 
-    
+            if (!WeakReferenceMessenger.Default.IsRegistered<UpdatedPromptMessage>(this))
+            {
+                WeakReferenceMessenger.Default.Register<UpdatedPromptMessage>(this, async (recipient, message) =>
+                {
+                    if ((SelectedCategory != message.Value.Category.ToString()) && !string.IsNullOrEmpty(SelectedCategory))
+                    {
+                        var _prompToRemoveFromList = prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id);
+
+                        if (prompts.Any() && prompts.Any(v => v.Prompt.Id == _prompToRemoveFromList.Prompt.Id))
+                        {
+                            prompts.Remove(_prompToRemoveFromList);
+                        }
+                    }
+                    else
+                    {
+                        if (prompts.Any() && prompts.Any(v => v.Prompt.Id == message.Value.Id))
+                        {
+                            var _currentCategory =prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id).Prompt.Category;
+
+                            if (_currentCategory != message.Value.Category)
+                            {
+                                prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id).Prompt.Category = message.Value.Category;
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         // ======================= 📌 MÉTODO PRINCIPAL: Cargar Prompts =======================
         [RelayCommand]
