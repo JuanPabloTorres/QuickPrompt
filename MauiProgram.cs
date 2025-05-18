@@ -91,6 +91,9 @@ namespace QuickPrompt
         {
             var apiKey = appSettings["GPTApiKeys:Key1"];
 
+            // ✅ Registro único de la conexión compartida
+            builder.Services.AddSingleton<DatabaseConnectionProvider>();
+
             // 🧠 Repositorio de Prompts usando el patrón Repository
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
 

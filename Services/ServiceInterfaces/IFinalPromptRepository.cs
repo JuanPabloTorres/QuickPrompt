@@ -1,4 +1,6 @@
 ﻿using QuickPrompt.Models;
+using QuickPrompt.Models.DTO;
+using QuickPrompt.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,5 +26,7 @@ namespace QuickPrompt.Services.ServiceInterfaces
         Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite);
 
         Task RestoreDatabaseAsync();
+
+        Task<List<FinalPromptDTO>> GetFinalPromptsByCategoryAsync(PromptCategory category);
     }
 }

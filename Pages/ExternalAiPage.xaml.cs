@@ -1,3 +1,4 @@
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels;
 
@@ -17,6 +18,13 @@ public partial class ExternalAiPage : ContentPage
 
         // Página predeterminada al cargar la vista
         ExternalAiWebView.Source = "https://chat.openai.com/";
+
+        _aiLauncherViewModel.ClearWebViewTextAction = async () =>
+        {
+            string clearScript = JsInjectionTool.GenerateClearPromptScript(); // Tu método JS
+
+            await ExternalAiWebView.EvaluateJavaScriptAsync(clearScript);
+        };
     }
 
     protected override async void OnAppearing()

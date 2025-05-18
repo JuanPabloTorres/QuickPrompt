@@ -1,4 +1,5 @@
 ﻿using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Tools;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace QuickPrompt.Services.ServiceInterfaces
 
         Task<bool> DeleteAllPromptsAsync();
 
-        Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables);
+        Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory);
 
         Task<List<PromptTemplate>> GetAllPromptsAsync();
 

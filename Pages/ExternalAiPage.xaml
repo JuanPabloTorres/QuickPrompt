@@ -18,6 +18,24 @@
         </Grid>
     </Shell.TitleView>
 
+    <!--  Barra de herramientas  -->
+    <ContentPage.ToolbarItems>
+
+        <!--  Botón de Copiar  -->
+        <ToolbarItem Command="{Binding ClearCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5c9;"
+                    Color="{StaticResource PrimaryRed}" />
+                <!--  Color asociado al botón Copiar  -->
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Clear Text
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="Auto, *">
 
         <!--  Contenedor de botones con Border  -->
@@ -83,6 +101,24 @@
                 </HorizontalStackLayout>
             </ScrollView>
 
+            <!--  Campo: Categoría  -->
+            <VerticalStackLayout Grid.Row="5" Margin="10,0,10,0">
+                <Label
+                    HorizontalOptions="Start"
+                    Style="{StaticResource TitleLabelStyle}"
+                    Text="Category" />
+
+                <Border Style="{StaticResource InputBorderStyle}">
+                    <Picker
+                        Title="Select category"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        ItemDisplayBinding="{Binding .}"
+                        ItemsSource="{Binding Categories}"
+                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                        Style="{StaticResource InputPickerStyle}" />
+                </Border>
+            </VerticalStackLayout>
+
             <CollectionView
                 x:Name="FinalPromptsCollection"
                 BackgroundColor="Transparent"
@@ -108,19 +144,18 @@
                                     TextColor="{StaticResource AppBlack}"
                                     VerticalOptions="Center"
                                     WidthRequest="180" />
-
                             </VerticalStackLayout>
-
-
                         </Border>
-
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </VerticalStackLayout>
 
         <!--  WebView + Carga  -->
-        <Grid Grid.Row="1">
+        <Grid
+            Grid.Row="1"
+            Margin="0,2,0,0"
+            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <WebView
                 x:Name="ExternalAiWebView"
                 Navigated="OnNavigated"

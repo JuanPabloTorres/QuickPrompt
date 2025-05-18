@@ -29,11 +29,15 @@ namespace QuickPrompt.ViewModels
         public BlockHandler<PromptTemplateViewModel> blockHandler = new();
         public bool IsSearchFlag { get; set; }
 
+        [ObservableProperty] public string selectedCategory;
+
         // Constructor primario con la lógica de inicialización
         public QuickPromptViewModel(IPromptRepository _databaseService)
         {
             this._databaseService = _databaseService;
         }
+
+    
 
         // ======================= 📌 MÉTODO PRINCIPAL: Cargar Prompts =======================
         [RelayCommand]

@@ -173,7 +173,7 @@
                             ItemDisplayBinding="{Binding .}"
                             ItemsSource="{Binding Categories}"
                             SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                            Style="{StaticResource InputEntryStyle}" />
+                            Style="{StaticResource InputPickerStyle}" />
                     </Border>
                 </VerticalStackLayout>
 

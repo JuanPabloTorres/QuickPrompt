@@ -1,4 +1,6 @@
 ﻿using QuickPrompt.Models;
+using QuickPrompt.Models.DTO;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
 using SQLite;
 
@@ -10,16 +12,21 @@ namespace QuickPrompt.Services
 
         private const string DatabaseName = "QuickPrompt.db3";
 
-        public FinalPromptRepository()
-        {
-            string dbPath = Path.Combine(FileSystem.AppDataDirectory, DatabaseName);
+        //public FinalPromptRepository()
+        //{
+        //    string dbPath = Path.Combine(FileSystem.AppDataDirectory, DatabaseName);
 
-            _database = new SQLiteAsyncConnection(dbPath);
+        //    _database = new SQLiteAsyncConnection(dbPath);
+
+        //    Task.Run(async () => await InitializeDatabaseAsync());
+        //}
+
+        public FinalPromptRepository(DatabaseConnectionProvider connectionProvider)
+        {
+            _database = connectionProvider.GetConnection();
 
             Task.Run(async () => await InitializeDatabaseAsync());
         }
-
-      
 
         public async Task InitializeDatabaseAsync()
         {
@@ -63,16 +70,50 @@ namespace QuickPrompt.Services
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+        public async Task<List<FinalPromptDTO>> GetFinalPromptsByCategoryAsync(PromptCategory category)
+        {
+            var sql = @"
+        SELECT 
+            f.CompletedText,           
+            f.SourcePromptId,            
+            p.Category
+        FROM FinalPrompt f
+        LEFT  JOIN PromptTemplate p ON f.SourcePromptId = p.Id
+        WHERE p.Category = ?
+    ";
+
+            return await _database.QueryAsync<FinalPromptDTO>(sql, (int)category);
+        }
+
+
+
         public async Task<int> SaveAsync(FinalPrompt prompt)
         {
+            if (string.IsNullOrWhiteSpace(prompt.CompletedText))
+                return 0;
+
+            // Obtener todos y comparar en memoria (pequeño volumen, rendimiento aceptable)
+            var allPrompts = await _database.Table<FinalPrompt>().ToListAsync();
+
+            bool alreadyExists = allPrompts
+                .Any(p => string.Equals(
+                    p.CompletedText?.Trim(),
+                    prompt.CompletedText?.Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (alreadyExists)
+                return 0; // No guardar duplicado
+
+            // Continuar con guardado normal
             if (prompt.Id == Guid.Empty)
                 prompt.Id = Guid.NewGuid();
 
             if (prompt.CreatedAt == default)
                 prompt.CreatedAt = DateTime.Now;
 
-            return await _database.InsertOrReplaceAsync(prompt);
+            return await _database.InsertAsync(prompt);
         }
+
 
         public async Task<bool> DeleteAsync(Guid id)
         {

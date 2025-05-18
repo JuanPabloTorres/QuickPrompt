@@ -41,7 +41,7 @@ namespace QuickPrompt.ViewModels
 
         [ObservableProperty] protected ObservableCollection<string> categories = new ObservableCollection<string>(Enum.GetNames(typeof(PromptCategory)).ToObservableCollection());
 
-        [ObservableProperty] protected string selectedCategory;
+        public ObservableCollection<string> FinalPrompts { get; set; } = new();
 
         protected string oldSearch;
 
@@ -61,7 +61,11 @@ namespace QuickPrompt.ViewModels
         {
         }
 
-        protected BaseViewModel(IPromptRepository promptDatabaseService,IFinalPromptRepository finalPromptRepository)
+        protected BaseViewModel(AppSettings appSettings)
+        {
+        }
+
+        protected BaseViewModel(IPromptRepository promptDatabaseService, IFinalPromptRepository finalPromptRepository)
         {
             this._databaseService = promptDatabaseService;
 
@@ -75,7 +79,7 @@ namespace QuickPrompt.ViewModels
             this._adMobService = admobService;
         }
 
-        protected BaseViewModel(IPromptRepository promptDatabaseService,IFinalPromptRepository finalPromptRepository, AdmobService admobService)
+        protected BaseViewModel(IPromptRepository promptDatabaseService, IFinalPromptRepository finalPromptRepository, AdmobService admobService)
         {
             this._databaseService = promptDatabaseService;
 
@@ -84,8 +88,14 @@ namespace QuickPrompt.ViewModels
             this._adMobService = admobService;
         }
 
-        protected BaseViewModel(AppSettings appSettings)
+        protected BaseViewModel(IFinalPromptRepository finalPromptRepository)
         {
+            this._finalPromptRepository = finalPromptRepository;
+        }
+
+        public IFinalPromptRepository GetService()
+        {
+            return _finalPromptRepository;
         }
 
         // ============================== 🚀 MÉTODOS PRINCIPALES ==============================
@@ -123,6 +133,7 @@ namespace QuickPrompt.ViewModels
             try
             {
                 loader.Message = loadingMessage;
+
                 loader.IsVisible = true;
 
                 await action(); // Ejecuta la tarea principal
@@ -174,16 +185,6 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         protected async Task GoBackAsync() => await Shell.Current.Navigation.PopAsync();
 
-        /// <summary>
-        /// Muestra un mensaje de éxito y regresa a la pantalla anterior.
-        /// </summary>
-        protected async Task NotifySuccessAndNavigateBack()
-        {
-            await AppShell.Current.DisplayAlert("Success", "The prompt has been updated successfully.", "OK");
-
-            await GoBackAsync();
-        }
-
         // ============================== 🛠 MÉTODOS AUXILIARES ==============================
 
         /// <summary>
@@ -210,13 +211,6 @@ namespace QuickPrompt.ViewModels
         /// Verdadero si la selección es válida.
         /// </returns>
         protected bool IsSelectionValid(string promptText, int selectionLength) => !string.IsNullOrEmpty(promptText) && selectionLength > 0;
-
-        protected void CleanSearch()
-        {
-            this.oldSearch = string.Empty;
-
-            this.Search = string.Empty;
-        }
 
         /// <summary>
         /// Alterna la selección de un prompt en la lista de eliminación. Si el prompt ya está

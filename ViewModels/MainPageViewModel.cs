@@ -26,6 +26,8 @@ public partial class MainPageViewModel(IPromptRepository promptDatabaseService, 
 
     [ObservableProperty] private string promptDescription;
 
+    [ObservableProperty] public string selectedCategory;
+
     // ============================ COMANDOS ============================
 
     [RelayCommand]

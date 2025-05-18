@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
+using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
@@ -20,6 +21,12 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
 
     [ObservableProperty] private string promptText;
 
+    [ObservableProperty] public string selectedCategory;
+
+
+
+
+
     // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
 
     /// <summary>
@@ -27,10 +34,13 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
     /// </summary>
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
+        await ExecuteWithLoadingAsync(async () =>
         {
-            await LoadPromptAsync(promptId);
-        }
+            if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
+            {
+                await LoadPromptAsync(promptId);
+            }
+        });
     }
 
     /// <summary>
@@ -47,6 +57,8 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
                 this.PromptTemplate = prompt;
 
                 this.PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
+
+                this.SelectedCategory = this.promptTemplate.Category.ToString();
 
                 UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(prompt.Template));
             }
@@ -96,6 +108,10 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
 
             await GoBackAsync();
+
+            MessagingCenter.Send(this, MessagingKeys.PromptUpdate, this.promptTemplate);
+
+
         }, AppMessagesEng.Prompts.PromptSaveError);
     }
 
@@ -131,12 +147,16 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
     /// </summary>
     private async Task UpdatePromptChangesAsync()
     {
+
+        var _category = Enum.TryParse(typeof(PromptCategory), SelectedCategory.ToString(), out var category) ? (PromptCategory)category : PromptCategory.General;
+
         await _databaseService.UpdatePromptAsync(
             PromptTemplate.Id,
             PromptTemplate.Title,
             PromptTemplate.Template,
             PromptTemplate.Description,
-            PromptTemplate.Variables);
+            PromptTemplate.Variables,
+            _category);
     }
 
     // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
@@ -247,4 +267,6 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             Variables = AngleBraceTextHandler.ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
     }
+
+  
 }

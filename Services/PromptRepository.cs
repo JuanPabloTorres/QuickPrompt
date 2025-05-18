@@ -23,14 +23,22 @@ namespace QuickPrompt.Services
             Task.Run(async () => await InitializeDatabaseAsync());
         }
 
-        public PromptRepository()
-        {
-            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+        //public PromptRepository()
+        //{
+        //    string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
 
-            _database = new SQLiteAsyncConnection(dbPath);
+        //    _database = new SQLiteAsyncConnection(dbPath);
+
+        //    Task.Run(async () => await InitializeDatabaseAsync());
+        //}
+
+        public PromptRepository(DatabaseConnectionProvider connectionProvider)
+        {
+            _database = connectionProvider.GetConnection();
 
             Task.Run(async () => await InitializeDatabaseAsync());
         }
+
 
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
@@ -461,7 +469,7 @@ new PromptTemplate
         /// <summary>
         /// Actualiza un prompt existente con nuevos valores.
         /// </summary>
-        public async Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables)
+        public async Task<int> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory)
         {
             var prompt = await GetPromptByIdAsync(id);
 
@@ -475,6 +483,8 @@ new PromptTemplate
             prompt.Description = newDescription;
 
             prompt.Variables = newVariables;
+
+            prompt.Category = selectedCategory;
 
             return await _database.UpdateAsync(prompt);
         }
