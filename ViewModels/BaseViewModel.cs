@@ -20,10 +20,9 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
-    public abstract partial class BaseViewModel : ObservableObject
+    public abstract partial class BaseViewModel : RootViewModel
     {
         // ============================== 🌟 PROPIEDADES ==============================
-        [ObservableProperty] public string emptyViewText = "No Prompts Available ";
 
         [ObservableProperty] protected string search;
 
@@ -31,11 +30,7 @@ namespace QuickPrompt.ViewModels
 
         [ObservableProperty] protected bool isAllSelected = false;
 
-        [ObservableProperty] private string selectedTextLabelCount = $"{AppMessagesEng.TotalMessage} None";
-
         [ObservableProperty] private bool showPromptActions;
-
-        [ObservableProperty] public bool isLoading;
 
         [ObservableProperty] private bool isVisualModeActive;
 
@@ -55,8 +50,6 @@ namespace QuickPrompt.ViewModels
 
         protected IFinalPromptRepository _finalPromptRepository;
 
-        protected AdmobService _adMobService;
-
         protected BaseViewModel()
         {
         }
@@ -72,20 +65,20 @@ namespace QuickPrompt.ViewModels
             this._finalPromptRepository = finalPromptRepository;
         }
 
-        protected BaseViewModel(IPromptRepository promptDatabaseService, AdmobService admobService)
+        protected BaseViewModel(IPromptRepository promptDatabaseService, AdmobService admobService) : base(admobService)
         {
             this._databaseService = promptDatabaseService;
 
-            this._adMobService = admobService;
+            //this._adMobService = admobService;
         }
 
-        protected BaseViewModel(IPromptRepository promptDatabaseService, IFinalPromptRepository finalPromptRepository, AdmobService admobService)
+        protected BaseViewModel(IPromptRepository promptDatabaseService, IFinalPromptRepository finalPromptRepository, AdmobService admobService) : base(admobService)
         {
             this._databaseService = promptDatabaseService;
 
             this._finalPromptRepository = finalPromptRepository;
 
-            this._adMobService = admobService;
+            //this._adMobService = admobService;
         }
 
         protected BaseViewModel(IFinalPromptRepository finalPromptRepository)
@@ -98,105 +91,7 @@ namespace QuickPrompt.ViewModels
             return _finalPromptRepository;
         }
 
-        // ============================== 🚀 MÉTODOS PRINCIPALES ==============================
-
-        /// <summary>
-        /// Ejecuta una tarea asíncrona con control de estado de carga y manejo de errores.
-        /// </summary>
-        /// <param name="action">
-        /// Tarea a ejecutar.
-        /// </param>
-        /// <param name="errorMessage">
-        /// Mensaje de error a mostrar en caso de fallo.
-        /// </param>
-        protected async Task ExecuteWithLoadingAsync(Func<Task> action, string errorMessage = "An error occurred. Please try again.")
-        {
-            try
-            {
-                IsLoading = true;
-
-                await action();
-            }
-            catch (Exception ex)
-            {
-                await AppShell.Current.DisplayAlert("Error", errorMessage, "OK");
-                // 🔹 Aquí puedes agregar un logging si es necesario
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-
-        public async Task RunWithLoaderAndErrorHandlingAsync(ReusableLoadingOverlay loader, Func<Task> action, string loadingMessage = "Cargando...", string errorMessage = "Ocurrió un error. Intenta nuevamente.")
-        {
-            try
-            {
-                loader.Message = loadingMessage;
-
-                loader.IsVisible = true;
-
-                await action(); // Ejecuta la tarea principal
-            }
-            catch (Exception ex)
-            {
-                // Muestra alerta de error
-                await Shell.Current.DisplayAlert("Error", errorMessage, "OK");
-
-                // Puedes loguear el error si deseas
-                System.Diagnostics.Debug.WriteLine($"[ERROR] {ex.Message}");
-            }
-            finally
-            {
-                loader.IsVisible = false;
-            }
-        }
-
-        /// <summary>
-        /// Navega a una nueva página con parámetros opcionales.
-        /// </summary>
-        /// <param name="route">
-        /// Ruta de la página destino.
-        /// </param>
-        /// <param name="parameters">
-        /// Parámetros opcionales.
-        /// </param>
-        /// <param name="animate">
-        /// Indica si se debe animar la transición.
-        /// </param>
-        protected async Task NavigateToAsync(string route, IDictionary<string, object>? parameters = null, bool animate = false)
-        {
-            await ExecuteWithLoadingAsync(async () =>
-            {
-                if (parameters is not null && parameters.Any())
-                {
-                    await Shell.Current.GoToAsync(route, animate, parameters);
-                }
-                else
-                {
-                    await Shell.Current.GoToAsync(route, animate);
-                }
-            });
-        }
-
-        /// <summary>
-        /// Comando para regresar a la página anterior.
-        /// </summary>
-        [RelayCommand]
-        protected async Task GoBackAsync() => await Shell.Current.Navigation.PopAsync();
-
         // ============================== 🛠 MÉTODOS AUXILIARES ==============================
-
-        /// <summary>
-        /// Actualiza el contador de palabras seleccionadas y su etiqueta.
-        /// </summary>
-        /// <param name="count">
-        /// Número de palabras seleccionadas.
-        /// </param>
-        protected void UpdateSelectedTextLabelCount(int count)
-        {
-            SelectedTextLabelCount = count == 0 ? $"{AppMessagesEng.TotalMessage} None" : $"{AppMessagesEng.TotalMessage} {count}";
-        }
 
         /// <summary>
         /// Valida si la selección de texto es válida.
@@ -228,37 +123,6 @@ namespace QuickPrompt.ViewModels
         {
         }
 
-        // ============================ 📌 EVENTO DE INICIALIZACIÓN ============================
-        public void Initialize()
-        {
-            _adMobService.LoadInterstitialAd();  // Precargar el anuncio intersticial
-
-            _adMobService.SetupAdEvents();       // Configurar eventos de AdMob
-        }
-
-        protected async void NavigateTo(string page, PromptTemplate selectedPrompt)
-        {
-            await ExecuteWithLoadingAsync(async () =>
-            {
-                if (selectedPrompt != null)
-                {
-                    await NavigateToAsync(page, new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
-                }
-            }, AppMessagesEng.GenericError);
-        }
-
-        [RelayCommand]
-        public virtual async Task MyBack()
-        {
-            await ExecuteWithLoadingAsync(async () =>
-            {
-                await Shell.Current.GoToAsync("..");
-            });
-        }
-
         protected async Task SendPromptToAsync(string pageName, string toastMessage, Guid promptID, string finalPrompt)
         {
             await ExecuteWithLoadingAsync(async () =>
@@ -266,6 +130,7 @@ namespace QuickPrompt.ViewModels
                 if (string.IsNullOrWhiteSpace(finalPrompt))
                 {
                     await AlertService.ShowAlert("Error", "No prompt generated.");
+
                     return;
                 }
 

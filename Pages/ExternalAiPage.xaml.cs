@@ -27,11 +27,6 @@ public partial class ExternalAiPage : ContentPage
         };
     }
 
-    protected override async void OnAppearing()
-    {
-        await _aiLauncherViewModel.LoadFinalPrompts();
-    }
-
     private void OnNavigating(object sender, WebNavigatingEventArgs e)
     {
         LoadingIndicator.IsVisible = true;

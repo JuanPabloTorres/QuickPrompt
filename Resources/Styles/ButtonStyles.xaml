@@ -190,14 +190,20 @@
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="HeightRequest" Value="50" />
 
+
         <Style.Triggers>
             <Trigger TargetType="Button" Property="IsPressed" Value="True">
                 <Setter Property="BackgroundColor" Value="{StaticResource PrimaryRed}" />
-                <Setter Property="Scale" Value="0.98" />
+                <Setter Property="Scale" Value="0.95" />
             </Trigger>
             <Trigger TargetType="Button" Property="IsEnabled" Value="False">
                 <Setter Property="BackgroundColor" Value="Gray" />
-                <Setter Property="TextColor" Value="LightGray" />
+                <Setter Property="TextColor" Value="White" />
+            </Trigger>
+
+            <Trigger TargetType="Button" Property="IsEnabled" Value="True">
+                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryRed}" />
+                <Setter Property="TextColor" Value="White" />
             </Trigger>
         </Style.Triggers>
     </Style>

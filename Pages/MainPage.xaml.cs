@@ -160,7 +160,7 @@ namespace QuickPrompt.Pages
                     {
                         Command = new Command(async () =>
                         {
-                            var result = await DisplayPromptAsync("Edit Variable", "Rename It:", $"OK:{part.Text.Trim('<', '>')}");
+                            var result = await DisplayPromptAsync("Edit Variable", "Rename It:", $"Changed This Name:{part.Text.Trim('<', '>')}");
 
                             if (!string.IsNullOrWhiteSpace(result))
                             {

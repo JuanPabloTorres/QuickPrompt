@@ -168,7 +168,6 @@
             x:Name="LoadingIndicator"
             Grid.Row="0"
             Grid.RowSpan="2"
-            Padding="5"
             IsVisible="False"
             Message="Loading..." />
     </Grid>

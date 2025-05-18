@@ -270,7 +270,8 @@ namespace QuickPrompt.ViewModels
 
                     Prompts.Remove(selectedPrompt);
 
-                    await CheckForMorePromptsAsync();
+                    // Verificar si hay más datos por cargar
+                    await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
 
                     await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
                 }, AppMessagesEng.Prompts.PromptDeleteError);
@@ -308,7 +309,10 @@ namespace QuickPrompt.ViewModels
                     // Actualizar el BlockHandler y verificar si hay más datos
                     blockHandler.Data = Prompts;
 
-                    await CheckForMorePromptsAsync();
+                   
+
+                    // Verificar si hay más datos por cargar
+                    await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
 
                     // Verificar si hay más datos disponibles
                     if (IsMoreDataAvailable)
@@ -321,6 +325,7 @@ namespace QuickPrompt.ViewModels
                     await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
 
                     this.IsAllSelected = false;
+
                 }, AppMessagesEng.Prompts.PromptDeleteError);
             }
         }

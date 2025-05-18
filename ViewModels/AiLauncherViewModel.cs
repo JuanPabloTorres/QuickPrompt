@@ -42,7 +42,7 @@ namespace QuickPrompt.ViewModels
         }
 
         [RelayCommand]
-        public   void Clear()
+        public void Clear()
         {
             // 3. Ejecuta la limpieza del WebView si está asignado
             ClearWebViewTextAction?.Invoke();
@@ -50,11 +50,9 @@ namespace QuickPrompt.ViewModels
             FinalPrompts.Clear();
 
             SelectedCategory = string.Empty;
-
-         
         }
 
-        async partial void OnSelectedCategoryChanged(string value)
+         async partial void OnSelectedCategoryChanged(string value)
         {
             await ExecuteWithLoadingAsync(async () =>
             {

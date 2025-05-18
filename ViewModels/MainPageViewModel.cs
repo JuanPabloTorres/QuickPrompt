@@ -37,7 +37,7 @@ public partial class MainPageViewModel(IPromptRepository promptDatabaseService, 
         {
             var validator = new PromptValidator();
 
-            string validationError = validator.ValidateEn(PromptTitle, PromptText);
+            string validationError = validator.ValidateEn(PromptTitle, PromptText, SelectedCategory);
 
             if (!string.IsNullOrEmpty(validationError))
             {
@@ -50,14 +50,14 @@ public partial class MainPageViewModel(IPromptRepository promptDatabaseService, 
 
             var newPrompt = PromptTemplate.CreatePromptTemplate(PromptTitle, PromptDescription, PromptText, _category);
 
-            await _databaseService.SavePromptAsync(newPrompt);
-
-            ClearPromptInputs();
+            await _databaseService.SavePromptAsync(newPrompt);            
 
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+
+            ClearPromptInputs();
 
             //await AppShell.Current.DisplayAlert("Saved", AppMessagesEng.Prompts.PromptSavedSuccess, "OK");
         }, AppMessagesEng.Prompts.PromptSaveError);

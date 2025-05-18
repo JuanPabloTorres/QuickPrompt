@@ -63,7 +63,7 @@
         <!--  Contenido Principal Scrollable  -->
         <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
             <Grid
-                Padding="20"
+                Margin="10"
                 RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto"
                 RowSpacing="10">
 
@@ -160,6 +160,7 @@
                             x:Name="PromptRawEditor"
                             CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}"
                             Placeholder="Example: Generate a message for &lt;recipient&gt; about &lt;subject&gt;"
                             SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
                             Style="{StaticResource PromptEditorStyle}"

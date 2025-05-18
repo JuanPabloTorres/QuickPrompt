@@ -118,7 +118,7 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
     {
         var validator = new PromptValidator();
 
-        string validationError = validator.ValidateEn(PromptTemplate.Title, PromptTemplate.Template);
+        string validationError = validator.ValidateEn(PromptTemplate.Title, PromptTemplate.Template,SelectedCategory);
 
         if (!string.IsNullOrEmpty(validationError))
         {
