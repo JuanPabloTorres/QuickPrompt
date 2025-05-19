@@ -28,7 +28,7 @@
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
     <Style x:Key="loadingBorderStyle" TargetType="Border">
 
-        <Setter Property="BackgroundColor" Value="LightGray" />
+        <Setter Property="BackgroundColor" Value="Gray" />
 
     </Style>
 

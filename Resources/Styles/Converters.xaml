@@ -29,5 +29,7 @@
 
     <converters:CategoryToDisplayNameConverter x:Key="CategoryToDisplayNameConverter" />
 
+    <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+
 
 </ResourceDictionary>

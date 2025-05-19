@@ -19,189 +19,125 @@
             ShowBackButton="True" />
     </Shell.TitleView>
 
-    <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="32">
+    <Grid
+        Padding="20"
+        RowDefinitions="*,Auto,Auto"
+        RowSpacing="16">
 
-            <!--  🌟 Welcome Title  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="30"
-                HorizontalOptions="Center"
-                Text="📘 Welcome to QuickPrompt"
-                TextColor="{StaticResource PrimaryBlueDark}" />
+        <!--  Carousel con los pasos  -->
+        <CarouselView
+            x:Name="GuideCarousel"
+            IndicatorView="StepIndicator"
+            IsSwipeEnabled="True"
+            ItemsSource="{Binding GuideSteps}"
+            Position="{Binding CurrentStepIndex, Mode=TwoWay}">
+            <CarouselView.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        HorizontalOptions="Fill"
+                        Style="{StaticResource CardStyle}"
+                        VerticalOptions="Center">
+                        <VerticalStackLayout
+                            Padding="10"
+                            Spacing="10"
+                            VerticalOptions="Center">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="25"
+                                HorizontalOptions="Center"
+                                Style="{StaticResource TitleLabelStyle}"
+                                Text="{Binding Title}" />
+                            <Label
+                                FontSize="16"
+                                HorizontalTextAlignment="Start"
+                                Style="{StaticResource SubtitleLabelStyle}"
+                                Text="{Binding Description}"
+                                TextColor="Black" />
 
-            <BoxView
-                Margin="0,0,0,10"
-                BackgroundColor="#D1D1D1"
-                HeightRequest="1" />
+                            <!--  Ejemplo resaltado si aplica  -->
+                            <Border
+                                BackgroundColor="{StaticResource PrimaryBlueDark}"
+                                IsVisible="{Binding HasExample}"
+                                Stroke="{StaticResource PrimaryTeal}"
+                                StrokeShape="RoundRectangle 10"
+                                StrokeThickness="1"
+                                Style="{StaticResource CardStyle}">
+                                <Label
+                                    FontAttributes="Italic"
+                                    FontSize="14"
+                                    HorizontalTextAlignment="Center"
+                                    Text="{Binding Example}"
+                                    TextColor="White" />
+                            </Border>
 
-            <!--  🔹 Intro  -->
-            <Label
-                FontSize="17"
-                Text="QuickPrompt lets you create, reuse, and organize AI instructions (prompts) for ChatGPT, Gemini, Grok or Copilot — faster and smarter."
-                TextColor="#333" />
+                            <!--  Botón solo visible en el último paso  -->
+                            <Button
+                                BackgroundColor="{StaticResource PrimaryRed}"
+                                Clicked="OnNavigateToCreatePrompt"
+                                CornerRadius="10"
+                                FontSize="16"
+                                HeightRequest="48"
+                                IsVisible="{Binding IsFinalStep}"
+                                Text="⚡ Create Your Prompt"
+                                TextColor="White" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
 
-            <!--  ❓ What is a Prompt  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="✨ What is a Prompt?"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="A prompt is the instruction you give an AI to generate a response or content."
-                TextColor="#333" />
+            </CarouselView.ItemTemplate>
+        </CarouselView>
 
-            <!--  1️⃣ Create or Choose  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="1️⃣ Choose or Create a Prompt"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Pick one from our curated library or start your own from scratch. Personalize them to fit your needs."
-                TextColor="#333" />
+        <!--  Indicador de paso  -->
+        <IndicatorView
+            x:Name="StepIndicator"
+            Grid.Row="1"
+            Margin="0,10"
+            HorizontalOptions="Center"
+            IndicatorColor="LightGray"
+            IndicatorSize="10"
+            SelectedIndicatorColor="Orange" />
 
-            <!--  2️⃣ Add Variables  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="2️⃣ Add Variables to Customize"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Use angle brackets ⟨⟩ to mark fields you want to fill later."
-                TextColor="#333" />
+        <!--  Botones de navegación  -->
+        <Grid
+            Grid.Row="2"
+            ColumnDefinitions="Auto,Auto"
+            HorizontalOptions="Center">
+            <Button
+                x:Name="BackButton"
+                Grid.Column="0"
+                Clicked="OnBackClicked"
+                IsEnabled="{Binding CanGoBack}"
+                Style="{StaticResource YellowButtonStyle}"
+                Text="">
 
-            <Border
-                Padding="15"
-                BackgroundColor="#F8F8F8"
-                Stroke="#E0E0E0"
-                StrokeShape="RoundRectangle 12">
-                <Label
-                    FontSize="15"
-                    Text="Example: Write an ad for ⟨product_name⟩ targeting ⟨audience⟩."
-                    TextColor="#444" />
-            </Border>
 
-            <!--  3️⃣ Fill Variables  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="3️⃣ Fill in the Variables"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Tap 'Generate' to easily insert values:"
-                TextColor="#333" />
-
-            <Border
-                Padding="15"
-                BackgroundColor="#F8F8F8"
-                Stroke="#E0E0E0"
-                StrokeShape="RoundRectangle 12">
-                <VerticalStackLayout Spacing="6">
-                    <Label
-                        FontSize="15"
-                        Text="• ⟨product_name⟩ → QuickPrompt"
-                        TextColor="#444" />
-                    <Label
-                        FontSize="15"
-                        Text="• ⟨audience⟩ → Beginners"
-                        TextColor="#444" />
-                </VerticalStackLayout>
-            </Border>
-
-            <!--  4️⃣ Copy and Use  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="4️⃣ Copy and Use Prompt"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Once generated, copy and use your prompt in your favorite AI tool instantly."
-                TextColor="#333" />
-
-            <!--  ⭐ Favorites  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="⭐ Save Favorite Prompts"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Tap the ⚡ icon to save a prompt and reuse it anytime — fast and efficiently."
-                TextColor="#333" />
-
-            <!--  🧠 Final Prompt Reuse  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="♻️ Reuse Your Final Prompts"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Every time you generate a filled prompt, it's saved for quick reuse later. Just tap on a past final prompt to auto-insert it into any AI."
-                TextColor="#333" />
-
-            <!--  🌐 AI WebView Access  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="🌐 Try Prompts Instantly in AI Platforms"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Use the 'AI Web' tab to open ChatGPT, Gemini, Grok, or Copilot directly — with your final prompt inserted automatically."
-                TextColor="#333" />
-
-            <!--  🔍 Full Example  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="🔍 Full Example"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Border
-                Padding="15"
-                BackgroundColor="#F6F6F6"
-                Stroke="#CCCCCC"
-                StrokeShape="RoundRectangle 12">
-                <VerticalStackLayout Spacing="6">
-                    <Label
-                        FontSize="15"
-                        Text="Prompt: Write an ad for ⟨product_name⟩ for ⟨audience⟩."
-                        TextColor="#333" />
-                    <Label
-                        FontSize="15"
-                        Text="Filled: Write an ad for QuickPrompt for beginners."
-                        TextColor="#555" />
-                </VerticalStackLayout>
-            </Border>
-
-            <!--  🚀 Call to Action  -->
-            <Label
-                FontAttributes="Bold"
-                FontSize="22"
-                Text="🚀 Ready to Try?"
-                TextColor="{StaticResource PrimaryBlueDark}" />
-            <Label
-                FontSize="16"
-                Text="Tap below to create your first prompt and unlock your AI's potential!"
-                TextColor="#333" />
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe5e0;"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
 
             <Button
-                Margin="0,10"
-                BackgroundColor="{StaticResource PrimaryRed}"
-                Clicked="OnNavigateToCreatePrompt"
-                CornerRadius="12"
-                FontSize="17"
-                HeightRequest="50"
-                Text="⚡ Create Your Prompt"
-                TextColor="White" />
-        </VerticalStackLayout>
-    </ScrollView>
+                x:Name="NextButton"
+                Grid.Column="1"
+                Clicked="OnNextClicked"
+                Style="{StaticResource YellowButtonStyle}"
+                Text="">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe5e1;"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
+        </Grid>
+
+    </Grid>
+
+
+
 
 
 </ContentPage>
