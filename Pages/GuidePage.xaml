@@ -91,6 +91,7 @@
                                         Radius="20"
                                         Offset="10,10" />
                                 </Border.Shadow>
+
                                 <Grid RowDefinitions="Auto,Auto,Auto,Auto" VerticalOptions="Center">
                                     <Label
                                         Grid.Row="0"

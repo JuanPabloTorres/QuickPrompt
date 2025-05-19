@@ -12,7 +12,7 @@ namespace QuickPrompt.Tools.Messages
         {
         "🔥 That’s it! You’re all set to prompt like a pro!",
         "You’re now ready to create and reuse powerful prompts!",
-        "Great job! You’ve completed the QuickPrompt guide.",
+        "Great job! You’ve completed the Quick Prompt guide.",
         "🎉 You’ve completed the guide!"
     };
 
