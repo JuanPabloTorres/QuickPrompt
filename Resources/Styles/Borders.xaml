@@ -13,7 +13,7 @@
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
         <Setter Property="StrokeThickness" Value="1" />
 
-     
+
     </Style>
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->

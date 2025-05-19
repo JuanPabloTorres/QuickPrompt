@@ -24,7 +24,7 @@ public partial class GuidePage : ContentPage
 
     private void LoadSteps()
     {
-        GuideSteps.Add(new GuideStep { Title = "📘 Welcome to QuickPrompt", Description = "QuickPrompt helps you create, reuse, and organize AI prompts for ChatGPT, Gemini, Grok or Copilot — faster and smarter." });
+        GuideSteps.Add(new GuideStep { Title = "AI-Powered Creativity", Description = "QuickPrompt helps you create, reuse, and organize AI prompts for ChatGPT, Gemini, Grok or Copilot — faster and smarter." });
 
         GuideSteps.Add(new GuideStep { Title = "✨ What is a Prompt?", Description = "A prompt is the instruction you give an AI to generate a response or content." });
 
