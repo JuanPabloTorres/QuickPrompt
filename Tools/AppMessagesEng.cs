@@ -33,6 +33,18 @@ namespace QuickPrompt.Tools
 
         public const string No = "No";
 
+        public const string GuideComplete = "🔥 That’s it! You’re all set to prompt like a pro!";
+
+        public const string GuideComplete1 = "You’re now ready to create and reuse powerful prompts!";
+
+        public const string GuideComplete2 = "Great job! You’ve completed the QuickPrompt guide.";
+
+        public const string GuideComplete3 = "🎉 You’ve completed the guide!";
+
+
+
+
+
         // **Messages Related to Prompts**
         public static class Prompts
         {

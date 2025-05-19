@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui;
 using QuickPrompt.Models;
+using QuickPrompt.Tools;
+using QuickPrompt.Tools.Messages;
 using System.Collections.ObjectModel;
 
 namespace QuickPrompt.Pages;
@@ -53,7 +55,13 @@ public partial class GuidePage : ContentPage
         }
         else
         {
-            // Ir al inicio de la app o cerrar guía
+            string message = GuideMessages.GetRandomGuideCompleteMessage();
+
+            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", message);
+
+            // Esperar a que la animación sea visible por un tiempo suficiente
+            await Task.Delay(1000); // espera 2 segundos (ajustable)
+
             await Shell.Current.GoToAsync("..");
 
             await Shell.Current.GoToAsync("//AIWeb");
