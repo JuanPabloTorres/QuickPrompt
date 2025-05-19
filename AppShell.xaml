@@ -36,7 +36,7 @@
 
 
         <!--  Quick Tab  -->
-        <Tab Title="Quick List">
+        <Tab Title="Quick">
 
             <Tab.Icon>
                 <FontImageSource

@@ -18,124 +18,182 @@
             Glyph="&#xe5cd;"
             ShowBackButton="True" />
     </Shell.TitleView>
+    <Border
+        HorizontalOptions="Fill"
+        Stroke="LightGray"
+        StrokeShape="RoundRectangle 12"
+        Style="{StaticResource CardStyle}"
+        VerticalOptions="Center">
 
-    <Grid
-        Padding="20"
-        RowDefinitions="*,Auto,Auto"
-        RowSpacing="16">
+        <Border.Background>
+            <LinearGradientBrush EndPoint="0.4,2">
+                <GradientStop Offset="0.10" Color="{StaticResource PrimaryBlueLight}" />
+                <GradientStop Offset="0.25" Color="{StaticResource PrimaryTeal}" />
+                <GradientStop Offset="2.0" Color="{StaticResource PrimaryYellow}" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <ScrollView>
 
-        <!--  Carousel con los pasos  -->
-        <CarouselView
-            x:Name="GuideCarousel"
-            IndicatorView="StepIndicator"
-            IsSwipeEnabled="True"
-            ItemsSource="{Binding GuideSteps}"
-            Position="{Binding CurrentStepIndex, Mode=TwoWay}">
-            <CarouselView.ItemTemplate>
-                <DataTemplate>
-                    <Border
-                        HorizontalOptions="Fill"
-                        Style="{StaticResource CardStyle}"
-                        VerticalOptions="Center">
-                        <VerticalStackLayout
-                            Padding="10"
-                            Spacing="10"
-                            VerticalOptions="Center">
-                            <Label
-                                FontAttributes="Bold"
-                                FontSize="25"
-                                HorizontalOptions="Center"
-                                Style="{StaticResource TitleLabelStyle}"
-                                Text="{Binding Title}" />
-                            <Label
-                                FontSize="16"
-                                HorizontalTextAlignment="Start"
-                                Style="{StaticResource SubtitleLabelStyle}"
-                                Text="{Binding Description}"
-                                TextColor="Black" />
+            <Grid
+                Padding="20"
+                RowDefinitions="Auto,Auto,Auto,Auto"
+                RowSpacing="16">
 
-                            <!--  Ejemplo resaltado si aplica  -->
+
+
+                <!--  Puedes poner aquí tu contenido  -->
+                <VerticalStackLayout Grid.Row="0" Padding="18">
+
+                    <Label
+                        Grid.Row="0"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"
+                        Style="{StaticResource TitleLabelStyle}"
+                        Text="🔥AI-Powered Creativity Starts Here 🔥"
+                        TextColor="White" />
+
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="18"
+                        HorizontalOptions="Center"
+                        Text="AI Tips And Tricks"
+                        TextColor="White" />
+
+                    <Label
+                        FontSize="14"
+                        HorizontalTextAlignment="Center"
+                        Text="Swipe through the guide to learn how to get the best from Quick Prompt!"
+                        TextColor="White" />
+                </VerticalStackLayout>
+
+                <!--  Carousel con los pasos  -->
+                <CarouselView
+                    x:Name="GuideCarousel"
+                    Grid.Row="1"
+                    IndicatorView="StepIndicator"
+                    IsSwipeEnabled="True"
+                    ItemsSource="{Binding GuideSteps}"
+                    Position="{Binding CurrentStepIndex, Mode=TwoWay}">
+                    <CarouselView.ItemTemplate>
+                        <DataTemplate>
                             <Border
-                                BackgroundColor="{StaticResource PrimaryBlueDark}"
-                                IsVisible="{Binding HasExample}"
-                                Stroke="{StaticResource PrimaryTeal}"
-                                StrokeShape="RoundRectangle 10"
-                                StrokeThickness="1"
-                                Style="{StaticResource CardStyle}">
-                                <Label
-                                    FontAttributes="Italic"
-                                    FontSize="14"
-                                    HorizontalTextAlignment="Center"
-                                    Text="{Binding Example}"
-                                    TextColor="White" />
+                                Margin="20"
+                                HorizontalOptions="Fill"
+                                Stroke="Transparent"
+                                StrokeShape="RoundRectangle 15,15,15,15"
+                                Style="{StaticResource CardStyle}"
+                                VerticalOptions="Center">
+
+                                <Border.Shadow>
+                                    <Shadow
+                                        Brush="Gray"
+                                        Opacity="0.5"
+                                        Radius="20"
+                                        Offset="10,10" />
+                                </Border.Shadow>
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto" VerticalOptions="Center">
+                                    <Label
+                                        Grid.Row="0"
+                                        FontAttributes="Bold"
+                                        FontSize="22"
+                                        HorizontalOptions="Center"
+                                        HorizontalTextAlignment="Center"
+                                        LineBreakMode="WordWrap"
+                                        Style="{StaticResource TitleLabelStyle}"
+                                        Text="{Binding Title}" />
+                                    <Label
+                                        Grid.Row="1"
+                                        FontSize="16"
+                                        HorizontalTextAlignment="Center"
+                                        Style="{StaticResource SubtitleLabelStyle}"
+                                        Text="{Binding Description}"
+                                        TextColor="Black" />
+
+                                    <!--  Ejemplo resaltado si aplica  -->
+                                    <Border
+                                        Grid.Row="2"
+                                        BackgroundColor="{StaticResource PrimaryBlueDark}"
+                                        IsVisible="{Binding HasExample}"
+                                        Stroke="{StaticResource PrimaryTeal}"
+                                        StrokeShape="RoundRectangle 10"
+                                        StrokeThickness="1"
+                                        Style="{StaticResource CardStyle}">
+                                        <Label
+                                            FontAttributes="Italic"
+                                            FontSize="14"
+                                            HorizontalTextAlignment="Center"
+                                            Text="{Binding Example}"
+                                            TextColor="White" />
+                                    </Border>
+
+                                    <!--  Botón solo visible en el último paso  -->
+                                    <Button
+                                        Grid.Row="3"
+                                        BackgroundColor="{StaticResource PrimaryRed}"
+                                        Clicked="OnNavigateToCreatePrompt"
+                                        CornerRadius="10"
+                                        FontSize="16"
+                                        HeightRequest="48"
+                                        IsVisible="{Binding IsFinalStep}"
+                                        Text="⚡ Create Your Prompt"
+                                        TextColor="White" />
+                                </Grid>
                             </Border>
+                        </DataTemplate>
 
-                            <!--  Botón solo visible en el último paso  -->
-                            <Button
-                                BackgroundColor="{StaticResource PrimaryRed}"
-                                Clicked="OnNavigateToCreatePrompt"
-                                CornerRadius="10"
-                                FontSize="16"
-                                HeightRequest="48"
-                                IsVisible="{Binding IsFinalStep}"
-                                Text="⚡ Create Your Prompt"
-                                TextColor="White" />
-                        </VerticalStackLayout>
-                    </Border>
-                </DataTemplate>
+                    </CarouselView.ItemTemplate>
+                </CarouselView>
 
-            </CarouselView.ItemTemplate>
-        </CarouselView>
+                <!--  Indicador de paso  -->
+                <IndicatorView
+                    x:Name="StepIndicator"
+                    Grid.Row="2"
+                    Margin="0,10"
+                    HorizontalOptions="Center"
+                    IndicatorColor="LightGray"
+                    IndicatorSize="10"
+                    SelectedIndicatorColor="Orange" />
 
-        <!--  Indicador de paso  -->
-        <IndicatorView
-            x:Name="StepIndicator"
-            Grid.Row="1"
-            Margin="0,10"
-            HorizontalOptions="Center"
-            IndicatorColor="LightGray"
-            IndicatorSize="10"
-            SelectedIndicatorColor="Orange" />
-
-        <!--  Botones de navegación  -->
-        <Grid
-            Grid.Row="2"
-            ColumnDefinitions="Auto,Auto"
-            HorizontalOptions="Center">
-            <Button
-                x:Name="BackButton"
-                Grid.Column="0"
-                Clicked="OnBackClicked"
-                IsEnabled="{Binding CanGoBack}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="">
+                <!--  Botones de navegación  -->
+                <Grid
+                    Grid.Row="3"
+                    ColumnDefinitions="Auto,Auto"
+                    HorizontalOptions="Center">
+                    <Button
+                        x:Name="BackButton"
+                        Grid.Column="0"
+                        Clicked="OnBackClicked"
+                        IsEnabled="{Binding CanGoBack}"
+                        Style="{StaticResource YellowButtonStyle}"
+                        Text="">
 
 
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe5e0;"
-                        Color="White" />
-                </Button.ImageSource>
-            </Button>
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xe5e0;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
 
-            <Button
-                x:Name="NextButton"
-                Grid.Column="1"
-                Clicked="OnNextClicked"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe5e1;"
-                        Color="White" />
-                </Button.ImageSource>
-            </Button>
-        </Grid>
+                    <Button
+                        x:Name="NextButton"
+                        Grid.Column="1"
+                        Clicked="OnNextClicked"
+                        Style="{StaticResource YellowButtonStyle}"
+                        Text="">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xe5e1;"
+                                Color="White" />
+                        </Button.ImageSource>
+                    </Button>
+                </Grid>
 
-    </Grid>
-
+            </Grid>
+        </ScrollView>
+    </Border>
 
 
 

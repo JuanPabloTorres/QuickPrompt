@@ -16,13 +16,6 @@
     <Color x:Key="TextLight">#FFFFFF</Color>
     <Color x:Key="AppBlack">#242124</Color>
 
-
-
-
-
-
-
-
     <!--  Define the Shadow resource first  -->
     <Shadow
         x:Key="MyShadow"
