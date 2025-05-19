@@ -25,7 +25,7 @@ namespace QuickPrompt.Services.ServiceInterfaces
 
         Task<bool> UpdateFavoriteStatusAsync(Guid id, bool isFavorite);
 
-        Task RestoreDatabaseAsync();
+        Task RestoreDatabaseAsync(SQLite.SQLiteAsyncConnection conn);
 
         Task<List<FinalPromptDTO>> GetFinalPromptsByCategoryAsync(PromptCategory category);
     }

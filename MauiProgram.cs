@@ -94,10 +94,15 @@ namespace QuickPrompt
             // ✅ Registro único de la conexión compartida
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
+          
+
             // 🧠 Repositorio de Prompts usando el patrón Repository
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
 
             builder.Services.AddSingleton<IFinalPromptRepository, FinalPromptRepository>();
+
+            // 🔹 Servicio gestor para operaciones como RestoreDatabase
+            builder.Services.AddSingleton<DatabaseServiceManager>();
 
             builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
 
@@ -137,9 +142,8 @@ namespace QuickPrompt
             builder.Services.AddScoped<AdmobBannerViewModel>();
 
             builder.Services.AddTransient<AiWebViewPageViewModel>();
-            
-            builder.Services.AddTransient<AiLauncherViewModel>();
 
+            builder.Services.AddTransient<AiLauncherViewModel>();
         }
 
         // Registra las páginas en el contenedor de dependencias

@@ -33,6 +33,6 @@ namespace QuickPrompt.Services.ServiceInterfaces
 
         Task<int> GetTotalPromptsCountAsync(string filterText, Filters dateFilter, string category);
 
-        Task RestoreDatabaseAsync();
+        Task RestoreDatabaseAsync(SQLite.SQLiteAsyncConnection conn);
     }
 }

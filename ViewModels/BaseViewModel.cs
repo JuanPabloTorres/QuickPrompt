@@ -50,12 +50,19 @@ namespace QuickPrompt.ViewModels
 
         protected IFinalPromptRepository _finalPromptRepository;
 
+        protected DatabaseServiceManager databaseServiceManager;
+
         protected BaseViewModel()
         {
         }
 
         protected BaseViewModel(AppSettings appSettings)
         {
+        }
+
+        protected BaseViewModel(DatabaseServiceManager dbManager)
+        {
+            databaseServiceManager = dbManager;
         }
 
         protected BaseViewModel(IPromptRepository promptDatabaseService, IFinalPromptRepository finalPromptRepository)

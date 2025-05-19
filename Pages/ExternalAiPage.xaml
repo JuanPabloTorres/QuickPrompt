@@ -36,7 +36,10 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto, *">
+    <Grid
+        HorizontalOptions="Fill"
+        RowDefinitions="Auto, *"
+        VerticalOptions="Fill">
 
         <!--  Contenedor de botones con Border  -->
 
@@ -152,10 +155,7 @@
         </VerticalStackLayout>
 
         <!--  WebView + Carga  -->
-        <Grid
-            Grid.Row="1"
-            Margin="0,2,0,0"
-            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <Grid Grid.Row="1" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <WebView
                 x:Name="ExternalAiWebView"
                 Navigated="OnNavigated"

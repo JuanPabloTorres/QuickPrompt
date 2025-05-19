@@ -7,7 +7,7 @@
     IsVisible="{Binding IsVisible, Source={x:Reference Root}}">
     <Border Style="{StaticResource loadingBorderStyle}">
 
-        <Grid BackgroundColor="#80000000" InputTransparent="False">
+        <Grid BackgroundColor="LightGray" InputTransparent="False">
             <VerticalStackLayout
                 HorizontalOptions="Center"
                 Spacing="10"

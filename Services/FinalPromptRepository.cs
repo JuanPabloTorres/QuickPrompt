@@ -8,22 +8,17 @@ namespace QuickPrompt.Services
 {
     public class FinalPromptRepository : IFinalPromptRepository
     {
-        private readonly SQLiteAsyncConnection _database;
+        private  SQLiteAsyncConnection _database;
 
-        private const string DatabaseName = "QuickPrompt.db3";
+        private readonly DatabaseConnectionProvider _dbProvider;
 
-        //public FinalPromptRepository()
-        //{
-        //    string dbPath = Path.Combine(FileSystem.AppDataDirectory, DatabaseName);
+       
 
-        //    _database = new SQLiteAsyncConnection(dbPath);
-
-        //    Task.Run(async () => await InitializeDatabaseAsync());
-        //}
-
-        public FinalPromptRepository(DatabaseConnectionProvider connectionProvider)
+        public FinalPromptRepository(DatabaseConnectionProvider provider)
         {
-            _database = connectionProvider.GetConnection();
+            _dbProvider = provider;
+
+            _database = _dbProvider.GetConnection();
 
             Task.Run(async () => await InitializeDatabaseAsync());
         }
@@ -73,9 +68,9 @@ namespace QuickPrompt.Services
         public async Task<List<FinalPromptDTO>> GetFinalPromptsByCategoryAsync(PromptCategory category)
         {
             var sql = @"
-        SELECT 
-            f.CompletedText,           
-            f.SourcePromptId,            
+        SELECT
+            f.CompletedText,
+            f.SourcePromptId,
             p.Category
         FROM FinalPrompt f
         LEFT  JOIN PromptTemplate p ON f.SourcePromptId = p.Id
@@ -84,8 +79,6 @@ namespace QuickPrompt.Services
 
             return await _database.QueryAsync<FinalPromptDTO>(sql, (int)category);
         }
-
-
 
         public async Task<int> SaveAsync(FinalPrompt prompt)
         {
@@ -113,7 +106,6 @@ namespace QuickPrompt.Services
 
             return await _database.InsertAsync(prompt);
         }
-
 
         public async Task<bool> DeleteAsync(Guid id)
         {
@@ -144,7 +136,7 @@ namespace QuickPrompt.Services
         public async Task RestoreDatabaseAsync()
         {
             // Cierra cualquier operación pendiente antes de borrar
-            await _database.CloseAsync();
+            //await _database.CloseAsync();
 
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
 
@@ -156,5 +148,13 @@ namespace QuickPrompt.Services
 
             await InitializeDatabaseAsync();
         }
+
+        public async Task RestoreDatabaseAsync(SQLiteAsyncConnection newConnection)
+        {
+            _database = newConnection;
+
+            await InitializeDatabaseAsync(); // usa la nueva conexión para inicializar tabla PromptTemplate
+        }
+
     }
 }

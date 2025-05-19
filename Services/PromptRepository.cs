@@ -14,21 +14,20 @@ namespace QuickPrompt.Services
     // Repository Implementation
     public class PromptRepository : IPromptRepository
     {
-        private readonly SQLiteAsyncConnection _database;
+        private  SQLiteAsyncConnection _database;
 
-        public PromptRepository(string dbPath)
+        private readonly DatabaseConnectionProvider _dbProvider;
+
+        public PromptRepository(DatabaseConnectionProvider provider)
         {
-            _database = new SQLiteAsyncConnection(dbPath);
+            _dbProvider = provider;
+
+            _database = _dbProvider.GetConnection();
 
             Task.Run(async () => await InitializeDatabaseAsync());
         }
 
-        public PromptRepository(DatabaseConnectionProvider connectionProvider)
-        {
-            _database = connectionProvider.GetConnection();
-
-            Task.Run(async () => await InitializeDatabaseAsync());
-        }
+     
 
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
@@ -643,7 +642,7 @@ new PromptTemplate
         public async Task RestoreDatabaseAsync()
         {
             // Cierra cualquier operación pendiente antes de borrar
-            await _database.CloseAsync();
+            //await _database.CloseAsync();
 
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
 
@@ -651,10 +650,18 @@ new PromptTemplate
                 File.Delete(dbPath);
 
             // Recrear la instancia de conexión y reiniciar base de datos
-            var newConnection = new SQLiteAsyncConnection(dbPath);
+            var newConnection = _database;
 
             await InitializeDatabaseAsync();
+
         }
+        public async Task RestoreDatabaseAsync(SQLiteAsyncConnection newConnection)
+        {
+            _database = newConnection;
+
+            await InitializeDatabaseAsync(); // usa la nueva conexión para tabla FinalPrompt
+        }
+
 
         /// <summary>
         /// Verifica si el archivo de base de datos ya existe en el dispositivo.

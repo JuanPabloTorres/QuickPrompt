@@ -21,7 +21,7 @@ public partial class SettingViewModel : BaseViewModel
     /// <param name="appSettings">
     /// Instancia de la configuración de la aplicación.
     /// </param>
-    public SettingViewModel(AppSettings appSettings, IPromptRepository databaseService, IFinalPromptRepository finalPromptRepository) : base(databaseService, finalPromptRepository)
+    public SettingViewModel(AppSettings appSettings, DatabaseServiceManager dbManager) : base(dbManager)
     {
         appVersion = appSettings?.Version ?? "Unknown Version"; // Evita valores nulos
     }
@@ -32,8 +32,6 @@ public partial class SettingViewModel : BaseViewModel
     [RelayCommand]
     private async Task RestoreDatabaseAsync()
     {
-      
-
         await ExecuteWithLoadingAsync(async () =>
         {
             bool confirm = await AppShell.Current.DisplayAlert(
@@ -45,11 +43,7 @@ public partial class SettingViewModel : BaseViewModel
             if (!confirm)
                 return;
 
-            var restoreDatabaseTask = _databaseService.RestoreDatabaseAsync();
-
-            var restorePromptTask = _finalPromptRepository.RestoreDatabaseAsync();
-
-            await Task.WhenAll(restoreDatabaseTask, restorePromptTask);
+            await databaseServiceManager.RestoreAsync();
 
             await GenericToolBox.ShowLottieMessageAsync(
                 "CompleteAnimation.json",
