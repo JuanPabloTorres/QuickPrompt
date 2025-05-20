@@ -4,9 +4,19 @@ namespace QuickPrompt
 {
     public partial class App : Application
     {
-        public App()
+
+        DatabaseServiceManager _databaseServiceManager;
+
+        public App(DatabaseServiceManager databaseServiceManager)
         {
             InitializeComponent();
+
+            _databaseServiceManager = databaseServiceManager;
+
+            Task.Run(async () =>
+            {
+                await _databaseServiceManager.InitializeAsync();
+            });
         }
 
         protected override Window CreateWindow(IActivationState? activationState)

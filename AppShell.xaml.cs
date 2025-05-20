@@ -1,4 +1,5 @@
 ﻿using QuickPrompt.Pages;
+using QuickPrompt.Tools;
 
 namespace QuickPrompt
 {
@@ -20,8 +21,17 @@ namespace QuickPrompt
             {
                 Preferences.Set("HasSeenGuide", true);
 
-                // Esperar a que se cargue el Shell completamente
-                await Task.Delay(200);
+                // Esperar carga del Shell (opcional)
+                await Task.Delay(500);
+
+                //var tabContext = Shell.Current.CurrentItem?.CurrentItem;
+
+                //if (tabContext is not null)
+                //    Shell.SetTabBarIsVisible(tabContext, false);
+
+                TabBarHelperTool.SetVisibility(false);
+
+
 
                 await GoToAsync($"/{nameof(GuidePage)}");
             }

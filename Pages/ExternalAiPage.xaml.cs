@@ -26,6 +26,10 @@ public partial class ExternalAiPage : ContentPage
             await ExternalAiWebView.EvaluateJavaScriptAsync(clearScript);
         };
     }
+    protected override void OnAppearing()
+    {
+        Shell.SetTabBarIsVisible(AppShell.Current, true);
+    }
 
     private void OnNavigating(object sender, WebNavigatingEventArgs e)
     {
@@ -72,5 +76,10 @@ public partial class ExternalAiPage : ContentPage
             // Opcional: limpiar selección visual
             FinalPromptsCollection.SelectedItem = null;
         }
+    }
+
+    private void onReloadWebView(object sender, EventArgs e)
+    {
+        ExternalAiWebView.Reload();
     }
 }

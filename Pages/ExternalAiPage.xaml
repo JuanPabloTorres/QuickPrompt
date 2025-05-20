@@ -21,6 +21,18 @@
     <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
 
+        <ToolbarItem Clicked="onReloadWebView" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5d5;"
+                    Color="{StaticResource PrimaryYellow}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to reload data
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+
         <!--  Botón de Copiar  -->
         <ToolbarItem Command="{Binding ClearCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
@@ -50,11 +62,12 @@
                 Orientation="Horizontal">
                 <HorizontalStackLayout Grid.Row="0" VerticalOptions="Center">
 
+
                     <!--  Botón: ChatGPT  -->
                     <Button
                         Clicked="OnChatGptClicked"
                         Style="{StaticResource AiButtonStyle}"
-                        Text="ChatGPT">
+                        Text="GPT">
                         <Button.ImageSource>
                             <FontImageSource
                                 FontFamily="MaterialIconsOutlined-Regular"

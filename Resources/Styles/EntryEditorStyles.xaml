@@ -25,7 +25,7 @@
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="HorizontalTextAlignment" Value="Start" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
         <Setter Property="Margin" Value="0" />
         <Setter Property="HorizontalTextAlignment" Value="Center" />
         <Setter Property="CharacterSpacing" Value="0.25" />

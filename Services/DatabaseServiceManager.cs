@@ -26,6 +26,13 @@ namespace QuickPrompt.Services
             _finalRepo = finalRepo;
         }
 
+        public async Task InitializeAsync()
+        {
+            await _promptRepo.InitializeDatabaseAsync();
+
+            await _finalRepo.InitializeDatabaseAsync();
+        }
+
         public async Task RestoreAsync()
         {
             await _provider.RestoreDatabaseAsync(async conn =>
@@ -35,7 +42,5 @@ namespace QuickPrompt.Services
                 await _finalRepo.RestoreDatabaseAsync(conn);
             });
         }
-
     }
-
 }

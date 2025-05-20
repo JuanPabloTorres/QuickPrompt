@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui;
 using QuickPrompt.Models;
 using QuickPrompt.Tools;
@@ -7,7 +8,7 @@ using System.Collections.ObjectModel;
 
 namespace QuickPrompt.Pages;
 
-public partial class GuidePage : ContentPage
+public partial class GuidePage : ContentPage, IQueryAttributable
 {
     public ObservableCollection<GuideStep> GuideSteps { get; } = new();
 
@@ -20,6 +21,19 @@ public partial class GuidePage : ContentPage
         LoadSteps();
 
         UpdateButtonStates();
+    }
+
+    public GuidePage(bool showbackButton)
+    {
+        InitializeComponent();
+
+        BindingContext = this;
+
+        LoadSteps();
+
+        UpdateButtonStates();
+
+        titleHeader.ShowBackButton = showbackButton;
     }
 
     private void LoadSteps()
@@ -87,9 +101,34 @@ public partial class GuidePage : ContentPage
 
     private void UpdateButtonStates()
     {
+        // Habilitar botón de retroceso solo si no estamos en el primer paso
         BackButton.IsEnabled = GuideCarousel.Position > 0;
 
+        // Verificar si estamos en el paso final
         bool isFinal = GuideSteps[GuideCarousel.Position].IsFinalStep;
+
+        if (isFinal)
+        {
+            NextButton.Text = "⚡ Start Now";
+
+            NextButton.ImageSource = null; // Remueve el ícono si no es necesario
+
+            NextButton.BackgroundColor = Color.FromArgb("#23486A"); // PrimaryRed
+
+            NextButton.TextColor = Colors.White;
+        }
+        else
+        {
+            NextButton.Text = string.Empty;
+
+            NextButton.ImageSource = new FontImageSource
+            {
+                FontFamily = "MaterialIconsOutlined-Regular",
+                Glyph = "\ue5e1", // Icono de flecha adelante
+                Color = Colors.White
+            };
+            NextButton.BackgroundColor = Color.FromArgb("#EFB036"); // PrimaryYellow
+        }
     }
 
     private async void OnNavigateToCreatePrompt(object sender, EventArgs e)
@@ -103,5 +142,22 @@ public partial class GuidePage : ContentPage
     public async Task MyBackAsync()
     {
         await Shell.Current.GoToAsync("..");
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("showbackButton", out var value) && bool.TryParse(value?.ToString(), out var isVisible))
+        {
+            titleHeader.ShowBackButton = isVisible;
+        }
+        else
+        {
+            titleHeader.ShowBackButton = false; // Valor por defecto
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        TabBarHelperTool.SetVisibility(true);
     }
 }

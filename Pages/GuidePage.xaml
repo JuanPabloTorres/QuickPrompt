@@ -13,10 +13,11 @@
 
     <Shell.TitleView>
         <view:TitleHeader
+            x:Name="titleHeader"
             Title="Quick Prompt Guide"
             BackCommand="{Binding MyBackCommand}"
             Glyph="&#xe5cd;"
-            ShowBackButton="True" />
+            ShowBackButton="false" />
     </Shell.TitleView>
     <Border
         HorizontalOptions="Fill"
@@ -77,7 +78,8 @@
                     IndicatorView="StepIndicator"
                     IsSwipeEnabled="True"
                     ItemsSource="{Binding GuideSteps}"
-                    Position="{Binding CurrentStepIndex, Mode=TwoWay}">
+                    Position="{Binding CurrentStepIndex, Mode=TwoWay}"
+                    PositionChanged="OnCarouselPositionChanged">
                     <CarouselView.ItemTemplate>
                         <DataTemplate>
                             <Border
