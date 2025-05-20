@@ -74,7 +74,7 @@ public partial class GuidePage : ContentPage, IQueryAttributable
             await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", message);
 
             // Esperar a que la animación sea visible por un tiempo suficiente
-            await Task.Delay(1000); // espera 2 segundos (ajustable)
+            await Task.Delay(300); // espera 2 segundos (ajustable)
 
             await Shell.Current.GoToAsync("..");
 
