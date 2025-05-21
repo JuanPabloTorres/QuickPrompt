@@ -25,6 +25,8 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
 
     [ObservableProperty] public string selectedCategory;
 
+    bool isNavigateFromRoot;
+
     // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
 
     /// <summary>
@@ -36,6 +38,12 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
         {
             if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
             {
+
+                isNavigateFromRoot = query.TryGetValue("isNavigateFromRoot", out var isRootNavigation)
+                                && bool.TryParse(isRootNavigation?.ToString(), out var navigationRoot)
+                                ? navigationRoot
+                                : true;
+
                 await LoadPromptAsync(promptId);
 
                 IsVisualModeActive = false;
@@ -105,7 +113,7 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptSavedSuccess);
+            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptUpdatedSuccess);
 
             await GoBackAsync();
 
@@ -268,5 +276,21 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             Description = existingPrompt.Description,
             Variables = AngleBraceTextHandler.ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
+    }
+    public override async Task MyBack()
+    {
+        await ExecuteWithLoadingAsync(async () =>
+        {
+            if (isNavigateFromRoot)
+            {
+                await GoBackAsync();
+            }
+            else
+            {
+            await GoToDetail();
+            }
+
+
+        }, AppMessagesEng.GenericError);
     }
 }

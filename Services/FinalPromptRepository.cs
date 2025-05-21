@@ -8,11 +8,11 @@ namespace QuickPrompt.Services
 {
     public class FinalPromptRepository : IFinalPromptRepository
     {
-        private  SQLiteAsyncConnection _database;
+        private SQLiteAsyncConnection _database;
 
         private readonly DatabaseConnectionProvider _dbProvider;
 
-       
+
 
         public FinalPromptRepository(DatabaseConnectionProvider provider)
         {
@@ -156,5 +156,25 @@ namespace QuickPrompt.Services
             await InitializeDatabaseAsync(); // usa la nueva conexión para inicializar tabla PromptTemplate
         }
 
+        public async Task<FinalPrompt?> FindByCompletedTextAsync(string completedText)
+        {
+            var normalized = completedText?.Trim().ToLowerInvariant();
+
+            return await _database.Table<FinalPrompt>()
+                .Where(x => x.CompletedText != null)
+                .ToListAsync()
+                .ContinueWith(t =>
+                    t.Result.FirstOrDefault(x =>
+                        x.CompletedText.Trim().ToLowerInvariant() == normalized));
+        }
+
+        public async Task<bool> DeleteByCompletedTextAsync(string completedText)
+        {
+            var prompt = await FindByCompletedTextAsync(completedText);
+            if (prompt == null)
+                return false;
+            return await _database.DeleteAsync(prompt) > 0;
+
+        }
     }
 }

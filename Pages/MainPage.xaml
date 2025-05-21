@@ -34,18 +34,20 @@
         </ToolbarItem>
 
         <!--  Botón de Copiar  -->
-        <ToolbarItem Command="{Binding CopyToClipboardCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <!--<ToolbarItem Command="{Binding CopyToClipboardCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe14d;"
                     Color="{StaticResource PrimaryBlueDark}" />
-                <!--  Color asociado al botón Copiar  -->
+        -->
+        <!--  Color asociado al botón Copiar  -->
+        <!--
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Clear Text
             </ToolTipProperties.Text>
-        </ToolbarItem>
+        </ToolbarItem>-->
 
         <!--  Import Json  -->
         <ToolbarItem Command="{Binding ImportPromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
@@ -199,10 +201,7 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout
-                    Grid.Row="7"
-                    Padding="10,5"
-                    Spacing="8">
+                <VerticalStackLayout Grid.Row="7" Padding="5">
 
                     <!--  Condición para mostrar el bloque  -->
                     <VerticalStackLayout.IsVisible>
@@ -214,7 +213,7 @@
 
                     <!--  Guía inicial para el usuario  -->
                     <Label
-                        Margin="0,5,0,10"
+                        Margin="5"
                         FontSize="13"
                         HorizontalTextAlignment="Center"
                         LineBreakMode="WordWrap"
@@ -222,10 +221,7 @@
                         TextColor="Gray" />
 
                     <!--  Botones de modo  -->
-                    <HorizontalStackLayout
-                        Margin="0,5,0,10"
-                        HorizontalOptions="Center"
-                        Spacing="20">
+                    <HorizontalStackLayout Margin="5" HorizontalOptions="Center">
 
                         <Button
                             Clicked="SwitchToEditor"
@@ -258,7 +254,7 @@
                             <FlexLayout
                                 x:Name="PromptChipContainer"
                                 AlignItems="Center"
-                                BackgroundColor="WhiteSmoke"
+                                BackgroundColor="GhostWhite"
                                 Direction="Row"
                                 IsVisible="{Binding IsVisualModeActive}"
                                 JustifyContent="Start"
@@ -270,7 +266,7 @@
                     <!--  Consejo visual debajo del contenedor  -->
                     <Label
                         x:Name="ChipHintLabel"
-                        Margin="0,5,0,0"
+                        Margin="5"
                         FontSize="12"
                         HorizontalTextAlignment="Center"
                         Text="💡 Tap on a variable chip (like &lt;topic&gt;) to edit its name."

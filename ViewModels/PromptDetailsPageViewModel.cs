@@ -226,8 +226,9 @@ public partial class PromptDetailsPageViewModel(IPromptRepository _databaseServi
               }
 
               await NavigateToAsync(nameof(EditPromptPage), new Dictionary<string, object>
-        {
-            { "selectedId", promptId }
+        {         
+                  { "selectedId", promptId },  
+                  { "isNavigateFromRoot", false }
         });
           },
           AppMessagesEng.GenericError);

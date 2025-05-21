@@ -24,7 +24,7 @@ namespace QuickPrompt.Services
 
             _database = _dbProvider.GetConnection();
 
-            Task.Run(async () => await InitializeDatabaseAsync());
+            //Task.Run(async () => await InitializeDatabaseAsync());
         }
 
      
@@ -668,9 +668,11 @@ new PromptTemplate
         /// </summary>
         public static bool DatabaseExists()
         {
-            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+            //string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
 
-            return File.Exists(dbPath);
+            //return File.Exists(dbPath);
+
+            return DatabaseConnectionProvider.DatabaseExists();
         }
     }
 }

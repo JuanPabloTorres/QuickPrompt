@@ -59,6 +59,8 @@ namespace QuickPrompt.Tools
             public const string PromptNotFound = "The prompt was not found in the database.";
 
             public const string PromptSavedSuccess = "The prompt has been saved successfully.";
+            
+            public const string PromptUpdatedSuccess = "The prompt has been updated successfully.";
 
             public const string PromptSaveError = "An issue occurred while saving the prompt. Please try again.";
 

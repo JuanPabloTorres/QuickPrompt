@@ -74,5 +74,21 @@ namespace QuickPrompt.ViewModels
                 }
             });
         }
+
+        [RelayCommand]
+        private async Task DeleteFinalPrompt(string promptText)
+        {
+            await ExecuteWithLoadingAsync(async () =>
+            {
+                var prompt = await _finalPromptRepository.FindByCompletedTextAsync(promptText);
+
+                if (prompt is not null)
+                {
+                    await _finalPromptRepository.DeleteAsync(prompt.Id);
+
+                    FinalPrompts.Remove(promptText);
+                }
+            });
+        }
     }
 }

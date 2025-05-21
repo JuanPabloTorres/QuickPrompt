@@ -29,6 +29,8 @@ public partial class ExternalAiPage : ContentPage
     protected override void OnAppearing()
     {
         Shell.SetTabBarIsVisible(AppShell.Current, true);
+
+        _aiLauncherViewModel.SelectedCategory = string.Empty;
     }
 
     private void OnNavigating(object sender, WebNavigatingEventArgs e)

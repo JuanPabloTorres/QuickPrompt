@@ -30,6 +30,8 @@
         <Setter Property="HorizontalTextAlignment" Value="Center" />
         <Setter Property="CharacterSpacing" Value="0.25" />
 
+
+
     </Style>
 
 
@@ -41,7 +43,7 @@
         <Setter Property="HeightRequest" Value="300" />
 
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
-        <Setter Property="BackgroundColor" Value="WhiteSmoke" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Margin" Value="5" />
     </Style>
 
@@ -49,7 +51,7 @@
     <Style x:Key="InputEditorStyle" TargetType="Editor">
         <Setter Property="FontSize" Value="16" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Placeholder" Value="Type Description..." />
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Fill" />
@@ -61,12 +63,12 @@
         <Setter Property="Placeholder" Value="Type the value here..." />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
         <Setter Property="FontSize" Value="16" />
-        <Setter Property="BackgroundColor" Value="WhiteSmoke" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
     </Style>
 
     <!--  Estilo para campos de entrada de texto  -->
     <Style x:Key="SearchEntryStyle" TargetType="Entry">
-        <Setter Property="BackgroundColor" Value="WhiteSmoke" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="IsSpellCheckEnabled" Value="True" />
         <Setter Property="ClearButtonVisibility" Value="WhileEditing" />

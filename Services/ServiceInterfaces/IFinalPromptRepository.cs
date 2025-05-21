@@ -28,5 +28,9 @@ namespace QuickPrompt.Services.ServiceInterfaces
         Task RestoreDatabaseAsync(SQLite.SQLiteAsyncConnection conn);
 
         Task<List<FinalPromptDTO>> GetFinalPromptsByCategoryAsync(PromptCategory category);
+
+        Task<FinalPrompt?> FindByCompletedTextAsync(string completedText);
+
+        Task<bool> DeleteByCompletedTextAsync(string completedText);
     }
 }

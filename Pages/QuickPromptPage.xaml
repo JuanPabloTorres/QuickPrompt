@@ -175,7 +175,7 @@
                                     Text="{Binding Prompt.Description}" />
 
                                 <!--  Action Buttons & Selection  -->
-                                <HorizontalStackLayout HorizontalOptions="Start" Spacing="14">
+                                <HorizontalStackLayout HorizontalOptions="Start" Spacing="5">
 
                                     <Button
                                         Command="{Binding SelectPromptCommand}"

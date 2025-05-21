@@ -3,6 +3,8 @@
     x:Class="QuickPrompt.Pages.ExternalAiPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:QuickPrompt.Pages"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     xmlns:view="clr-namespace:QuickPrompt.Views"
     BackgroundColor="WhiteSmoke"
     Routing.Route="AIWeb">
@@ -47,144 +49,209 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
+    <ScrollView>
 
-    <Grid
-        HorizontalOptions="Fill"
-        RowDefinitions="Auto, *"
-        VerticalOptions="Fill">
-
-        <!--  Contenedor de botones con Border  -->
-
-        <VerticalStackLayout Grid.Row="0" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <ScrollView
-                Grid.Row="0"
-                HorizontalScrollBarVisibility="Never"
-                Orientation="Horizontal">
-                <HorizontalStackLayout Grid.Row="0" VerticalOptions="Center">
-
-
-                    <!--  Botón: ChatGPT  -->
-                    <Button
-                        Clicked="OnChatGptClicked"
-                        Style="{StaticResource AiButtonStyle}"
-                        Text="GPT">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xf06c;"
-                                Color="White" />
-                        </Button.ImageSource>
-                    </Button>
-
-                    <!--  Botón: Gemini  -->
-                    <Button
-                        Clicked="OnGeminiClicked"
-                        Style="{StaticResource AiButtonStyle}"
-                        Text="Gemini">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xf06c;"
-                                Color="White" />
-                        </Button.ImageSource>
-                    </Button>
-
-                    <!--  Botón: Grok  -->
-                    <Button
-                        Clicked="OnGrokClicked"
-                        Style="{StaticResource AiButtonStyle}"
-                        Text="Grok">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xf06c;"
-                                Color="White" />
-                        </Button.ImageSource>
-                    </Button>
-
-                    <!--  Botón: Copilot  -->
-                    <Button
-                        Clicked="OnCopilotClicked"
-                        Style="{StaticResource AiButtonStyle}"
-                        Text="Copilot">
-                        <Button.ImageSource>
-                            <FontImageSource
-                                FontFamily="MaterialIconsOutlined-Regular"
-                                Glyph="&#xf06c;"
-                                Color="White" />
-                        </Button.ImageSource>
-                    </Button>
-                </HorizontalStackLayout>
-            </ScrollView>
-
-            <!--  Campo: Categoría  -->
-            <VerticalStackLayout Grid.Row="5" Margin="10,0,10,0">
-                <Label
-                    HorizontalOptions="Start"
-                    Style="{StaticResource TitleLabelStyle}"
-                    Text="Category" />
-
-                <Border Style="{StaticResource InputBorderStyle}">
-                    <Picker
-                        Title="Select category"
-                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                        ItemDisplayBinding="{Binding .}"
-                        ItemsSource="{Binding Categories}"
-                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                        Style="{StaticResource InputPickerStyle}" />
-                </Border>
-            </VerticalStackLayout>
-
-            <CollectionView
-                x:Name="FinalPromptsCollection"
-                BackgroundColor="Transparent"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                ItemsLayout="HorizontalList"
-                ItemsSource="{Binding FinalPrompts}"
-                SelectionChanged="OnFinalPromptSelected"
-                SelectionMode="Single">
-
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-
-                        <Border Style="{StaticResource CardStyleText}">
-
-                            <VerticalStackLayout>
-                                <Label
-                                    FontSize="12"
-                                    HeightRequest="50"
-                                    HorizontalTextAlignment="Center"
-                                    LineBreakMode="WordWrap"
-                                    MaxLines="5"
-                                    Text="{Binding .}"
-                                    TextColor="{StaticResource AppBlack}"
-                                    VerticalOptions="Center"
-                                    WidthRequest="180" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
-
-        <!--  WebView + Carga  -->
         <Grid
-            Grid.Row="1"
-            Margin="0,2,0,0"
-            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <WebView
-                x:Name="ExternalAiWebView"
-                Navigated="OnNavigated"
-                Navigating="OnNavigating"
-                Source="about:blank" />
-        </Grid>
+            HorizontalOptions="Fill"
+            RowDefinitions="Auto, *"
+            VerticalOptions="Fill">
 
-        <!--  Overlay de carga  -->
-        <view:ReusableLoadingOverlay
-            x:Name="LoadingIndicator"
-            Grid.Row="0"
-            Grid.RowSpan="2"
-            IsVisible="False"
-            Message="Loading..." />
-    </Grid>
+            <toolkit:Expander
+                Grid.Row="0"
+                Margin="10"
+                BackgroundColor="WhiteSmoke"
+                IsExpanded="False">
+                <toolkit:Expander.Header>
+                    <Grid
+                        Padding="10"
+                        BackgroundColor="{StaticResource PrimaryRed}"
+                        ColumnDefinitions="*,Auto"
+                        VerticalOptions="Center">
+
+                        <!--  Título centrado  -->
+                        <Label
+                            Grid.Column="0"
+                            FontAttributes="Bold"
+                            FontSize="16"
+                            HorizontalOptions="Start"
+                            Text="AI Options And Final Prompts"
+                            TextColor="GhostWhite"
+                            VerticalOptions="Center" />
+
+                        <!--  Ícono de flecha  -->
+                        <Image
+                            Grid.Column="1"
+                            HeightRequest="20"
+                            HorizontalOptions="End"
+                            VerticalOptions="Center"
+                            WidthRequest="20">
+                            <Image.Source>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe5cf;"
+                                    Size="20"
+                                    Color="GhostWhite" />
+                            </Image.Source>
+                        </Image>
+                    </Grid>
+                </toolkit:Expander.Header>
+
+                <toolkit:Expander.Content>
+                    <VerticalStackLayout
+                        Padding="10"
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                        Spacing="15">
+
+                        <!--  🔘 AI Buttons  -->
+                        <ScrollView Orientation="Horizontal">
+                            <HorizontalStackLayout Spacing="12">
+
+                                <Button
+                                    Clicked="OnChatGptClicked"
+                                    Style="{StaticResource AiButtonStyle}"
+                                    Text="GPT">
+                                    <Button.ImageSource>
+                                        <FontImageSource
+                                            FontFamily="MaterialIconsOutlined-Regular"
+                                            Glyph="&#xf06c;"
+                                            Color="GhostWhite" />
+                                    </Button.ImageSource>
+                                </Button>
+
+                                <Button
+                                    Clicked="OnGeminiClicked"
+                                    Style="{StaticResource AiButtonStyle}"
+                                    Text="Gemini">
+                                    <Button.ImageSource>
+                                        <FontImageSource
+                                            FontFamily="MaterialIconsOutlined-Regular"
+                                            Glyph="&#xf06c;"
+                                            Color="GhostWhite" />
+                                    </Button.ImageSource>
+                                </Button>
+
+                                <Button
+                                    Clicked="OnGrokClicked"
+                                    Style="{StaticResource AiButtonStyle}"
+                                    Text="Grok">
+                                    <Button.ImageSource>
+                                        <FontImageSource
+                                            FontFamily="MaterialIconsOutlined-Regular"
+                                            Glyph="&#xf06c;"
+                                            Color="GhostWhite" />
+                                    </Button.ImageSource>
+                                </Button>
+
+                                <Button
+                                    Clicked="OnCopilotClicked"
+                                    Style="{StaticResource AiButtonStyle}"
+                                    Text="Copilot">
+                                    <Button.ImageSource>
+                                        <FontImageSource
+                                            FontFamily="MaterialIconsOutlined-Regular"
+                                            Glyph="&#xf06c;"
+                                            Color="GhostWhite" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </HorizontalStackLayout>
+                        </ScrollView>
+
+                        <!--  🔽 Category Picker  -->
+                        <VerticalStackLayout>
+                            <Label
+                                HorizontalOptions="Start"
+                                Style="{StaticResource TitleLabelStyle}"
+                                Text="Category" />
+
+                            <Border Style="{StaticResource InputBorderStyle}">
+                                <Picker
+                                    Title="Select category"
+                                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                                    ItemDisplayBinding="{Binding .}"
+                                    ItemsSource="{Binding Categories}"
+                                    SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                                    Style="{StaticResource InputPickerStyle}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!--  🧠 Final Prompts  -->
+                        <CollectionView
+                            x:Name="FinalPromptsCollection"
+                            BackgroundColor="WhiteSmoke"
+                            ItemsLayout="HorizontalList"
+                            ItemsSource="{Binding FinalPrompts}"
+                            SelectionChanged="OnFinalPromptSelected"
+                            SelectionMode="Single">
+
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource CardStyleText}">
+                                        <HorizontalStackLayout
+                                            Padding="8"
+                                            HorizontalOptions="Center"
+                                            Spacing="8"
+                                            VerticalOptions="Center">
+
+                                            <!--  Texto del FinalPrompt  -->
+                                            <Label
+                                                FontSize="12"
+                                                HeightRequest="50"
+                                                HorizontalTextAlignment="Start"
+                                                LineBreakMode="WordWrap"
+                                                MaxLines="5"
+                                                Text="{Binding .}"
+                                                TextColor="{StaticResource AppBlack}"
+                                                VerticalOptions="Center"
+                                                WidthRequest="160" />
+
+                                            <!--  Botón eliminar  -->
+                                            <Button
+                                                Padding="0"
+                                                BackgroundColor="Transparent"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type local:ExternalAiPage}}, Path=BindingContext.DeleteFinalPromptCommand}"
+                                                CommandParameter="{Binding .}"
+                                                HeightRequest="28"
+                                                HorizontalOptions="End"
+                                                VerticalOptions="Center"
+                                                WidthRequest="28">
+                                                <Button.ImageSource>
+                                                    <FontImageSource
+                                                        FontFamily="MaterialIconsOutlined-Regular"
+                                                        Glyph="&#xe872;"
+                                                        Color="{StaticResource PrimaryRed}" />
+                                                </Button.ImageSource>
+                                            </Button>
+
+                                        </HorizontalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+
+
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </toolkit:Expander.Content>
+            </toolkit:Expander>
+
+            <!--  WebView + Carga  -->
+            <Grid
+                Grid.Row="1"
+                Margin="0,2,0,0"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+                <WebView
+                    x:Name="ExternalAiWebView"
+                    Navigated="OnNavigated"
+                    Navigating="OnNavigating"
+                    Source="about:blank" />
+            </Grid>
+
+            <!--  Overlay de carga  -->
+            <view:ReusableLoadingOverlay
+                x:Name="LoadingIndicator"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                IsVisible="False"
+                Message="Loading..." />
+        </Grid>
+    </ScrollView>
 </ContentPage>

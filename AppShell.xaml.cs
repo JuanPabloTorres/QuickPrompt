@@ -24,14 +24,7 @@ namespace QuickPrompt
                 // Esperar carga del Shell (opcional)
                 await Task.Delay(500);
 
-                //var tabContext = Shell.Current.CurrentItem?.CurrentItem;
-
-                //if (tabContext is not null)
-                //    Shell.SetTabBarIsVisible(tabContext, false);
-
                 TabBarHelperTool.SetVisibility(false);
-
-
 
                 await GoToAsync($"/{nameof(GuidePage)}");
             }

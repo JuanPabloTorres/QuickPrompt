@@ -8,7 +8,7 @@
     <Style x:Key="CardStyle" TargetType="Border">
         <Setter Property="Margin" Value="10" />
         <Setter Property="Padding" Value="10" />
-        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGray}" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
         <Setter Property="StrokeThickness" Value="1" />
@@ -40,7 +40,9 @@
         <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
         <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Padding" Value="5" />
+
     </Style>
     <!--  Estilo para el Border de entrada  -->
     <Style x:Key="InputBorderStyle2" TargetType="Border">
@@ -48,12 +50,13 @@
         <Setter Property="Stroke" Value="{StaticResource PrimaryTeal}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
         <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
     </Style>
 
     <Style x:Key="SuggestionChipBorderStyle" TargetType="Border">
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueLight}" />
         <Setter Property="StrokeThickness" Value="0.5" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Padding" Value="4" />
         <Setter Property="Margin" Value="4" />
         <Setter Property="StrokeShape">
@@ -68,9 +71,9 @@
         <Setter Property="Padding" Value="0" />
         <Setter Property="WidthRequest" Value="300" />
         <Setter Property="HeightRequest" Value="380" />
-        <Setter Property="Background" Value="White" />
+        <Setter Property="Background" Value="GhostWhite" />
         <Setter Property="Shadow" Value="{StaticResource MyShadow}" />
-        <Setter Property="Stroke" Value="{StaticResource White}" />
+        <Setter Property="Stroke" Value=" GhostWhite" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="10,10,10,10" />

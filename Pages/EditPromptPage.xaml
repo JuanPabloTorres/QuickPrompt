@@ -7,13 +7,9 @@
     BackgroundColor="GhostWhite"
     Shell.PresentationMode="Animated">
 
-
     <Shell.BackButtonBehavior>
         <BackButtonBehavior IsVisible="False" />
     </Shell.BackButtonBehavior>
-
-
-
 
     <Shell.TitleView>
         <views:TitleHeader
@@ -50,13 +46,7 @@
                 Reset Floating Button Position
             </ToolTipProperties.Text>
         </ToolbarItem>
-
-
     </ContentPage.ToolbarItems>
-
-
-
-
 
     <AbsoluteLayout>
 
@@ -147,7 +137,6 @@
                     </Border>
                 </VerticalStackLayout>
 
-
                 <!--  Campo: Prompt  -->
                 <VerticalStackLayout Grid.Row="6">
 
@@ -192,10 +181,7 @@
                         TextColor="Gray" />
 
                     <!--  Botones de modo  -->
-                    <HorizontalStackLayout
-                        Margin="0,5,0,10"
-                        HorizontalOptions="Center"
-                        Spacing="20">
+                    <HorizontalStackLayout Margin="5" HorizontalOptions="Center">
 
                         <Button
                             Clicked="SwitchToEditor"
@@ -228,7 +214,7 @@
                             <FlexLayout
                                 x:Name="PromptChipContainer"
                                 AlignItems="Center"
-                                BackgroundColor="WhiteSmoke"
+                                BackgroundColor="GhostWhite"
                                 Direction="Row"
                                 IsVisible="{Binding IsVisualModeActive}"
                                 JustifyContent="Start"
@@ -247,7 +233,6 @@
                         TextColor="Gray" />
                 </VerticalStackLayout>
             </Grid>
-
         </ScrollView>
 
         <!--  Botón flotante  -->
@@ -273,5 +258,4 @@
             </Button.ImageSource>
         </Button>
     </AbsoluteLayout>
-
 </ContentPage>

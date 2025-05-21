@@ -101,7 +101,7 @@
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="TextColor" Value="{StaticResource TextLight}" />
         <Setter Property="Margin" Value="8" />
-        <Setter Property="VerticalOptions" Value="End" />
+        <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
     <!--  Botón Principal  -->
