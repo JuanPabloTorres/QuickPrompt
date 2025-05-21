@@ -73,7 +73,8 @@
                             Grid.Column="0"
                             FontAttributes="Bold"
                             FontSize="16"
-                            HorizontalOptions="Start"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="Center"
                             Text="AI Options And Final Prompts"
                             TextColor="GhostWhite"
                             VerticalOptions="Center" />

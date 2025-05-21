@@ -1,9 +1,12 @@
-﻿using CommunityToolkit.Maui.Core.Extensions;
+﻿using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Extensions;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Tools;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -87,6 +90,10 @@ namespace QuickPrompt.ViewModels
                     await _finalPromptRepository.DeleteAsync(prompt.Id);
 
                     FinalPrompts.Remove(promptText);
+
+                    var toast = Toast.Make($"Prompt Remove...", ToastDuration.Short);
+
+                    await toast.Show();
                 }
             });
         }
