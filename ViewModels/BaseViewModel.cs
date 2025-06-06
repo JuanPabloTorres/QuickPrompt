@@ -142,6 +142,7 @@ namespace QuickPrompt.ViewModels
                 }
 
                 var toast = Toast.Make($"Opening {toastMessage}...", ToastDuration.Short);
+
                 await toast.Show();
 
                 await NavigateToAsync(pageName, new Dictionary<string, object>

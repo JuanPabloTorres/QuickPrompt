@@ -2,14 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
+using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
-using System.Collections.ObjectModel;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace QuickPrompt.ViewModels;
 
@@ -50,7 +47,7 @@ public partial class MainPageViewModel(IPromptRepository promptDatabaseService, 
 
             var newPrompt = PromptTemplate.CreatePromptTemplate(PromptTitle, PromptDescription, PromptText, _category);
 
-            await _databaseService.SavePromptAsync(newPrompt);            
+            await _databaseService.SavePromptAsync(newPrompt);
 
             // ✅ Espera que el anuncio se cierre
             await _adMobService.ShowInterstitialAdAndWaitAsync();
@@ -94,6 +91,12 @@ public partial class MainPageViewModel(IPromptRepository promptDatabaseService, 
     private async Task RemoveBracesFromSelectedText()
     {
         await HandleSelectedTextAsync(CursorPosition, SelectionLength);
+    }
+
+    [RelayCommand]
+    private async Task GoToAdvancedBuilder()
+    {
+        await NavigateToAsync(nameof(PromptBuilderPage));
     }
 
     // ============================ MANEJO DE VARIABLES Y BRACES ============================

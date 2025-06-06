@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.Pages.PromptBuilderPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:enums="clr-namespace:QuickPrompt.Models.Enums"
+    xmlns:local="clr-namespace:QuickPrompt.Pages"
+    xmlns:models="clr-namespace:QuickPrompt.Models"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
+    x:Name="PageRef"
+    BackgroundColor="WhiteSmoke"
+    Shell.PresentationMode="Animated">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
+
+    <Shell.TitleView>
+        <views:TitleHeader
+            Title="Prompt Builder"
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5e0;"
+            ShowBackButton="True" />
+    </Shell.TitleView>
+
+    <!--  ToolbarItems: acciones principales  -->
+    <ContentPage.ToolbarItems>
+        <!--  Guardar Prompt  -->
+        <ToolbarItem Command="{Binding SavePromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe86c;"
+                    Color="{StaticResource PrimaryBlueDark}" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Guardar Prompt
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
+    <Border
+        HorizontalOptions="Fill"
+        Stroke="{StaticResource PrimaryBlueDark}"
+        StrokeShape="RoundRectangle 8"
+        StrokeThickness="0.2"
+        Style="{StaticResource CardStyle}"
+        VerticalOptions="Center">
+
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
+
+            <!--  Overlay de carga  -->
+            <views:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                Grid.Row="0"
+                IsVisible="{Binding IsLoading}"
+                Message="Loading..." />
+
+            <VerticalStackLayout
+                Grid.Row="0"
+                Padding="20"
+                HorizontalOptions="Center"
+                Spacing="16"
+                VerticalOptions="Center">
+
+                <!--  Título principal  -->
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="32"
+                    HorizontalTextAlignment="Center"
+                    Style="{StaticResource TitleLabelStyle}"
+                    Text="Prompt Builder"
+                    TextColor="{StaticResource AppBlack}" />
+
+                <!--  Mensaje explicativo breve  -->
+                <Label
+                    FontSize="14"
+                    HorizontalTextAlignment="Center"
+                    Text="This guided tool helps you create high-quality prompts step by step. Whether you're a beginner or a pro, you'll get better results—faster."
+                    TextColor="{StaticResource AppBlack}" />
+
+                <!--  Mensaje de motivación final  -->
+                <Label
+                    FontSize="14"
+                    HorizontalTextAlignment="Center"
+                    Text="Swipe to begin your journey to smarter prompting 🚀"
+                    TextColor="{StaticResource AppBlack}" />
+            </VerticalStackLayout>
+
+            <!--  CarouselView interactivo  -->
+            <CarouselView
+                x:Name="PromptCarousel"
+                Grid.Row="1"
+                HorizontalOptions="Fill"
+                IndicatorView="{x:Reference PromptIndicator}"
+                ItemsSource="{Binding Steps}"
+                PositionChanged="OnCarouselPositionChanged"
+                VerticalOptions="Fill">
+
+                <CarouselView.ItemTemplate>
+                    <DataTemplate x:DataType="models:StepModel">
+                        <Grid Padding="20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Title  -->
+                            <Label
+                                Grid.Row="0"
+                                Margin="0,0,0,16"
+                                HorizontalOptions="Center"
+                                Style="{StaticResource TitleLabelStyle}"
+                                Text="{Binding Title}" />
+
+                            <ScrollView Grid.Row="1">
+                                <VerticalStackLayout Spacing="16">
+
+                                    <!--  Preview step  -->
+                                    <VerticalStackLayout IsVisible="{Binding IsPreviewStep}" Spacing="12">
+                                        <!--  Sub-title  -->
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="20"
+                                            HorizontalOptions="Center"
+                                            Style="{StaticResource TitleLabelStyle}"
+                                            Text="Almost there! Review your prompt" />
+
+                                        <!--  Border como tarjeta con esquinas redondeadas y sombra  -->
+                                        <Border
+                                            Margin="0,0,0,8"
+                                            Padding="12"
+                                            BackgroundColor="White"
+                                            Shadow="Opacity=0.2,Offset=0,2,BlurRadius=4"
+                                            StrokeShape="RoundRectangle 12,12,12,12"
+                                            StrokeThickness="0">
+
+                                            <!--  Scrollable label para el texto del prompt final  -->
+                                            <ScrollView Orientation="Vertical" VerticalScrollBarVisibility="Always">
+
+                                                <Label
+                                                    Margin="0"
+                                                    FontSize="16"
+                                                    HorizontalOptions="FillAndExpand"
+                                                    LineBreakMode="WordWrap"
+                                                    Text="{Binding PreviewContent}"
+                                                    TextColor="{StaticResource AppBlack}"
+                                                    VerticalOptions="Start" />
+                                            </ScrollView>
+                                        </Border>
+
+                                        <!--  Sección de validaciones: cada fila es más espaciosa  -->
+                                        <Grid
+                                            ColumnDefinitions="Auto,*,Auto"
+                                            ColumnSpacing="8"
+                                            RowSpacing="12">
+
+                                            <Label
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                FontSize="20"
+                                                Text="{Binding IsContextValid, Converter={StaticResource BoolToCheckIconConverter}}"
+                                                TextColor="{Binding IsContextValid, Converter={StaticResource BoolToColorConverter}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                FontSize="16"
+                                                Text="Context clearly defined."
+                                                VerticalOptions="Center" />
+
+                                            <Label
+                                                Grid.Row="1"
+                                                Grid.Column="0"
+                                                FontSize="20"
+                                                Text="{Binding IsTaskValid, Converter={StaticResource BoolToCheckIconConverter}}"
+                                                TextColor="{Binding IsTaskValid, Converter={StaticResource BoolToColorConverter}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Row="1"
+                                                Grid.Column="1"
+                                                FontSize="16"
+                                                Text="Specific task clearly defined."
+                                                VerticalOptions="Center" />
+
+                                            <Label
+                                                Grid.Row="2"
+                                                Grid.Column="0"
+                                                FontSize="20"
+                                                Text="{Binding AreExamplesValid, Converter={StaticResource BoolToCheckIconConverter}}"
+                                                TextColor="{Binding AreExamplesValid, Converter={StaticResource BoolToColorConverter}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Row="2"
+                                                Grid.Column="1"
+                                                FontSize="16"
+                                                Text="Examples included."
+                                                VerticalOptions="Center" />
+
+                                            <Label
+                                                Grid.Row="3"
+                                                Grid.Column="0"
+                                                FontSize="20"
+                                                Text="{Binding IsFormatValid, Converter={StaticResource BoolToCheckIconConverter}}"
+                                                TextColor="{Binding IsFormatValid, Converter={StaticResource BoolToColorConverter}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Row="3"
+                                                Grid.Column="1"
+                                                FontSize="16"
+                                                Text="Format defined."
+                                                VerticalOptions="Center" />
+
+                                            <Label
+                                                Grid.Row="4"
+                                                Grid.Column="0"
+                                                FontSize="20"
+                                                Text="{Binding AreLimitsValid, Converter={StaticResource BoolToCheckIconConverter}}"
+                                                TextColor="{Binding AreLimitsValid, Converter={StaticResource BoolToColorConverter}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Row="4"
+                                                Grid.Column="1"
+                                                FontSize="16"
+                                                Text="Constraints defined."
+                                                VerticalOptions="Center" />
+                                        </Grid>
+                                    </VerticalStackLayout>
+
+                                    <!--  Default text step (Context, Task, Examples, Limits)  -->
+                                    <VerticalStackLayout IsVisible="{Binding IsTextStep}">
+                                        <Border
+                                            Padding="8"
+                                            BackgroundColor="White"
+                                            StrokeShape="RoundRectangle 8,8,8,8"
+                                            Style="{StaticResource InputBorderStyle}">
+                                            <Editor
+                                                AutoSize="TextChanges"
+                                                BackgroundColor="Transparent"
+                                                HeightRequest="100"
+                                                Placeholder="{Binding Placeholder}"
+                                                Style="{StaticResource InputEditorStyle}"
+                                                Text="{Binding InputText, Mode=TwoWay}"
+                                                TextColor="{StaticResource AppBlack}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                    <!--  Format step  -->
+                                    <VerticalStackLayout IsVisible="{Binding IsFormatStep}">
+                                        <Label
+                                            Margin="0,0,0,4"
+                                            FontSize="16"
+                                            Text="Select a format:"
+                                            TextColor="{StaticResource AppBlack}" />
+
+                                        <Border
+                                            Padding="0"
+                                            BackgroundColor="White"
+                                            StrokeShape="RoundRectangle 8,8,8,8"
+                                            Style="{StaticResource InputBorderStyle}">
+                                            <Picker
+                                                Title="{Binding Placeholder}"
+                                                ItemsSource="{Binding AvailableFormats}"
+                                                SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
+                                                Style="{StaticResource InputPickerStyle2}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
+                                </VerticalStackLayout>
+                            </ScrollView>
+                        </Grid>
+
+                    </DataTemplate>
+                </CarouselView.ItemTemplate>
+            </CarouselView>
+
+            <!--  Indicador de páginas (dots)  -->
+            <IndicatorView
+                x:Name="PromptIndicator"
+                Grid.Row="2"
+                Margin="10"
+                HorizontalOptions="Center"
+                IndicatorColor="LightGray"
+                IndicatorSize="8"
+                SelectedIndicatorColor="{StaticResource PrimaryBlueDark}" />
+
+            <!--  Botones de navegación (fuera del CarouselView)  -->
+            <Grid
+                Grid.Row="3"
+                Padding="20,0"
+                ColumnDefinitions="*,*"
+                ColumnSpacing="20">
+                <Button
+                    x:Name="BackButton"
+                    Grid.Column="0"
+                    Clicked="OnBackClicked"
+                    IsEnabled="{Binding Path=PromptCarousel.Position, Converter={StaticResource GreaterThanZeroConverter}}"
+                    Style="{StaticResource YellowButtonStyle}"
+                    Text="">
+
+
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe5e0;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+
+                <Button
+                    x:Name="NextButton"
+                    Grid.Column="1"
+                    BackgroundColor="{Binding NextButtonBackground}"
+                    Clicked="OnNextClicked"
+                    IsEnabled="{Binding CanGoNext}"
+                    Style="{StaticResource YellowButtonStyle}"
+                    Text="{Binding NextButtonText}"
+                    TextColor="{Binding NextButtonTextColor}">
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xe5e1;"
+                            Color="White" />
+                    </Button.ImageSource>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</ContentPage>

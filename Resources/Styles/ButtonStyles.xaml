@@ -236,7 +236,7 @@
     </Style>
 
     <Style x:Key="FilterButtonStyle" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="TextColor" Value="White" />
         <Setter Property="CornerRadius" Value="8" />
 

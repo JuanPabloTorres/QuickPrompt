@@ -94,7 +94,7 @@ namespace QuickPrompt
             // ✅ Registro único de la conexión compartida
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
-          
+
 
             // 🧠 Repositorio de Prompts usando el patrón Repository
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
@@ -144,6 +144,8 @@ namespace QuickPrompt
             builder.Services.AddTransient<AiWebViewPageViewModel>();
 
             builder.Services.AddTransient<AiLauncherViewModel>();
+
+            builder.Services.AddTransient<PromptBuilderPageViewModel>();
         }
 
         // Registra las páginas en el contenedor de dependencias
@@ -178,6 +180,8 @@ namespace QuickPrompt
             Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
 
             Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
+
+            Routing.RegisterRoute(nameof(PromptBuilderPage), typeof(PromptBuilderPage));
         }
     }
 }

@@ -33,21 +33,19 @@
             </ToolTipProperties.Text>
         </ToolbarItem>
 
-        <!--  Botón de Copiar  -->
-        <!--<ToolbarItem Command="{Binding CopyToClipboardCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <!--  Nuevo botón: Advanced Prompt Builder  -->
+        <ToolbarItem Command="{Binding GoToAdvancedBuilderCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe14d;"
+                    Glyph="&#xea3c;"
                     Color="{StaticResource PrimaryBlueDark}" />
-        -->
-        <!--  Color asociado al botón Copiar  -->
-        <!--
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
-                Click to Clear Text
+                Advanced Prompt Builder
             </ToolTipProperties.Text>
-        </ToolbarItem>-->
+        </ToolbarItem>
+
 
         <!--  Import Json  -->
         <ToolbarItem Command="{Binding ImportPromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
