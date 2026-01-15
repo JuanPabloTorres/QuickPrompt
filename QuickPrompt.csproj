@@ -88,7 +88,7 @@
 
   <ItemGroup>
     <!-- App Icon (asegúrate de que el SVG sea cuadrado y simple) -->
-    <MauiIcon Include="Resources\AppIcon\quickprompticon3.svg" Color="#011F4B" ForegroundFile="Resources\AppIcon\quickprompticon3.svg" />
+    <MauiIcon Include="Resources\AppIcon\quickprompticon3.svg" Color="#011F4B" />
 
 
     <!-- Splash Screen (usa PNG de 512x512 o 1024x1024 preferido) -->
@@ -142,25 +142,11 @@
     <PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.1" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <MauiXaml Update="Pages\ChatGptPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\CopilotChatPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
     <MauiXaml Update="Pages\EditPromptPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\ExternalAiPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\GeminiPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\GrokPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\GuidePage.xaml">
@@ -235,13 +221,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="QuickPrompt\Tests\Engines\" />
     <Folder Include="Resources\Images\" />
+    <Folder Include="Tests\Engines\" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="$(UserProfile)\.nuget\packages\mtadmob.ios.binding\11.2.0.1\lib\net8.0-ios18.0\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\GADMediatedUnifiedNativeAdNotificationSource.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="QuickPrompt.Tests\QuickPrompt.Tests.csproj" />
+    <None Include="Tests\QuickPrompt.Tests.csproj" />
+    <None Include="Tests\QuickPrompt.Tests.sln" />
   </ItemGroup>
 
 
@@ -254,8 +245,140 @@
     <AndroidSigningKeyPass>QpSftw#2024!</AndroidSigningKeyPass>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="QuickPrompt.AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="**/*Tests.cs" />
+  </ItemGroup>
 
 </Project>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

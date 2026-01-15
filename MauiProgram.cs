@@ -93,8 +93,6 @@ namespace QuickPrompt
         // Registra los servicios necesarios en el contenedor de dependencias
         private static void RegisterServices(MauiAppBuilder builder, IConfiguration appSettings)
         {
-            var apiKey = appSettings["GPTApiKeys:Key1"];
-
             // ✅ Database
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
@@ -104,29 +102,24 @@ namespace QuickPrompt
             builder.Services.AddSingleton<DatabaseServiceManager>();
 
             // ✅ Existing Services
-            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
             builder.Services.AddSingleton<AdmobService>();
 
-            // 🆕 ENGINE SERVICES (Step 1-2)
-            // Registry is static, but we register as singleton for consistency
+            // 🆕 ENGINE SERVICES
             builder.Services.AddSingleton<IWebViewInjectionService, WebViewInjectionService>();
 
-            // 🆕 HISTORY SERVICES (Step 3)
+            // 🆕 HISTORY SERVICES
             builder.Services.AddSingleton<IExecutionHistoryRepository>(sp =>
             {
                 var dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
                 return new SqliteExecutionHistoryRepository(dbPath);
             });
 
-            // Cloud repository: use Null implementation if Firestore not configured
             builder.Services.AddSingleton<IExecutionHistoryCloudRepository>(sp =>
             {
                 // TODO: Replace with real Firestore repo when Firebase is configured
-                // Check if Firestore config exists (google-services.json, etc.)
                 return new NullExecutionHistoryCloudRepository();
             });
 
-            // SyncService depends on repos and auth state
             builder.Services.AddSingleton<SyncService>(sp =>
             {
                 var localRepo = sp.GetRequiredService<IExecutionHistoryRepository>();
@@ -140,30 +133,26 @@ namespace QuickPrompt
                     () => sessionService.IsLoggedIn,
                     () =>
                     {
-                        // Check if CloudSyncEnabled (async call in sync context - gets cached settings)
                         var settings = settingsService.GetSettingsAsync().GetAwaiter().GetResult();
                         return settings.CloudSyncEnabled;
                     }
                 );
             });
 
-            // ExecutionHistoryIntegration
             builder.Services.AddSingleton<ExecutionHistoryIntegration>(sp =>
             {
                 var localRepo = sp.GetRequiredService<IExecutionHistoryRepository>();
                 var syncService = sp.GetRequiredService<SyncService>();
                 var deviceId = Preferences.Get("DeviceId", Guid.NewGuid().ToString());
-                Preferences.Set("DeviceId", deviceId); // Persist if new
+                Preferences.Set("DeviceId", deviceId);
                 return new ExecutionHistoryIntegration(localRepo, syncService, deviceId);
             });
 
-            // 🆕 SETTINGS SERVICES (Step 4)
+            // 🆕 SETTINGS SERVICES
             builder.Services.AddSingleton<ISettingsService, SettingsService>();
-
-            // 🆕 SESSION SERVICE (Step 4, placeholder implementation)
             builder.Services.AddSingleton<ISessionService, SessionService>();
 
-            // ✅ Existing Config
+            // ✅ Config
             var appSettingsModel = new AppSettings
             {
                 Version = appSettings["AppSettings:Version"] ?? "1.0.0",
@@ -188,7 +177,6 @@ namespace QuickPrompt
             builder.Services.AddScoped<EditPromptPageViewModel>();
             builder.Services.AddScoped<QuickPromptViewModel>();
             builder.Services.AddScoped<AdmobBannerViewModel>();
-            builder.Services.AddTransient<AiWebViewPageViewModel>();
             builder.Services.AddTransient<AiLauncherViewModel>();
             builder.Services.AddTransient<PromptBuilderPageViewModel>();
 
@@ -211,17 +199,10 @@ namespace QuickPrompt
 
         private static void ConfigureRouting()
         {
-            // Existing routes
             Routing.RegisterRoute(nameof(PromptDetailsPage), typeof(PromptDetailsPage));
             Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
             Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));
-            Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-            Routing.RegisterRoute(nameof(ChatGptPage), typeof(ChatGptPage));
-            Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
-            Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
             Routing.RegisterRoute(nameof(PromptBuilderPage), typeof(PromptBuilderPage));
-
-            // 🆕 NEW ROUTES (Step 2)
             Routing.RegisterRoute(nameof(EngineWebViewPage), typeof(EngineWebViewPage));
         }
     }
