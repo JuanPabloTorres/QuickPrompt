@@ -38,10 +38,10 @@ namespace QuickPrompt.Engines.Registry
             {
                 Name = "Copilot",
                 BaseUrl = "https://copilot.microsoft.com/",
-                InputSelector = "textarea[placeholder*='Ask']",
-                SubmitSelector = "button[aria-label*='Submit']",
-                DelayMs = 2500, // Increased for full page load
-                FallbackStrategy = FallbackStrategy.ClipboardFallback
+                InputSelector = "textarea",
+                SubmitSelector = "button[type='submit']",
+                DelayMs = 3500,
+                FallbackStrategy = FallbackStrategy.Auto
             }
         };
 
