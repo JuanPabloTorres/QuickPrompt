@@ -104,7 +104,7 @@ namespace QuickPrompt.Engines.Injection
             return $@"
 (function() {{
     try {{
-        console.log('[QuickPrompt] Starting persistent injection');
+        console.log('[QuickPrompt] Starting persistent injection for {descriptor.Name}');
         var input = null;
         var submit = null;
         
@@ -132,12 +132,21 @@ namespace QuickPrompt.Engines.Injection
             }}
         }}
         
-        // Strategy 3: Try contenteditable divs
+        // Strategy 3: Try contenteditable divs (important for Gemini)
         if (!input) {{
             console.log('[QuickPrompt] Trying contenteditable');
-            input = document.querySelector('[contenteditable=""true""]');
-            if (!input) {{
-                input = document.querySelector('[role=""textbox""]');
+            var contentEditableSelectors = [
+                'rich-textarea div[contenteditable=""true""]',
+                'div[contenteditable=""true""]',
+                '[contenteditable=""true""]',
+                '[role=""textbox""]'
+            ];
+            for (var i = 0; i < contentEditableSelectors.length; i++) {{
+                input = document.querySelector(contentEditableSelectors[i]);
+                if (input) {{
+                    console.log('[QuickPrompt] Found contenteditable with: ' + contentEditableSelectors[i]);
+                    break;
+                }}
             }}
         }}
         
@@ -146,7 +155,7 @@ namespace QuickPrompt.Engines.Injection
             return 'error:input-not-found';
         }}
         
-        console.log('[QuickPrompt] Input found:', input.tagName, input.className);
+        console.log('[QuickPrompt] Input found:', input.tagName, input.className || 'no-class');
         
         // Focus input FIRST - critical for React/Vue components
         input.focus();
@@ -171,16 +180,21 @@ namespace QuickPrompt.Engines.Injection
                     
                     console.log('[QuickPrompt] Set textarea/input value, length=' + input.value.length);
                 }} else if (input.isContentEditable || input.getAttribute('contenteditable') === 'true') {{
-                    // For contenteditable, use innerHTML to preserve formatting
+                    // For contenteditable (Gemini uses this)
                     input.innerHTML = '';
                     input.textContent = '{escapedPrompt}';
+                    
+                    // Also try innerText as fallback
+                    input.innerText = '{escapedPrompt}';
                     
                     // Trigger events
                     input.dispatchEvent(new Event('focus', {{ bubbles: true }}));
                     input.dispatchEvent(new Event('input', {{ bubbles: true }}));
                     input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    input.dispatchEvent(new KeyboardEvent('keydown', {{ bubbles: true }}));
+                    input.dispatchEvent(new KeyboardEvent('keyup', {{ bubbles: true }}));
                     
-                    console.log('[QuickPrompt] Set contenteditable value');
+                    console.log('[QuickPrompt] Set contenteditable value, textContent.length=' + input.textContent.length);
                 }}
                 
                 // Move cursor to end
@@ -193,18 +207,29 @@ namespace QuickPrompt.Engines.Injection
             }}
         }}, 100);
         
-        // Try to find and click submit button (after another delay)
+        // Try to find and click submit button (with more aggressive search)
         setTimeout(function() {{
             try {{
                 console.log('[QuickPrompt] Looking for submit button');
-                submit = document.querySelector('{submitSelector}');
                 
-                if (!submit) {{
+                // Strategy 1: Try descriptor selector
+                submit = document.querySelector('{submitSelector}');
+                if (submit && !submit.disabled) {{
+                    console.log('[QuickPrompt] Found submit with descriptor selector');
+                }}
+                
+                // Strategy 2: Try common button selectors
+                if (!submit || submit.disabled) {{
                     var submitSelectors = [
-                        'button[type=""submit""]',
                         'button[aria-label*=""Send""]',
+                        'button[aria-label*=""send""]',
+                        'button[aria-label*=""Submit""]',
                         'button[aria-label*=""submit""]',
-                        'button[data-testid*=""send""]'
+                        'button[type=""submit""]',
+                        'button[data-testid*=""send""]',
+                        'button[data-testid*=""Send""]',
+                        'button[title*=""Send""]',
+                        'button[title*=""send""]'
                     ];
                     for (var i = 0; i < submitSelectors.length; i++) {{
                         submit = document.querySelector(submitSelectors[i]);
@@ -215,14 +240,56 @@ namespace QuickPrompt.Engines.Injection
                     }}
                 }}
                 
+                // Strategy 3: Find button with SVG icon (common for send buttons)
+                if (!submit || submit.disabled) {{
+                    var allButtons = document.querySelectorAll('button');
+                    console.log('[QuickPrompt] Checking ' + allButtons.length + ' buttons for SVG icons');
+                    for (var i = 0; i < allButtons.length; i++) {{
+                        var btn = allButtons[i];
+                        if (!btn.disabled && btn.querySelector('svg')) {{
+                            var ariaLabel = btn.getAttribute('aria-label') || '';
+                            var title = btn.getAttribute('title') || '';
+                            // Check if it looks like a send button
+                            if (ariaLabel.toLowerCase().includes('send') || 
+                                title.toLowerCase().includes('send') ||
+                                btn.className.toLowerCase().includes('send')) {{
+                                submit = btn;
+                                console.log('[QuickPrompt] Found button with SVG icon, aria-label:', ariaLabel);
+                                break;
+                            }}
+                        }}
+                    }}
+                }}
+                
+                // Strategy 4: Last resort - find any enabled button near the input
+                if (!submit || submit.disabled) {{
+                    console.log('[QuickPrompt] Last resort: looking for any button near input');
+                    var parent = input.parentElement;
+                    for (var level = 0; level < 5; level++) {{
+                        if (!parent) break;
+                        var buttons = parent.querySelectorAll('button:not([disabled])');
+                        if (buttons.length > 0) {{
+                            submit = buttons[buttons.length - 1]; // Usually send button is last
+                            console.log('[QuickPrompt] Found button at level ' + level);
+                            break;
+                        }}
+                        parent = parent.parentElement;
+                    }}
+                }}
+                
                 if (submit && !submit.disabled) {{
-                    console.log('[QuickPrompt] Clicking submit');
+                    console.log('[QuickPrompt] Clicking submit button');
                     submit.click();
+                    return 'success:submitted';
+                }} else {{
+                    console.log('[QuickPrompt] Submit button not found or disabled');
+                    return 'success:value-set-no-submit';
                 }}
             }} catch (e) {{
                 console.log('[QuickPrompt] Error clicking submit:', e.message);
+                return 'success:value-set-no-submit';
             }}
-        }}, 300);
+        }}, 500); // Increased delay to 500ms to ensure value is set
         
         return 'success:value-set';
         
