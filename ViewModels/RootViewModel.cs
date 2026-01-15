@@ -39,6 +39,9 @@ namespace QuickPrompt.ViewModels
         [RelayCommand]
         protected async Task GoBackAsync() => await Shell.Current.Navigation.PopAsync();
 
+        [RelayCommand]
+        protected async Task NavigateToCreateAsync() => await Shell.Current.GoToAsync("//Create");
+
         protected async Task ExecuteWithLoadingAsync(Func<Task> action, string errorMessage = "An error occurred. Please try again.")
         {
             try
