@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
+    xmlns:localcontrols="clr-namespace:QuickPrompt.Controls"
     xmlns:view="clr-namespace:QuickPrompt.Views"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
@@ -80,10 +81,17 @@
                 SelectionMode="None">
 
                 <CollectionView.EmptyView>
-                    <VerticalStackLayout VerticalOptions="Center">
-
-                        <Label Style="{StaticResource TitleLabelStyle}" Text="{Binding EmptyViewText}" />
-                    </VerticalStackLayout>
+                    <!-- 🆕 Using EmptyStateView control for better UX -->
+                    <localcontrols:EmptyStateView
+                        Icon="{x:Static localcontrols:EmptyStates+Icons.Inbox}"
+                        Title="No prompts found"
+                        Description="{Binding EmptyViewText}"
+                        ButtonText="Create First Prompt"
+                        ShowButton="True">
+                        <localcontrols:EmptyStateView.ButtonCommand>
+                            <Binding Path="NavigateToCreateCommand" />
+                        </localcontrols:EmptyStateView.ButtonCommand>
+                    </localcontrols:EmptyStateView>
                 </CollectionView.EmptyView>
 
                 <CollectionView.Header>

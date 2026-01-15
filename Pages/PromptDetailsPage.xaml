@@ -212,25 +212,28 @@
 
             <!--  Instrucciones finales  -->
             <Label
-                Margin="0,0,0,5"
-                FontSize="16"
+                Margin="0,10,0,5"
+                FontSize="18"
+                FontAttributes="Bold"
                 HorizontalOptions="Center"
                 IsVisible="{Binding ShowPromptActions}"
-                Text="Select an AI to use your prompt:"
-                TextColor="{StaticResource AppBlack}" />
+                Text="🤖 Select an AI Provider"
+                TextColor="{StaticResource PrimaryBlueDark}" />
 
-            <!--  Botones AI en layout responsive  -->
-            <FlexLayout
-                AlignItems="Center"
-                Direction="Row"
-                HorizontalOptions="Center"
+            <!--  Botones AI en grid para mejor layout  -->
+            <Grid
+                ColumnDefinitions="*,*"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="12"
+                RowSpacing="12"
                 IsVisible="{Binding ShowPromptActions}"
-                JustifyContent="Center"
-                Wrap="Wrap">
+                Margin="0,5,0,20">
 
+                <!-- ChatGPT -->
                 <Button
+                    Grid.Row="0" Grid.Column="0"
                     Style="{StaticResource AiButtonStyle}"
-                    Text="GPT"
+                    Text="ChatGPT"
                     TextColor="{StaticResource TextLight}">
                     <Button.Command>
                         <Binding Path="SendPromptToCommand" />
@@ -238,7 +241,6 @@
                     <Button.CommandParameter>
                         <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
                     </Button.CommandParameter>
-
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
@@ -247,7 +249,9 @@
                     </Button.ImageSource>
                 </Button>
 
+                <!-- Gemini -->
                 <Button
+                    Grid.Row="0" Grid.Column="1"
                     Style="{StaticResource AiButtonStyle}"
                     Text="Gemini"
                     TextColor="{StaticResource TextLight}">
@@ -265,7 +269,9 @@
                     </Button.ImageSource>
                 </Button>
 
+                <!-- Grok -->
                 <Button
+                    Grid.Row="1" Grid.Column="0"
                     Style="{StaticResource AiButtonStyle}"
                     Text="Grok"
                     TextColor="{StaticResource TextLight}">
@@ -275,7 +281,6 @@
                     <Button.CommandParameter>
                         <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
                     </Button.CommandParameter>
-
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
@@ -284,7 +289,9 @@
                     </Button.ImageSource>
                 </Button>
 
+                <!-- Copilot -->
                 <Button
+                    Grid.Row="1" Grid.Column="1"
                     Style="{StaticResource AiButtonStyle}"
                     Text="Copilot"
                     TextColor="{StaticResource TextLight}">
@@ -301,7 +308,7 @@
                             Color="{StaticResource TextLight}" />
                     </Button.ImageSource>
                 </Button>
-            </FlexLayout>
+            </Grid>
 
             <!--  Overlay de carga  -->
             <view:ReusableLoadingOverlay
