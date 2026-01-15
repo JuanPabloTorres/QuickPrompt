@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuickPrompt.Controls.AIProviderButton"
+             x:Name="Root">
+
+    <Border BackgroundColor="{Binding ProviderColor, Source={x:Reference Root}}"
+            StrokeThickness="0"
+            Padding="0"
+            HeightRequest="60">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+
+        <!-- Shadow -->
+        <Border.Shadow>
+            <Shadow Brush="{StaticResource AppBlack}"
+                    Opacity="0.15"
+                    Radius="8"
+                    Offset="0,2" />
+        </Border.Shadow>
+
+        <!-- Tap Gesture -->
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
+                                  CommandParameter="{Binding ProviderName, Source={x:Reference Root}}" />
+        </Border.GestureRecognizers>
+
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16,12">
+
+            <!-- Provider Logo/Icon -->
+            <Image Grid.Column="0"
+                   Source="{Binding ProviderIcon, Source={x:Reference Root}}"
+                   WidthRequest="32"
+                   HeightRequest="32"
+                   Aspect="AspectFit"
+                   VerticalOptions="Center"
+                   IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
+
+            <!-- Fallback Icon (Material Icon) -->
+            <Label Grid.Column="0"
+                   Text="{Binding ProviderMaterialIcon, Source={x:Reference Root}}"
+                   FontFamily="MaterialIconsOutlined-Regular"
+                   FontSize="32"
+                   TextColor="White"
+                   VerticalOptions="Center"
+                   IsVisible="{Binding ShowMaterialIcon, Source={x:Reference Root}}" />
+
+            <!-- Provider Name & Description -->
+            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                <Label Text="{Binding ProviderName, Source={x:Reference Root}}"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="White" />
+                <Label Text="{Binding ProviderDescription, Source={x:Reference Root}}"
+                       FontSize="12"
+                       TextColor="White"
+                       Opacity="0.9"
+                       IsVisible="{Binding ShowDescription, Source={x:Reference Root}}" />
+            </VerticalStackLayout>
+
+            <!-- Status Indicator / Badge -->
+            <Border Grid.Column="2"
+                    BackgroundColor="{StaticResource Success}"
+                    Padding="8,4"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding ShowBadge, Source={x:Reference Root}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4" />
+                </Border.StrokeShape>
+                <Label Text="{Binding BadgeText, Source={x:Reference Root}}"
+                       FontSize="10"
+                       FontAttributes="Bold"
+                       TextColor="White" />
+            </Border>
+
+            <!-- Arrow Icon -->
+            <Label Grid.Column="2"
+                   Text="&#xe5cc;"
+                   FontFamily="MaterialIconsOutlined-Regular"
+                   FontSize="24"
+                   TextColor="White"
+                   VerticalOptions="Center"
+                   IsVisible="{Binding ShowArrow, Source={x:Reference Root}}" />
+
+        </Grid>
+    </Border>
+
+</ContentView>
