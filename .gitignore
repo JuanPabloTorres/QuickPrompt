@@ -392,3 +392,10 @@ FIX_*.md
 # Local development notes
 NOTES.md
 TODO.md
+
+# ============================================
+# EXCEPT: Keep important documentation
+# ============================================
+!PROJECT_COMPLETION_SUMMARY.md
+!CRASH_FIXES_&_RESTRUCTURING.md
+!docs/*.md
