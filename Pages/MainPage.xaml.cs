@@ -20,26 +20,37 @@ namespace QuickPrompt.Pages
 
         protected override void OnAppearing()
         {
-            _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
-
-            base.OnAppearing();
-
-            Dispatcher.Dispatch(() =>
+            try
             {
-                const double buttonSize = 50;
+                _viewModel.Initialize(); // Inicializar AdMob cuando la página aparece
 
-                const double visiblePortion = 40;
+                base.OnAppearing();
 
-                // Centro de la pantalla (vertical)
-                double y = (this.Height - buttonSize) / 2;
+                Dispatcher.Dispatch(() =>
+                {
+                    const double buttonSize = 50;
 
-                // Parte derecha sobresaliendo 10px
-                double x = this.Width - visiblePortion - 12;
+                    const double visiblePortion = 40;
 
-                AbsoluteLayout.SetLayoutBounds(FloatingButton, new Rect(x, y, buttonSize, buttonSize));
-            });
+                    // Centro de la pantalla (vertical)
+                    double y = (this.Height - buttonSize) / 2;
 
-            RenderPromptAsChips(_viewModel.PromptText);
+                    // Parte derecha sobresaliendo 10px
+                    double x = this.Width - visiblePortion - 12;
+
+                    AbsoluteLayout.SetLayoutBounds(FloatingButton, new Rect(x, y, buttonSize, buttonSize));
+                });
+
+                // ✅ Validar antes de procesar
+                if (!string.IsNullOrEmpty(_viewModel?.PromptText))
+                {
+                    RenderPromptAsChips(_viewModel.PromptText);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainPage.OnAppearing] Error: {ex.Message}");
+            }
         }
 
         private void ResetFloatingButtonPosition(object sender, EventArgs e)
