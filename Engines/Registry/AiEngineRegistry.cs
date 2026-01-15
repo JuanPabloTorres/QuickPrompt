@@ -20,9 +20,9 @@ namespace QuickPrompt.Engines.Registry
             {
                 Name = "Gemini",
                 BaseUrl = "https://gemini.google.com/",
-                InputSelector = "div[contenteditable='true'][aria-label*='Enter']",
+                InputSelector = "[contenteditable='true']",
                 SubmitSelector = "button[aria-label*='Send']",
-                DelayMs = 3000, // Increased for full page load
+                DelayMs = 4000,
                 FallbackStrategy = FallbackStrategy.Auto
             },
             ["Grok"] = new AiEngineDescriptor
@@ -40,7 +40,7 @@ namespace QuickPrompt.Engines.Registry
                 BaseUrl = "https://copilot.microsoft.com/",
                 InputSelector = "textarea",
                 SubmitSelector = "button[type='submit']",
-                DelayMs = 3500,
+                DelayMs = 4000,
                 FallbackStrategy = FallbackStrategy.Auto
             }
         };
