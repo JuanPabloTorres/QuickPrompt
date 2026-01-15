@@ -362,8 +362,33 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Excluir archivos de configuraci�n sensibles
+# Excluir archivos de configuración sensibles
 appsettings.json
 
-
+# Android KeyStore
 key.keystore
+
+# ============================================
+# QuickPrompt - Custom Ignores
+# ============================================
+
+# Temporary commit message files
+COMMIT_MSG_*.txt
+
+# Temporary instruction files (should be in docs/)
+*_INSTRUCTIONS.md
+*_FIX.md
+
+# VS Code-behind files (already removed but prevent recreation)
+Resources/Styles/*.xaml.cs
+
+# Temporary markdown files (summaries, reports, etc.)
+STEP_*.md
+AUDIT_*.md
+FIX_*.md
+*_SUMMARY.md
+*_STRATEGY.md
+
+# Local development notes
+NOTES.md
+TODO.md
