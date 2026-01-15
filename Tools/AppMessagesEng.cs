@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace QuickPrompt.Tools
+﻿namespace QuickPrompt.Tools
 {
     public class AppMessagesEng
     {
@@ -40,10 +34,6 @@ namespace QuickPrompt.Tools
         public const string GuideComplete2 = "Great job! You’ve completed the QuickPrompt guide.";
 
         public const string GuideComplete3 = "🎉 You’ve completed the guide!";
-
-
-
-
 
         // **Messages Related to Prompts**
         public static class Prompts
