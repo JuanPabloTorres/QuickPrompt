@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuickPrompt.Controls.SkeletonView"
+             x:Name="Root">
+    
+    <Grid>
+        <!-- Skeleton Background with Shimmer Effect -->
+        <BoxView CornerRadius="{Binding CornerRadius, Source={x:Reference Root}}"
+                 BackgroundColor="{StaticResource Gray200}"
+                 HeightRequest="{Binding HeightRequest, Source={x:Reference Root}}"
+                 WidthRequest="{Binding WidthRequest, Source={x:Reference Root}}" />
+        
+        <!-- Shimmer Animation Overlay -->
+        <BoxView x:Name="ShimmerOverlay"
+                 CornerRadius="{Binding CornerRadius, Source={x:Reference Root}}"
+                 Opacity="0.5"
+                 HeightRequest="{Binding HeightRequest, Source={x:Reference Root}}"
+                 WidthRequest="{Binding WidthRequest, Source={x:Reference Root}}">
+            <BoxView.Background>
+                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                    <GradientStop Color="Transparent" Offset="0" />
+                    <GradientStop Color="{StaticResource Gray300}" Offset="0.5" />
+                    <GradientStop Color="Transparent" Offset="1" />
+                </LinearGradientBrush>
+            </BoxView.Background>
+        </BoxView>
+    </Grid>
+</ContentView>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuickPrompt.Controls.ErrorStateView"
+             x:Name="Root">
+    
+    <VerticalStackLayout Spacing="16"
+                         HorizontalOptions="Center"
+                         VerticalOptions="Center"
+                         Padding="40">
+        
+        <!-- Error Icon -->
+        <Label FontFamily="MaterialIconsOutlined-Regular"
+               FontSize="80"
+               HorizontalOptions="Center"
+               TextColor="{StaticResource Error}"
+               Text="&#xe000;" />
+        
+        <!-- Error Title -->
+        <Label FontSize="20"
+               FontAttributes="Bold"
+               HorizontalOptions="Center"
+               HorizontalTextAlignment="Center"
+               TextColor="{StaticResource Gray900}"
+               Text="{Binding Title, Source={x:Reference Root}}" />
+        
+        <!-- Error Message -->
+        <Label FontSize="14"
+               HorizontalOptions="Center"
+               HorizontalTextAlignment="Center"
+               TextColor="{StaticResource Gray600}"
+               Text="{Binding Message, Source={x:Reference Root}}"
+               MaximumWidthRequest="300" />
+        
+        <!-- Technical Details (Collapsible) -->
+        <Border IsVisible="{Binding ShowDetails, Source={x:Reference Root}}"
+                StrokeThickness="1"
+                Stroke="{StaticResource Gray300}"
+                BackgroundColor="{StaticResource Gray100}"
+                Padding="12"
+                Margin="0,8,0,0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            
+            <Label FontSize="12"
+                   FontFamily="Consolas"
+                   TextColor="{StaticResource Gray700}"
+                   Text="{Binding Details, Source={x:Reference Root}}"
+                   LineBreakMode="WordWrap" />
+        </Border>
+        
+        <!-- Action Buttons -->
+        <HorizontalStackLayout Spacing="12"
+                               HorizontalOptions="Center"
+                               Margin="0,16,0,0">
+            
+            <!-- Retry Button -->
+            <Button Text="{Binding RetryButtonText, Source={x:Reference Root}}"
+                    Command="{Binding RetryCommand, Source={x:Reference Root}}"
+                    IsVisible="{Binding ShowRetryButton, Source={x:Reference Root}}"
+                    Style="{StaticResource PrimaryButton}" />
+            
+            <!-- Secondary Action Button -->
+            <Button Text="{Binding SecondaryButtonText, Source={x:Reference Root}}"
+                    Command="{Binding SecondaryCommand, Source={x:Reference Root}}"
+                    IsVisible="{Binding ShowSecondaryButton, Source={x:Reference Root}}"
+                    Style="{StaticResource SecondaryButton}" />
+            
+        </HorizontalStackLayout>
+        
+    </VerticalStackLayout>
+    
+</ContentView>
