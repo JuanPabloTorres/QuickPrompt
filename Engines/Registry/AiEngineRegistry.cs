@@ -20,9 +20,9 @@ namespace QuickPrompt.Engines.Registry
             {
                 Name = "Gemini",
                 BaseUrl = "https://gemini.google.com/",
-                InputSelector = "rich-textarea div[contenteditable='true']",
-                SubmitSelector = "button[aria-label='Send message']",
-                DelayMs = 2500, // Increased for full page load
+                InputSelector = "div[contenteditable='true'][aria-label*='Enter']",
+                SubmitSelector = "button[aria-label*='Send']",
+                DelayMs = 3000, // Increased for full page load
                 FallbackStrategy = FallbackStrategy.Auto
             },
             ["Grok"] = new AiEngineDescriptor

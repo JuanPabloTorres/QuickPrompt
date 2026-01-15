@@ -132,6 +132,8 @@ namespace QuickPrompt.Engines.Injection
         if (!input) {{
             console.log('[QuickPrompt] Trying contenteditable');
             var contentEditableSelectors = [
+                'div[contenteditable=""true""][aria-label*=""Enter""]',
+                'div[contenteditable=""true""][data-placeholder]',
                 'rich-textarea div[contenteditable=""true""]',
                 'div[contenteditable=""true""]',
                 '[contenteditable=""true""]',
@@ -149,6 +151,13 @@ namespace QuickPrompt.Engines.Injection
         if (!input) {{
             console.log('[QuickPrompt] No input found');
             return 'error:input-not-found';
+        }}
+        
+        // Verify input is visible and interactable
+        var isVisible = input.offsetWidth > 0 && input.offsetHeight > 0;
+        if (!isVisible) {{
+            console.log('[QuickPrompt] Input found but not visible');
+            return 'error:input-not-visible';
         }}
         
         console.log('[QuickPrompt] Input found:', input.tagName, input.className || 'no-class');
@@ -215,11 +224,12 @@ namespace QuickPrompt.Engines.Injection
                     var submitSelectors = [
                         'button[aria-label*=""Send""]',
                         'button[aria-label*=""send""]',
+                        'button[aria-label=""Send""]',
+                        'button[data-testid*=""send""]',
+                        'button[data-testid*=""Send""]',
                         'button[aria-label*=""Submit""]',
                         'button[aria-label*=""submit""]',
                         'button[type=""submit""]',
-                        'button[data-testid*=""send""]',
-                        'button[data-testid*=""Send""]',
                         'button[title*=""Send""]',
                         'button[title*=""send""]'
                     ];
