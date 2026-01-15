@@ -11,6 +11,7 @@ using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
 using QuickPrompt.Views;
+using QuickPrompt.Engines.Execution;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -145,12 +146,32 @@ namespace QuickPrompt.ViewModels
 
                 await toast.Show();
 
-                await NavigateToAsync(pageName, new Dictionary<string, object>
-        {
-            { "TemplateId", promptID },
-            { "FinalPrompt", finalPrompt }
-        });
+                // 🆕 Map legacy page names to engine names
+                var engineName = MapPageNameToEngineName(pageName);
+
+                // 🆕 Navigate to EngineWebViewPage with individual parameters instead of complex object
+                await NavigateToAsync("EngineWebViewPage", new Dictionary<string, object>
+                {
+                    { "EngineName", engineName },
+                    { "Prompt", finalPrompt },
+                    { "PromptId", promptID }
+                });
             });
+        }
+
+        /// <summary>
+        /// Maps legacy page names to engine names for new architecture.
+        /// </summary>
+        private string MapPageNameToEngineName(string pageName)
+        {
+            return pageName switch
+            {
+                "ChatGptPage" => "ChatGPT",
+                "GeminiPage" => "Gemini",
+                "GrokPage" => "Grok",
+                "CopilotChatPage" => "Copilot",
+                _ => pageName // Fallback: use page name as-is
+            };
         }
     }
 }
