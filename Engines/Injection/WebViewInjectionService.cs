@@ -100,229 +100,231 @@ namespace QuickPrompt.Engines.Injection
             return $@"
 (function() {{
     try {{
-        console.log('[QuickPrompt] ========== DIAGNOSTIC START ==========');
-        console.log('[QuickPrompt] Starting persistent injection for {descriptor.Name}');
+        console.log('[QuickPrompt] INJECTION START for {descriptor.Name}');
+        console.log('[QuickPrompt] Prompt length to inject:', '{escapedPrompt}'.length);
+        
         var input = null;
         var submit = null;
         
-        // DIAGNOSTIC: Log all contenteditable elements
-        var allContentEditables = document.querySelectorAll('[contenteditable=""true""]');
-        console.log('[QuickPrompt] DIAGNOSTIC: Found ' + allContentEditables.length + ' contenteditable elements');
-        for (var i = 0; i < allContentEditables.length; i++) {{
-            var el = allContentEditables[i];
-            console.log('[QuickPrompt] DIAGNOSTIC: Contenteditable ' + i + ':', {{
-                tagName: el.tagName,
-                className: el.className,
-                ariaLabel: el.getAttribute('aria-label'),
-                dataPlaceholder: el.getAttribute('data-placeholder'),
-                offsetWidth: el.offsetWidth,
-                offsetHeight: el.offsetHeight
-            }});
-        }}
-        
-        // DIAGNOSTIC: Log all textareas
-        var allTextareas = document.querySelectorAll('textarea');
-        console.log('[QuickPrompt] DIAGNOSTIC: Found ' + allTextareas.length + ' textarea elements');
-        
-        // Strategy 1: Try descriptor's specific selector
-        console.log('[QuickPrompt] Trying descriptor selector: {inputSelector}');
+        // Strategy 1: descriptor selector
+        console.log('[QuickPrompt] Strategy 1: descriptor selector');
         input = document.querySelector('{inputSelector}');
-        if (input) {{
-            console.log('[QuickPrompt] SUCCESS with descriptor selector');
-        }}
+        if (input) console.log('[QuickPrompt] Strategy 1: FOUND');
         
-        // Strategy 2: Try common textarea selectors
+        // Strategy 2: common textareas
         if (!input) {{
-            console.log('[QuickPrompt] Trying common textarea selectors');
+            console.log('[QuickPrompt] Strategy 2: common textarea selectors');
             var commonSelectors = [
                 'textarea[placeholder*=""message""]',
                 'textarea[placeholder*=""Ask""]',
-                'textarea[placeholder*=""prompt""]',
-                'textarea[aria-label]',
                 'textarea',
                 'input[type=""text""]'
             ];
             for (var i = 0; i < commonSelectors.length; i++) {{
                 input = document.querySelector(commonSelectors[i]);
                 if (input) {{
-                    console.log('[QuickPrompt] Found with: ' + commonSelectors[i]);
+                    console.log('[QuickPrompt] Strategy 2: FOUND with selector', i);
                     break;
                 }}
             }}
         }}
         
-        // Strategy 3: Try contenteditable divs - TRY ALL PATTERNS
+        // Strategy 3: contenteditable divs
         if (!input) {{
-            console.log('[QuickPrompt] Trying contenteditable - testing all patterns');
+            console.log('[QuickPrompt] Strategy 3: contenteditable elements');
+            var allContentEditables = document.querySelectorAll('[contenteditable=""true""]');
+            console.log('[QuickPrompt] Found contenteditable elements:', allContentEditables.length);
+            
+            if (allContentEditables.length > 0) {{
+                for (var idx = 0; idx < Math.min(allContentEditables.length, 3); idx++) {{
+                    var ce = allContentEditables[idx];
+                    console.log('[QuickPrompt] ContentEditable', idx, 'tag:', ce.tagName, 'visible:', (ce.offsetWidth > 0));
+                }}
+            }}
+            
             var contentEditableSelectors = [
-                'div[contenteditable=""true""][aria-label*=""Enter""]',
-                'div[contenteditable=""true""][data-placeholder]',
-                'rich-textarea div[contenteditable=""true""]',
                 'div[contenteditable=""true""]',
                 '[contenteditable=""true""]',
                 '[role=""textbox""]'
             ];
+            
             for (var i = 0; i < contentEditableSelectors.length; i++) {{
-                var testInput = document.querySelector(contentEditableSelectors[i]);
-                console.log('[QuickPrompt] Test selector [' + i + ']: ' + contentEditableSelectors[i] + ' => ' + (testInput ? 'FOUND' : 'NOT FOUND'));
-                if (testInput && !input) {{
-                    input = testInput;
-                    console.log('[QuickPrompt] USING: ' + contentEditableSelectors[i]);
+                input = document.querySelector(contentEditableSelectors[i]);
+                if (input) {{
+                    console.log('[QuickPrompt] Strategy 3: FOUND with selector', i);
+                    break;
                 }}
             }}
         }}
         
         if (!input) {{
-            console.log('[QuickPrompt] ERROR: No input found after all strategies');
-            console.log('[QuickPrompt] ========== DIAGNOSTIC END (FAILED) ==========');
+            console.log('[QuickPrompt] ERROR: No input found');
             return 'error:input-not-found';
         }}
         
-        // Verify input is visible and interactable
+        console.log('[QuickPrompt] Input found - tag:', input.tagName, 'editable:', input.isContentEditable);
+        
+        // Visibility check
         var isVisible = input.offsetWidth > 0 && input.offsetHeight > 0;
-        console.log('[QuickPrompt] Input visibility check:', {{
-            offsetWidth: input.offsetWidth,
-            offsetHeight: input.offsetHeight,
-            isVisible: isVisible
-        }});
+        console.log('[QuickPrompt] Visibility:', isVisible, 'size:', input.offsetWidth, 'x', input.offsetHeight);
         
         if (!isVisible) {{
-            console.log('[QuickPrompt] ERROR: Input found but not visible');
-            console.log('[QuickPrompt] ========== DIAGNOSTIC END (NOT VISIBLE) ==========');
+            console.log('[QuickPrompt] ERROR: Input not visible');
             return 'error:input-not-visible';
         }}
         
-        console.log('[QuickPrompt] Input found and visible:', {{
-            tagName: input.tagName,
-            className: input.className || 'no-class',
-            ariaLabel: input.getAttribute('aria-label')
-        }});
-        
-        // Focus input FIRST - critical for React/Vue components
+        // Focus input
+        console.log('[QuickPrompt] Focusing input');
         input.focus();
         input.click();
-        console.log('[QuickPrompt] Focused and clicked input');
         
-        // Wait for focus handlers to complete (synchronous wait using busy loop)
-        var waitUntil = Date.now() + 100;
+        // Wait for focus handlers
+        var waitUntil = Date.now() + 150;
         while (Date.now() < waitUntil) {{}}
-        console.log('[QuickPrompt] Wait complete (100ms)');
+        console.log('[QuickPrompt] Focus wait complete');
         
-        // Set value based on element type
+        // Check prompt is not empty
+        if (!'{escapedPrompt}' || '{escapedPrompt}'.length === 0) {{
+            console.log('[QuickPrompt] ERROR: Prompt is empty');
+            return 'error:empty-prompt';
+        }}
+        
+        // Set value based on type
         if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA') {{
+            console.log('[QuickPrompt] Setting INPUT/TEXTAREA value');
+            
             input.value = '';
             input.value = '{escapedPrompt}';
             
-            input.dispatchEvent(new Event('focus', {{ bubbles: true }}));
-            input.dispatchEvent(new Event('input', {{ bubbles: true }}));
-            input.dispatchEvent(new Event('change', {{ bubbles: true }}));
-            input.dispatchEvent(new KeyboardEvent('keydown', {{ bubbles: true, key: 'a' }}));
-            input.dispatchEvent(new KeyboardEvent('keyup', {{ bubbles: true, key: 'a' }}));
+            console.log('[QuickPrompt] Value set, length:', input.value.length);
             
-            console.log('[QuickPrompt] Set textarea/input value, length=' + input.value.length);
+            // CRITICAL for Grok: Dispatch input events that trigger validation
+            var inputEvent = new Event('input', {{ bubbles: true, cancelable: true }});
+            input.dispatchEvent(inputEvent);
+            
+            // Also dispatch composition events (for frameworks that track text input)
+            input.dispatchEvent(new CompositionEvent('compositionstart', {{ bubbles: true }}));
+            input.dispatchEvent(new CompositionEvent('compositionend', {{ bubbles: true, data: '{escapedPrompt}' }}));
+            
+            // Dispatch keyboard events to simulate typing
+            input.dispatchEvent(new KeyboardEvent('keydown', {{ bubbles: true, key: 'a', code: 'KeyA' }}));
+            input.dispatchEvent(new KeyboardEvent('keypress', {{ bubbles: true, key: 'a', code: 'KeyA' }}));
+            input.dispatchEvent(new KeyboardEvent('keyup', {{ bubbles: true, key: 'a', code: 'KeyA' }}));
+            
+            // Dispatch change event
+            input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            
+            // Force React/Vue detection by setting the value descriptor property
+            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+            nativeInputValueSetter.call(input, '{escapedPrompt}');
+            input.dispatchEvent(new Event('input', {{ bubbles: true }}));
+            
+            console.log('[QuickPrompt] All events dispatched for INPUT/TEXTAREA');
+            
         }} else if (input.isContentEditable || input.getAttribute('contenteditable') === 'true') {{
+            console.log('[QuickPrompt] Setting CONTENTEDITABLE value');
+            
             input.innerHTML = '';
             input.textContent = '{escapedPrompt}';
             input.innerText = '{escapedPrompt}';
             
-            input.dispatchEvent(new Event('focus', {{ bubbles: true }}));
-            input.dispatchEvent(new Event('input', {{ bubbles: true }}));
-            input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            console.log('[QuickPrompt] Value set, textContent length:', (input.textContent || '').length);
+            
+            // Dispatch input event
+            input.dispatchEvent(new Event('input', {{ bubbles: true, cancelable: true }}));
+            
+            // Dispatch keyboard events
             input.dispatchEvent(new KeyboardEvent('keydown', {{ bubbles: true }}));
+            input.dispatchEvent(new KeyboardEvent('keypress', {{ bubbles: true }}));
             input.dispatchEvent(new KeyboardEvent('keyup', {{ bubbles: true }}));
             
-            console.log('[QuickPrompt] Set contenteditable value, textContent.length=' + input.textContent.length);
+            // Dispatch change event
+            input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            
+            console.log('[QuickPrompt] All events dispatched for CONTENTEDITABLE');
         }}
         
         if (typeof input.setSelectionRange === 'function') {{
             input.setSelectionRange(input.value.length, input.value.length);
         }}
         
-        console.log('[QuickPrompt] Value set successfully, scheduling submit button search');
-        console.log('[QuickPrompt] ========== DIAGNOSTIC END (SUCCESS) ==========');
+        console.log('[QuickPrompt] Value injection complete');
         
-        // Schedule submit button click
+        // Submit button search with extended wait for button to enable
         setTimeout(function() {{
             try {{
-                console.log('[QuickPrompt] Looking for submit button');
+                console.log('[QuickPrompt] Searching submit button (waiting for enable)');
                 
-                submit = document.querySelector('{submitSelector}');
-                if (submit && !submit.disabled) {{
-                    console.log('[QuickPrompt] Found submit with descriptor selector');
-                }}
-                
-                if (!submit || submit.disabled) {{
-                    var submitSelectors = [
-                        'button[aria-label*=""Send""]',
-                        'button[aria-label*=""send""]',
-                        'button[aria-label=""Send""]',
-                        'button[data-testid*=""send""]',
-                        'button[data-testid*=""Send""]',
-                        'button[aria-label*=""Submit""]',
-                        'button[aria-label*=""submit""]',
-                        'button[type=""submit""]',
-                        'button[title*=""Send""]',
-                        'button[title*=""send""]'
-                    ];
-                    for (var i = 0; i < submitSelectors.length; i++) {{
-                        submit = document.querySelector(submitSelectors[i]);
-                        if (submit && !submit.disabled) {{
-                            console.log('[QuickPrompt] Found submit with: ' + submitSelectors[i]);
-                            break;
-                        }}
+                // For Grok specifically, wait a bit more for button to enable
+                var checkButtonEnabled = function() {{
+                    submit = document.querySelector('{submitSelector}');
+                    if (submit && !submit.disabled) {{
+                        console.log('[QuickPrompt] Found enabled button with descriptor');
+                        return true;
                     }}
-                }}
-                
-                if (!submit || submit.disabled) {{
-                    var allButtons = document.querySelectorAll('button');
-                    console.log('[QuickPrompt] Checking ' + allButtons.length + ' buttons for SVG icons');
-                    for (var i = 0; i < allButtons.length; i++) {{
-                        var btn = allButtons[i];
-                        if (!btn.disabled && btn.querySelector('svg')) {{
-                            var ariaLabel = btn.getAttribute('aria-label') || '';
-                            var title = btn.getAttribute('title') || '';
-                            if (ariaLabel.toLowerCase().includes('send') || 
-                                title.toLowerCase().includes('send') ||
-                                btn.className.toLowerCase().includes('send')) {{
-                                submit = btn;
-                                console.log('[QuickPrompt] Found button with SVG icon, aria-label:', ariaLabel);
-                                break;
+                    
+                    if (!submit || submit.disabled) {{
+                        var submitSelectors = [
+                            'button[aria-label*=""Send""]',
+                            'button[type=""submit""]',
+                            'button[aria-label*=""Submit""]'
+                        ];
+                        for (var i = 0; i < submitSelectors.length; i++) {{
+                            submit = document.querySelector(submitSelectors[i]);
+                            if (submit && !submit.disabled) {{
+                                console.log('[QuickPrompt] Found enabled button with selector', i);
+                                return true;
                             }}
                         }}
                     }}
-                }}
-                
-                if (!submit || submit.disabled) {{
-                    console.log('[QuickPrompt] Last resort: looking for any button near input');
-                    var parent = input.parentElement;
-                    for (var level = 0; level < 5; level++) {{
-                        if (!parent) break;
-                        var buttons = parent.querySelectorAll('button:not([disabled])');
-                        if (buttons.length > 0) {{
-                            submit = buttons[buttons.length - 1];
-                            console.log('[QuickPrompt] Found button at level ' + level);
-                            break;
+                    
+                    if (!submit || submit.disabled) {{
+                        var allButtons = document.querySelectorAll('button');
+                        for (var i = 0; i < allButtons.length; i++) {{
+                            var btn = allButtons[i];
+                            if (!btn.disabled && btn.querySelector('svg')) {{
+                                var ariaLabel = btn.getAttribute('aria-label') || '';
+                                if (ariaLabel.toLowerCase().includes('send') || ariaLabel.toLowerCase().includes('submit')) {{
+                                    submit = btn;
+                                    console.log('[QuickPrompt] Found enabled SVG button');
+                                    return true;
+                                }}
+                            }}
                         }}
-                        parent = parent.parentElement;
                     }}
-                }}
+                    
+                    return false;
+                }};
                 
-                if (submit && !submit.disabled) {{
-                    console.log('[QuickPrompt] Clicking submit button');
-                    submit.click();
-                }} else {{
-                    console.log('[QuickPrompt] Submit button not found or disabled');
-                }}
+                // Try to find enabled button with retries
+                var attempts = 0;
+                var maxAttempts = 10;
+                var checkInterval = setInterval(function() {{
+                    attempts++;
+                    console.log('[QuickPrompt] Button check attempt', attempts);
+                    
+                    if (checkButtonEnabled()) {{
+                        clearInterval(checkInterval);
+                        console.log('[QuickPrompt] Clicking submit button');
+                        submit.click();
+                        console.log('[QuickPrompt] Submit clicked successfully');
+                    }} else if (attempts >= maxAttempts) {{
+                        clearInterval(checkInterval);
+                        console.log('[QuickPrompt] Submit button not enabled after', maxAttempts, 'attempts');
+                        console.log('[QuickPrompt] User will need to click submit manually');
+                    }}
+                }}, 200); // Check every 200ms
+                
             }} catch (e) {{
-                console.log('[QuickPrompt] Error clicking submit:', e.message);
+                console.log('[QuickPrompt] Submit error:', e.message);
             }}
-        }}, 400);
+        }}, 500); // Initial delay before starting checks
         
+        console.log('[QuickPrompt] INJECTION SUCCESS');
         return 'success:value-set';
         
     }} catch (e) {{
         console.log('[QuickPrompt] FATAL ERROR:', e.message);
-        console.log('[QuickPrompt] ========== DIAGNOSTIC END (EXCEPTION) ==========');
         return 'error:' + e.message;
     }}
 }})();";
