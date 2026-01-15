@@ -48,7 +48,7 @@ namespace QuickPrompt
 
             InitializeIoC(mauiApp);
 
-            return builder.Build();
+            return mauiApp; // ✅ FIX: Retornar el mauiApp que ya fue built
         }
 
         // Configura el builder base de la aplicación

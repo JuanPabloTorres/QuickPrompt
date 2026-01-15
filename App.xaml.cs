@@ -11,27 +11,49 @@ namespace QuickPrompt
         {
             InitializeComponent();
 
-            _databaseServiceManager = databaseServiceManager;
+            _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
 
             Task.Run(async () =>
             {
-                await _databaseServiceManager.InitializeAsync();
+                try
+                {
+                    await _databaseServiceManager.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[App] Database initialization error: {ex.Message}");
+                    // No lanzar excepción - dejar que la app continúe
+                }
             });
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var window = new Window
+            try
             {
-                Page = new AppShell() // ← Aquí especificas el Shell como la página raíz
-            };
-
-            return window;
+                var window = new Window
+                {
+                    Page = new AppShell()
+                };
+                return window;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] Error: {ex.Message}");
+                throw;
+            }
         }
 
         protected override void OnStart()
         {
-            PromptCacheCleanupService.RunCleanupIfDue();
+            try
+            {
+                PromptCacheCleanupService.RunCleanupIfDue();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[App.OnStart] Error: {ex.Message}");
+            }
         }
     }
 }
