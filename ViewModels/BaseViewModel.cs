@@ -12,6 +12,7 @@ using QuickPrompt.Tools;
 using QuickPrompt.ViewModels.Prompts;
 using QuickPrompt.Views;
 using QuickPrompt.Engines.Execution;
+using QuickPrompt.Constants;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -150,10 +151,10 @@ namespace QuickPrompt.ViewModels
                 var engineName = MapPageNameToEngineName(pageName);
 
                 // 🆕 Navigate to EngineWebViewPage with individual parameters instead of complex object
-                await NavigateToAsync("EngineWebViewPage", new Dictionary<string, object>
+                await NavigateToAsync(NavigationRoutes.EngineWebView, new Dictionary<string, object>
                 {
-                    { "EngineName", engineName },
-                    { "Prompt", finalPrompt },
+                    { NavigationParameters.EngineName, engineName },
+                    { NavigationParameters.Prompt, finalPrompt },
                     { "PromptId", promptID }
                 });
             });

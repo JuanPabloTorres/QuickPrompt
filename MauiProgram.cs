@@ -14,6 +14,7 @@ using QuickPrompt.History.Sync;
 using QuickPrompt.History;
 using QuickPrompt.Settings;
 using QuickPrompt.Engines.WebView;
+using QuickPrompt.Constants;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
 
@@ -199,11 +200,11 @@ namespace QuickPrompt
 
         private static void ConfigureRouting()
         {
-            Routing.RegisterRoute(nameof(PromptDetailsPage), typeof(PromptDetailsPage));
-            Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
-            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));
-            Routing.RegisterRoute(nameof(PromptBuilderPage), typeof(PromptBuilderPage));
-            Routing.RegisterRoute(nameof(EngineWebViewPage), typeof(EngineWebViewPage));
+            Routing.RegisterRoute(NavigationRoutes.PromptDetails, typeof(PromptDetailsPage));
+            Routing.RegisterRoute(NavigationRoutes.EditPrompt, typeof(EditPromptPage));
+            Routing.RegisterRoute(NavigationRoutes.Guide, typeof(GuidePage));
+            Routing.RegisterRoute(NavigationRoutes.PromptBuilder, typeof(PromptBuilderPage));
+            Routing.RegisterRoute(NavigationRoutes.EngineWebView, typeof(EngineWebViewPage));
         }
     }
 }
