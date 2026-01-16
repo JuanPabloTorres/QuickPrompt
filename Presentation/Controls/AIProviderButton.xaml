@@ -23,7 +23,7 @@
         <!-- Tap Gesture -->
         <Border.GestureRecognizers>
             <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
-                                  CommandParameter="{Binding ProviderName, Source={x:Reference Root}}" />
+                                  CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}" />
         </Border.GestureRecognizers>
 
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16,12">

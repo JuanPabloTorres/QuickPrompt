@@ -3,7 +3,8 @@
     x:Class="QuickPrompt.Resources.Styles.Converters"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:converters="clr-namespace:QuickPrompt.Converters">
+    xmlns:converters="clr-namespace:QuickPrompt.Converters"
+    xmlns:presentationConverters="clr-namespace:QuickPrompt.Presentation.Converters">
 
     <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
 
@@ -31,5 +32,8 @@
 
     <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
 
+    <!-- 🆕 Integer Converters -->
+    <presentationConverters:IntToBoolConverter x:Key="IntToBoolConverter" />
+    <presentationConverters:IntToInverseBoolConverter x:Key="IntToInverseBoolConverter" />
 
 </ResourceDictionary>

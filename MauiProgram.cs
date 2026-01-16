@@ -194,8 +194,9 @@ namespace QuickPrompt
             builder.Services.AddTransient<SettingPage>();
             builder.Services.AddScoped<QuickPromptPage>();
 
-            // 🆕 NEW PAGES (Step 2)
+            // 🆕 AI PAGES
             builder.Services.AddTransient<EngineWebViewPage>();
+            builder.Services.AddTransient<Features.AI.Pages.AiLauncherPage>();
         }
 
         private static void ConfigureRouting()

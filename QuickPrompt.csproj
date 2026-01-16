@@ -146,6 +146,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="Features\AI\Pages\AiLauncherPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Pages\EditPromptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
@@ -221,7 +224,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="QuickPrompt\Tests\Engines\" />
     <Folder Include="Resources\Images\" />
     <Folder Include="Tests\Engines\" />
   </ItemGroup>
@@ -255,7 +257,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AndroidResource Remove="QuickPrompt\**" />
     <Compile Remove="**/*Tests.cs" />
+    <Compile Remove="QuickPrompt\**" />
+    <EmbeddedResource Remove="QuickPrompt\**" />
+    <MauiCss Remove="QuickPrompt\**" />
+    <MauiXaml Remove="QuickPrompt\**" />
+    <None Remove="QuickPrompt\**" />
   </ItemGroup>
 
 </Project>

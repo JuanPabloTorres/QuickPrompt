@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ResourceDictionary
-    x:Class="QuickPrompt.Resources.Styles.AppColors"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
@@ -15,6 +14,17 @@
     <Color x:Key="TextDark">#333333</Color>
     <Color x:Key="TextLight">#FFFFFF</Color>
     <Color x:Key="AppBlack">#242124</Color>
+
+    <!--  🆕 Additional UI Colors  -->
+    <Color x:Key="AppBackground">#F8F9FA</Color>
+    <Color x:Key="CardBackground">#FFFFFF</Color>
+    <Color x:Key="BorderColor">#E0E0E0</Color>
+    <Color x:Key="TextPrimary">#333333</Color>
+    <Color x:Key="TextSecondary">#666666</Color>
+    <Color x:Key="Success">#10B981</Color>
+    <Color x:Key="Danger">#EF4444</Color>
+    <Color x:Key="Warning">#F59E0B</Color>
+    <Color x:Key="Info">#3B82F6</Color>
 
     <!--  Define the Shadow resource first  -->
     <Shadow
