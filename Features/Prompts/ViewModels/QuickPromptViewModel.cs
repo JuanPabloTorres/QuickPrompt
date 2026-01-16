@@ -2,11 +2,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.Prompts.UseCases;
 using QuickPrompt.Extensions;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
-using QuickPrompt.Pages;
-using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using QuickPrompt.Tools.Messages;
@@ -15,333 +15,303 @@ using System.Collections.ObjectModel;
 
 namespace QuickPrompt.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the Quick Prompt page (main list).
+    /// Refactored to use Use Cases and services - Phase 1.
+    /// </summary>
     public partial class QuickPromptViewModel : BaseViewModel
     {
-        // ======================= 📌 PROPIEDADES =======================
+        // 🆕 Use Cases and Services (injected)
         private readonly IPromptRepository _databaseService;
+        private readonly DeletePromptUseCase _deletePromptUseCase;
+        private readonly IDialogService _dialogService;
 
-        public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();   // Lista de prompts seleccionados para eliminar
-
-        [ObservableProperty] private ObservableCollection<PromptTemplateViewModel> prompts = new();  // Inicializamos la lista vacía
-
+        // Properties
+        public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();
+        [ObservableProperty] private ObservableCollection<PromptTemplateViewModel> prompts = new();
         [ObservableProperty] private string? search;
-
-        [ObservableProperty] private bool isMoreDataAvailable = true;  // Para indicar si hay más datos disponibles
+        [ObservableProperty] private bool isMoreDataAvailable = true;
+        [ObservableProperty] public string selectedCategory = string.Empty;
 
         public BlockHandler<PromptTemplateViewModel> blockHandler = new();
         public bool IsSearchFlag { get; set; }
+        private string oldSearch = string.Empty;
+        private string oldSelectCategory = string.Empty;
+        private Filters oldDateFilter = Filters.All;
 
-        [ObservableProperty] public string selectedCategory = string.Empty;
-
-        // Constructor primario con la lógica de inicialización
-        public QuickPromptViewModel(IPromptRepository _databaseService)
+        // Constructor with dependency injection
+        public QuickPromptViewModel(
+            IPromptRepository databaseService,
+            DeletePromptUseCase deletePromptUseCase,
+            IDialogService dialogService)
         {
-            this._databaseService = _databaseService;
+            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            _deletePromptUseCase = deletePromptUseCase ?? throw new ArgumentNullException(nameof(deletePromptUseCase));
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
+            RegisterMessenger();
+        }
+
+        private void RegisterMessenger()
+        {
             if (!WeakReferenceMessenger.Default.IsRegistered<UpdatedPromptMessage>(this))
             {
                 WeakReferenceMessenger.Default.Register<UpdatedPromptMessage>(this, async (recipient, message) =>
                 {
                     if ((SelectedCategory != message.Value.Category.ToString()) && !string.IsNullOrEmpty(SelectedCategory))
                     {
-                        var _prompToRemoveFromList = prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id);
-
-                        if (prompts.Any() && prompts.Any(v => v.Prompt.Id == _prompToRemoveFromList.Prompt.Id))
+                        var promptToRemove = prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id);
+                        if (prompts.Any() && promptToRemove != null)
                         {
-                            prompts.Remove(_prompToRemoveFromList);
+                            prompts.Remove(promptToRemove);
                         }
                     }
                     else
                     {
-                        if (prompts.Any() && prompts.Any(v => v.Prompt.Id == message.Value.Id))
+                        var existingPrompt = prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id);
+                        if (existingPrompt != null && existingPrompt.Prompt.Category != message.Value.Category)
                         {
-                            var _currentCategory =prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id).Prompt.Category;
-
-                            if (_currentCategory != message.Value.Category)
-                            {
-                                prompts.FirstOrDefault(v => v.Prompt.Id == message.Value.Id).Prompt.Category = message.Value.Category;
-                            }
+                            existingPrompt.Prompt.Category = message.Value.Category;
                         }
                     }
                 });
             }
         }
 
-        // ======================= 📌 MÉTODO PRINCIPAL: Cargar Prompts =======================
+        // ============================ LOAD PROMPTS ============================
+
         [RelayCommand]
         public async Task LoadInitialPrompts()
         {
             ToggleSearchFlag(false);
-
-            if (IsAllSelected)
-            {
-                IsAllSelected = false;
-            }
-
-            // Reiniciar la configuración inicial
+            IsAllSelected = false;
             blockHandler.Reset();
-
             Prompts.Clear();
-
             SelectedPromptsToDelete.Clear();
-
             Search = string.Empty;
-
             SelectedCategory = string.Empty;
-
             SelectedDateFilter = Filters.All;
 
-            // Actualizar el total de prompts y cargar el primer bloque
             await LoadPromptsAsync();
         }
 
-        public void ToggleSearchFlag(bool on_Or_off)
-        {
-            this.IsSearchFlag = on_Or_off;
-        }
+        public void ToggleSearchFlag(bool onOrOff) => IsSearchFlag = onOrOff;
 
-        /// <summary>
-        /// Devuelve el valor de la cadena de búsqueda actual.
-        /// </summary>
-        public string GetSearchValue()
-        {
-            return Search;
-        }
+        public string GetSearchValue() => Search ?? string.Empty;
 
-        public Filters GetFilterValue()
-        {
-            return selectedDateFilter;
-        }
+        public Filters GetFilterValue() => selectedDateFilter;
 
-        /// <summary>
-        /// Actualiza el total de prompts disponibles en la base de datos, considerando el filtro si
-        /// se proporciona.
-        /// </summary>
-        public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string filter = null, string category = null)
+        public async Task UpdateTotalPromptsCountAsync(Filters dateFilter = Filters.All, string? filter = null, string? category = null)
         {
-            // Obtener el total de prompts de la base de datos, con o sin filtro
             blockHandler.CountInDB = await _databaseService.GetTotalPromptsCountAsync(filter, dateFilter, category);
         }
 
-        /// <summary>
-        /// Verifica si hay más datos disponibles para cargar y actualiza la propiedad correspondiente.
-        /// </summary>
-        public async Task CheckForMorePromptsAsync(Filters dateFilter = Filters.All, string filter = null, string category = null)
+        public async Task CheckForMorePromptsAsync(Filters dateFilter = Filters.All, string? filter = null, string? category = null)
         {
             await UpdateTotalPromptsCountAsync(dateFilter, filter, category);
-
-            // Asignar directamente si hay más datos disponibles
             IsMoreDataAvailable = blockHandler.HasMoreData();
         }
 
         public override void TogglePromptSelection(PromptTemplateViewModel prompt)
         {
             if (SelectedPromptsToDelete.Contains(prompt))
-            {
-                SelectedPromptsToDelete.Remove(prompt);  // Si ya estaba seleccionado, lo deseleccionamos
-            }
+                SelectedPromptsToDelete.Remove(prompt);
             else
-            {
-                SelectedPromptsToDelete.Add(prompt);  // Si no estaba seleccionado, lo agregamos
-            }
+                SelectedPromptsToDelete.Add(prompt);
         }
 
-        /// <summary>
-        /// Carga más prompts o aplica el filtro de búsqueda si se especifica.
-        /// </summary>
         [RelayCommand]
         public async Task LoadMorePrompts()
         {
-            // Validación: al menos un criterio debe estar presente
             bool isSearchEmpty = string.IsNullOrWhiteSpace(Search);
-
             bool isFilterEmpty = SelectedDateFilter == Filters.None;
-
             bool isSelectedCategoryEmpty = string.IsNullOrEmpty(SelectedCategory);
 
             if (isSearchEmpty || isFilterEmpty || isSelectedCategoryEmpty)
-            {
                 await LoadPromptsAsync();
-            }
             else
-            {
                 await FilterPromptsAsync();
-            }
         }
 
-        /// <summary>
-        /// Carga el próximo bloque de prompts desde la base de datos y actualiza la lista.
-        /// </summary>
         public async Task LoadPromptsAsync()
         {
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
                 await BlockDataHandler();
-            }, AppMessagesEng.Prompts.PromptLoadError);
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"{AppMessagesEng.Prompts.PromptLoadError}: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        // ======================= 🔍 FILTRAR PROMPTS =======================
+        // ============================ FILTERING ============================
+
         [RelayCommand]
         private async Task FilterPromptsAsync()
         {
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
-                // Verificar si cambió la búsqueda o el filtro
                 bool searchChanged = !string.Equals(oldSearch, Search, StringComparison.OrdinalIgnoreCase);
-
                 bool filterChanged = oldDateFilter != SelectedDateFilter;
+                bool categoryChanged = oldSelectCategory != SelectedCategory;
 
-                bool categoryChange = oldSelectCategory != SelectedCategory;
-
-                // Reiniciar búsqueda si es necesario
-                if (!IsSearchFlag || searchChanged || filterChanged || categoryChange)
+                if (!IsSearchFlag || searchChanged || filterChanged || categoryChanged)
                 {
                     ToggleSearchFlag(true);
-
                     blockHandler.Reset();
-
                     Prompts.Clear();
-
-                    oldSearch = Search;
-
+                    oldSearch = Search ?? string.Empty;
                     oldDateFilter = SelectedDateFilter;
-
-                    oldSelectCategory = Enum.TryParse<PromptCategory>(SelectedCategory?.ToString(), out var category) ? category.ToString() : PromptCategory.General.ToString();
+                    oldSelectCategory = SelectedCategory ?? PromptCategory.General.ToString();
                 }
 
                 await BlockDataHandler();
-            }, AppMessagesEng.Prompts.PromptLoadError);
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"{AppMessagesEng.Prompts.PromptLoadError}: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private async Task BlockDataHandler()
         {
-            // Actualizar conteo total según los filtros actuales
             await UpdateTotalPromptsCountAsync(SelectedDateFilter, Search, SelectedCategory);
 
-            // Calcular el desplazamiento y ajustarlo para evitar duplicados
             int toSkip = blockHandler.AdjustToSkip(blockHandler.ToSkip(), Prompts.Count);
-
-            // Calcular el tamaño del lote sin exceder los datos disponibles
             int batchSize = Math.Min(BlockHandler<PromptTemplate>.SIZE, Math.Max(0, blockHandler.CountInDB - toSkip));
 
-            // Cargar el bloque de prompts
-            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, this.Search, SelectedCategory);
+            var promptList = await _databaseService.GetPromptsByBlockAsync(toSkip, batchSize, SelectedDateFilter, Search, SelectedCategory);
 
             if (promptList.Any())
             {
-                // Agregar los nuevos prompts y ordenar la colección
-                Prompts.AddRange(promptList.ToViewModelObservableCollection(this._databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
-
+                Prompts.AddRange(promptList.ToViewModelObservableCollection(_databaseService, TogglePromptSelection, DeletePromptAsync, NavigateTo));
                 Prompts = Prompts.OrderBy(p => p.Prompt.Title).ToObservableCollection();
-
-                // Actualizar los datos en el BlockHandler y avanzar al siguiente bloque
                 blockHandler.Data = Prompts;
-
                 blockHandler.NextBlock();
             }
 
-            // Verificar si hay más datos por cargar
-            await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
+            await CheckForMorePromptsAsync(SelectedDateFilter, Search, SelectedCategory);
         }
 
-        // ======================= 🔄 REFRESCAR PROMPTS =======================
         [RelayCommand]
-        private async Task RefreshPrompts()
-        {
-            await LoadInitialPrompts();
-        }
+        private async Task RefreshPrompts() => await LoadInitialPrompts();
 
-        // ======================= ❌ ELIMINAR UN PROMPT =======================
+        // ============================ DELETE PROMPTS ============================
 
         public override async void DeletePromptAsync(PromptTemplateViewModel selectedPrompt)
         {
             if (selectedPrompt == null) return;
 
-            bool confirm = await AppShell.Current.DisplayAlert(
+            bool confirm = await _dialogService.ShowConfirmationAsync(
                 "Confirm Deletion",
                 $"Are you sure you want to delete the prompt \"{selectedPrompt.Prompt.Title}\"?",
-                "Delete", "Cancel");
+                "Delete",
+                "Cancel");
 
-            if (confirm)
+            if (!confirm) return;
+
+            IsLoading = true;
+            try
             {
-                await ExecuteWithLoadingAsync(async () =>
+                var result = await _deletePromptUseCase.ExecuteAsync(selectedPrompt.Prompt.Id);
+
+                if (result.IsFailure)
                 {
-                    await _databaseService.DeletePromptAsync(selectedPrompt.Prompt.Id);
+                    await _dialogService.ShowErrorAsync(result.Error);
+                    return;
+                }
 
-                    Prompts.Remove(selectedPrompt);
+                Prompts.Remove(selectedPrompt);
+                await CheckForMorePromptsAsync(SelectedDateFilter, Search, SelectedCategory);
 
-                    // Verificar si hay más datos por cargar
-                    await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
-
-                    await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
-                }, AppMessagesEng.Prompts.PromptDeleteError);
+                await _dialogService.ShowLottieMessageAsync(
+                    "RemoveComplete1.json",
+                    $"The prompt {selectedPrompt.Prompt.Title} has been deleted.");
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"{AppMessagesEng.Prompts.PromptDeleteError}: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
-        // ======================= 📌 Comando para eliminar prompts seleccionados =======================
         [RelayCommand]
         public async Task DeleteSelectedPromptsAsync()
         {
             if (!SelectedPromptsToDelete.Any())
             {
-                await AppShell.Current.DisplayAlert("Notification", "No items selected for deletion.", "OK");
+                await _dialogService.ShowAlertAsync("Notification", "No items selected for deletion.");
                 return;
             }
 
-            bool confirm = await AppShell.Current.DisplayAlert(
+            bool confirm = await _dialogService.ShowConfirmationAsync(
                 "Confirm Deletion",
                 $"Are you sure you want to delete {SelectedPromptsToDelete.Count} selected items?",
-                "Delete", "Cancel");
+                "Delete",
+                "Cancel");
 
-            if (confirm)
+            if (!confirm) return;
+
+            IsLoading = true;
+            try
             {
-                await ExecuteWithLoadingAsync(async () =>
+                foreach (var prompt in SelectedPromptsToDelete.ToList())
                 {
-                    foreach (var prompt in SelectedPromptsToDelete.ToList())
+                    var result = await _deletePromptUseCase.ExecuteAsync(prompt.Prompt.Id);
+                    
+                    if (result.IsSuccess)
                     {
-                        await _databaseService.DeletePromptAsync(prompt.Prompt.Id);
-
                         Prompts.Remove(prompt);
-
-                        SelectedPromptsToDelete.Remove(prompt);  // Asegurarse de limpiar la lista seleccionada
+                        SelectedPromptsToDelete.Remove(prompt);
                     }
+                }
 
-                    // Actualizar el BlockHandler y verificar si hay más datos
-                    blockHandler.Data = Prompts;
+                blockHandler.Data = Prompts;
+                await CheckForMorePromptsAsync(SelectedDateFilter, Search, SelectedCategory);
 
-                   
+                if (IsMoreDataAvailable)
+                {
+                    await LoadInitialPrompts();
+                }
 
-                    // Verificar si hay más datos por cargar
-                    await CheckForMorePromptsAsync(this.SelectedDateFilter, this.Search, SelectedCategory);
+                await _dialogService.ShowLottieMessageAsync(
+                    "RemoveComplete1.json",
+                    AppMessagesEng.Prompts.PromptsDeletedSuccess);
 
-                    // Verificar si hay más datos disponibles
-                    if (IsMoreDataAvailable)
-                    {
-                        //blockHandler.NextBlock();
-
-                        await LoadInitialPrompts();
-                    }
-
-                    await GenericToolBox.ShowLottieMessageAsync("RemoveComplete1.json", AppMessagesEng.Prompts.PromptsDeletedSuccess);
-
-                    this.IsAllSelected = false;
-
-                }, AppMessagesEng.Prompts.PromptDeleteError);
+                IsAllSelected = false;
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"{AppMessagesEng.Prompts.PromptDeleteError}: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
-        // ======================= 📌 Lógica de selección =======================
+        // ============================ FAVORITES ============================
 
-        /// <summary>
-        /// Alterna el estado de favorito de un prompt.
-        /// </summary>
         [RelayCommand]
         private async Task ToggleFavorite(PromptTemplateViewModel prompt)
         {
             if (prompt == null) return;
 
             prompt.IsFavorite = !prompt.IsFavorite;
-
             await _databaseService.UpdateFavoriteStatusAsync(prompt.Prompt.Id, prompt.IsFavorite);
 
             if (!prompt.IsFavorite && SelectedDateFilter == Filters.Favorites)
@@ -359,7 +329,6 @@ namespace QuickPrompt.ViewModels
         private void SelectFilter(Filters filter)
         {
             SelectedDateFilter = filter;
-
             FilterPromptsCommand.Execute(null);
         }
     }
