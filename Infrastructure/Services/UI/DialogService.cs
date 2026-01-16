@@ -51,14 +51,15 @@ public class DialogService : IDialogService
 
         try
         {
-            var popup = new LottieMessagePopup(animationFileName, message);
+            // Create popup with auto-close duration
+            var popup = new LottieMessagePopup(animationFileName, message, durationMs);
 
-            await MauiApp.Current.MainPage.ShowPopupAsync(popup);
+            // Show popup - it will auto-close after the specified duration
+            // Don't await ShowPopupAsync as it will block until the popup is closed
+            _ = MauiApp.Current.MainPage.ShowPopupAsync(popup);
 
-            // Auto-close after duration
-            await Task.Delay(durationMs);
-
-            popup.Close();
+            // Note: The popup handles its own closing via CloseAfterDelay internal method
+            // We don't need to manually close it here
         }
         catch (Exception ex)
         {
