@@ -17,6 +17,9 @@ using QuickPrompt.Engines.WebView;
 using QuickPrompt.Constants;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.Infrastructure.Services.Cache;
+using QuickPrompt.Infrastructure.Services.UI;
 
 namespace QuickPrompt
 {
@@ -94,6 +97,10 @@ namespace QuickPrompt
         // Registra los servicios necesarios en el contenedor de dependencias
         private static void RegisterServices(MauiAppBuilder builder, IConfiguration appSettings)
         {
+            // 🆕 PHASE 1: Application Layer Services
+            builder.Services.AddSingleton<IDialogService, DialogService>();
+            builder.Services.AddSingleton<IPromptCacheService, PromptCacheService>();
+
             // ✅ Database
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
