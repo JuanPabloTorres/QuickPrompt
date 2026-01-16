@@ -18,6 +18,7 @@ using QuickPrompt.Constants;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
 using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.Prompts.UseCases;
 using QuickPrompt.Infrastructure.Services.Cache;
 using QuickPrompt.Infrastructure.Services.UI;
 
@@ -100,6 +101,13 @@ namespace QuickPrompt
             // 🆕 PHASE 1: Application Layer Services
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IPromptCacheService, PromptCacheService>();
+
+            // 🆕 PHASE 1: Use Cases
+            builder.Services.AddTransient<CreatePromptUseCase>();
+            builder.Services.AddTransient<UpdatePromptUseCase>();
+            builder.Services.AddTransient<DeletePromptUseCase>();
+            builder.Services.AddTransient<ExecutePromptUseCase>();
+            builder.Services.AddTransient<GetPromptByIdUseCase>();
 
             // ✅ Database
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
