@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="QuickPrompt.Pages.PromptDetailsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:models="clr-namespace:QuickPrompt.Models"
+    xmlns:view="clr-namespace:QuickPrompt.Views"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
+    x:Name="promptDetailsPage"
+    BackgroundColor="GhostWhite"
+    Shell.PresentationMode="Animated">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
+
+    <Shell.TitleView>
+        <views:TitleHeader
+            Title="Prompt Designer"
+            BackCommand="{Binding MyBackCommand}"
+            Glyph="&#xe5e0;"
+            ShowBackButton="True" />
+    </Shell.TitleView>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem
+            Command="{Binding SharePromptCommand}"
+            IsEnabled="{Binding IsShareButtonVisible}"
+            Text="Compartir">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe80d;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+
+        <ToolbarItem
+            Command="{Binding NavigateToEditPromptCommand}"
+            CommandParameter="{Binding PromptID}"
+            Text="Editar">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe3c9;"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </ToolbarItem.IconImageSource>
+        </ToolbarItem>
+
+        <!--  Botón de Copiar  -->
+        <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe5c9;"
+                    Color="{StaticResource PrimaryRed}" />
+                <!--  Color asociado al botón Copiar  -->
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>
+                Click to Clear Text
+            </ToolTipProperties.Text>
+        </ToolbarItem>
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+
+        <VerticalStackLayout
+            Padding="20"
+            Spacing="15"
+            VerticalOptions="Fill">
+
+            <!--  Título Principal  -->
+            <Label
+                FontAttributes="Bold"
+                FontSize="24"
+                HorizontalOptions="Center"
+                Text="{Binding PromptTitle}"
+                TextColor="{StaticResource PrimaryBlueDark}" />
+
+            <!--  Categoría del Prompt  -->
+            <Label
+                Margin="0,2,0,0"
+                Padding="6,2"
+                BackgroundColor="{StaticResource PrimaryRed}"
+                FontAttributes="Bold"
+                FontSize="13"
+                HorizontalOptions="Start"
+                Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
+                TextColor="White"
+                VerticalOptions="Center" />
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
+            <!--  Descripción  -->
+            <Label
+                FontSize="16"
+                HorizontalOptions="Center"
+                Text="{Binding Description}"
+                TextColor="{StaticResource PrimaryBlueLight}" />
+
+            <!--  Prompt Principal  -->
+            <Border
+                Padding="12"
+                BackgroundColor="#F6F6F6"
+                Stroke="#DDDDDD"
+                StrokeShape="RoundRectangle 8"
+                StrokeThickness="1">
+
+                <Label
+                    FontSize="16"
+                    Text="{Binding PromptText}"
+                    TextColor="{StaticResource PrimaryBlueLight}" />
+            </Border>
+
+            <ScrollView>
+                <VerticalStackLayout>
+                    <Label
+                        Margin="0,10,0,0"
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        Text="Complete the Variables:"
+                        TextColor="{StaticResource AppBlack}" />
+
+                    <!--  Línea divisoria  -->
+                    <BoxView Style="{StaticResource DividerLineStyle}" />
+
+                    <CollectionView
+                        x:Name="VariablesCollection"
+                        Margin="0,5"
+                        ItemsSource="{Binding Variables}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <VerticalStackLayout Padding="6" Spacing="6">
+
+                                    <Label
+                                        FontAttributes="Bold"
+                                        FontSize="16"
+                                        Text="{Binding Name}"
+                                        TextColor="{StaticResource PrimaryBlueDark}" />
+
+                                    <Border Style="{StaticResource InputBorderStyle}">
+                                        <Entry
+                                            Focused="OnEntryFocused"
+                                            Placeholder="Enter value here..."
+                                            Style="{StaticResource VariableInputEntryStyle}"
+                                            Text="{Binding Value}"
+                                            Unfocused="OnEntryUnfocused">
+
+                                            <Entry.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnEntryTapped" />
+                                            </Entry.GestureRecognizers>
+                                        </Entry>
+                                    </Border>
+
+                                    <!--  Sugerencias desde caché  -->
+                                    <CollectionView
+                                        Margin="0,4"
+                                        IsVisible="{Binding ShowSuggestions}"
+                                        ItemsLayout="HorizontalList"
+                                        ItemsSource="{Binding Suggestions}"
+                                        SelectionMode="None">
+
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource SuggestionChipBorderStyle}">
+                                                    <Label
+                                                        Style="{StaticResource SuggestionChipLabelStyle}"
+                                                        Text="{Binding .}"
+                                                        TextColor="Gray">
+                                                        <Label.GestureRecognizers>
+                                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" CommandParameter="{Binding .}" />
+                                                        </Label.GestureRecognizers>
+                                                    </Label>
+                                                </Border>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!--  Botón Generar Prompt  -->
+            <Button
+                Command="{Binding GeneratePromptCommand}"
+                Style="{StaticResource YellowButtonStyle}"
+                Text="Generate Prompt"
+                TextColor="White">
+                <Button.ImageSource>
+                    <FontImageSource
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe26c;"
+                        Color="White" />
+                </Button.ImageSource>
+            </Button>
+
+            <!--  Prompt Generado  -->
+            <Label
+                Margin="0,10"
+                FontAttributes="Italic"
+                FontSize="15"
+                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
+                LineBreakMode="WordWrap"
+                Text="{Binding FinalPrompt, StringFormat='Complete Prompt Generated: {0}'}"
+                TextColor="{StaticResource AppBlack}" />
+
+            <!--  Línea divisoria  -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
+            <!--  Instrucciones finales  -->
+            <Label
+                Margin="0,10,0,5"
+                FontSize="18"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"
+                IsVisible="{Binding ShowPromptActions}"
+                Text="🤖 Select an AI Provider"
+                TextColor="{StaticResource PrimaryBlueDark}" />
+
+            <!--  Botones AI en grid para mejor layout  -->
+            <Grid
+                ColumnDefinitions="*,*"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="12"
+                RowSpacing="12"
+                IsVisible="{Binding ShowPromptActions}"
+                Margin="0,5,0,20">
+
+                <!-- ChatGPT -->
+                <Button
+                    Grid.Row="0" Grid.Column="0"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="ChatGPT"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
+                    </Button.CommandParameter>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!-- Gemini -->
+                <Button
+                    Grid.Row="0" Grid.Column="1"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Gemini"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="GeminiPage" ToolName="Gemini" />
+                    </Button.CommandParameter>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!-- Grok -->
+                <Button
+                    Grid.Row="1" Grid.Column="0"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Grok"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
+                    </Button.CommandParameter>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+
+                <!-- Copilot -->
+                <Button
+                    Grid.Row="1" Grid.Column="1"
+                    Style="{StaticResource AiButtonStyle}"
+                    Text="Copilot"
+                    TextColor="{StaticResource TextLight}">
+                    <Button.Command>
+                        <Binding Path="SendPromptToCommand" />
+                    </Button.Command>
+                    <Button.CommandParameter>
+                        <models:NavigationParams PageName="CopilotChatPage" ToolName="Copilot" />
+                    </Button.CommandParameter>
+                    <Button.ImageSource>
+                        <FontImageSource
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            Glyph="&#xf06c;"
+                            Color="{StaticResource TextLight}" />
+                    </Button.ImageSource>
+                </Button>
+            </Grid>
+
+            <!--  Overlay de carga  -->
+            <view:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                IsVisible="{Binding IsLoading}"
+                Message="Loading..." />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

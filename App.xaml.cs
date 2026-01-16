@@ -4,34 +4,87 @@ namespace QuickPrompt
 {
     public partial class App : Application
     {
-
         DatabaseServiceManager _databaseServiceManager;
 
         public App(DatabaseServiceManager databaseServiceManager)
         {
-            InitializeComponent();
+            global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Starting...");
 
-            _databaseServiceManager = databaseServiceManager;
-
-            Task.Run(async () =>
+            try
             {
-                await _databaseServiceManager.InitializeAsync();
-            });
+                InitializeComponent();
+                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] InitializeComponent completed");
+
+                _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
+                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] DatabaseServiceManager injected");
+
+                // ✅ Database initialization in background with error handling
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        global::System.Diagnostics.Debug.WriteLine("[App] Database initialization starting...");
+                        await _databaseServiceManager.InitializeAsync();
+                        global::System.Diagnostics.Debug.WriteLine("[App] Database initialization completed");
+                    }
+                    catch (Exception ex)
+                    {
+                        global::System.Diagnostics.Debug.WriteLine($"[App] Database initialization error: {ex.GetType().Name}: {ex.Message}");
+                        // Don't throw - app should continue without database error
+                    }
+                });
+
+                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Constructor completed successfully");
+            }
+            catch (Exception ex)
+            {
+                global::System.Diagnostics.Debug.WriteLine($"[App.Constructor] FATAL ERROR: {ex.GetType().Name}: {ex.Message}");
+                global::System.Diagnostics.Debug.WriteLine($"[App.Constructor] StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var window = new Window
-            {
-                Page = new AppShell() // ← Aquí especificas el Shell como la página raíz
-            };
+            global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Starting...");
 
-            return window;
+            try
+            {
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating AppShell...");
+                var shell = new AppShell();
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] AppShell created successfully");
+
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating Window...");
+                var window = new Window
+                {
+                    Page = shell
+                };
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Window created successfully");
+
+                return window;
+            }
+            catch (Exception ex)
+            {
+                global::System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] FATAL ERROR: {ex.GetType().Name}: {ex.Message}");
+                global::System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         protected override void OnStart()
         {
-            PromptCacheCleanupService.RunCleanupIfDue();
+            global::System.Diagnostics.Debug.WriteLine("[App.OnStart] Starting...");
+
+            try
+            {
+                PromptCacheCleanupService.RunCleanupIfDue();
+                global::System.Diagnostics.Debug.WriteLine("[App.OnStart] Cache cleanup completed");
+            }
+            catch (Exception ex)
+            {
+                global::System.Diagnostics.Debug.WriteLine($"[App.OnStart] Error in cache cleanup: {ex.GetType().Name}: {ex.Message}");
+                // Don't throw - not critical
+            }
         }
     }
 }

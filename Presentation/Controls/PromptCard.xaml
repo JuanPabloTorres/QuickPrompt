@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="QuickPrompt.Controls.PromptCard"
+             x:Name="Root">
+
+    <Border BackgroundColor="{StaticResource Gray100}"
+            StrokeThickness="0"
+            Padding="16"
+            Margin="8,4">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="12" />
+        </Border.StrokeShape>
+        
+        <!-- Shadow Effect -->
+        <Border.Shadow>
+            <Shadow Brush="{StaticResource AppBlack}"
+                    Opacity="0.1"
+                    Radius="8"
+                    Offset="0,2" />
+        </Border.Shadow>
+
+        <!-- Tap Gesture -->
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding TapCommand, Source={x:Reference Root}}"
+                                  CommandParameter="{Binding BindingContext, Source={x:Reference Root}}" />
+        </Border.GestureRecognizers>
+
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8">
+
+            <!-- Title Row -->
+            <Label Grid.Row="0" Grid.Column="0"
+                   Text="{Binding Title, Source={x:Reference Root}}"
+                   FontSize="16"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource Gray900}"
+                   LineBreakMode="TailTruncation"
+                   MaxLines="2" />
+
+            <!-- Favorite Button -->
+            <Button Grid.Row="0" Grid.Column="1"
+                    Text="&#xe87d;"
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    FontSize="24"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding IsFavorite, Source={x:Reference Root}, Converter={StaticResource BooleanToStarIconConverter}}"
+                    Command="{Binding FavoriteCommand, Source={x:Reference Root}}"
+                    CommandParameter="{Binding BindingContext, Source={x:Reference Root}}"
+                    Padding="0"
+                    WidthRequest="40"
+                    HeightRequest="40"
+                    VerticalOptions="Start" />
+
+            <!-- Description/Preview -->
+            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                   Text="{Binding Description, Source={x:Reference Root}}"
+                   FontSize="14"
+                   TextColor="{StaticResource Gray600}"
+                   LineBreakMode="TailTruncation"
+                   MaxLines="2"
+                   IsVisible="{Binding ShowDescription, Source={x:Reference Root}}" />
+
+            <!-- Metadata Row -->
+            <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                   Spacing="12">
+                
+                <!-- Category Badge -->
+                <Border BackgroundColor="{Binding CategoryColor, Source={x:Reference Root}}"
+                        Padding="8,4"
+                        IsVisible="{Binding ShowCategory, Source={x:Reference Root}}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="4" />
+                    </Border.StrokeShape>
+                    <Label Text="{Binding Category, Source={x:Reference Root}}"
+                           FontSize="12"
+                           FontAttributes="Bold"
+                           TextColor="White" />
+                </Border>
+
+                <!-- Variables Count -->
+                <HorizontalStackLayout Spacing="4"
+                                       IsVisible="{Binding ShowVariableCount, Source={x:Reference Root}}">
+                    <Label Text="&#xe3c9;"
+                           FontFamily="MaterialIconsOutlined-Regular"
+                           FontSize="16"
+                           TextColor="{StaticResource Gray500}"
+                           VerticalOptions="Center" />
+                    <Label Text="{Binding VariableCount, Source={x:Reference Root}, StringFormat='{0} variables'}"
+                           FontSize="12"
+                           TextColor="{StaticResource Gray600}"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Usage Count -->
+                <HorizontalStackLayout Spacing="4"
+                                       IsVisible="{Binding ShowUsageCount, Source={x:Reference Root}}">
+                    <Label Text="&#xe8fd;"
+                           FontFamily="MaterialIconsOutlined-Regular"
+                           FontSize="16"
+                           TextColor="{StaticResource Gray500}"
+                           VerticalOptions="Center" />
+                    <Label Text="{Binding UsageCount, Source={x:Reference Root}, StringFormat='{0} uses'}"
+                           FontSize="12"
+                           TextColor="{StaticResource Gray600}"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+            </HorizontalStackLayout>
+
+            <!-- Date/Time -->
+            <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                   Text="{Binding DateText, Source={x:Reference Root}}"
+                   FontSize="12"
+                   TextColor="{StaticResource Gray500}"
+                   IsVisible="{Binding ShowDate, Source={x:Reference Root}}" />
+
+        </Grid>
+    </Border>
+
+</ContentView>

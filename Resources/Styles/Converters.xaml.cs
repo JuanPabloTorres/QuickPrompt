@@ -2,8 +2,8 @@ namespace QuickPrompt.Resources.Styles;
 
 public partial class Converters : ResourceDictionary
 {
-	public Converters()
-	{
-		InitializeComponent();
-	}
+    public Converters()
+    {
+        InitializeComponent();
+    }
 }

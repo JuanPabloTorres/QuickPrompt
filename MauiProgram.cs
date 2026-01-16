@@ -8,6 +8,13 @@ using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.ViewModels;
+using QuickPrompt.Engines.Injection;
+using QuickPrompt.History.Repositories;
+using QuickPrompt.History.Sync;
+using QuickPrompt.History;
+using QuickPrompt.Settings;
+using QuickPrompt.Engines.WebView;
+using QuickPrompt.Constants;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
 
@@ -34,16 +41,14 @@ namespace QuickPrompt
 #if DEBUG
             builder.Logging.AddDebug();
 #else
-            builder.Logging.AddConsole(); // Habilita logging en release
+            builder.Logging.AddConsole();
 #endif
 
             var mauiApp = builder.Build();
 
-            //Ioc.Default.ConfigureServices(mauiApp.Services);
-
             InitializeIoC(mauiApp);
 
-            return builder.Build();
+            return mauiApp; // ✅ FIX: Retornar el mauiApp que ya fue built
         }
 
         // Configura el builder base de la aplicación
@@ -89,30 +94,71 @@ namespace QuickPrompt
         // Registra los servicios necesarios en el contenedor de dependencias
         private static void RegisterServices(MauiAppBuilder builder, IConfiguration appSettings)
         {
-            var apiKey = appSettings["GPTApiKeys:Key1"];
-
-            // ✅ Registro único de la conexión compartida
+            // ✅ Database
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
-
-
-            // 🧠 Repositorio de Prompts usando el patrón Repository
+            // ✅ Existing Repositories
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
-
             builder.Services.AddSingleton<IFinalPromptRepository, FinalPromptRepository>();
-
-            // 🔹 Servicio gestor para operaciones como RestoreDatabase
             builder.Services.AddSingleton<DatabaseServiceManager>();
 
-            builder.Services.AddSingleton<IChatGPTService>(sp => new ChatGPTService(apiKey));
+            // ✅ Existing Services
+            builder.Services.AddSingleton<AdmobService>();
 
-            // Registrar configuración de versión como servicio
+            // 🆕 ENGINE SERVICES
+            builder.Services.AddSingleton<IWebViewInjectionService, WebViewInjectionService>();
+
+            // 🆕 HISTORY SERVICES
+            builder.Services.AddSingleton<IExecutionHistoryRepository>(sp =>
+            {
+                var dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
+                return new SqliteExecutionHistoryRepository(dbPath);
+            });
+
+            builder.Services.AddSingleton<IExecutionHistoryCloudRepository>(sp =>
+            {
+                // TODO: Replace with real Firestore repo when Firebase is configured
+                return new NullExecutionHistoryCloudRepository();
+            });
+
+            builder.Services.AddSingleton<SyncService>(sp =>
+            {
+                var localRepo = sp.GetRequiredService<IExecutionHistoryRepository>();
+                var cloudRepo = sp.GetRequiredService<IExecutionHistoryCloudRepository>();
+                var sessionService = sp.GetRequiredService<ISessionService>();
+                var settingsService = sp.GetRequiredService<ISettingsService>();
+
+                return new SyncService(
+                    localRepo,
+                    cloudRepo,
+                    () => sessionService.IsLoggedIn,
+                    () =>
+                    {
+                        var settings = settingsService.GetSettingsAsync().GetAwaiter().GetResult();
+                        return settings.CloudSyncEnabled;
+                    }
+                );
+            });
+
+            builder.Services.AddSingleton<ExecutionHistoryIntegration>(sp =>
+            {
+                var localRepo = sp.GetRequiredService<IExecutionHistoryRepository>();
+                var syncService = sp.GetRequiredService<SyncService>();
+                var deviceId = Preferences.Get("DeviceId", Guid.NewGuid().ToString());
+                Preferences.Set("DeviceId", deviceId);
+                return new ExecutionHistoryIntegration(localRepo, syncService, deviceId);
+            });
+
+            // 🆕 SETTINGS SERVICES
+            builder.Services.AddSingleton<ISettingsService, SettingsService>();
+            builder.Services.AddSingleton<ISessionService, SessionService>();
+
+            // ✅ Config
             var appSettingsModel = new AppSettings
             {
-                Version = appSettings["AppSettings:Version"] ?? "1.0.0", // Valor predeterminado si no se encuentra
+                Version = appSettings["AppSettings:Version"] ?? "1.0.0",
             };
 
-            // 🔹 Registrar configuración de AdMob utilizando IOptions
             builder.Services.Configure<AdMobSettings>(options =>
             {
                 options.InterstitialAdId = appSettings["AdMobSettings:InterstitialAdId"] ?? string.Empty;
@@ -121,67 +167,44 @@ namespace QuickPrompt
             });
 
             builder.Services.AddSingleton(appSettingsModel);
-
-            builder.Services.AddSingleton<AdmobService>();
         }
 
-        // Registra los ViewModels en el contenedor de dependencias
         private static void RegisterViewModels(MauiAppBuilder builder)
         {
-            // ViewModels que necesitan recrearse en cada navegación
+            // Existing ViewModels
             builder.Services.AddTransient<MainPageViewModel>();
-
             builder.Services.AddTransient<SettingViewModel>();
-
             builder.Services.AddScoped<PromptDetailsPageViewModel>();
-
             builder.Services.AddScoped<EditPromptPageViewModel>();
-
             builder.Services.AddScoped<QuickPromptViewModel>();
-
             builder.Services.AddScoped<AdmobBannerViewModel>();
-
-            builder.Services.AddTransient<AiWebViewPageViewModel>();
-
             builder.Services.AddTransient<AiLauncherViewModel>();
-
             builder.Services.AddTransient<PromptBuilderPageViewModel>();
+
+            // 🆕 NEW VIEWMODELS (Step 4)
+            builder.Services.AddTransient<SettingsViewModel>();
         }
 
-        // Registra las páginas en el contenedor de dependencias
         private static void RegisterPages(MauiAppBuilder builder)
         {
+            // Existing Pages
             builder.Services.AddTransient<MainPage>();
-
             builder.Services.AddTransient<PromptDetailsPage>();
-
             builder.Services.AddTransient<EditPromptPage>();
-
             builder.Services.AddTransient<SettingPage>();
-
             builder.Services.AddScoped<QuickPromptPage>();
+
+            // 🆕 NEW PAGES (Step 2)
+            builder.Services.AddTransient<EngineWebViewPage>();
         }
 
-        // Configura las rutas para la navegación
         private static void ConfigureRouting()
         {
-            Routing.RegisterRoute(nameof(PromptDetailsPage), typeof(PromptDetailsPage));
-
-            Routing.RegisterRoute(nameof(EditPromptPage), typeof(EditPromptPage));
-
-            Routing.RegisterRoute(nameof(GuidePage), typeof(GuidePage));
-
-            Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-
-            Routing.RegisterRoute(nameof(ChatGptPage), typeof(ChatGptPage));
-
-            Routing.RegisterRoute(nameof(GeminiPage), typeof(GeminiPage));
-
-            Routing.RegisterRoute(nameof(GrokPage), typeof(GrokPage));
-
-            Routing.RegisterRoute(nameof(CopilotChatPage), typeof(CopilotChatPage));
-
-            Routing.RegisterRoute(nameof(PromptBuilderPage), typeof(PromptBuilderPage));
+            Routing.RegisterRoute(NavigationRoutes.PromptDetails, typeof(PromptDetailsPage));
+            Routing.RegisterRoute(NavigationRoutes.EditPrompt, typeof(EditPromptPage));
+            Routing.RegisterRoute(NavigationRoutes.Guide, typeof(GuidePage));
+            Routing.RegisterRoute(NavigationRoutes.PromptBuilder, typeof(PromptBuilderPage));
+            Routing.RegisterRoute(NavigationRoutes.EngineWebView, typeof(EngineWebViewPage));
         }
     }
 }

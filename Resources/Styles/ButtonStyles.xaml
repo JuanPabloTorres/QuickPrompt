@@ -33,6 +33,61 @@
         </Style.Triggers>
     </Style>
 
+    <!--  🆕 Modern Primary Button  -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinimumWidthRequest" Value="120" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow
+                    Brush="{StaticResource AppBlack}"
+                    Opacity="0.2"
+                    Radius="8"
+                    Offset="0,2" />
+            </Setter.Value>
+        </Setter>
+
+        <Style.Triggers>
+            <Trigger TargetType="Button" Property="IsPressed" Value="True">
+                <Setter Property="Scale" Value="0.95" />
+                <Setter Property="Opacity" Value="0.8" />
+            </Trigger>
+            <Trigger TargetType="Button" Property="IsEnabled" Value="False">
+                <Setter Property="BackgroundColor" Value="{StaticResource Gray400}" />
+                <Setter Property="TextColor" Value="{StaticResource Gray600}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--  🆕 Modern Secondary Button  -->
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BorderColor" Value="{StaticResource PrimaryBlueDark}" />
+        <Setter Property="BorderWidth" Value="2" />
+        <Setter Property="MinimumWidthRequest" Value="120" />
+
+        <Style.Triggers>
+            <Trigger TargetType="Button" Property="IsPressed" Value="True">
+                <Setter Property="Scale" Value="0.95" />
+                <Setter Property="BackgroundColor" Value="{StaticResource Gray100}" />
+            </Trigger>
+            <Trigger TargetType="Button" Property="IsEnabled" Value="False">
+                <Setter Property="BorderColor" Value="{StaticResource Gray400}" />
+                <Setter Property="TextColor" Value="{StaticResource Gray400}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!--  Estilo para el botón de búsqueda  -->
     <Style x:Key="SearchButtonStyle" TargetType="Button">
         <Setter Property="HorizontalOptions" Value="Fill" />

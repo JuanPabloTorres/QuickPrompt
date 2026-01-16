@@ -101,33 +101,35 @@ public partial class GuidePage : ContentPage, IQueryAttributable
 
     private void UpdateButtonStates()
     {
-        // Habilitar botón de retroceso solo si no estamos en el primer paso
+        // ✅ Validar que GuideCarousel y GuideSteps estén inicializados
+        if (GuideCarousel == null || GuideSteps == null || GuideSteps.Count == 0)
+            return;
+
+        // ✅ Validar que Position esté dentro del rango
+        if (GuideCarousel.Position < 0 || GuideCarousel.Position >= GuideSteps.Count)
+            return;
+
         BackButton.IsEnabled = GuideCarousel.Position > 0;
 
-        // Verificar si estamos en el paso final
         bool isFinal = GuideSteps[GuideCarousel.Position].IsFinalStep;
 
         if (isFinal)
         {
             NextButton.Text = "⚡ Start Now";
-
-            NextButton.ImageSource = null; // Remueve el ícono si no es necesario
-
-            NextButton.BackgroundColor = Color.FromArgb("#23486A"); // PrimaryRed
-
+            NextButton.ImageSource = null;
+            NextButton.BackgroundColor = Color.FromArgb("#23486A");
             NextButton.TextColor = Colors.White;
         }
         else
         {
             NextButton.Text = string.Empty;
-
             NextButton.ImageSource = new FontImageSource
             {
                 FontFamily = "MaterialIconsOutlined-Regular",
-                Glyph = "\ue5e1", // Icono de flecha adelante
+                Glyph = "\ue5e1",
                 Color = Colors.White
             };
-            NextButton.BackgroundColor = Color.FromArgb("#EFB036"); // PrimaryYellow
+            NextButton.BackgroundColor = Color.FromArgb("#EFB036");
         }
     }
 

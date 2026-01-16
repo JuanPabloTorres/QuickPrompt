@@ -130,10 +130,13 @@ namespace QuickPrompt.ViewModels
         // ----------------------------------
         public void UpdatePreviewStep()
         {
+            // ✅ Validar que Steps no sea null
+            if (Steps == null || Steps.Count == 0)
+                return;
+
             var previewStep = Steps.FirstOrDefault(s => s.Type == StepType.Preview);
             if (previewStep is null) return;
 
-            // 1) Capturar cada fragmento (sin etiquetas “Context:” ni “Task:”)
             var contextText = Steps.FirstOrDefault(s => s.Type == StepType.Context)?.InputText?.Trim();
             var taskText = Steps.FirstOrDefault(s => s.Type == StepType.Task)?.InputText?.Trim();
             var examplesText = Steps.FirstOrDefault(s => s.Type == StepType.Examples)?.InputText?.Trim();
@@ -142,48 +145,36 @@ namespace QuickPrompt.ViewModels
 
             var segments = new List<string>();
 
-            // 2) Combinar Context + Task en una sola oración
             if (!string.IsNullOrWhiteSpace(contextText) && !string.IsNullOrWhiteSpace(taskText))
             {
-                // Ejemplo: "As a digital marketing expert, generate 5 creative post ideas."
                 segments.Add($"As {contextText.TrimEnd('.')}, {taskText.TrimEnd('.')}");
             }
             else if (!string.IsNullOrWhiteSpace(taskText))
             {
-                // Si no hay contexto, solo la tarea: "Generate 5 creative post ideas."
                 segments.Add(taskText.TrimEnd('.'));
             }
             else if (!string.IsNullOrWhiteSpace(contextText))
             {
-                // Si no hay tarea pero sí contexto: "Assume you are a digital marketing expert."
                 segments.Add($"Assume you are {contextText.TrimEnd('.')}");
             }
 
-            // 3) Agregar ejemplos como “For example: …”
             if (!string.IsNullOrWhiteSpace(examplesText))
             {
-                // "For example, '5 tips to improve photography' and '3 common mistakes when creating reels'."
                 segments.Add($"For example, {examplesText.TrimEnd('.')}");
             }
 
-            // 4) Agregar formato: “Present your results in a [format] format”
             if (!string.IsNullOrWhiteSpace(formatText))
             {
-                // "Present your results in a numbered outline format."
                 segments.Add($"Present your results in a {formatText.ToLower().TrimEnd('.')}{(formatText.EndsWith("format", StringComparison.OrdinalIgnoreCase) ? "" : " format")}");
             }
 
-            // 5) Agregar restricciones: “Limit to …”
             if (!string.IsNullOrWhiteSpace(limitsText))
             {
-                // "Limit it to 7 titles of up to 10 words each."
                 segments.Add($"Limit it to {limitsText.TrimEnd('.')}");
             }
 
-            // 6) Unir todo en un solo párrafo (oraciones separadas por punto y espacio)
             var combined = string.Join(". ", segments);
 
-            // Asegurar que termine en punto
             if (!string.IsNullOrWhiteSpace(combined) && !combined.EndsWith("."))
             {
                 combined += ".";
@@ -191,12 +182,23 @@ namespace QuickPrompt.ViewModels
 
             previewStep.PreviewContent = combined;
 
-            // 7) Propagar banderas de validación para los iconos en Preview
-            previewStep.IsContextValid = Steps.First(s => s.Type == StepType.Context).IsContextValid;
-            previewStep.IsTaskValid = Steps.First(s => s.Type == StepType.Task).IsTaskValid;
-            previewStep.AreExamplesValid = Steps.First(s => s.Type == StepType.Examples).AreExamplesValid;
-            previewStep.IsFormatValid = Steps.First(s => s.Type == StepType.Format).IsFormatValid;
-            previewStep.AreLimitsValid = Steps.First(s => s.Type == StepType.Limits).AreLimitsValid;
+            // ✅ Validar antes de acceder con First()
+            var contextStep = Steps.FirstOrDefault(s => s.Type == StepType.Context);
+            var taskStep = Steps.FirstOrDefault(s => s.Type == StepType.Task);
+            var examplesStep = Steps.FirstOrDefault(s => s.Type == StepType.Examples);
+            var formatStep = Steps.FirstOrDefault(s => s.Type == StepType.Format);
+            var limitsStep = Steps.FirstOrDefault(s => s.Type == StepType.Limits);
+
+            if (contextStep != null)
+                previewStep.IsContextValid = contextStep.IsContextValid;
+            if (taskStep != null)
+                previewStep.IsTaskValid = taskStep.IsTaskValid;
+            if (examplesStep != null)
+                previewStep.AreExamplesValid = examplesStep.AreExamplesValid;
+            if (formatStep != null)
+                previewStep.IsFormatValid = formatStep.IsFormatValid;
+            if (limitsStep != null)
+                previewStep.AreLimitsValid = limitsStep.AreLimitsValid;
         }
 
 
@@ -205,35 +207,41 @@ namespace QuickPrompt.ViewModels
         // ----------------------------------
         private void UpdateNavigationState()
         {
+            // ✅ Validar que Steps no sea null y CurrentStep sea válido
+            if (Steps == null || Steps.Count == 0 || CurrentStep >= Steps.Count)
+            {
+                CanGoNext = false;
+                return;
+            }
+
             var step = Steps[CurrentStep];
 
-            // Si estamos en Preview, habilitamos para “Complete”
+            // Si estamos en Preview, habilitamos para "Complete"
             if (step.IsPreviewStep)
             {
                 CanGoNext = true;
                 NextButtonText = "⚡ Complete";
                 NextButtonIcon = string.Empty;
-                NextButtonBackground = Color.FromArgb("#23486A"); // Ejemplo color final
+                NextButtonBackground = Color.FromArgb("#23486A");
                 NextButtonTextColor = Colors.White;
                 return;
             }
 
-            // Para cualquier otro paso, “Next” solo si step.IsValid == true
+            // Para cualquier otro paso, "Next" solo si step.IsValid == true
             CanGoNext = step.IsValid;
 
             if (CanGoNext)
             {
                 NextButtonText = string.Empty;
-                NextButtonIcon = "\ue5e1";                  // Ícono de flecha adelante
-                NextButtonBackground = Color.FromArgb("#EFB036"); // Amarillo
+                NextButtonIcon = "\ue5e1";
+                NextButtonBackground = Color.FromArgb("#EFB036");
                 NextButtonTextColor = Colors.White;
             }
             else
             {
-                // Deshabilitado: gris
                 NextButtonText = string.Empty;
                 NextButtonIcon = "\ue5e1";
-                NextButtonBackground = Color.FromArgb("#D3D3D3"); // Gris claro
+                NextButtonBackground = Color.FromArgb("#D3D3D3");
                 NextButtonTextColor = Colors.Gray;
             }
         }
