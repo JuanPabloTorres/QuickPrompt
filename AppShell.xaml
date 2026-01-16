@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:QuickPrompt"
     xmlns:pages="clr-namespace:QuickPrompt.Pages"
+    xmlns:aiPages="clr-namespace:QuickPrompt.Features.AI.Pages"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="Quick Prompt"
     Shell.NavBarHasShadow="True"
@@ -16,49 +17,57 @@
         <toolkit:StatusBarBehavior StatusBarColor="{StaticResource AppBlack}" StatusBarStyle="LightContent" />
     </Shell.Behaviors>
 
-    <!--  TabBar Configuration  -->
     <TabBar>
-
-        <!--  Quick Prompts Tab (Main Feature)  -->
-        <Tab Title="Quick">
-            <Tab.Icon>
+        <ShellContent
+            Title="Quick"
+            ContentTemplate="{DataTemplate pages:QuickPromptPage}"
+            Route="Quick">
+            <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xea0b;"
+                    Size="24"
                     Color="{StaticResource PrimaryBlueLight}" />
-            </Tab.Icon>
-            <ShellContent
-                Title="Quick Prompt"
-                ContentTemplate="{DataTemplate pages:QuickPromptPage}"
-                Route="Quick" />
-        </Tab>
+            </ShellContent.Icon>
+        </ShellContent>
 
-        <!--  Create Tab  -->
-        <Tab Title="Create">
-            <Tab.Icon>
+        <ShellContent
+            Title="Create"
+            ContentTemplate="{DataTemplate pages:MainPage}"
+            Route="Create">
+            <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe145;"
+                    Size="24"
                     Color="{StaticResource PrimaryBlueLight}" />
-            </Tab.Icon>
-            <ShellContent
-                Title="Create"
-                ContentTemplate="{DataTemplate pages:MainPage}"
-                Route="Create" />
-        </Tab>
+            </ShellContent.Icon>
+        </ShellContent>
 
-        <!--  Settings Tab  -->
-        <Tab Title="Settings">
-            <Tab.Icon>
+        <ShellContent
+            Title="AI"
+            ContentTemplate="{DataTemplate aiPages:AiLauncherPage}"
+            Route="AIWeb">
+            <ShellContent.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe86c;"
+                    Size="24"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </ShellContent.Icon>
+        </ShellContent>
+
+        <ShellContent
+            Title="Settings"
+            ContentTemplate="{DataTemplate pages:SettingPage}"
+            Route="Setting">
+            <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe8b8;"
+                    Size="24"
                     Color="{StaticResource PrimaryBlueLight}" />
-            </Tab.Icon>
-            <ShellContent
-                Title="Settings"
-                ContentTemplate="{DataTemplate pages:SettingPage}"
-                Route="Setting" />
-        </Tab>
+            </ShellContent.Icon>
+        </ShellContent>
     </TabBar>
 </Shell>

@@ -28,6 +28,9 @@ namespace QuickPrompt.Controls
         public static readonly BindableProperty CommandProperty =
             BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(AIProviderButton), null);
 
+        public static readonly BindableProperty CommandParameterProperty =
+            BindableProperty.Create(nameof(CommandParameter), typeof(object), typeof(AIProviderButton), null);
+
         public static readonly BindableProperty BadgeTextProperty =
             BindableProperty.Create(nameof(BadgeText), typeof(string), typeof(AIProviderButton), string.Empty);
 
@@ -85,6 +88,12 @@ namespace QuickPrompt.Controls
         {
             get => (ICommand)GetValue(CommandProperty);
             set => SetValue(CommandProperty, value);
+        }
+
+        public object CommandParameter
+        {
+            get => GetValue(CommandParameterProperty);
+            set => SetValue(CommandParameterProperty, value);
         }
 
         public string BadgeText
