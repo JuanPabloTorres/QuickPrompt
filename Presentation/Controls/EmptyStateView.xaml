@@ -17,7 +17,7 @@
                Text="{Binding Icon, Source={x:Reference Root}}" />
         
         <!-- Title -->
-        <Label FontSize="20"
+        <Label Style="{StaticResource Heading2TextStyle}"
                FontAttributes="Bold"
                HorizontalOptions="Center"
                HorizontalTextAlignment="Center"
@@ -25,7 +25,7 @@
                Text="{Binding Title, Source={x:Reference Root}}" />
         
         <!-- Description -->
-        <Label FontSize="14"
+        <Label Style="{StaticResource BodySmallTextStyle}"
                HorizontalOptions="Center"
                HorizontalTextAlignment="Center"
                TextColor="{StaticResource Gray600}"

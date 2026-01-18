@@ -16,14 +16,14 @@
             <!-- Icon -->
             <Label Text="{Binding Icon, Source={x:Reference Root}}"
                    FontFamily="MaterialIconsOutlined-Regular"
-                   FontSize="14"
+                   Style="{StaticResource BodySmallTextStyle}"
                    TextColor="{Binding TextColor, Source={x:Reference Root}}"
                    VerticalOptions="Center"
                    IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
 
             <!-- Text -->
             <Label Text="{Binding Text, Source={x:Reference Root}}"
-                   FontSize="12"
+                   Style="{StaticResource CaptionTextStyle}"
                    FontAttributes="Bold"
                    TextColor="{Binding TextColor, Source={x:Reference Root}}"
                    VerticalOptions="Center" />

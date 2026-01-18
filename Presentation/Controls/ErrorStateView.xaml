@@ -17,7 +17,7 @@
                Text="&#xe000;" />
         
         <!-- Error Title -->
-        <Label FontSize="20"
+        <Label Style="{StaticResource Heading2TextStyle}"
                FontAttributes="Bold"
                HorizontalOptions="Center"
                HorizontalTextAlignment="Center"
@@ -25,7 +25,7 @@
                Text="{Binding Title, Source={x:Reference Root}}" />
         
         <!-- Error Message -->
-        <Label FontSize="14"
+        <Label Style="{StaticResource BodySmallTextStyle}"
                HorizontalOptions="Center"
                HorizontalTextAlignment="Center"
                TextColor="{StaticResource Gray600}"
@@ -43,7 +43,7 @@
                 <RoundRectangle CornerRadius="8" />
             </Border.StrokeShape>
             
-            <Label FontSize="12"
+            <Label Style="{StaticResource CaptionTextStyle}"
                    FontFamily="Consolas"
                    TextColor="{StaticResource Gray700}"
                    Text="{Binding Details, Source={x:Reference Root}}"
