@@ -32,7 +32,7 @@
             <!-- Title Row -->
             <Label Grid.Row="0" Grid.Column="0"
                    Text="{Binding Title, Source={x:Reference Root}}"
-                   FontSize="16"
+                   Style="{StaticResource BodyLargeTextStyle}"
                    FontAttributes="Bold"
                    TextColor="{StaticResource Gray900}"
                    LineBreakMode="TailTruncation"
@@ -55,7 +55,7 @@
             <!-- Description/Preview -->
             <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                    Text="{Binding Description, Source={x:Reference Root}}"
-                   FontSize="14"
+                   Style="{StaticResource BodySmallTextStyle}"
                    TextColor="{StaticResource Gray600}"
                    LineBreakMode="TailTruncation"
                    MaxLines="2"
@@ -73,7 +73,7 @@
                         <RoundRectangle CornerRadius="4" />
                     </Border.StrokeShape>
                     <Label Text="{Binding Category, Source={x:Reference Root}}"
-                           FontSize="12"
+                           Style="{StaticResource CaptionTextStyle}"
                            FontAttributes="Bold"
                            TextColor="White" />
                 </Border>
@@ -83,11 +83,11 @@
                                        IsVisible="{Binding ShowVariableCount, Source={x:Reference Root}}">
                     <Label Text="&#xe3c9;"
                            FontFamily="MaterialIconsOutlined-Regular"
-                           FontSize="16"
+                           Style="{StaticResource BodyLargeTextStyle}"
                            TextColor="{StaticResource Gray500}"
                            VerticalOptions="Center" />
                     <Label Text="{Binding VariableCount, Source={x:Reference Root}, StringFormat='{0} variables'}"
-                           FontSize="12"
+                           Style="{StaticResource CaptionTextStyle}"
                            TextColor="{StaticResource Gray600}"
                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
@@ -97,11 +97,11 @@
                                        IsVisible="{Binding ShowUsageCount, Source={x:Reference Root}}">
                     <Label Text="&#xe8fd;"
                            FontFamily="MaterialIconsOutlined-Regular"
-                           FontSize="16"
+                           Style="{StaticResource BodyLargeTextStyle}"
                            TextColor="{StaticResource Gray500}"
                            VerticalOptions="Center" />
                     <Label Text="{Binding UsageCount, Source={x:Reference Root}, StringFormat='{0} uses'}"
-                           FontSize="12"
+                           Style="{StaticResource CaptionTextStyle}"
                            TextColor="{StaticResource Gray600}"
                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
@@ -111,7 +111,7 @@
             <!-- Date/Time -->
             <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                    Text="{Binding DateText, Source={x:Reference Root}}"
-                   FontSize="12"
+                   Style="{StaticResource CaptionTextStyle}"
                    TextColor="{StaticResource Gray500}"
                    IsVisible="{Binding ShowDate, Source={x:Reference Root}}" />
 
