@@ -49,11 +49,11 @@
             <!-- Provider Name & Description -->
             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                 <Label Text="{Binding ProviderName, Source={x:Reference Root}}"
-                       FontSize="16"
+                       Style="{StaticResource BodyLargeTextStyle}"
                        FontAttributes="Bold"
                        TextColor="White" />
                 <Label Text="{Binding ProviderDescription, Source={x:Reference Root}}"
-                       FontSize="12"
+                       Style="{StaticResource CaptionTextStyle}"
                        TextColor="White"
                        Opacity="0.9"
                        IsVisible="{Binding ShowDescription, Source={x:Reference Root}}" />
@@ -69,7 +69,7 @@
                     <RoundRectangle CornerRadius="4" />
                 </Border.StrokeShape>
                 <Label Text="{Binding BadgeText, Source={x:Reference Root}}"
-                       FontSize="10"
+                       Style="{StaticResource CaptionTextStyle}"
                        FontAttributes="Bold"
                        TextColor="White" />
             </Border>
