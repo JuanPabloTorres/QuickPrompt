@@ -1,13 +1,17 @@
-﻿using QuickPrompt.Pages;
-using QuickPrompt.Tools;
+﻿using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.Pages;
 
 namespace QuickPrompt
 {
     public partial class AppShell : Shell
     {
-        public AppShell()
+        private readonly ITabBarService _tabBarService;
+
+        public AppShell(ITabBarService tabBarService)
         {
             InitializeComponent();
+
+            _tabBarService = tabBarService ?? throw new ArgumentNullException(nameof(tabBarService));
 
             // Mostrar la guía solo la primera vez
             ShowGuideIfFirstLaunch();
@@ -24,7 +28,7 @@ namespace QuickPrompt
                 // Esperar carga del Shell (opcional)
                 await Task.Delay(500);
 
-                TabBarHelperTool.SetVisibility(false);
+                _tabBarService.SetVisibility(false);
 
                 await GoToAsync($"/{nameof(GuidePage)}");
             }

@@ -203,11 +203,15 @@ namespace QuickPrompt
 
         private static void RegisterPages(MauiAppBuilder builder)
         {
+            // Shell
+            builder.Services.AddSingleton<AppShell>();
+
             // Existing Pages
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<PromptDetailsPage>();
             builder.Services.AddTransient<EditPromptPage>();
             builder.Services.AddTransient<SettingPage>();
+            builder.Services.AddTransient<GuidePage>();
             builder.Services.AddScoped<QuickPromptPage>();
 
             // 🆕 AI PAGES

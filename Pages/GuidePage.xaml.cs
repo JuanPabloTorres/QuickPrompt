@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
 using QuickPrompt.Models;
-using QuickPrompt.Tools;
 using QuickPrompt.Tools.Messages;
 using System.Collections.ObjectModel;
 
@@ -10,30 +10,23 @@ namespace QuickPrompt.Pages;
 
 public partial class GuidePage : ContentPage, IQueryAttributable
 {
+    private readonly ITabBarService _tabBarService;
+    private readonly IDialogService _dialogService;
+
     public ObservableCollection<GuideStep> GuideSteps { get; } = new();
 
-    public GuidePage()
+    public GuidePage(ITabBarService tabBarService, IDialogService dialogService)
     {
         InitializeComponent();
+
+        _tabBarService = tabBarService ?? throw new ArgumentNullException(nameof(tabBarService));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
         BindingContext = this;
 
         LoadSteps();
 
         UpdateButtonStates();
-    }
-
-    public GuidePage(bool showbackButton)
-    {
-        InitializeComponent();
-
-        BindingContext = this;
-
-        LoadSteps();
-
-        UpdateButtonStates();
-
-        titleHeader.ShowBackButton = showbackButton;
     }
 
     private void LoadSteps()
@@ -71,7 +64,7 @@ public partial class GuidePage : ContentPage, IQueryAttributable
         {
             string message = GuideMessages.GetRandomGuideCompleteMessage();
 
-            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", message);
+            await _dialogService.ShowLottieMessageAsync("CompleteAnimation.json", message);
 
             // Esperar a que la animación sea visible por un tiempo suficiente
             await Task.Delay(300); // espera 2 segundos (ajustable)
@@ -160,6 +153,6 @@ public partial class GuidePage : ContentPage, IQueryAttributable
 
     protected override void OnDisappearing()
     {
-        TabBarHelperTool.SetVisibility(true);
+        _tabBarService.SetVisibility(true);
     }
 }

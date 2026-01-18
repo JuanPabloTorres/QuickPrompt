@@ -5,8 +5,9 @@ namespace QuickPrompt
     public partial class App : Application
     {
         DatabaseServiceManager _databaseServiceManager;
+        private readonly AppShell _appShell;
 
-        public App(DatabaseServiceManager databaseServiceManager)
+        public App(DatabaseServiceManager databaseServiceManager, AppShell appShell)
         {
             global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Starting...");
 
@@ -16,7 +17,8 @@ namespace QuickPrompt
                 global::System.Diagnostics.Debug.WriteLine("[App.Constructor] InitializeComponent completed");
 
                 _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
-                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] DatabaseServiceManager injected");
+                _appShell = appShell ?? throw new ArgumentNullException(nameof(appShell));
+                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Dependencies injected");
 
                 // ✅ Database initialization in background with error handling
                 Task.Run(async () =>
@@ -50,14 +52,12 @@ namespace QuickPrompt
 
             try
             {
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating AppShell...");
-                var shell = new AppShell();
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] AppShell created successfully");
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Using injected AppShell");
 
                 global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating Window...");
                 var window = new Window
                 {
-                    Page = shell
+                    Page = _appShell
                 };
                 global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Window created successfully");
 
