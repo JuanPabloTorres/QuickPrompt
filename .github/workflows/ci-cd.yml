@@ -1,0 +1,183 @@
+name: .NET MAUI CI/CD
+
+on:
+  push:
+    branches: [ main, develop, refactor/statement-of-work ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  PROJECT_PATH: 'QuickPrompt.csproj'
+  TEST_PROJECT_PATH: 'QuickPrompt.Tests/QuickPrompt.Tests.csproj'
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+    
+    steps:
+    - name: ?? Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: ?? Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: ?? Restore dependencies
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: ??? Build solution
+      run: dotnet build ${{ env.PROJECT_PATH }} --configuration Release --no-restore
+
+    - name: ?? Run tests
+      run: dotnet test ${{ env.TEST_PROJECT_PATH }} --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
+
+    - name: ?? Code Coverage Report
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: '**/coverage.cobertura.xml'
+        badge: true
+        format: markdown
+        output: both
+        fail_below_min: false
+        thresholds: '60 80'
+
+    - name: ?? Add Coverage to PR
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: code-coverage-results.md
+
+    - name: ?? Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/test-results.trx'
+
+    - name: ?? Upload coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: '**/coverage.cobertura.xml'
+
+    - name: ? Test Summary
+      uses: test-summary/action@v2
+      if: always()
+      with:
+        paths: '**/test-results.trx'
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: ?? Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: ?? Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: ?? Run linter
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+
+    - name: ?? SonarCloud Scan (Optional)
+      if: false  # Enable if you have SonarCloud configured
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build-android:
+    name: Build Android
+    runs-on: windows-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - name: ?? Checkout code
+      uses: actions/checkout@v4
+
+    - name: ?? Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: ? Setup JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'microsoft'
+        java-version: '17'
+
+    - name: ??? Build Android
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release -f net9.0-android --no-restore
+
+    - name: ?? Upload Android APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-build
+        path: '**/*.apk'
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - name: ?? Checkout code
+      uses: actions/checkout@v4
+
+    - name: ?? Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: ?? Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+
+    - name: ??? Build iOS
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release -f net9.0-ios --no-restore
+
+    - name: ?? Upload iOS IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-build
+        path: '**/*.ipa'
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - name: ?? Checkout code
+      uses: actions/checkout@v4
+
+    - name: ?? Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: ??? Build Windows
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release -f net9.0-windows10.0.19041.0 --no-restore
+
+    - name: ?? Upload Windows MSIX
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: '**/*.msix'
