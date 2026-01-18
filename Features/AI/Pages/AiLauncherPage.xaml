@@ -14,12 +14,12 @@
 
             <!-- Header Section -->
             <VerticalStackLayout Spacing="8">
-                <Label Text="?? Launch AI Engine"
-                       FontSize="28"
+                <Label Text="🚀 Launch AI Engine"
+                       Style="{StaticResource Heading1TextStyle}"
                        FontAttributes="Bold"
                        TextColor="{StaticResource PrimaryBlueDark}" />
                 <Label Text="Select an AI engine to send your prompt"
-                       FontSize="14"
+                       Style="{StaticResource BodySmallTextStyle}"
                        TextColor="{StaticResource TextSecondary}"
                        Opacity="0.8" />
             </VerticalStackLayout>
@@ -27,7 +27,7 @@
             <!-- AI Providers Grid -->
             <VerticalStackLayout Spacing="12">
                 <Label Text="Available Engines"
-                       FontSize="16"
+                       Style="{StaticResource BodyLargeTextStyle}"
                        FontAttributes="Bold"
                        TextColor="{StaticResource PrimaryBlueDark}"
                        Margin="0,8,0,0" />
@@ -86,14 +86,14 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Grid.Column="0"
                            Text="Recent Prompts"
-                           FontSize="16"
+                           Style="{StaticResource BodyLargeTextStyle}"
                            FontAttributes="Bold"
                            TextColor="{StaticResource PrimaryBlueDark}"
                            VerticalOptions="Center" />
                     
                     <Button Grid.Column="1"
                             Text="Clear All"
-                            FontSize="12"
+                            Style="{StaticResource ButtonTextStyle}"
                             BackgroundColor="Transparent"
                             TextColor="{StaticResource Danger}"
                             BorderWidth="0"
@@ -119,12 +119,12 @@
                                Opacity="0.3"
                                HorizontalOptions="Center" />
                         <Label Text="No recent prompts"
-                               FontSize="16"
+                               Style="{StaticResource BodyLargeTextStyle}"
                                FontAttributes="Bold"
                                TextColor="{StaticResource TextSecondary}"
                                HorizontalOptions="Center" />
                         <Label Text="Complete a prompt to see it here"
-                               FontSize="12"
+                               Style="{StaticResource CaptionTextStyle}"
                                TextColor="{StaticResource TextSecondary}"
                                Opacity="0.7"
                                HorizontalOptions="Center" />
@@ -166,7 +166,7 @@
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                         <Label Grid.Column="0"
                                                Text="{Binding .}"
-                                               FontSize="14"
+                                               Style="{StaticResource BodySmallTextStyle}"
                                                TextColor="{StaticResource TextPrimary}"
                                                LineBreakMode="TailTruncation"
                                                MaxLines="2"
@@ -175,7 +175,7 @@
                                         <Label Grid.Column="1"
                                                Text="&#xe5cc;"
                                                FontFamily="MaterialIconsOutlined-Regular"
-                                               FontSize="20"
+                                               Style="{StaticResource Heading2TextStyle}"
                                                TextColor="{StaticResource PrimaryBlueLight}"
                                                VerticalOptions="Center" />
                                     </Grid>
@@ -189,7 +189,7 @@
             <!-- Quick Actions -->
             <VerticalStackLayout Spacing="12" Margin="0,20,0,20">
                 <Label Text="Quick Actions"
-                       FontSize="16"
+                       Style="{StaticResource BodyLargeTextStyle}"
                        FontAttributes="Bold"
                        TextColor="{StaticResource PrimaryBlueDark}" />
 
@@ -212,7 +212,7 @@
                                    TextColor="White"
                                    HorizontalOptions="Center" />
                             <Label Text="Quick"
-                                   FontSize="12"
+                                   Style="{StaticResource CaptionTextStyle}"
                                    FontAttributes="Bold"
                                    TextColor="White"
                                    HorizontalOptions="Center" />
@@ -237,7 +237,7 @@
                                    TextColor="White"
                                    HorizontalOptions="Center" />
                             <Label Text="Create"
-                                   FontSize="12"
+                                   Style="{StaticResource CaptionTextStyle}"
                                    FontAttributes="Bold"
                                    TextColor="White"
                                    HorizontalOptions="Center" />
