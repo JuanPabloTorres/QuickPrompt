@@ -386,7 +386,8 @@ public class CreatePromptUseCaseTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal("", result.Value.Description);
+        // Use Case converts empty description to "N/A"
+        Assert.Equal("N/A", result.Value.Description);
     }
 
     #endregion
