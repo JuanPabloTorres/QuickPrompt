@@ -20,7 +20,8 @@ namespace QuickPrompt.Controls
             BindableProperty.Create(nameof(Category), typeof(string), typeof(PromptCard), string.Empty);
 
         public static readonly BindableProperty CategoryColorProperty =
-            BindableProperty.Create(nameof(CategoryColor), typeof(Color), typeof(PromptCard), Colors.Gray);
+            BindableProperty.Create(nameof(CategoryColor), typeof(Color), typeof(PromptCard), 
+                Application.Current?.Resources["Gray400"] as Color ?? Microsoft.Maui.Graphics.Colors.Gray);
 
         public static readonly BindableProperty IsFavoriteProperty =
             BindableProperty.Create(nameof(IsFavorite), typeof(bool), typeof(PromptCard), false);

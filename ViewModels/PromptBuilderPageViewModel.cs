@@ -34,8 +34,8 @@ namespace QuickPrompt.ViewModels
         [ObservableProperty] private int currentStep;
         [ObservableProperty] private string nextButtonText = string.Empty;
         [ObservableProperty] private string nextButtonIcon = string.Empty;
-        [ObservableProperty] private Color nextButtonBackground = Colors.Gray;
-        [ObservableProperty] private Color nextButtonTextColor = Colors.White;
+        [ObservableProperty] private Color nextButtonBackground;
+        [ObservableProperty] private Color nextButtonTextColor;
         [ObservableProperty] private bool canGoNext;
 
         // Constructor with dependency injection
@@ -47,6 +47,10 @@ namespace QuickPrompt.ViewModels
             _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             _adMobService = adMobService ?? throw new ArgumentNullException(nameof(adMobService));
+
+            // ✅ Initialize colors from Design System tokens
+            nextButtonBackground = (Color)Application.Current.Resources["Gray400"];
+            nextButtonTextColor = (Color)Application.Current.Resources["White"];
 
             InitializeSteps();
         }
@@ -183,8 +187,9 @@ namespace QuickPrompt.ViewModels
                 CanGoNext = true;
                 NextButtonText = "⚡ Complete";
                 NextButtonIcon = string.Empty;
-                NextButtonBackground = Color.FromArgb("#23486A");
-                NextButtonTextColor = Colors.White;
+                // ✅ Use Design System token
+                NextButtonBackground = (Color)Application.Current.Resources["PrimaryBlueDark"];
+                NextButtonTextColor = (Color)Application.Current.Resources["White"];
                 return;
             }
 
@@ -194,15 +199,17 @@ namespace QuickPrompt.ViewModels
             {
                 NextButtonText = string.Empty;
                 NextButtonIcon = "\ue5e1";
-                NextButtonBackground = Color.FromArgb("#EFB036");
-                NextButtonTextColor = Colors.White;
+                // ✅ Use Design System token
+                NextButtonBackground = (Color)Application.Current.Resources["PrimaryYellow"];
+                NextButtonTextColor = (Color)Application.Current.Resources["White"];
             }
             else
             {
                 NextButtonText = string.Empty;
                 NextButtonIcon = "\ue5e1";
-                NextButtonBackground = Color.FromArgb("#D3D3D3");
-                NextButtonTextColor = Colors.Gray;
+                // ✅ Use Design System token
+                NextButtonBackground = (Color)Application.Current.Resources["StateDisabledBackground"];
+                NextButtonTextColor = (Color)Application.Current.Resources["StateDisabledText"];
             }
         }
 

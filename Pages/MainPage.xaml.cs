@@ -155,7 +155,8 @@ namespace QuickPrompt.Pages
                 {
                     var border = new Border
                     {
-                        BackgroundColor = Colors.LightBlue,
+                        // ✅ Use Design System token
+                        BackgroundColor = (Color)Application.Current.Resources["Info200"],
                         StrokeShape = new RoundRectangle { CornerRadius = 10 },
                         Padding = new Thickness(10, 5),
                         Margin = new Thickness(4),
@@ -163,7 +164,8 @@ namespace QuickPrompt.Pages
                         {
                             Text = part.Text,
                             FontSize = 14,
-                            TextColor = Colors.Black
+                            // ✅ Use Design System token
+                            TextColor = (Color)Application.Current.Resources["TextPrimary"]
                         }
                     };
 
@@ -190,7 +192,8 @@ namespace QuickPrompt.Pages
                     {
                         Text = part.Text,
                         FontSize = 14,
-                        TextColor = Colors.Black,
+                        // ✅ Use Design System token
+                        TextColor = (Color)Application.Current.Resources["TextPrimary"],
                         Margin = new Thickness(2, 4)
                     });
                 }

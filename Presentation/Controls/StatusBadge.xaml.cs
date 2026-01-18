@@ -15,10 +15,12 @@ namespace QuickPrompt.Controls
             BindableProperty.Create(nameof(Icon), typeof(string), typeof(StatusBadge), string.Empty);
 
         public static readonly BindableProperty BadgeColorProperty =
-            BindableProperty.Create(nameof(BadgeColor), typeof(Color), typeof(StatusBadge), Colors.Gray);
+            BindableProperty.Create(nameof(BadgeColor), typeof(Color), typeof(StatusBadge), 
+                Application.Current?.Resources["Gray400"] as Color ?? Microsoft.Maui.Graphics.Colors.Gray);
 
         public static readonly BindableProperty TextColorProperty =
-            BindableProperty.Create(nameof(TextColor), typeof(Color), typeof(StatusBadge), Colors.White);
+            BindableProperty.Create(nameof(TextColor), typeof(Color), typeof(StatusBadge), 
+                Application.Current?.Resources["White"] as Color ?? Microsoft.Maui.Graphics.Colors.White);
 
         public static readonly BindableProperty ShowIconProperty =
             BindableProperty.Create(nameof(ShowIcon), typeof(bool), typeof(StatusBadge), true);
@@ -71,40 +73,40 @@ namespace QuickPrompt.Controls
         {
             Text = text,
             Icon = "&#xe86c;", // Check circle
-            BadgeColor = Color.FromRgb(34, 197, 94), // Green
-            TextColor = Colors.White
+            BadgeColor = (Color)Application.Current.Resources["SuccessColor"],
+            TextColor = (Color)Application.Current.Resources["White"]
         };
 
         public static StatusBadge Error(string text) => new()
         {
             Text = text,
             Icon = "&#xe001;", // Error
-            BadgeColor = Color.FromRgb(239, 68, 68), // Red
-            TextColor = Colors.White
+            BadgeColor = (Color)Application.Current.Resources["ErrorColor"],
+            TextColor = (Color)Application.Current.Resources["White"]
         };
 
         public static StatusBadge Warning(string text) => new()
         {
             Text = text,
             Icon = "&#xe002;", // Warning
-            BadgeColor = Color.FromRgb(251, 191, 36), // Amber
-            TextColor = Colors.Black
+            BadgeColor = (Color)Application.Current.Resources["WarningColor"],
+            TextColor = (Color)Application.Current.Resources["TextPrimary"]
         };
 
         public static StatusBadge Info(string text) => new()
         {
             Text = text,
             Icon = "&#xe88e;", // Info
-            BadgeColor = Color.FromRgb(59, 130, 246), // Blue
-            TextColor = Colors.White
+            BadgeColor = (Color)Application.Current.Resources["InfoColor"],
+            TextColor = (Color)Application.Current.Resources["White"]
         };
 
         public static StatusBadge Neutral(string text) => new()
         {
             Text = text,
             Icon = string.Empty,
-            BadgeColor = Color.FromRgb(156, 163, 175), // Gray
-            TextColor = Colors.White,
+            BadgeColor = (Color)Application.Current.Resources["Gray400"],
+            TextColor = (Color)Application.Current.Resources["White"],
             ShowIcon = false
         };
     }
@@ -127,11 +129,12 @@ namespace QuickPrompt.Controls
 
         public static class Colors
         {
-            public static readonly Color Success = Color.FromRgb(34, 197, 94);
-            public static readonly Color Error = Color.FromRgb(239, 68, 68);
-            public static readonly Color Warning = Color.FromRgb(251, 191, 36);
-            public static readonly Color Info = Color.FromRgb(59, 130, 246);
-            public static readonly Color Neutral = Color.FromRgb(156, 163, 175);
+            // ? Use Design System tokens instead of hardcoded RGB values
+            public static Color Success => (Color)Application.Current.Resources["SuccessColor"];
+            public static Color Error => (Color)Application.Current.Resources["ErrorColor"];
+            public static Color Warning => (Color)Application.Current.Resources["WarningColor"];
+            public static Color Info => (Color)Application.Current.Resources["InfoColor"];
+            public static Color Neutral => (Color)Application.Current.Resources["Gray400"];
         }
     }
 }

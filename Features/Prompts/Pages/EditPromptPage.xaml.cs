@@ -152,7 +152,8 @@ public partial class EditPromptPage : ContentPage
             {
                 var border = new Border
                 {
-                    BackgroundColor = Colors.LightBlue,
+                    // ? Use Design System token
+                    BackgroundColor = (Color)Application.Current.Resources["Info200"],
                     StrokeShape = new RoundRectangle { CornerRadius = 10 },
                     Padding = new Thickness(10),
                     Margin = new Thickness(4),
@@ -160,7 +161,8 @@ public partial class EditPromptPage : ContentPage
                     {
                         Text = part.Text,
                         FontSize = 12,
-                        TextColor = Colors.Black
+                        // ? Use Design System token
+                        TextColor = (Color)Application.Current.Resources["TextPrimary"]
                     }
                 };
 
@@ -187,7 +189,8 @@ public partial class EditPromptPage : ContentPage
                 {
                     Text = part.Text,
                     FontSize = 14,
-                    TextColor = Colors.Black,
+                    // ? Use Design System token
+                    TextColor = (Color)Application.Current.Resources["TextPrimary"],
                     Margin = new Thickness(2, 4)
                 });
             }

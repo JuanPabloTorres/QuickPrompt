@@ -17,7 +17,8 @@ namespace QuickPrompt.Controls
             BindableProperty.Create(nameof(ProviderDescription), typeof(string), typeof(AIProviderButton), string.Empty);
 
         public static readonly BindableProperty ProviderColorProperty =
-            BindableProperty.Create(nameof(ProviderColor), typeof(Color), typeof(AIProviderButton), Colors.Gray);
+            BindableProperty.Create(nameof(ProviderColor), typeof(Color), typeof(AIProviderButton), 
+                Application.Current?.Resources["Gray400"] as Color ?? Microsoft.Maui.Graphics.Colors.Gray);
 
         public static readonly BindableProperty ProviderIconProperty =
             BindableProperty.Create(nameof(ProviderIcon), typeof(ImageSource), typeof(AIProviderButton), null);
@@ -147,6 +148,8 @@ namespace QuickPrompt.Controls
     {
         public static class Colors
         {
+            // ? AI Provider brand colors - preserve for brand recognition
+            // Note: These could be added to Design System as AiChatGPT, AiGemini, etc. if needed
             public static readonly Color ChatGPT = Color.FromRgb(16, 163, 127); // OpenAI green
             public static readonly Color Gemini = Color.FromRgb(138, 180, 248); // Google blue
             public static readonly Color Grok = Color.FromRgb(0, 0, 0); // X black
