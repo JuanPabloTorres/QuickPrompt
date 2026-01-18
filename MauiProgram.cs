@@ -101,6 +101,7 @@ namespace QuickPrompt
             // 🆕 PHASE 1: Application Layer Services
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IPromptCacheService, PromptCacheService>();
+            builder.Services.AddSingleton<ITabBarService, TabBarService>();
 
             // 🆕 PHASE 1: Use Cases
             builder.Services.AddTransient<CreatePromptUseCase>();
