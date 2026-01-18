@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ============================================ -->
+    <!-- DESIGN SYSTEM: SPACING TOKENS               -->
+    <!-- Version: 1.0                                 -->
+    <!-- Phase: 2 - Foundation                        -->
+    <!-- Source: docs/design-system/DESIGN_TOKENS.md  -->
+    <!-- ============================================ -->
+
+    <!-- ============================================ -->
+    <!-- SPACING SCALE (4px Base Unit)                -->
+    <!-- ============================================ -->
+    <x:Double x:Key="SpacingXs">4</x:Double>
+    <x:Double x:Key="SpacingSm">8</x:Double>
+    <x:Double x:Key="SpacingMd">16</x:Double>
+    <x:Double x:Key="SpacingLg">24</x:Double>
+    <x:Double x:Key="SpacingXl">32</x:Double>
+    <x:Double x:Key="Spacing2xl">48</x:Double>
+    <x:Double x:Key="Spacing3xl">64</x:Double>
+    <x:Double x:Key="SpacingNone">0</x:Double>
+
+    <!-- ============================================ -->
+    <!-- THICKNESS PRESETS (Uniform)                  -->
+    <!-- ============================================ -->
+    <Thickness x:Key="ThicknessXs">4</Thickness>
+    <Thickness x:Key="ThicknessSm">8</Thickness>
+    <Thickness x:Key="ThicknessMd">16</Thickness>
+    <Thickness x:Key="ThicknessLg">24</Thickness>
+    <Thickness x:Key="ThicknessXl">32</Thickness>
+    <Thickness x:Key="Thickness2xl">48</Thickness>
+    <Thickness x:Key="Thickness3xl">64</Thickness>
+    <Thickness x:Key="ThicknessNone">0</Thickness>
+
+    <!-- ============================================ -->
+    <!-- THICKNESS PRESETS (Directional)              -->
+    <!-- ============================================ -->
+    
+    <!-- Horizontal Only (Left, Right) -->
+    <Thickness x:Key="ThicknessHorizontalSm">8,0,8,0</Thickness>
+    <Thickness x:Key="ThicknessHorizontalMd">16,0,16,0</Thickness>
+    <Thickness x:Key="ThicknessHorizontalLg">24,0,24,0</Thickness>
+
+    <!-- Vertical Only (Top, Bottom) -->
+    <Thickness x:Key="ThicknessVerticalSm">0,8,0,8</Thickness>
+    <Thickness x:Key="ThicknessVerticalMd">0,16,0,16</Thickness>
+    <Thickness x:Key="ThicknessVerticalLg">0,24,0,24</Thickness>
+
+    <!-- Asymmetric (Common patterns) -->
+    <Thickness x:Key="ThicknessPageMargin">16,20,16,16</Thickness>
+    <Thickness x:Key="ThicknessCardPadding">16</Thickness>
+    <Thickness x:Key="ThicknessCardPaddingLarge">24</Thickness>
+
+    <!-- ============================================ -->
+    <!-- COMPONENT-SPECIFIC SPACING                   -->
+    <!-- ============================================ -->
+    
+    <!-- Button Padding -->
+    <Thickness x:Key="ButtonPaddingSmall">12,6,12,6</Thickness>
+    <Thickness x:Key="ButtonPaddingMedium">16,12,16,12</Thickness>
+    <Thickness x:Key="ButtonPaddingLarge">20,14,20,14</Thickness>
+
+    <!-- Input Padding -->
+    <Thickness x:Key="InputPadding">12,10,12,10</Thickness>
+
+    <!-- Card Spacing -->
+    <x:Double x:Key="CardGap">16</x:Double>
+
+    <!-- List Item Spacing -->
+    <x:Double x:Key="ListItemPadding">12</x:Double>
+    <x:Double x:Key="ListItemGap">8</x:Double>
+
+</ResourceDictionary>

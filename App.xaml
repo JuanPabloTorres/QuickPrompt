@@ -7,6 +7,17 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- ============================================ -->
+                <!-- DESIGN SYSTEM TOKENS (Phase 2 - Load First) -->
+                <!-- ============================================ -->
+                <ResourceDictionary Source="Resources/Styles/DesignTokens/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/DesignTokens/Typography.xaml" />
+                <ResourceDictionary Source="Resources/Styles/DesignTokens/Spacing.xaml" />
+                <ResourceDictionary Source="Resources/Styles/DesignTokens/Tokens.xaml" />
+
+                <!-- ============================================ -->
+                <!-- LEGACY STYLES (To be refactored in Phase 3)  -->
+                <!-- ============================================ -->
                 <ResourceDictionary Source="Resources/Styles/AppColors.xaml" />
 
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

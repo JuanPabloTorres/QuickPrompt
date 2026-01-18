@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ============================================ -->
+    <!-- DESIGN SYSTEM: TYPOGRAPHY TOKENS            -->
+    <!-- Version: 1.0                                 -->
+    <!-- Phase: 2 - Foundation                        -->
+    <!-- Source: docs/design-system/DESIGN_TOKENS.md  -->
+    <!-- ============================================ -->
+
+    <!-- ============================================ -->
+    <!-- FONT FAMILIES                                -->
+    <!-- ============================================ -->
+    <x:String x:Key="FontFamilyPrimary">OpenSans-Regular</x:String>
+    <x:String x:Key="FontFamilySemiBold">OpenSans-SemiBold</x:String>
+    <x:String x:Key="FontFamilyDisplay">Designer</x:String>
+
+    <!-- ============================================ -->
+    <!-- FONT SIZES (Device-Independent Pixels)       -->
+    <!-- ============================================ -->
+    <x:Double x:Key="FontSizeDisplay">40</x:Double>
+    <x:Double x:Key="FontSizeHeading1">28</x:Double>
+    <x:Double x:Key="FontSizeHeading2">22</x:Double>
+    <x:Double x:Key="FontSizeHeading3">18</x:Double>
+    <x:Double x:Key="FontSizeBodyLarge">16</x:Double>
+    <x:Double x:Key="FontSizeBody">15</x:Double>
+    <x:Double x:Key="FontSizeBodySmall">13</x:Double>
+    <x:Double x:Key="FontSizeCaption">12</x:Double>
+    <x:Double x:Key="FontSizeButton">15</x:Double>
+    <x:Double x:Key="FontSizeButtonSmall">14</x:Double>
+    <x:Double x:Key="FontSizeButtonLarge">16</x:Double>
+
+    <!-- ============================================ -->
+    <!-- LINE HEIGHTS (Multipliers)                   -->
+    <!-- ============================================ -->
+    <x:Double x:Key="LineHeightDisplay">1.2</x:Double>
+    <x:Double x:Key="LineHeightHeading">1.3</x:Double>
+    <x:Double x:Key="LineHeightBody">1.5</x:Double>
+    <x:Double x:Key="LineHeightCaption">1.4</x:Double>
+    <x:Double x:Key="LineHeightButton">1.0</x:Double>
+
+    <!-- ============================================ -->
+    <!-- LETTER SPACING (EM units)                    -->
+    <!-- ============================================ -->
+    <x:Double x:Key="LetterSpacingTight">-0.02</x:Double>
+    <x:Double x:Key="LetterSpacingNormal">0.0</x:Double>
+    <x:Double x:Key="LetterSpacingWide">0.01</x:Double>
+
+    <!-- ============================================ -->
+    <!-- TEXT STYLES (Complete XAML Styles)           -->
+    <!-- ============================================ -->
+
+    <!-- Display / Hero Text -->
+    <Style x:Key="DisplayTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightDisplay}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingTight}" />
+    </Style>
+
+    <!-- Heading 1 -->
+    <Style x:Key="Heading1TextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeading1}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightHeading}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingTight}" />
+    </Style>
+
+    <!-- Heading 2 -->
+    <Style x:Key="Heading2TextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeading2}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightHeading}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Heading 3 -->
+    <Style x:Key="Heading3TextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeading3}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightHeading}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Body Large -->
+    <Style x:Key="BodyLargeTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Body (Default) -->
+    <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Body Secondary (gray text) -->
+    <Style x:Key="BodySecondaryTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Body Small -->
+    <Style x:Key="BodySmallTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBodySmall}" />
+        <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
+    </Style>
+
+    <!-- Caption -->
+    <Style x:Key="CaptionTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightCaption}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingWide}" />
+    </Style>
+
+    <!-- Button Text -->
+    <Style x:Key="ButtonTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeButton}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightButton}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingWide}" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+</ResourceDictionary>
