@@ -1,271 +1,237 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.Prompts.UseCases;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
-using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 using QuickPrompt.Tools.Messages;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels;
 
-public partial class EditPromptPageViewModel(IPromptRepository _databaseService, AdmobService admobService) : BaseViewModel(_databaseService, admobService), IQueryAttributable
+/// <summary>
+/// ViewModel for editing an existing prompt.
+/// Refactored to use Use Cases and services - Phase 1.
+/// </summary>
+public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
 {
-    // ============================== 🌟 PROPIEDADES ==============================
+    // 🆕 Use Cases and Services (injected)
+    private readonly GetPromptByIdUseCase _getPromptByIdUseCase;
+    private readonly UpdatePromptUseCase _updatePromptUseCase;
+    private readonly IDialogService _dialogService;
+    private readonly AdmobService _adMobService;
 
-    [ObservableProperty] private PromptTemplate promptTemplate;
-
+    // Properties
+    [ObservableProperty] private PromptTemplate promptTemplate = new();
     [ObservableProperty] private int cursorPosition;
-
     [ObservableProperty] private int selectionLength;
+    [ObservableProperty] private string promptText = string.Empty;
+    [ObservableProperty] public string selectedCategory = string.Empty;
 
-    [ObservableProperty] private string promptText;
+    private bool isNavigateFromRoot;
 
-    [ObservableProperty] public string selectedCategory;
+    // Constructor with dependency injection
+    public EditPromptPageViewModel(
+        GetPromptByIdUseCase getPromptByIdUseCase,
+        UpdatePromptUseCase updatePromptUseCase,
+        IDialogService dialogService,
+        AdmobService admobService)
+    {
+        _getPromptByIdUseCase = getPromptByIdUseCase ?? throw new ArgumentNullException(nameof(getPromptByIdUseCase));
+        _updatePromptUseCase = updatePromptUseCase ?? throw new ArgumentNullException(nameof(updatePromptUseCase));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+        _adMobService = admobService ?? throw new ArgumentNullException(nameof(admobService));
+    }
 
-    bool isNavigateFromRoot;
+    // ============================ NAVIGATION ============================
 
-    // ============================== 📌 MÉTODOS DE CARGA Y NAVEGACIÓN ==============================
-
-    /// <summary>
-    /// Aplica atributos de navegación y carga el prompt si el ID es válido.
-    /// </summary>
     public async void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        await ExecuteWithLoadingAsync(async () =>
+        IsLoading = true;
+        try
         {
-            if (query.TryGetValue("selectedId", out var selectedId) && Guid.TryParse(selectedId?.ToString(), out Guid promptId))
+            if (query.TryGetValue("selectedId", out var selectedId) && 
+                Guid.TryParse(selectedId?.ToString(), out Guid promptId))
             {
-
                 isNavigateFromRoot = query.TryGetValue("isNavigateFromRoot", out var isRootNavigation)
                                 && bool.TryParse(isRootNavigation?.ToString(), out var navigationRoot)
                                 ? navigationRoot
                                 : true;
 
                 await LoadPromptAsync(promptId);
-
                 IsVisualModeActive = false;
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowErrorAsync($"Error loading prompt: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
-    /// <summary>
-    /// Carga un prompt desde la base de datos y actualiza la interfaz.
-    /// </summary>
     private async Task LoadPromptAsync(Guid promptId)
     {
-        await ExecuteWithLoadingAsync(async () =>
+        var result = await _getPromptByIdUseCase.ExecuteAsync(promptId);
+
+        if (result.IsFailure)
         {
-            var prompt = await _databaseService.GetPromptByIdAsync(promptId);
+            await _dialogService.ShowErrorAsync(result.Error);
+            await GoBackAsync();
+            return;
+        }
 
-            if (prompt != null)
-            {
-                this.PromptTemplate = prompt;
-
-                this.PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template).ToDictionary(v => v, v => string.Empty);
-
-                this.SelectedCategory = this.promptTemplate.Category.ToString();
-
-                UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(prompt.Template));
-            }
-            else
-            {
-                await AppShell.Current.DisplayAlert("Notice", AppMessagesEng.Prompts.PromptNotFound, "OK");
-
-                await GoBackAsync();
-            }
-        }, AppMessagesEng.Prompts.PromptLoadError);
+        var prompt = result.Value;
+        PromptTemplate = prompt;
+        PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template)
+            .ToDictionary(v => v, v => string.Empty);
+        SelectedCategory = PromptTemplate.Category.ToString();
+        UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(prompt.Template));
     }
 
-    /// <summary>
-    /// Navega a la página de detalles del prompt.
-    /// </summary>
     [RelayCommand]
     private async Task GoToDetail()
     {
-        if (this.PromptTemplate != null)
+        if (PromptTemplate != null)
         {
-            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={this.PromptTemplate.Id}", true);
+            await Shell.Current.GoToAsync($"PromptDetailsPage?selectedId={PromptTemplate.Id}", true);
         }
     }
 
-    // ============================== 🔄 MÉTODOS PARA ACTUALIZACIÓN DEL PROMPT ==============================
+    // ============================ UPDATE PROMPT ============================
 
-    /// <summary>
-    /// Actualiza los cambios del prompt si es válido.
-    /// </summary>
     [RelayCommand]
     private async Task UpdateChangesAsync()
     {
-        await ExecuteWithLoadingAsync(async () =>
+        IsLoading = true;
+        try
         {
             _adMobService.LoadInterstitialAd();
 
-            if (!ValidatePromptTemplate())
+            // Update variables
+            PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(PromptTemplate.Template)
+                .ToDictionary(v => v, v => string.Empty);
+
+            // Create request
+            var request = new UpdatePromptRequest
+            {
+                PromptId = PromptTemplate.Id,
+                Title = PromptTemplate.Title,
+                Description = PromptTemplate.Description,
+                Template = PromptTemplate.Template,
+                Category = SelectedCategory
+            };
+
+            // Execute use case
+            var result = await _updatePromptUseCase.ExecuteAsync(request);
+
+            if (result.IsFailure)
+            {
+                await _dialogService.ShowErrorAsync(result.Error);
                 return;
+            }
 
-            UpdatePromptVariables();
+            // Update local instance
+            PromptTemplate = result.Value;
 
-            await UpdatePromptChangesAsync();
-
-            // ✅ Espera que el anuncio se cierre
+            // Show ad
             await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-            await GenericToolBox.ShowLottieMessageAsync("CompleteAnimation.json", AppMessagesEng.Prompts.PromptUpdatedSuccess);
+            // Show success
+            await _dialogService.ShowLottieMessageAsync(
+                "CompleteAnimation.json",
+                AppMessagesEng.Prompts.PromptUpdatedSuccess);
 
+            // Navigate back
             await GoBackAsync();
 
-            WeakReferenceMessenger.Default.Send(new UpdatedPromptMessage(promptTemplate));
-        }, AppMessagesEng.Prompts.PromptSaveError);
-    }
-
-    /// <summary>
-    /// Valida que el prompt tenga un título y contenido válido.
-    /// </summary>
-    private bool ValidatePromptTemplate()
-    {
-        var validator = new PromptValidator();
-
-        string validationError = validator.ValidateEn(PromptTemplate.Title, PromptTemplate.Template,SelectedCategory);
-
-        if (!string.IsNullOrEmpty(validationError))
-        {
-            AppShell.Current.DisplayAlert("Error", validationError, "OK").ConfigureAwait(false);
-
-            return false;
+            // Notify other ViewModels
+            WeakReferenceMessenger.Default.Send(new UpdatedPromptMessage(PromptTemplate));
         }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Extrae y actualiza las variables del prompt.
-    /// </summary>
-    private void UpdatePromptVariables()
-    {
-        PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(PromptTemplate.Template).ToDictionary(v => v, v => string.Empty);
-    }
-
-    /// <summary>
-    /// Guarda los cambios del prompt en la base de datos.
-    /// </summary>
-    private async Task UpdatePromptChangesAsync()
-    {
-        var _category = Enum.TryParse(typeof(PromptCategory), SelectedCategory.ToString(), out var category) ? (PromptCategory)category : PromptCategory.General;
-
-        var _updatedResponse = await _databaseService.UpdatePromptAsync(
-              PromptTemplate.Id,
-              PromptTemplate.Title,
-              PromptTemplate.Template,
-              PromptTemplate.Description,
-              PromptTemplate.Variables,
-              _category);
-
-        if (_updatedResponse != null)
+        catch (Exception ex)
         {
-            this.promptTemplate = _updatedResponse;
+            await _dialogService.ShowErrorAsync($"{AppMessagesEng.Prompts.PromptSaveError}: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
-    // ============================== 🔠 MANEJO DE TEXTO Y VARIABLES ==============================
+    // ============================ VARIABLE HANDLING ============================
 
-    /// <summary> Elimina las llaves `<>` del texto seleccionado. </summary>
-    private async Task RemoveBracesFromSelectedText()
-    {
-        await HandleSelectedTextAsync(this.CursorPosition, this.SelectionLength);
-    }
-
-    /// <summary>
-    /// Maneja la selección de texto para quitar llaves `{}` si están presentes.
-    /// </summary>
-    public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
-    {
-        var handler = new AngleBraceTextHandler(this.PromptTemplate.Template);
-
-        if (handler.IsSelectionValid(cursorPosition, selectionLength))
-        {
-            var (startIndex, length) = handler.AdjustSelectionForAngleBraces(cursorPosition, selectionLength);
-
-            string selectedText = handler.ExtractTextWithoutAngleBraces(startIndex, length);
-
-            // Remover el sufijo "/n" si existe en la variable
-            selectedText = AngleBraceTextHandler.RemoveVariableSuffix(selectedText);
-
-            handler.UpdateText(startIndex, length, selectedText);
-
-            this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-            UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
-        }
-        else
-        {
-            await AlertService.ShowAlert("Warning", AppMessagesEng.Warnings.InvalidTextSelection);
-        }
-    }
-
-    /// <summary>
-    /// Convierte el texto seleccionado en una variable rodeada de `{}`.
-    /// </summary>
     [RelayCommand]
     private async Task CreateVariableAsync()
     {
-        if (IsSelectionValid(this.PromptTemplate.Template, this.SelectionLength))
+        if (IsSelectionValid(PromptTemplate.Template, SelectionLength))
         {
             EncloseSelectedTextWithBraces();
         }
         else
         {
-            await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
+            await _dialogService.ShowErrorAsync(AppMessagesEng.Warnings.SelectWordError);
         }
     }
 
     private async void EncloseSelectedTextWithBraces()
     {
-        var handler = new AngleBraceTextHandler(this.PromptTemplate.Template);
+        var handler = new AngleBraceTextHandler(PromptTemplate.Template);
 
-        // Verificar si la selección es válida
         if (!handler.IsSelectionValid(CursorPosition, SelectionLength))
         {
-            await AlertService.ShowAlert("Error", AppMessagesEng.Warnings.SelectWordError);
+            await _dialogService.ShowErrorAsync(AppMessagesEng.Warnings.SelectWordError);
             return;
         }
 
-        // Si ya está rodeado por llaves, eliminarlas
         if (handler.IsSurroundedByAngleBraces(CursorPosition, SelectionLength))
         {
             await RemoveBracesFromSelectedText();
-
             return;
         }
 
-        // Extraer el texto seleccionado
-        string selectedText = this.PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
+        string selectedText = PromptTemplate.Template.Substring(CursorPosition, SelectionLength);
 
-        if (AngleBraceTextHandler.ContainsVariable($"<{selectedText}>", this.PromptTemplate.Template))
+        if (AngleBraceTextHandler.ContainsVariable($"<{selectedText}>", PromptTemplate.Template))
         {
-            var _nextVariableVersion = AngleBraceTextHandler.GetNextVariableSuffixVersion(this.PromptTemplate.Template, selectedText);
-
-            // Agregar sufijo numérico para hacer el nombre único
-            selectedText += _nextVariableVersion;
+            var nextVersion = AngleBraceTextHandler.GetNextVariableSuffixVersion(PromptTemplate.Template, selectedText);
+            selectedText += nextVersion;
         }
 
-        // Actualizar el texto con las llaves `<>` incluidas
         handler.UpdateText(CursorPosition, SelectionLength, $"<{selectedText}>");
-
-        // Actualizar la plantilla con el nuevo texto
-        this.PromptTemplate = InitializePromptTemplate(this.PromptTemplate, handler.Text);
-
-        // Actualizar el contador de variables
+        PromptTemplate = InitializePromptTemplate(PromptTemplate, handler.Text);
         UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
     }
 
-    // ============================== 🔧 MÉTODO AUXILIAR PARA INICIALIZAR PROMPTS ==============================
+    private async Task RemoveBracesFromSelectedText()
+    {
+        await HandleSelectedTextAsync(CursorPosition, SelectionLength);
+    }
 
-    /// <summary>
-    /// Inicializa un nuevo objeto `PromptTemplate` con valores actualizados.
-    /// </summary>
+    public async Task HandleSelectedTextAsync(int cursorPosition, int selectionLength)
+    {
+        var handler = new AngleBraceTextHandler(PromptTemplate.Template);
+
+        if (handler.IsSelectionValid(cursorPosition, selectionLength))
+        {
+            var (startIndex, length) = handler.AdjustSelectionForAngleBraces(cursorPosition, selectionLength);
+            string selectedText = handler.ExtractTextWithoutAngleBraces(startIndex, length);
+            selectedText = AngleBraceTextHandler.RemoveVariableSuffix(selectedText);
+            handler.UpdateText(startIndex, length, selectedText);
+            PromptTemplate = InitializePromptTemplate(PromptTemplate, handler.Text);
+            UpdateSelectedTextLabelCount(AngleBraceTextHandler.CountWordsWithAngleBraces(handler.Text));
+        }
+        else
+        {
+            await _dialogService.ShowAlertAsync("Warning", AppMessagesEng.Warnings.InvalidTextSelection);
+        }
+    }
+
+    // ============================ HELPERS ============================
+
     private PromptTemplate InitializePromptTemplate(PromptTemplate existingPrompt, string newTemplate)
     {
         return new PromptTemplate
@@ -277,20 +243,24 @@ public partial class EditPromptPageViewModel(IPromptRepository _databaseService,
             Variables = AngleBraceTextHandler.ExtractVariables(newTemplate).ToDictionary(v => v, v => string.Empty)
         };
     }
+
     public override async Task MyBack()
     {
-        await ExecuteWithLoadingAsync(async () =>
+        IsLoading = true;
+        try
         {
             if (isNavigateFromRoot)
-            {
                 await GoBackAsync();
-            }
             else
-            {
-            await GoToDetail();
-            }
-
-
-        }, AppMessagesEng.GenericError);
+                await GoToDetail();
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowErrorAsync($"{AppMessagesEng.GenericError}: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }
