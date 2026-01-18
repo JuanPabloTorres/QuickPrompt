@@ -110,8 +110,9 @@ public partial class GuidePage : ContentPage, IQueryAttributable
         {
             NextButton.Text = "⚡ Start Now";
             NextButton.ImageSource = null;
-            NextButton.BackgroundColor = Color.FromArgb("#23486A");
-            NextButton.TextColor = Colors.White;
+            // ✅ Use Design System token instead of hardcoded color
+            NextButton.BackgroundColor = (Color)Application.Current.Resources["PrimaryBlueDark"];
+            NextButton.TextColor = (Color)Application.Current.Resources["White"];
         }
         else
         {
@@ -120,9 +121,10 @@ public partial class GuidePage : ContentPage, IQueryAttributable
             {
                 FontFamily = "MaterialIconsOutlined-Regular",
                 Glyph = "\ue5e1",
-                Color = Colors.White
+                Color = (Color)Application.Current.Resources["White"]
             };
-            NextButton.BackgroundColor = Color.FromArgb("#EFB036");
+            // ✅ Use Design System token instead of hardcoded color
+            NextButton.BackgroundColor = (Color)Application.Current.Resources["PrimaryYellow"];
         }
     }
 
