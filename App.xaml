@@ -7,33 +7,41 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- ============================================ -->
-                <!-- DESIGN SYSTEM TOKENS (Phase 2 - Load First) -->
-                <!-- ============================================ -->
-                <ResourceDictionary Source="Resources/Styles/DesignTokens/Colors.xaml" />
-                <ResourceDictionary Source="Resources/Styles/DesignTokens/Typography.xaml" />
-                <ResourceDictionary Source="Resources/Styles/DesignTokens/Spacing.xaml" />
-                <ResourceDictionary Source="Resources/Styles/DesignTokens/Tokens.xaml" />
+                <!--  
+                ==================================================================================
+                QuickPrompt Design System - Resource Dictionary Order
+                Version: 1.0
+                Phase: 2 - Foundation
+                
+                Order matters! Colors must be defined before they're referenced
+                ==================================================================================
+                -->
 
-                <!-- ============================================ -->
-                <!-- LEGACY STYLES (To be refactored in Phase 3)  -->
-                <!-- ============================================ -->
-                <ResourceDictionary Source="Resources/Styles/AppColors.xaml" />
-
+                <!-- Step 1: Colors (Base tokens - must be first) -->
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
 
+                <!-- Step 2: Typography (Depends on Colors for text colors) -->
+                <ResourceDictionary Source="Resources/Styles/Typography.xaml" />
+
+                <!-- Step 3: Spacing (Standalone tokens) -->
+                <ResourceDictionary Source="Resources/Styles/Spacing.xaml" />
+
+                <!-- Step 4: Shadows (Depends on Colors for shadow brush) -->
+                <ResourceDictionary Source="Resources/Styles/Shadows.xaml" />
+
+                <!-- Step 5: Tokens (Miscellaneous - radius, sizing, animation, opacity) -->
+                <ResourceDictionary Source="Resources/Styles/Tokens.xaml" />
+
+                <!-- Step 6: Legacy/Existing Styles (Keep for backward compatibility) -->
+                <ResourceDictionary Source="Resources/Styles/AppColors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/Borders.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/ButtonStyles.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/LabelStyles.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/EntryEditorStyles.xaml" />
-
                 <ResourceDictionary Source="Resources/Styles/VisualElementsStyles.xaml" />
 
+                <!-- Step 7: Converters (Last - utility classes) -->
                 <ResourceDictionary Source="Resources/Styles/Converters.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

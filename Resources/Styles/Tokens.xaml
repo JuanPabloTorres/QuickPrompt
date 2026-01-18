@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--  
+    ==================================================================================
+    QuickPrompt Design System - Miscellaneous Tokens
+    Version: 1.0
+    Phase: 2 - Foundation
+    Based on: docs/design-system/DESIGN_TOKENS.md
+    Includes: Border Radius, Sizing, Animation, Opacity
+    ==================================================================================
+    -->
+
+    <!-- ============================================================================
+         BORDER RADIUS TOKENS
+         5 standardized radius sizes for consistent rounded corners
+         ============================================================================ -->
+    
+    <x:Double x:Key="RadiusSm">4</x:Double>
+    <x:Double x:Key="RadiusMd">8</x:Double>
+    <x:Double x:Key="RadiusLg">12</x:Double>
+    <x:Double x:Key="RadiusXl">16</x:Double>
+    <x:Double x:Key="RadiusPill">9999</x:Double>  <!-- Pill shape (fully rounded) -->
+
+    <!-- Component-Specific Radius Aliases -->
+    <x:Double x:Key="ButtonRadius">{StaticResource RadiusMd}</x:Double>
+    <x:Double x:Key="InputRadius">{StaticResource RadiusSm}</x:Double>
+    <x:Double x:Key="CardRadius">{StaticResource RadiusMd}</x:Double>
+    <x:Double x:Key="ModalRadius">{StaticResource RadiusLg}</x:Double>
+
+    <!-- ============================================================================
+         COMPONENT HEIGHTS
+         Standardized heights for consistency and accessibility (44dp minimum)
+         ============================================================================ -->
+    
+    <!-- Button Heights -->
+    <x:Double x:Key="ButtonHeightSmall">36</x:Double>
+    <x:Double x:Key="ButtonHeightMedium">44</x:Double>   <!-- Default, meets 44dp touch target -->
+    <x:Double x:Key="ButtonHeightLarge">52</x:Double>
+
+    <!-- Input Heights -->
+    <x:Double x:Key="InputHeight">44</x:Double>  <!-- Standard input field -->
+    <x:Double x:Key="InputHeightSmall">36</x:Double>
+
+    <!-- Icon Sizes -->
+    <x:Double x:Key="IconSizeXs">16</x:Double>
+    <x:Double x:Key="IconSizeSm">20</x:Double>
+    <x:Double x:Key="IconSizeMd">24</x:Double>
+    <x:Double x:Key="IconSizeLg">32</x:Double>
+    <x:Double x:Key="IconSizeXl">48</x:Double>
+
+    <!-- ============================================================================
+         LAYOUT WIDTH CONSTRAINTS
+         Maximum widths for content readability
+         ============================================================================ -->
+    
+    <x:Double x:Key="ContentMaxWidth">1200</x:Double>  <!-- Desktop max content width -->
+    <x:Double x:Key="ContentMaxWidthNarrow">680</x:Double>  <!-- For readable text -->
+
+    <!-- ============================================================================
+         ANIMATION DURATION TOKENS (Milliseconds)
+         Consistent timing for all animations
+         ============================================================================ -->
+    
+    <x:Int32 x:Key="AnimationDurationInstant">100</x:Int32>
+    <x:Int32 x:Key="AnimationDurationFast">200</x:Int32>
+    <x:Int32 x:Key="AnimationDurationMedium">300</x:Int32>
+    <x:Int32 x:Key="AnimationDurationSlow">500</x:Int32>
+
+    <!-- ============================================================================
+         EASING FUNCTIONS
+         Note: Easing cannot be defined as XAML resources. 
+         Use directly in code as: Easing.SinOut, Easing.SinIn, Easing.SinInOut, Easing.Linear
+         
+         Standard easing curves for natural motion:
+         - EaseOut (SinOut): Most common, elements enter decisively
+         - EaseIn (SinIn): Elements exit
+         - EaseInOut (SinInOut): Symmetrical
+         - Linear: Progress indicators
+         ============================================================================ -->
+
+    <!-- ============================================================================
+         OPACITY TOKENS
+         Standardized opacity levels for disabled/secondary states
+         ============================================================================ -->
+    
+    <x:Double x:Key="OpacityDisabled">0.38</x:Double>
+    <x:Double x:Key="OpacitySecondary">0.60</x:Double>
+    <x:Double x:Key="OpacityTertiary">0.87</x:Double>
+    <x:Double x:Key="OpacityFull">1.0</x:Double>
+
+    <!-- Overlay Opacity -->
+    <x:Double x:Key="OpacityOverlayLight">0.3</x:Double>
+    <x:Double x:Key="OpacityOverlayDark">0.5</x:Double>
+
+    <!-- ============================================================================
+         Z-INDEX / LAYERING (Conceptual)
+         MAUI doesn't have explicit z-index, but these guide element ordering
+         ============================================================================ -->
+    
+    <x:Int32 x:Key="ZIndexBase">0</x:Int32>          <!-- Default layer -->
+    <x:Int32 x:Key="ZIndexCard">1</x:Int32>          <!-- Cards above background -->
+    <x:Int32 x:Key="ZIndexDropdown">10</x:Int32>     <!-- Dropdowns -->
+    <x:Int32 x:Key="ZIndexModal">100</x:Int32>       <!-- Modals -->
+    <x:Int32 x:Key="ZIndexToast">200</x:Int32>       <!-- Toasts/snackbars -->
+    <x:Int32 x:Key="ZIndexLoading">300</x:Int32>     <!-- Full-screen loading -->
+
+</ResourceDictionary>
