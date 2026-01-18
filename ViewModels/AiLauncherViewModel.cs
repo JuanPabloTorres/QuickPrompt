@@ -1,43 +1,44 @@
 ﻿using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
-using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using QuickPrompt.Extensions;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.Constants;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
-using QuickPrompt.Tools;
-using QuickPrompt.Constants;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.ViewModels
 {
+    /// <summary>
+    /// ViewModel for AI Engine Launcher page.
+    /// Refactored to use Use Cases and services - Phase 1.
+    /// </summary>
     public partial class AiLauncherViewModel : BaseViewModel
     {
-        [ObservableProperty] 
-        private string selectedPrompt = string.Empty;
+        // 🆕 Services (injected)
+        private readonly IFinalPromptRepository _finalPromptRepository;
+        private readonly IDialogService _dialogService;
 
-        [ObservableProperty] 
-        public string selectedCategory;
+        // Properties
+        [ObservableProperty] private string selectedPrompt = string.Empty;
+        [ObservableProperty] public string selectedCategory = string.Empty;
+        [ObservableProperty] private string selectedEngine = string.Empty;
 
-        [ObservableProperty]
-        private string selectedEngine = string.Empty;
-
-        public AiLauncherViewModel(IFinalPromptRepository finalPromptRepository) : base(finalPromptRepository)
+        // Constructor with dependency injection
+        public AiLauncherViewModel(
+            IFinalPromptRepository finalPromptRepository,
+            IDialogService dialogService)
         {
+            _finalPromptRepository = finalPromptRepository ?? throw new ArgumentNullException(nameof(finalPromptRepository));
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         }
 
-        /// <summary>
-        /// Load all final prompts from the database
-        /// </summary>
+        // ============================ LOAD PROMPTS ============================
+
         public async Task LoadFinalPrompts()
         {
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
                 var prompts = await _finalPromptRepository.GetAllAsync();
 
@@ -47,55 +48,71 @@ namespace QuickPrompt.ViewModels
                 var newPrompts = prompts
                     .DistinctBy(v => v.CompletedText)
                     .Select(s => s.CompletedText)
-                    .OrderByDescending(p => p) // Most recent first
-                    .Take(10) // Limit to 10 most recent
+                    .OrderByDescending(p => p)
+                    .Take(10)
                     .ToList();
 
                 FinalPrompts.Clear();
-                
+
                 if (newPrompts.Any())
                 {
-                    FinalPrompts.AddRange(newPrompts);
+                    foreach (var prompt in newPrompts)
+                    {
+                        FinalPrompts.Add(prompt);
+                    }
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error loading prompts: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        /// <summary>
-        /// Launch an AI engine with or without a prompt
-        /// </summary>
+        // ============================ LAUNCH ENGINE ============================
+
         [RelayCommand]
         private async Task LaunchEngine(string engineName)
         {
-            await ExecuteWithLoadingAsync(async () =>
+            if (string.IsNullOrWhiteSpace(engineName))
             {
-                if (string.IsNullOrWhiteSpace(engineName))
-                {
-                    await AlertService.ShowAlert("Error", "Invalid AI engine selected.");
-                    return;
-                }
+                await _dialogService.ShowErrorAsync("Invalid AI engine selected.");
+                return;
+            }
 
+            IsLoading = true;
+            try
+            {
                 SelectedEngine = engineName;
 
-                // If no prompt selected, launch with empty prompt (user can type in the engine)
-                var promptToSend = string.IsNullOrWhiteSpace(SelectedPrompt) 
-                    ? string.Empty 
+                var promptToSend = string.IsNullOrWhiteSpace(SelectedPrompt)
+                    ? string.Empty
                     : SelectedPrompt;
 
                 var toast = Toast.Make($"Launching {engineName}...", ToastDuration.Short);
                 await toast.Show();
 
-                // Navigate to EngineWebViewPage
                 await NavigateToAsync(NavigationRoutes.EngineWebView, new Dictionary<string, object>
                 {
                     { NavigationParameters.EngineName, engineName },
                     { NavigationParameters.Prompt, promptToSend }
                 });
-            });
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error launching engine: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        /// <summary>
-        /// Select a prompt from the list and prompt user to choose an engine
-        /// </summary>
+        // ============================ SELECT PROMPT ============================
+
         [RelayCommand]
         private async Task SelectPrompt(string promptText)
         {
@@ -104,8 +121,7 @@ namespace QuickPrompt.ViewModels
 
             SelectedPrompt = promptText;
 
-            // Show action sheet to choose engine
-            var action = await Shell.Current.DisplayActionSheet(
+            var action = await _dialogService.ShowActionSheetAsync(
                 "Choose AI Engine",
                 "Cancel",
                 null,
@@ -121,13 +137,12 @@ namespace QuickPrompt.ViewModels
             }
         }
 
-        /// <summary>
-        /// Clear all prompts and reset selection
-        /// </summary>
+        // ============================ CLEAR PROMPTS ============================
+
         [RelayCommand]
         public async Task Clear()
         {
-            bool confirm = await Shell.Current.DisplayAlert(
+            bool confirm = await _dialogService.ShowConfirmationAsync(
                 "Confirm",
                 "Are you sure you want to clear all recent prompts?",
                 "Yes",
@@ -137,11 +152,11 @@ namespace QuickPrompt.ViewModels
             if (!confirm)
                 return;
 
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
-                // Delete all final prompts from database
                 var prompts = await _finalPromptRepository.GetAllAsync();
-                
+
                 if (prompts != null && prompts.Any())
                 {
                     foreach (var prompt in prompts)
@@ -156,23 +171,29 @@ namespace QuickPrompt.ViewModels
 
                 var toast = Toast.Make("All prompts cleared", ToastDuration.Short);
                 await toast.Show();
-            });
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error clearing prompts: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        /// <summary>
-        /// Filter prompts by category
-        /// </summary>
+        // ============================ FILTER BY CATEGORY ============================
+
         async partial void OnSelectedCategoryChanged(string value)
         {
-            await ExecuteWithLoadingAsync(async () =>
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            IsLoading = true;
+            try
             {
                 if (Enum.TryParse<PromptCategory>(value, out var parsedCategory))
                 {
-                    if (_finalPromptRepository is null)
-                    {
-                        return;
-                    }
-
                     var prompts = await _finalPromptRepository.GetFinalPromptsByCategoryAsync(parsedCategory);
 
                     FinalPrompts.Clear();
@@ -182,44 +203,54 @@ namespace QuickPrompt.ViewModels
                         FinalPrompts.Add(prompt.CompletedText);
                     }
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error filtering prompts: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        /// <summary>
-        /// Delete a single final prompt
-        /// </summary>
+        // ============================ DELETE SINGLE PROMPT ============================
+
         [RelayCommand]
         private async Task DeleteFinalPrompt(string promptText)
         {
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
                 var prompt = await _finalPromptRepository.FindByCompletedTextAsync(promptText);
 
                 if (prompt is not null)
                 {
                     await _finalPromptRepository.DeleteAsync(prompt.Id);
-
                     FinalPrompts.Remove(promptText);
 
-                    var toast = Toast.Make($"Prompt removed", ToastDuration.Short);
-
+                    var toast = Toast.Make("Prompt removed", ToastDuration.Short);
                     await toast.Show();
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error deleting prompt: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        /// <summary>
-        /// Navigate to Quick Prompts tab
-        /// </summary>
+        // ============================ NAVIGATION ============================
+
         [RelayCommand]
         private async Task GoToQuickPrompts()
         {
             await Shell.Current.GoToAsync("//Quick");
         }
 
-        /// <summary>
-        /// Navigate to Create tab
-        /// </summary>
         [RelayCommand]
         private async Task GoToCreate()
         {
