@@ -1,17 +1,26 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.Prompts.UseCases;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
-using QuickPrompt.Tools;
+using QuickPrompt.Services;
 using System.Collections.ObjectModel;
 
 namespace QuickPrompt.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the Prompt Builder wizard.
+    /// Refactored to use Use Cases and services - Phase 1.
+    /// </summary>
     public partial class PromptBuilderPageViewModel : BaseViewModel
     {
-        // ----------------------------------
-        // 1) Listado global de formatos
-        // ----------------------------------
+        // 🆕 Use Cases and Services (injected)
+        private readonly CreatePromptUseCase _createPromptUseCase;
+        private readonly IDialogService _dialogService;
+        private readonly AdmobService _adMobService;
+
+        // Properties
         public ObservableCollection<string> AvailableFormats { get; } = new ObservableCollection<string>
         {
             "List",
@@ -20,98 +29,70 @@ namespace QuickPrompt.ViewModels
             "Numbered Outline"
         };
 
-        // ----------------------------------
-        // 2) Colección de pasos
-        // ----------------------------------
         public ObservableCollection<StepModel> Steps { get; set; }
 
-        // ----------------------------------
-        // 3) Propiedades para controlar navegación y estado de UI
-        // ----------------------------------
-        [ObservableProperty]
-        private int currentStep;
+        [ObservableProperty] private int currentStep;
+        [ObservableProperty] private string nextButtonText = string.Empty;
+        [ObservableProperty] private string nextButtonIcon = string.Empty;
+        [ObservableProperty] private Color nextButtonBackground = Colors.Gray;
+        [ObservableProperty] private Color nextButtonTextColor = Colors.White;
+        [ObservableProperty] private bool canGoNext;
 
-        [ObservableProperty]
-        private bool isLoading;
-
-        [ObservableProperty]
-        private string nextButtonText;
-
-        [ObservableProperty]
-        private string nextButtonIcon;
-
-        [ObservableProperty]
-        private Color nextButtonBackground;
-
-        [ObservableProperty]
-        private Color nextButtonTextColor;
-
-        [ObservableProperty]
-        private bool canGoNext;
-
-
+        // Constructor with dependency injection
         public PromptBuilderPageViewModel(
-
-
-        )
+            CreatePromptUseCase createPromptUseCase,
+            IDialogService dialogService,
+            AdmobService adMobService)
         {
-            // 4) Crear cada StepModel (sin formatos aún)
+            _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+            _adMobService = adMobService ?? throw new ArgumentNullException(nameof(adMobService));
+
+            InitializeSteps();
+        }
+
+        private void InitializeSteps()
+        {
             var contextStep = new StepModel(StepType.Context, "Step 1: Context", "E.g., You are a digital marketing expert...");
             var taskStep = new StepModel(StepType.Task, "Step 2: Task", "E.g., Generate 5 creative post ideas...");
-            var examplesStep = new StepModel(StepType.Examples, "Step 3: Examples", "E.g., '5 tips to improve photography', '3 common mistakes when creating reels'");
+            var examplesStep = new StepModel(StepType.Examples, "Step 3: Examples", "E.g., '5 tips to improve photography'");
             var formatStep = new StepModel(StepType.Format, "Step 4: Format", "E.g., List, Comparison Table...");
             var limitsStep = new StepModel(StepType.Limits, "Step 5: Constraints", "E.g., Max 7 titles, 10 words each.");
             var previewStep = new StepModel(StepType.Preview, "Step 6: Preview", string.Empty, isPreviewStep: true);
 
-            // 5) Copiar AvailableFormats al StepModel de tipo Format
             foreach (var fmt in AvailableFormats)
             {
                 formatStep.AvailableFormats.Add(fmt);
             }
 
-            // 6) Construir la colección de Steps
             Steps = new ObservableCollection<StepModel>
             {
-                contextStep,
-                taskStep,
-                examplesStep,
-                formatStep,
-                limitsStep,
-                previewStep
+                contextStep, taskStep, examplesStep, formatStep, limitsStep, previewStep
             };
 
-            // 7) Suscribirse a cambios de PROPERTY de cada StepModel (InputText, SelectedOption, IsValid, etc.)
             foreach (var step in Steps)
             {
                 step.PropertyChanged += Step_PropertyChanged;
             }
 
-            // 8) Inicializar el paso actual y estados iniciales
             CurrentStep = 0;
             UpdatePreviewStep();
             UpdateNavigationState();
         }
 
-        // ----------------------------------
-        // 9) Cada vez que CurrentStep cambie, actualizamos la Preview y la navegación
-        // ----------------------------------
+        // ============================ STEP NAVIGATION ============================
+
         partial void OnCurrentStepChanged(int value)
         {
-            // Si el usuario llegó al paso Preview, recalculamos el contenido
             if (value == Steps.Count - 1)
             {
                 UpdatePreviewStep();
             }
-
             UpdateNavigationState();
         }
 
-        // ----------------------------------
-        // 10) Responder a cambios en cualquier StepModel (InputText, SelectedOption, IsValid, etc.)
-        // ----------------------------------
-        private void Step_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void Step_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            // Si cambian los textos o la selección de formato, volvemos a calcular Preview y habilitamos/deshabilitamos “Next”
             if (e.PropertyName is nameof(StepModel.InputText)
                 or nameof(StepModel.SelectedOption)
                 or nameof(StepModel.IsContextValid)
@@ -125,12 +106,8 @@ namespace QuickPrompt.ViewModels
             }
         }
 
-        // ----------------------------------
-        // 11) Construir el contenido del paso “Preview”
-        // ----------------------------------
         public void UpdatePreviewStep()
         {
-            // ✅ Validar que Steps no sea null
             if (Steps == null || Steps.Count == 0)
                 return;
 
@@ -153,10 +130,6 @@ namespace QuickPrompt.ViewModels
             {
                 segments.Add(taskText.TrimEnd('.'));
             }
-            else if (!string.IsNullOrWhiteSpace(contextText))
-            {
-                segments.Add($"Assume you are {contextText.TrimEnd('.')}");
-            }
 
             if (!string.IsNullOrWhiteSpace(examplesText))
             {
@@ -165,7 +138,7 @@ namespace QuickPrompt.ViewModels
 
             if (!string.IsNullOrWhiteSpace(formatText))
             {
-                segments.Add($"Present your results in a {formatText.ToLower().TrimEnd('.')}{(formatText.EndsWith("format", StringComparison.OrdinalIgnoreCase) ? "" : " format")}");
+                segments.Add($"Present your results in a {formatText.ToLower()} format");
             }
 
             if (!string.IsNullOrWhiteSpace(limitsText))
@@ -174,7 +147,6 @@ namespace QuickPrompt.ViewModels
             }
 
             var combined = string.Join(". ", segments);
-
             if (!string.IsNullOrWhiteSpace(combined) && !combined.EndsWith("."))
             {
                 combined += ".";
@@ -182,32 +154,22 @@ namespace QuickPrompt.ViewModels
 
             previewStep.PreviewContent = combined;
 
-            // ✅ Validar antes de acceder con First()
+            // Update validation flags
             var contextStep = Steps.FirstOrDefault(s => s.Type == StepType.Context);
             var taskStep = Steps.FirstOrDefault(s => s.Type == StepType.Task);
             var examplesStep = Steps.FirstOrDefault(s => s.Type == StepType.Examples);
             var formatStep = Steps.FirstOrDefault(s => s.Type == StepType.Format);
             var limitsStep = Steps.FirstOrDefault(s => s.Type == StepType.Limits);
 
-            if (contextStep != null)
-                previewStep.IsContextValid = contextStep.IsContextValid;
-            if (taskStep != null)
-                previewStep.IsTaskValid = taskStep.IsTaskValid;
-            if (examplesStep != null)
-                previewStep.AreExamplesValid = examplesStep.AreExamplesValid;
-            if (formatStep != null)
-                previewStep.IsFormatValid = formatStep.IsFormatValid;
-            if (limitsStep != null)
-                previewStep.AreLimitsValid = limitsStep.AreLimitsValid;
+            if (contextStep != null) previewStep.IsContextValid = contextStep.IsContextValid;
+            if (taskStep != null) previewStep.IsTaskValid = taskStep.IsTaskValid;
+            if (examplesStep != null) previewStep.AreExamplesValid = examplesStep.AreExamplesValid;
+            if (formatStep != null) previewStep.IsFormatValid = formatStep.IsFormatValid;
+            if (limitsStep != null) previewStep.AreLimitsValid = limitsStep.AreLimitsValid;
         }
 
-
-        // ----------------------------------
-        // 12) Actualizar estado de botón “Next” según el paso actual y su validación
-        // ----------------------------------
         private void UpdateNavigationState()
         {
-            // ✅ Validar que Steps no sea null y CurrentStep sea válido
             if (Steps == null || Steps.Count == 0 || CurrentStep >= Steps.Count)
             {
                 CanGoNext = false;
@@ -216,7 +178,6 @@ namespace QuickPrompt.ViewModels
 
             var step = Steps[CurrentStep];
 
-            // Si estamos en Preview, habilitamos para "Complete"
             if (step.IsPreviewStep)
             {
                 CanGoNext = true;
@@ -227,7 +188,6 @@ namespace QuickPrompt.ViewModels
                 return;
             }
 
-            // Para cualquier otro paso, "Next" solo si step.IsValid == true
             CanGoNext = step.IsValid;
 
             if (CanGoNext)
@@ -246,9 +206,8 @@ namespace QuickPrompt.ViewModels
             }
         }
 
-        // ----------------------------------
-        // 13) Comando para terminar el prompt (último paso)
-        // ----------------------------------
+        // ============================ COMMANDS ============================
+
         [RelayCommand]
         public async Task FinishPromptAsync()
         {
@@ -257,12 +216,11 @@ namespace QuickPrompt.ViewModels
             var preview = Steps.FirstOrDefault(s => s.Type == StepType.Preview);
             if (preview == null) return;
 
-            bool confirmed = await AppShell.Current.DisplayAlert(
+            bool confirmed = await _dialogService.ShowConfirmationAsync(
                 "Final Prompt",
                 preview.PreviewContent,
                 "Accept",
-                "Cancel"
-            );
+                "Cancel");
 
             if (confirmed)
             {
@@ -270,27 +228,20 @@ namespace QuickPrompt.ViewModels
             }
         }
 
-        // ----------------------------------
-        // 14) Comando para guardar el prompt
-        // ----------------------------------
         [RelayCommand]
         private async Task SavePromptAsync()
         {
-            await ExecuteWithLoadingAsync(async () =>
+            IsLoading = true;
+            try
             {
                 UpdatePreviewStep();
                 var preview = Steps.First(s => s.Type == StepType.Preview);
 
-                if (!preview.IsContextValid
-                    || !preview.IsTaskValid
-                    || !preview.IsFormatValid
-                    || !preview.AreLimitsValid)
+                if (!preview.IsContextValid || !preview.IsTaskValid || 
+                    !preview.IsFormatValid || !preview.AreLimitsValid)
                 {
-                    await AppShell.Current.DisplayAlert(
-                        "Error",
-                        "Please complete Context, Task, Format, and Constraints.",
-                        "OK"
-                    );
+                    await _dialogService.ShowErrorAsync(
+                        "Please complete Context, Task, Format, and Constraints.");
                     return;
                 }
 
@@ -310,37 +261,48 @@ namespace QuickPrompt.ViewModels
                     autoTitle = "Generated Prompt";
                 }
 
-                var newPrompt = PromptTemplate.CreatePromptTemplate(
-                    autoTitle,
-                    string.Empty,
-                    fullTemplate,
-                    PromptCategory.General
-                );
-                await _databaseService.SavePromptAsync(newPrompt);
+                var request = new CreatePromptRequest
+                {
+                    Title = autoTitle,
+                    Description = string.Empty,
+                    Template = $"<prompt>{fullTemplate}</prompt>",
+                    Category = PromptCategory.General.ToString()
+                };
+
+                var result = await _createPromptUseCase.ExecuteAsync(request);
+
+                if (result.IsFailure)
+                {
+                    await _dialogService.ShowErrorAsync(result.Error);
+                    return;
+                }
+
                 await _adMobService.ShowInterstitialAdAndWaitAsync();
 
-                await GenericToolBox.ShowLottieMessageAsync(
+                await _dialogService.ShowLottieMessageAsync(
                     "CompleteAnimation.json",
-                    "Prompt saved successfully."
-                );
+                    "Prompt saved successfully.");
 
-                // Limpiar todos los pasos
+                // Clear all steps
                 foreach (var step in Steps)
                 {
                     step.InputText = string.Empty;
                     step.SelectedOption = string.Empty;
                 }
 
-                // Reiniciar al primer paso
                 CurrentStep = 0;
                 UpdatePreviewStep();
-            },
-            "Error saving prompt.");
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowErrorAsync($"Error saving prompt: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        // ----------------------------------
-        // 15) Comando para probar el prompt
-        // ----------------------------------
         [RelayCommand]
         private async Task TestPromptAsync()
         {
@@ -349,25 +311,13 @@ namespace QuickPrompt.ViewModels
 
             if (string.IsNullOrWhiteSpace(context) || string.IsNullOrWhiteSpace(task))
             {
-                await AppShell.Current.DisplayAlert(
-                    "Error",
-                    "Please complete Context and Task.",
-                    "OK"
-                );
+                await _dialogService.ShowErrorAsync("Please complete Context and Task.");
                 return;
             }
 
             UpdatePreviewStep();
             var preview = Steps.First(s => s.Type == StepType.Preview);
-            await AppShell.Current.DisplayAlert("Prompt Preview", preview.PreviewContent, "OK");
-        }
-    }
-
-    public static class TaskExtensions
-    {
-        public static void FireAndForget(this Task task)
-        {
-            _ = task.ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);
+            await _dialogService.ShowAlertAsync("Prompt Preview", preview.PreviewContent);
         }
     }
 }

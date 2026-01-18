@@ -1,64 +1,86 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
 using QuickPrompt.Models;
 using QuickPrompt.Services;
-using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
 
 namespace QuickPrompt.ViewModels;
 
 /// <summary>
-/// ViewModel para la página de configuración. Maneja la información de la versión de la aplicación.
+/// ViewModel for the settings page.
+/// Refactored to use Use Cases and services - Phase 1.
 /// </summary>
 public partial class SettingViewModel : BaseViewModel
 {
-    [ObservableProperty]
-    private string appVersion;
+    // 🆕 Services (injected)
+    private readonly DatabaseServiceManager _databaseServiceManager;
+    private readonly IDialogService _dialogService;
 
-    /// <summary>
-    /// Constructor que inicializa la versión de la aplicación.
-    /// </summary>
-    /// <param name="appSettings">
-    /// Instancia de la configuración de la aplicación.
-    /// </param>
-    public SettingViewModel(AppSettings appSettings, DatabaseServiceManager dbManager) : base(dbManager)
+    [ObservableProperty] private string appVersion;
+
+    // Constructor with dependency injection
+    public SettingViewModel(
+        AppSettings appSettings,
+        DatabaseServiceManager dbManager,
+        IDialogService dialogService)
     {
-        appVersion = appSettings?.Version ?? "Unknown Version"; // Evita valores nulos
+        _databaseServiceManager = dbManager ?? throw new ArgumentNullException(nameof(dbManager));
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+        appVersion = appSettings?.Version ?? "Unknown Version";
     }
 
-    /// <summary>
-    /// Comando para borrar la base de datos.
-    /// </summary>
+    // ============================ DATABASE ============================
+
     [RelayCommand]
     private async Task RestoreDatabaseAsync()
     {
-        await ExecuteWithLoadingAsync(async () =>
+        bool confirm = await _dialogService.ShowConfirmationAsync(
+            AppMessagesEng.ConfirmationTitle,
+            AppMessagesEng.RestoreConfirmationMessage,
+            AppMessagesEng.Yes,
+            AppMessagesEng.No);
+
+        if (!confirm)
+            return;
+
+        IsLoading = true;
+        try
         {
-            bool confirm = await AppShell.Current.DisplayAlert(
-          AppMessagesEng.ConfirmationTitle,
-          AppMessagesEng.RestoreConfirmationMessage,
-          AppMessagesEng.Yes,
-          AppMessagesEng.No);
+            await _databaseServiceManager.RestoreAsync();
 
-            if (!confirm)
-                return;
-
-            await databaseServiceManager.RestoreAsync();
-
-            await GenericToolBox.ShowLottieMessageAsync(
+            await _dialogService.ShowLottieMessageAsync(
                 "CompleteAnimation.json",
                 AppMessagesEng.DatabaseRestore);
-        }, AppMessagesEng.GenericError);
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowErrorAsync($"{AppMessagesEng.GenericError}: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
+
+    // ============================ NAVIGATION ============================
 
     [RelayCommand]
     private async Task OpenGuideLinkAsync()
     {
-        await ExecuteWithLoadingAsync(async () =>
+        IsLoading = true;
+        try
         {
             var uri = new Uri("https://estjuanpablotorres.wixsite.com/quickprompt");
-
             await Launcher.Default.OpenAsync(uri);
-        }, AppMessagesEng.GenericError);
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowErrorAsync($"Error opening guide: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }
