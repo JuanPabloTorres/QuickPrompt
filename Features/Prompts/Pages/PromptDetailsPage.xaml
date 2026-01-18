@@ -72,7 +72,7 @@
             <!--  Título Principal  -->
             <Label
                 FontAttributes="Bold"
-                FontSize="24"
+                Style="{StaticResource Heading1TextStyle}"
                 HorizontalOptions="Center"
                 Text="{Binding PromptTitle}"
                 TextColor="{StaticResource PrimaryBlueDark}" />
@@ -83,7 +83,7 @@
                 Padding="6,2"
                 BackgroundColor="{StaticResource PrimaryRed}"
                 FontAttributes="Bold"
-                FontSize="13"
+                Style="{StaticResource BodySmallTextStyle}"
                 HorizontalOptions="Start"
                 Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
                 TextColor="White"
@@ -94,7 +94,7 @@
 
             <!--  Descripción  -->
             <Label
-                FontSize="16"
+                Style="{StaticResource BodyLargeTextStyle}"
                 HorizontalOptions="Center"
                 Text="{Binding Description}"
                 TextColor="{StaticResource PrimaryBlueLight}" />
@@ -108,7 +108,7 @@
                 StrokeThickness="1">
 
                 <Label
-                    FontSize="16"
+                    Style="{StaticResource BodyLargeTextStyle}"
                     Text="{Binding PromptText}"
                     TextColor="{StaticResource PrimaryBlueLight}" />
             </Border>
@@ -118,7 +118,7 @@
                     <Label
                         Margin="0,10,0,0"
                         FontAttributes="Bold"
-                        FontSize="20"
+                        Style="{StaticResource Heading2TextStyle}"
                         Text="Complete the Variables:"
                         TextColor="{StaticResource AppBlack}" />
 
@@ -135,7 +135,7 @@
 
                                     <Label
                                         FontAttributes="Bold"
-                                        FontSize="16"
+                                        Style="{StaticResource BodyLargeTextStyle}"
                                         Text="{Binding Name}"
                                         TextColor="{StaticResource PrimaryBlueDark}" />
 
@@ -201,7 +201,7 @@
             <Label
                 Margin="0,10"
                 FontAttributes="Italic"
-                FontSize="15"
+                Style="{StaticResource BodyTextStyle}"
                 IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
                 LineBreakMode="WordWrap"
                 Text="{Binding FinalPrompt, StringFormat='Complete Prompt Generated: {0}'}"
@@ -213,7 +213,7 @@
             <!--  Instrucciones finales  -->
             <Label
                 Margin="0,10,0,5"
-                FontSize="18"
+                Style="{StaticResource Heading3TextStyle}"
                 FontAttributes="Bold"
                 HorizontalOptions="Center"
                 IsVisible="{Binding ShowPromptActions}"
