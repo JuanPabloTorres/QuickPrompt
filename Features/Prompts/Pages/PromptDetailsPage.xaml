@@ -51,7 +51,7 @@
         <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
+                    FontFamily="MaterialIconsOutlined.Regular"
                     Glyph="&#xe5c9;"
                     Color="{StaticResource PrimaryRed}" />
                 <!--  Color asociado al botón Copiar  -->
@@ -102,8 +102,8 @@
             <!--  Prompt Principal  -->
             <Border
                 Padding="12"
-                BackgroundColor="#F6F6F6"
-                Stroke="#DDDDDD"
+                BackgroundColor="{StaticResource SurfaceCard}"
+                Stroke="{StaticResource BorderLight}"
                 StrokeShape="RoundRectangle 8"
                 StrokeThickness="1">
 
