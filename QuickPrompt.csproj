@@ -232,6 +232,10 @@
     <None Include="$(UserProfile)\.nuget\packages\mtadmob.ios.binding\11.2.0.1\lib\net8.0-ios18.0\MTAdmob.Google.MobileAds.resources\GoogleMobileAds.xcframework\ios-arm64_x86_64-simulator\GoogleMobileAds.framework\Headers\Mediation\GADMediatedUnifiedNativeAdNotificationSource.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include=".github\ISSUE_TEMPLATE\bug_report.yml" />
+    <None Include=".github\ISSUE_TEMPLATE\feature_request.yml" />
+    <None Include=".github\pull_request_template.md" />
+    <None Include=".github\workflows\ci-cd.yml" />
     <None Include="QuickPrompt.Tests\QuickPrompt.Tests.csproj" />
     <None Include="Tests\QuickPrompt.Tests.csproj" />
     <None Include="Tests\QuickPrompt.Tests.sln" />
