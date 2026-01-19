@@ -18,6 +18,9 @@ public partial class EditPromptPage : ContentPage
         _viewModel = viewModel;
 
         BindingContext = viewModel;
+
+        // Subscribe to property changes for chip rendering
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     protected override void OnAppearing()
@@ -217,5 +220,16 @@ public partial class EditPromptPage : ContentPage
     private void SwitchToEditor(object sender, EventArgs e)
     {
         _viewModel.IsVisualModeActive = false;
+    }
+
+    private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(_viewModel.IsVisualModeActive))
+        {
+            if (_viewModel.IsVisualModeActive && !string.IsNullOrWhiteSpace(_viewModel.PromptTemplate?.Template))
+            {
+                RenderPromptAsChips(_viewModel.PromptTemplate.Template);
+            }
+        }
     }
 }

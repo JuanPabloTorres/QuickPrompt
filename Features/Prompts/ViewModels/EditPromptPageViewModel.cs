@@ -263,4 +263,21 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
             IsLoading = false;
         }
     }
+
+    // ============================ MODE SWITCHING ============================
+
+    [RelayCommand]
+    private void SwitchToEditor()
+    {
+        IsVisualModeActive = false;
+    }
+
+    [RelayCommand]
+    private void SwitchToChips()
+    {
+        if (!string.IsNullOrWhiteSpace(PromptTemplate?.Template))
+        {
+            IsVisualModeActive = true;
+        }
+    }
 }

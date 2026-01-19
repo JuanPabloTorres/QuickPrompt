@@ -4,6 +4,8 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:QuickPrompt.Views"
+    xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
+    xmlns:inputs="clr-namespace:QuickPrompt.Components.Inputs"
     BackgroundColor="WhiteSmoke"
     Shell.PresentationMode="Animated">
 
@@ -74,7 +76,7 @@
                 <!--  Explicación breve  -->
                 <Label
                     Grid.Row="1"
-                    FontSize="14"
+                    Style="{StaticResource BodySmallTextStyle}"
                     Text="Create your prompt by completing the title, description, and main prompt below. You can insert variables using the floating &lt;&gt; button."
                     TextColor="Gray" />
 
@@ -82,34 +84,21 @@
                 <BoxView Grid.Row="2" Style="{StaticResource DividerLineStyle}" />
 
                 <!--  Campo: Title  -->
-
-                <VerticalStackLayout Grid.Row="3">
-
-                    <Label
-                        Grid.Row="3"
-                        HorizontalOptions="Start"
-                        Style="{StaticResource TitleLabelStyle}"
-                        Text="Title " />
-                    <Border Grid.Row="3" Style="{StaticResource InputBorderStyle}">
-                        <Entry
-                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                            Placeholder="Example: Blog Post Generator"
-                            Style="{StaticResource InputEntryStyle}"
-                            Text="{Binding PromptTemplate.Title}" />
-                    </Border>
-                </VerticalStackLayout>
+                <inputs:TextInput 
+                    Grid.Row="3"
+                    Label="Title"
+                    Placeholder="Example: Blog Post Generator"
+                    Text="{Binding PromptTemplate.Title}"
+                    ShowLabel="True" />
 
                 <!--  Campo: Description  -->
-
                 <VerticalStackLayout Grid.Row="4">
-
                     <Label
-                        Grid.Row="4"
-                        FontSize="14"
+                        Style="{StaticResource BodySmallTextStyle}"
+                        FontAttributes="Bold"
                         HorizontalOptions="Start"
-                        Style="{StaticResource TitleLabelStyle}"
-                        Text="Description (optional) " />
-                    <Border Grid.Row="4" Style="{StaticResource InputBorderStyle}">
+                        Text="Description (optional)" />
+                    <Border Style="{StaticResource InputBorderStyle}">
                         <Editor
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                             IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}"
@@ -174,38 +163,36 @@
                     <!--  Guía inicial para el usuario  -->
                     <Label
                         Margin="0,5,0,10"
-                        FontSize="13"
+                        Style="{StaticResource BodySmallTextStyle}"
                         HorizontalTextAlignment="Center"
                         LineBreakMode="WordWrap"
                         Text="💡 Switch between visual and text modes to edit your prompt. Tap any &lt;variable&gt; chip to rename it."
                         TextColor="Gray" />
 
                     <!--  Botones de modo  -->
-                    <HorizontalStackLayout Margin="5" HorizontalOptions="Center">
+                    <HorizontalStackLayout Margin="5" HorizontalOptions="Center" Spacing="8">
 
-                        <Button
-                            Clicked="SwitchToEditor"
-                            Style="{StaticResource YellowButtonStyle}"
-                            Text="Text Mode">
-                            <Button.ImageSource>
+                        <buttons:SecondaryButton
+                            Text="Text Mode"
+                            Command="{Binding SwitchToEditorCommand}">
+                            <buttons:SecondaryButton.ImageSource>
                                 <FontImageSource
                                     FontFamily="MaterialIconsOutlined-Regular"
                                     Glyph="&#xe5d8;"
-                                    Color="Black" />
-                            </Button.ImageSource>
-                        </Button>
+                                    Color="{StaticResource PrimaryBlue}" />
+                            </buttons:SecondaryButton.ImageSource>
+                        </buttons:SecondaryButton>
 
-                        <Button
-                            Clicked="SwitchToChips"
-                            Style="{StaticResource YellowButtonStyle}"
-                            Text="Visual Mode">
-                            <Button.ImageSource>
+                        <buttons:PrimaryButton
+                            Text="Visual Mode"
+                            Command="{Binding SwitchToChipsCommand}">
+                            <buttons:PrimaryButton.ImageSource>
                                 <FontImageSource
                                     FontFamily="MaterialIconsOutlined-Regular"
                                     Glyph="&#xe5db;"
-                                    Color="Black" />
-                            </Button.ImageSource>
-                        </Button>
+                                    Color="White" />
+                            </buttons:PrimaryButton.ImageSource>
+                        </buttons:PrimaryButton>
                     </HorizontalStackLayout>
 
                     <!--  Contenedor de chips dentro de ScrollView que sí funciona  -->
@@ -227,7 +214,7 @@
                     <Label
                         x:Name="ChipHintLabel"
                         Margin="0,5,0,0"
-                        FontSize="12"
+                        Style="{StaticResource CaptionTextStyle}"
                         HorizontalTextAlignment="Center"
                         Text="💡 Tap on a variable chip (like &lt;topic&gt;) to edit its name."
                         TextColor="Gray" />
