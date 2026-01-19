@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ResourceDictionary
-    x:Class="QuickPrompt.Resources.Styles.Borders"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
@@ -12,8 +11,6 @@
         <Setter Property="Stroke" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="StrokeShape" Value="RoundRectangle 12,12,12,12" />
         <Setter Property="StrokeThickness" Value="1" />
-
-
     </Style>
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
@@ -29,9 +26,7 @@
 
     <!--  Estilo reutilizable para tarjetas (Border) con bordes redondeados y sombra  -->
     <Style x:Key="loadingBorderStyle" TargetType="Border">
-
         <Setter Property="BackgroundColor" Value="Gray" />
-
     </Style>
 
     <!--  Estilo para bordes de entradas de texto  -->
@@ -42,8 +37,8 @@
         <Setter Property="StrokeThickness" Value="1" />
         <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="Padding" Value="5" />
-
     </Style>
+
     <!--  Estilo para el Border de entrada  -->
     <Style x:Key="InputBorderStyle2" TargetType="Border">
         <Setter Property="Padding" Value="5" />
@@ -73,7 +68,7 @@
         <Setter Property="HeightRequest" Value="380" />
         <Setter Property="Background" Value="GhostWhite" />
         <Setter Property="Shadow" Value="{StaticResource MyShadow}" />
-        <Setter Property="Stroke" Value=" GhostWhite" />
+        <Setter Property="Stroke" Value="GhostWhite" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="10,10,10,10" />

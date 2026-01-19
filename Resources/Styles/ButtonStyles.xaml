@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ResourceDictionary
-    x:Class="QuickPrompt.Resources.Styles.ButtonStyles"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:enums="clr-namespace:QuickPrompt.Tools"
@@ -18,7 +17,7 @@
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.3"
                     Radius="8"
                     Offset="5,5" />
@@ -45,7 +44,7 @@
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.2"
                     Radius="8"
                     Offset="0,2" />
@@ -93,12 +92,11 @@
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Center" />
         <Setter Property="TextColor" Value="White" />
-
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.3"
                     Radius="8"
                     Offset="5,5" />
@@ -178,13 +176,11 @@
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryYellow}" />
         <Setter Property="BorderColor" Value="{StaticResource PrimaryYellow}" />
         <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="BorderWidth" Value="1" />
         <Setter Property="Margin" Value="8" />
-
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.3"
                     Radius="8"
                     Offset="5,5" />
@@ -212,7 +208,7 @@
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.3"
                     Radius="10"
                     Offset="5,5" />
@@ -255,7 +251,7 @@
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.3"
                     Radius="10"
                     Offset="5,5" />
@@ -341,7 +337,7 @@
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
-                    Brush="{StaticResource AppBlack}"
+                    Brush="Black"
                     Opacity="0.2"
                     Radius="8"
                     Offset="2,2" />

@@ -4,10 +4,10 @@ namespace QuickPrompt
 {
     public partial class App : Application
     {
-        DatabaseServiceManager _databaseServiceManager;
-        private readonly AppShell _appShell;
+        private readonly DatabaseServiceManager _databaseServiceManager;
+        private readonly IServiceProvider _serviceProvider;
 
-        public App(DatabaseServiceManager databaseServiceManager, AppShell appShell)
+        public App(DatabaseServiceManager databaseServiceManager, IServiceProvider serviceProvider)
         {
             global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Starting...");
 
@@ -17,7 +17,7 @@ namespace QuickPrompt
                 global::System.Diagnostics.Debug.WriteLine("[App.Constructor] InitializeComponent completed");
 
                 _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
-                _appShell = appShell ?? throw new ArgumentNullException(nameof(appShell));
+                _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
                 global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Dependencies injected");
 
                 // ✅ Database initialization in background with error handling
@@ -52,13 +52,24 @@ namespace QuickPrompt
 
             try
             {
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Using injected AppShell");
-
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating Window...");
-                var window = new Window
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Resolving AppShell from service provider...");
+                
+                // ✅ FIX: Use injected service provider directly instead of Handler.MauiContext
+                var appShell = _serviceProvider.GetRequiredService<AppShell>();
+                
+                if (appShell == null)
                 {
-                    Page = _appShell
+                    throw new InvalidOperationException("Failed to resolve AppShell from service provider");
+                }
+
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] AppShell resolved successfully");
+                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating Window...");
+                
+                var window = new Window(appShell)
+                {
+                    Title = "QuickPrompt"
                 };
+                
                 global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Window created successfully");
 
                 return window;
