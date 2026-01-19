@@ -161,6 +161,15 @@
     <MauiXaml Update="Components\ComponentCatalogPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Components\Containers\ElevatedCard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Components\Containers\OutlinedCard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Components\Containers\StandardCard.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Components\Inputs\PasswordInput.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
