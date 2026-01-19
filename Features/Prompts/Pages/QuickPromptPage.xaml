@@ -81,12 +81,12 @@
                 SelectionMode="None">
 
                 <CollectionView.EmptyView>
-                    <!-- 🆕 Using EmptyStateView control for better UX -->
+                    <!--  🆕 Using EmptyStateView control for better UX  -->
                     <localcontrols:EmptyStateView
-                        Icon="{x:Static localcontrols:EmptyStates+Icons.Inbox}"
                         Title="No prompts found"
-                        Description="{Binding EmptyViewText}"
                         ButtonText="Create First Prompt"
+                        Description="{Binding EmptyViewText}"
+                        Icon="{x:Static localcontrols:EmptyStates+Icons.Inbox}"
                         ShowButton="True">
                         <localcontrols:EmptyStateView.ButtonCommand>
                             <Binding Path="NavigateToCreateCommand" />

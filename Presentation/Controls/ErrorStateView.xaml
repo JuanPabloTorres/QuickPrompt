@@ -1,74 +1,84 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Controls.ErrorStateView"
-             x:Name="Root">
-    
-    <VerticalStackLayout Spacing="16"
-                         HorizontalOptions="Center"
-                         VerticalOptions="Center"
-                         Padding="40">
-        
-        <!-- Error Icon -->
-        <Label FontFamily="MaterialIconsOutlined-Regular"
-               FontSize="80"
-               HorizontalOptions="Center"
-               TextColor="{StaticResource Error}"
-               Text="&#xe000;" />
-        
-        <!-- Error Title -->
-        <Label Style="{StaticResource Heading2TextStyle}"
-               FontAttributes="Bold"
-               HorizontalOptions="Center"
-               HorizontalTextAlignment="Center"
-               TextColor="{StaticResource Gray900}"
-               Text="{Binding Title, Source={x:Reference Root}}" />
-        
-        <!-- Error Message -->
-        <Label Style="{StaticResource BodySmallTextStyle}"
-               HorizontalOptions="Center"
-               HorizontalTextAlignment="Center"
-               TextColor="{StaticResource Gray600}"
-               Text="{Binding Message, Source={x:Reference Root}}"
-               MaximumWidthRequest="300" />
-        
-        <!-- Technical Details (Collapsible) -->
-        <Border IsVisible="{Binding ShowDetails, Source={x:Reference Root}}"
-                StrokeThickness="1"
-                Stroke="{StaticResource Gray300}"
-                BackgroundColor="{StaticResource Gray100}"
-                Padding="12"
-                Margin="0,8,0,0">
+<ContentView
+    x:Class="QuickPrompt.Controls.ErrorStateView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
+
+    <VerticalStackLayout
+        Padding="40"
+        HorizontalOptions="Center"
+        Spacing="16"
+        VerticalOptions="Center">
+
+        <!--  Error Icon  -->
+        <Label
+            FontFamily="MaterialIconsOutlined-Regular"
+            FontSize="80"
+            HorizontalOptions="Center"
+            Text="&#xe000;"
+            TextColor="{StaticResource Error}" />
+
+        <!--  Error Title  -->
+        <Label
+            FontAttributes="Bold"
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center"
+            Style="{StaticResource Heading2TextStyle}"
+            Text="{Binding Title, Source={x:Reference Root}}"
+            TextColor="{StaticResource Gray900}" />
+
+        <!--  Error Message  -->
+        <Label
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center"
+            MaximumWidthRequest="300"
+            Style="{StaticResource BodySmallTextStyle}"
+            Text="{Binding Message, Source={x:Reference Root}}"
+            TextColor="{StaticResource Gray600}" />
+
+        <!--  Technical Details (Collapsible)  -->
+        <Border
+            Margin="0,8,0,0"
+            Padding="12"
+            BackgroundColor="{StaticResource Gray100}"
+            IsVisible="{Binding ShowDetails, Source={x:Reference Root}}"
+            Stroke="{StaticResource Gray300}"
+            StrokeThickness="1">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="8" />
             </Border.StrokeShape>
-            
-            <Label Style="{StaticResource CaptionTextStyle}"
-                   FontFamily="Consolas"
-                   TextColor="{StaticResource Gray700}"
-                   Text="{Binding Details, Source={x:Reference Root}}"
-                   LineBreakMode="WordWrap" />
+
+            <Label
+                FontFamily="Consolas"
+                LineBreakMode="WordWrap"
+                Style="{StaticResource CaptionTextStyle}"
+                Text="{Binding Details, Source={x:Reference Root}}"
+                TextColor="{StaticResource Gray700}" />
         </Border>
-        
-        <!-- Action Buttons -->
-        <HorizontalStackLayout Spacing="12"
-                               HorizontalOptions="Center"
-                               Margin="0,16,0,0">
-            
-            <!-- Retry Button -->
-            <Button Text="{Binding RetryButtonText, Source={x:Reference Root}}"
-                    Command="{Binding RetryCommand, Source={x:Reference Root}}"
-                    IsVisible="{Binding ShowRetryButton, Source={x:Reference Root}}"
-                    Style="{StaticResource PrimaryButton}" />
-            
-            <!-- Secondary Action Button -->
-            <Button Text="{Binding SecondaryButtonText, Source={x:Reference Root}}"
-                    Command="{Binding SecondaryCommand, Source={x:Reference Root}}"
-                    IsVisible="{Binding ShowSecondaryButton, Source={x:Reference Root}}"
-                    Style="{StaticResource SecondaryButton}" />
-            
+
+        <!--  Action Buttons  -->
+        <HorizontalStackLayout
+            Margin="0,16,0,0"
+            HorizontalOptions="Center"
+            Spacing="12">
+
+            <!--  Retry Button  -->
+            <Button
+                Command="{Binding RetryCommand, Source={x:Reference Root}}"
+                IsVisible="{Binding ShowRetryButton, Source={x:Reference Root}}"
+                Style="{StaticResource PrimaryButton}"
+                Text="{Binding RetryButtonText, Source={x:Reference Root}}" />
+
+            <!--  Secondary Action Button  -->
+            <Button
+                Command="{Binding SecondaryCommand, Source={x:Reference Root}}"
+                IsVisible="{Binding ShowSecondaryButton, Source={x:Reference Root}}"
+                Style="{StaticResource SecondaryButton}"
+                Text="{Binding SecondaryButtonText, Source={x:Reference Root}}" />
+
         </HorizontalStackLayout>
-        
+
     </VerticalStackLayout>
-    
+
 </ContentView>

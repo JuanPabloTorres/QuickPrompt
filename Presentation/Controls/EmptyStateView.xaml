@@ -1,44 +1,50 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Controls.EmptyStateView"
-             x:Name="Root">
-    
-    <VerticalStackLayout Spacing="16"
-                         HorizontalOptions="Center"
-                         VerticalOptions="Center"
-                         Padding="40">
-        
-        <!-- Icon/Image -->
-        <Label FontFamily="MaterialIconsOutlined-Regular"
-               FontSize="80"
-               HorizontalOptions="Center"
-               TextColor="{StaticResource Gray400}"
-               Text="{Binding Icon, Source={x:Reference Root}}" />
-        
-        <!-- Title -->
-        <Label Style="{StaticResource Heading2TextStyle}"
-               FontAttributes="Bold"
-               HorizontalOptions="Center"
-               HorizontalTextAlignment="Center"
-               TextColor="{StaticResource Gray900}"
-               Text="{Binding Title, Source={x:Reference Root}}" />
-        
-        <!-- Description -->
-        <Label Style="{StaticResource BodySmallTextStyle}"
-               HorizontalOptions="Center"
-               HorizontalTextAlignment="Center"
-               TextColor="{StaticResource Gray600}"
-               Text="{Binding Description, Source={x:Reference Root}}"
-               MaximumWidthRequest="300" />
-        
-        <!-- Action Button (Optional) -->
-        <Button Text="{Binding ButtonText, Source={x:Reference Root}}"
-                Command="{Binding ButtonCommand, Source={x:Reference Root}}"
-                IsVisible="{Binding ShowButton, Source={x:Reference Root}}"
-                Style="{StaticResource PrimaryButton}"
-                Margin="0,16,0,0" />
-        
+<ContentView
+    x:Class="QuickPrompt.Controls.EmptyStateView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
+
+    <VerticalStackLayout
+        Padding="40"
+        HorizontalOptions="Center"
+        Spacing="16"
+        VerticalOptions="Center">
+
+        <!--  Icon/Image  -->
+        <Label
+            FontFamily="MaterialIconsOutlined-Regular"
+            FontSize="80"
+            HorizontalOptions="Center"
+            Text="{Binding Icon, Source={x:Reference Root}}"
+            TextColor="{StaticResource Gray400}" />
+
+        <!--  Title  -->
+        <Label
+            FontAttributes="Bold"
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center"
+            Style="{StaticResource Heading2TextStyle}"
+            Text="{Binding Title, Source={x:Reference Root}}"
+            TextColor="{StaticResource Gray900}" />
+
+        <!--  Description  -->
+        <Label
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center"
+            MaximumWidthRequest="300"
+            Style="{StaticResource BodySmallTextStyle}"
+            Text="{Binding Description, Source={x:Reference Root}}"
+            TextColor="{StaticResource Gray600}" />
+
+        <!--  Action Button (Optional)  -->
+        <Button
+            Margin="0,16,0,0"
+            Command="{Binding ButtonCommand, Source={x:Reference Root}}"
+            IsVisible="{Binding ShowButton, Source={x:Reference Root}}"
+            Style="{StaticResource PrimaryButton}"
+            Text="{Binding ButtonText, Source={x:Reference Root}}" />
+
     </VerticalStackLayout>
-    
+
 </ContentView>

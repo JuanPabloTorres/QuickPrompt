@@ -32,7 +32,7 @@
 
     <converters:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
 
-    <!-- 🆕 Integer Converters -->
+    <!--  🆕 Integer Converters  -->
     <presentationConverters:IntToBoolConverter x:Key="IntToBoolConverter" />
     <presentationConverters:IntToInverseBoolConverter x:Key="IntToInverseBoolConverter" />
 

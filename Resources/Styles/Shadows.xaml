@@ -1,74 +1,83 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<ResourceDictionary
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!--  
-    ==================================================================================
-    QuickPrompt Design System - Shadow & Elevation Tokens
-    Version: 1.0
-    Phase: 2 - Foundation
-    Based on: docs/design-system/DESIGN_TOKENS.md
-    5 Elevation Levels: None ? Raised ? Floating ? Overlay ? Modal
-    ==================================================================================
+    <!--
+        ==================================================================================
+        QuickPrompt Design System - Shadow & Elevation Tokens
+        Version: 1.0
+        Phase: 2 - Foundation
+        Based on: docs/design-system/DESIGN_TOKENS.md
+        5 Elevation Levels: None → Raised → Floating → Overlay → Modal
+        ==================================================================================
     -->
 
-    <!-- ============================================================================
-         SHADOW DEFINITIONS
-         5 elevation levels for consistent depth hierarchy
-         ============================================================================ -->
+    <!--
+        ============================================================================
+        SHADOW DEFINITIONS
+        5 elevation levels for consistent depth hierarchy
+        ============================================================================
+    -->
 
-    <!-- Level 0: Flat (No Shadow) -->
-    <Shadow x:Key="ShadowNone" 
-            Radius="0" 
-            Opacity="0" 
-            Offset="0,0" />
+    <!--  Level 0: Flat (No Shadow)  -->
+    <Shadow
+        x:Key="ShadowNone"
+        Opacity="0"
+        Radius="0"
+        Offset="0,0" />
 
-    <!-- Level 1: Raised (Subtle elevation) -->
-    <Shadow x:Key="ShadowLevel1" 
-            Radius="2" 
-            Opacity="0.05" 
-            Offset="0,1"
-            Brush="{StaticResource Black}" />
+    <!--  Level 1: Raised (Subtle elevation)  -->
+    <Shadow
+        x:Key="ShadowLevel1"
+        Brush="{StaticResource Black}"
+        Opacity="0.05"
+        Radius="2"
+        Offset="0,1" />
 
-    <!-- Level 2: Floating (Standard cards, hover states) -->
-    <Shadow x:Key="ShadowLevel2" 
-            Radius="6" 
-            Opacity="0.10" 
-            Offset="0,4"
-            Brush="{StaticResource Black}" />
+    <!--  Level 2: Floating (Standard cards, hover states)  -->
+    <Shadow
+        x:Key="ShadowLevel2"
+        Brush="{StaticResource Black}"
+        Opacity="0.10"
+        Radius="6"
+        Offset="0,4" />
 
-    <!-- Level 3: Overlay (Dropdowns, bottom sheets) -->
-    <Shadow x:Key="ShadowLevel3" 
-            Radius="15" 
-            Opacity="0.15" 
-            Offset="0,10"
-            Brush="{StaticResource Black}" />
+    <!--  Level 3: Overlay (Dropdowns, bottom sheets)  -->
+    <Shadow
+        x:Key="ShadowLevel3"
+        Brush="{StaticResource Black}"
+        Opacity="0.15"
+        Radius="15"
+        Offset="0,10" />
 
-    <!-- Level 4: Modal (Full-screen overlays, critical dialogs) -->
-    <Shadow x:Key="ShadowLevel4" 
-            Radius="25" 
-            Opacity="0.20" 
-            Offset="0,20"
-            Brush="{StaticResource Black}" />
+    <!--  Level 4: Modal (Full-screen overlays, critical dialogs)  -->
+    <Shadow
+        x:Key="ShadowLevel4"
+        Brush="{StaticResource Black}"
+        Opacity="0.20"
+        Radius="25"
+        Offset="0,20" />
 
-    <!-- ============================================================================
-         SEMANTIC SHADOW ALIASES
-         Usage-based names for common scenarios
-         ============================================================================ -->
-    
+    <!--
+        ============================================================================
+        SEMANTIC SHADOW ALIASES
+        Usage-based names for common scenarios
+        ============================================================================
+    -->
+
     <Shadow x:Key="ShadowCard">{StaticResource ShadowLevel1}</Shadow>
     <Shadow x:Key="ShadowCardHover">{StaticResource ShadowLevel2}</Shadow>
     <Shadow x:Key="ShadowFloating">{StaticResource ShadowLevel2}</Shadow>
     <Shadow x:Key="ShadowDropdown">{StaticResource ShadowLevel3}</Shadow>
     <Shadow x:Key="ShadowModal">{StaticResource ShadowLevel4}</Shadow>
 
-    <!-- ============================================================================
-         LEGACY SHADOW ALIAS
-         Maintained for backward compatibility
-         ============================================================================ -->
-    
-    <!-- Map old MyShadow to new ShadowCard -->
+    <!--
+        ============================================================================
+        LEGACY SHADOW ALIAS
+        Maintained for backward compatibility
+        ============================================================================
+    -->
+
+    <!--  Map old MyShadow to new ShadowCard  -->
     <Shadow x:Key="MyShadow">{StaticResource ShadowCard}</Shadow>
 
 </ResourceDictionary>

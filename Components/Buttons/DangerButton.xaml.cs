@@ -3,102 +3,50 @@ using System.Windows.Input;
 namespace QuickPrompt.Components.Buttons
 {
     /// <summary>
-    /// Primary button component for main call-to-action interactions.
+    /// Danger button component for destructive actions (delete, remove, etc.).
     /// Built with 100% Design System token compliance.
-    /// 
-    /// Features:
-    /// - Uses Design System colors (PrimaryBlue, White)
-    /// - Respects Design System spacing (ThicknessMd)
-    /// - Follows Design System sizing (ButtonHeightMedium, RadiusMd)
-    /// - Supports icons and text
-    /// - Animated press feedback
-    /// - Accessible (SemanticProperties, AutomationId)
+    /// Uses red/danger color to signal destructive action.
     /// </summary>
-    public partial class PrimaryButton : ContentView
+    public partial class DangerButton : ContentView
     {
         #region Bindable Properties
 
-        /// <summary>
-        /// Button text label
-        /// </summary>
         public static readonly BindableProperty TextProperty =
-            BindableProperty.Create(
-                nameof(Text),
-                typeof(string),
-                typeof(PrimaryButton),
-                string.Empty);
+            BindableProperty.Create(nameof(Text), typeof(string), typeof(DangerButton), string.Empty);
 
-        /// <summary>
-        /// Command to execute when button is tapped
-        /// </summary>
         public static readonly BindableProperty CommandProperty =
-            BindableProperty.Create(
-                nameof(Command),
-                typeof(ICommand),
-                typeof(PrimaryButton),
-                null);
+            BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(DangerButton), null);
 
-        /// <summary>
-        /// Parameter to pass to the Command
-        /// </summary>
         public static readonly BindableProperty CommandParameterProperty =
-            BindableProperty.Create(
-                nameof(CommandParameter),
-                typeof(object),
-                typeof(PrimaryButton),
-                null);
+            BindableProperty.Create(nameof(CommandParameter), typeof(object), typeof(DangerButton), null);
 
-        /// <summary>
-        /// Button background color (defaults to PrimaryBlue from Design System)
-        /// </summary>
         public static readonly BindableProperty BackgroundColorProperty =
             BindableProperty.Create(
-                nameof(BackgroundColor),
-                typeof(Color),
-                typeof(PrimaryButton),
-                Application.Current?.Resources["PrimaryBlue"] as Color ?? Colors.Blue);
+                nameof(BackgroundColor), 
+                typeof(Color), 
+                typeof(DangerButton), 
+                Application.Current?.Resources["Danger"] as Color ?? Colors.Red);
 
-        /// <summary>
-        /// Button text color (defaults to White from Design System)
-        /// </summary>
         public static readonly BindableProperty TextColorProperty =
             BindableProperty.Create(
-                nameof(TextColor),
-                typeof(Color),
-                typeof(PrimaryButton),
+                nameof(TextColor), 
+                typeof(Color), 
+                typeof(DangerButton), 
                 Application.Current?.Resources["White"] as Color ?? Colors.White);
 
-        /// <summary>
-        /// Optional icon/image source
-        /// </summary>
         public static readonly BindableProperty ImageSourceProperty =
             BindableProperty.Create(
-                nameof(ImageSource),
-                typeof(ImageSource),
-                typeof(PrimaryButton),
+                nameof(ImageSource), 
+                typeof(ImageSource), 
+                typeof(DangerButton), 
                 null,
                 propertyChanged: OnImageSourceChanged);
 
-        /// <summary>
-        /// Controls icon visibility (auto-calculated from ImageSource)
-        /// </summary>
         public static readonly BindableProperty ShowIconProperty =
-            BindableProperty.Create(
-                nameof(ShowIcon),
-                typeof(bool),
-                typeof(PrimaryButton),
-                false);
+            BindableProperty.Create(nameof(ShowIcon), typeof(bool), typeof(DangerButton), false);
 
-        /// <summary>
-        /// Button opacity (defaults to 1.0, reduced when disabled)
-        /// </summary>
         public static readonly BindableProperty OpacityProperty =
-            BindableProperty.Create(
-                nameof(Opacity),
-                typeof(double),
-                typeof(PrimaryButton),
-                1.0,
-                propertyChanged: OnOpacityChanged);
+            BindableProperty.Create(nameof(Opacity), typeof(double), typeof(DangerButton), 1.0);
 
         #endregion
 
@@ -156,15 +104,13 @@ namespace QuickPrompt.Components.Buttons
 
         #region Constructor
 
-        public PrimaryButton()
+        public DangerButton()
         {
             InitializeComponent();
 
-            // Set semantic properties for accessibility
-            SemanticProperties.SetDescription(this, "Primary action button");
-            AutomationId = "PrimaryButton";
+            SemanticProperties.SetDescription(this, "Danger action button - destructive");
+            AutomationId = "DangerButton";
 
-            // Handle IsEnabled changes for visual feedback
             PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(IsEnabled))
@@ -178,21 +124,14 @@ namespace QuickPrompt.Components.Buttons
 
         #region Event Handlers
 
-        /// <summary>
-        /// Handle button tap with animation feedback
-        /// </summary>
         private async void OnButtonTapped(object sender, TappedEventArgs e)
         {
             if (!IsEnabled || sender is not Border border)
                 return;
 
-            // ? Use Design System animation duration token
             var animationDuration = (int)Application.Current.Resources["AnimationDurationFast"];
 
-            // Press animation: scale down
             await border.ScaleTo(0.95, (uint)(animationDuration / 2), Easing.CubicOut);
-
-            // Release animation: scale back up
             await border.ScaleTo(1.0, (uint)(animationDuration / 2), Easing.CubicIn);
         }
 
@@ -202,38 +141,27 @@ namespace QuickPrompt.Components.Buttons
 
         private static void OnImageSourceChanged(BindableObject bindable, object oldValue, object newValue)
         {
-            if (bindable is PrimaryButton button)
+            if (bindable is DangerButton button)
             {
                 button.ShowIcon = newValue != null;
             }
-        }
-
-        private static void OnOpacityChanged(BindableObject bindable, object oldValue, object newValue)
-        {
-            // Opacity property change handled by XAML binding
         }
 
         #endregion
 
         #region Visual State Management
 
-        /// <summary>
-        /// Update visual appearance based on IsEnabled state
-        /// Uses Design System tokens for disabled state
-        /// </summary>
         private void UpdateVisualState()
         {
             if (!IsEnabled)
             {
-                // ? Use Design System tokens for disabled state
                 BackgroundColor = (Color)Application.Current.Resources["StateDisabledBackground"];
                 TextColor = (Color)Application.Current.Resources["StateDisabledText"];
                 Opacity = (double)Application.Current.Resources["OpacityDisabled"];
             }
             else
             {
-                // ? Use Design System tokens for enabled state
-                BackgroundColor = (Color)Application.Current.Resources["PrimaryBlue"];
+                BackgroundColor = (Color)Application.Current.Resources["Danger"];
                 TextColor = (Color)Application.Current.Resources["White"];
                 Opacity = (double)Application.Current.Resources["OpacityFull"];
             }

@@ -1,87 +1,102 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Controls.AIProviderButton"
-             x:Name="Root">
+<ContentView
+    x:Class="QuickPrompt.Controls.AIProviderButton"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
 
-    <Border BackgroundColor="{Binding ProviderColor, Source={x:Reference Root}}"
-            StrokeThickness="0"
-            Padding="0"
-            HeightRequest="60">
+    <Border
+        Padding="0"
+        BackgroundColor="{Binding ProviderColor, Source={x:Reference Root}}"
+        HeightRequest="60"
+        StrokeThickness="0">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="8" />
         </Border.StrokeShape>
 
-        <!-- Shadow -->
+        <!--  Shadow  -->
         <Border.Shadow>
-            <Shadow Brush="{StaticResource AppBlack}"
-                    Opacity="0.15"
-                    Radius="8"
-                    Offset="0,2" />
+            <Shadow
+                Brush="{StaticResource AppBlack}"
+                Opacity="0.15"
+                Radius="8"
+                Offset="0,2" />
         </Border.Shadow>
 
-        <!-- Tap Gesture -->
+        <!--  Tap Gesture  -->
         <Border.GestureRecognizers>
-            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
-                                  CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}" />
+            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}" CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}" />
         </Border.GestureRecognizers>
 
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16,12">
+        <Grid
+            Padding="16,12"
+            ColumnDefinitions="Auto,*,Auto"
+            ColumnSpacing="12">
 
-            <!-- Provider Logo/Icon -->
-            <Image Grid.Column="0"
-                   Source="{Binding ProviderIcon, Source={x:Reference Root}}"
-                   WidthRequest="32"
-                   HeightRequest="32"
-                   Aspect="AspectFit"
-                   VerticalOptions="Center"
-                   IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
+            <!--  Provider Logo/Icon  -->
+            <Image
+                Grid.Column="0"
+                Aspect="AspectFit"
+                HeightRequest="32"
+                IsVisible="{Binding ShowIcon, Source={x:Reference Root}}"
+                Source="{Binding ProviderIcon, Source={x:Reference Root}}"
+                VerticalOptions="Center"
+                WidthRequest="32" />
 
-            <!-- Fallback Icon (Material Icon) -->
-            <Label Grid.Column="0"
-                   Text="{Binding ProviderMaterialIcon, Source={x:Reference Root}}"
-                   FontFamily="MaterialIconsOutlined-Regular"
-                   FontSize="32"
-                   TextColor="White"
-                   VerticalOptions="Center"
-                   IsVisible="{Binding ShowMaterialIcon, Source={x:Reference Root}}" />
+            <!--  Fallback Icon (Material Icon)  -->
+            <Label
+                Grid.Column="0"
+                FontFamily="MaterialIconsOutlined-Regular"
+                FontSize="32"
+                IsVisible="{Binding ShowMaterialIcon, Source={x:Reference Root}}"
+                Text="{Binding ProviderMaterialIcon, Source={x:Reference Root}}"
+                TextColor="White"
+                VerticalOptions="Center" />
 
-            <!-- Provider Name & Description -->
-            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                <Label Text="{Binding ProviderName, Source={x:Reference Root}}"
-                       Style="{StaticResource BodyLargeTextStyle}"
-                       FontAttributes="Bold"
-                       TextColor="White" />
-                <Label Text="{Binding ProviderDescription, Source={x:Reference Root}}"
-                       Style="{StaticResource CaptionTextStyle}"
-                       TextColor="White"
-                       Opacity="0.9"
-                       IsVisible="{Binding ShowDescription, Source={x:Reference Root}}" />
+            <!--  Provider Name & Description  -->
+            <VerticalStackLayout
+                Grid.Column="1"
+                Spacing="2"
+                VerticalOptions="Center">
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodyLargeTextStyle}"
+                    Text="{Binding ProviderName, Source={x:Reference Root}}"
+                    TextColor="White" />
+                <Label
+                    IsVisible="{Binding ShowDescription, Source={x:Reference Root}}"
+                    Opacity="0.9"
+                    Style="{StaticResource CaptionTextStyle}"
+                    Text="{Binding ProviderDescription, Source={x:Reference Root}}"
+                    TextColor="White" />
             </VerticalStackLayout>
 
-            <!-- Status Indicator / Badge -->
-            <Border Grid.Column="2"
-                    BackgroundColor="{StaticResource Success}"
-                    Padding="8,4"
-                    VerticalOptions="Center"
-                    IsVisible="{Binding ShowBadge, Source={x:Reference Root}}">
+            <!--  Status Indicator / Badge  -->
+            <Border
+                Grid.Column="2"
+                Padding="8,4"
+                BackgroundColor="{StaticResource Success}"
+                IsVisible="{Binding ShowBadge, Source={x:Reference Root}}"
+                VerticalOptions="Center">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="4" />
                 </Border.StrokeShape>
-                <Label Text="{Binding BadgeText, Source={x:Reference Root}}"
-                       Style="{StaticResource CaptionTextStyle}"
-                       FontAttributes="Bold"
-                       TextColor="White" />
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource CaptionTextStyle}"
+                    Text="{Binding BadgeText, Source={x:Reference Root}}"
+                    TextColor="White" />
             </Border>
 
-            <!-- Arrow Icon -->
-            <Label Grid.Column="2"
-                   Text="&#xe5cc;"
-                   FontFamily="MaterialIconsOutlined-Regular"
-                   FontSize="24"
-                   TextColor="White"
-                   VerticalOptions="Center"
-                   IsVisible="{Binding ShowArrow, Source={x:Reference Root}}" />
+            <!--  Arrow Icon  -->
+            <Label
+                Grid.Column="2"
+                FontFamily="MaterialIconsOutlined-Regular"
+                FontSize="24"
+                IsVisible="{Binding ShowArrow, Source={x:Reference Root}}"
+                Text="&#xe5cc;"
+                TextColor="White"
+                VerticalOptions="Center" />
 
         </Grid>
     </Border>

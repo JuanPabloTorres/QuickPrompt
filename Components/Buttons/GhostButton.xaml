@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuickPrompt.Components.Buttons.GhostButton"
+             x:Name="Root">
+
+    <!-- 
+    ==================================================================================
+    GhostButton Component
+    Version: 1.0.0
+    Phase: 3.2 - Button System
+    Design System: 100% Compliant
+    
+    A ghost button for subtle tertiary actions using Design System tokens.
+    Transparent background with colored text only.
+    
+    Usage:
+        <buttons:GhostButton Text="Learn More" Command="{Binding LearnCommand}" />
+    
+    Design Tokens Used:
+        - Colors: PrimaryBlue, StateDisabledText
+        - Typography: ButtonTextStyle
+        - Spacing: ThicknessMd
+        - Sizing: ButtonHeightMedium, RadiusMd
+        - Animation: AnimationDurationFast
+    ==================================================================================
+    -->
+
+    <Border BackgroundColor="Transparent"
+            Padding="{StaticResource ThicknessMd}"
+            HeightRequest="{StaticResource ButtonHeightMedium}"
+            Opacity="{Binding Opacity, Source={x:Reference Root}}"
+            x:Name="ButtonBorder">
+        
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
+        </Border.StrokeShape>
+
+        <!-- Tap Gesture with Animation -->
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
+                                  CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}"
+                                  Tapped="OnButtonTapped" />
+        </Border.GestureRecognizers>
+
+        <!-- Button Content: Icon + Text -->
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource SpacingSm}">
+            
+            <!-- Optional Icon -->
+            <Image Grid.Column="0"
+                   Source="{Binding ImageSource, Source={x:Reference Root}}"
+                   WidthRequest="{StaticResource IconSizeSm}"
+                   HeightRequest="{StaticResource IconSizeSm}"
+                   Aspect="AspectFit"
+                   VerticalOptions="Center"
+                   IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
+
+            <!-- Button Text -->
+            <Label Grid.Column="1"
+                   Text="{Binding Text, Source={x:Reference Root}}"
+                   Style="{StaticResource ButtonTextStyle}"
+                   TextColor="{Binding TextColor, Source={x:Reference Root}}"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+        </Grid>
+    </Border>
+
+</ContentView>

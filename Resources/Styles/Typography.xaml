@@ -1,31 +1,33 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<ResourceDictionary
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!--  
-    ==================================================================================
-    QuickPrompt Design System - Typography Tokens
-    Version: 1.0
-    Phase: 2 - Foundation
-    Based on: docs/design-system/DESIGN_TOKENS.md
-    ==================================================================================
+    <!--
+        ==================================================================================
+        QuickPrompt Design System - Typography Tokens
+        Version: 1.0
+        Phase: 2 - Foundation
+        Based on: docs/design-system/DESIGN_TOKENS.md
+        ==================================================================================
     -->
 
-    <!-- ============================================================================
-         FONT FAMILIES
-         Primary: OpenSans, Display: Designer
-         ============================================================================ -->
-    
+    <!--
+        ============================================================================
+        FONT FAMILIES
+        Primary: OpenSans, Display: Designer
+        ============================================================================
+    -->
+
     <x:String x:Key="FontFamilyPrimary">OpenSans-Regular</x:String>
     <x:String x:Key="FontFamilySemiBold">OpenSans-SemiBold</x:String>
     <x:String x:Key="FontFamilyDisplay">Designer</x:String>
 
-    <!-- ============================================================================
-         FONT SIZES (Device-Independent Pixels)
-         8-level scale: Display ? Heading 1-3 ? Body variants ? Caption
-         ============================================================================ -->
-    
+    <!--
+        ============================================================================
+        FONT SIZES (Device-Independent Pixels)
+        8-level scale: Display → Heading 1-3 → Body variants → Caption
+        ============================================================================
+    -->
+
     <x:Double x:Key="FontSizeDisplay">40</x:Double>
     <x:Double x:Key="FontSizeHeading1">28</x:Double>
     <x:Double x:Key="FontSizeHeading2">22</x:Double>
@@ -38,32 +40,46 @@
     <x:Double x:Key="FontSizeButtonSmall">14</x:Double>
     <x:Double x:Key="FontSizeButtonLarge">16</x:Double>
 
-    <!-- ============================================================================
-         LINE HEIGHTS (Multipliers)
-         Applied as: FontSize * LineHeight
-         ============================================================================ -->
-    
-    <x:Double x:Key="LineHeightDisplay">1.2</x:Double>    <!-- Tight for headlines -->
-    <x:Double x:Key="LineHeightHeading">1.3</x:Double>    <!-- Headings -->
-    <x:Double x:Key="LineHeightBody">1.5</x:Double>       <!-- Body text (readable) -->
-    <x:Double x:Key="LineHeightCaption">1.4</x:Double>    <!-- Small text -->
-    <x:Double x:Key="LineHeightButton">1.0</x:Double>     <!-- Tight for buttons -->
+    <!--
+        ============================================================================
+        LINE HEIGHTS (Multipliers)
+        Applied as: FontSize * LineHeight
+        ============================================================================
+    -->
 
-    <!-- ============================================================================
-         LETTER SPACING (EM units)
-         Subtle adjustments for optimal readability
-         ============================================================================ -->
-    
-    <x:Double x:Key="LetterSpacingTight">-0.02</x:Double>   <!-- Display text -->
-    <x:Double x:Key="LetterSpacingNormal">0.0</x:Double>    <!-- Default -->
-    <x:Double x:Key="LetterSpacingWide">0.01</x:Double>     <!-- Captions, buttons -->
+    <x:Double x:Key="LineHeightDisplay">1.2</x:Double>    
+    <!--  Tight for headlines  -->
+    <x:Double x:Key="LineHeightHeading">1.3</x:Double>    
+    <!--  Headings  -->
+    <x:Double x:Key="LineHeightBody">1.5</x:Double>       
+    <!--  Body text (readable)  -->
+    <x:Double x:Key="LineHeightCaption">1.4</x:Double>    
+    <!--  Small text  -->
+    <x:Double x:Key="LineHeightButton">1.0</x:Double>     
+    <!--  Tight for buttons  -->
 
-    <!-- ============================================================================
-         TEXT STYLES - Complete Style Definitions
-         Apply these styles to Label, Span, and other text elements
-         ============================================================================ -->
+    <!--
+        ============================================================================
+        LETTER SPACING (EM units)
+        Subtle adjustments for optimal readability
+        ============================================================================
+    -->
 
-    <!-- Display / Hero Text Style -->
+    <x:Double x:Key="LetterSpacingTight">-0.02</x:Double>   
+    <!--  Display text  -->
+    <x:Double x:Key="LetterSpacingNormal">0.0</x:Double>    
+    <!--  Default  -->
+    <x:Double x:Key="LetterSpacingWide">0.01</x:Double>     
+    <!--  Captions, buttons  -->
+
+    <!--
+        ============================================================================
+        TEXT STYLES - Complete Style Definitions
+        Apply these styles to Label, Span, and other text elements
+        ============================================================================
+    -->
+
+    <!--  Display / Hero Text Style  -->
     <Style x:Key="DisplayTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
@@ -72,7 +88,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingTight}" />
     </Style>
 
-    <!-- Heading 1 Style -->
+    <!--  Heading 1 Style  -->
     <Style x:Key="Heading1TextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeHeading1}" />
@@ -81,7 +97,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingTight}" />
     </Style>
 
-    <!-- Heading 2 Style -->
+    <!--  Heading 2 Style  -->
     <Style x:Key="Heading2TextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeHeading2}" />
@@ -90,7 +106,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Heading 3 Style -->
+    <!--  Heading 3 Style  -->
     <Style x:Key="Heading3TextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeHeading3}" />
@@ -99,7 +115,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Body Large Style -->
+    <!--  Body Large Style  -->
     <Style x:Key="BodyLargeTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}" />
@@ -108,7 +124,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Body (Default) Style -->
+    <!--  Body (Default) Style  -->
     <Style x:Key="BodyTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
@@ -117,7 +133,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Body Secondary (Gray text) Style -->
+    <!--  Body Secondary (Gray text) Style  -->
     <Style x:Key="BodySecondaryTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
@@ -126,7 +142,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Body Small Style -->
+    <!--  Body Small Style  -->
     <Style x:Key="BodySmallTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeBodySmall}" />
@@ -135,7 +151,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingNormal}" />
     </Style>
 
-    <!-- Caption Style -->
+    <!--  Caption Style  -->
     <Style x:Key="CaptionTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
@@ -144,7 +160,7 @@
         <Setter Property="CharacterSpacing" Value="{StaticResource LetterSpacingWide}" />
     </Style>
 
-    <!-- Button Text Style -->
+    <!--  Button Text Style  -->
     <Style x:Key="ButtonTextStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FontFamilySemiBold}" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeButton}" />
@@ -154,16 +170,24 @@
         <Setter Property="VerticalTextAlignment" Value="Center" />
     </Style>
 
-    <!-- ============================================================================
-         LEGACY TYPOGRAPHY ALIASES
-         Maintained for backward compatibility - Phase 4 will migrate these
-         ============================================================================ -->
-    
-    <!-- TitleLabelStyle ? Heading1TextStyle -->
-    <Style x:Key="TitleLabelStyle" TargetType="Label" BasedOn="{StaticResource Heading1TextStyle}" />
-    
-    <!-- SubtitleLabelStyle ? BodyLargeTextStyle with secondary color -->
-    <Style x:Key="SubtitleLabelStyle" TargetType="Label" BasedOn="{StaticResource BodyLargeTextStyle}">
+    <!--
+        ============================================================================
+        LEGACY TYPOGRAPHY ALIASES
+        Maintained for backward compatibility - Phase 4 will migrate these
+        ============================================================================
+    -->
+
+    <!--  TitleLabelStyle → Heading1TextStyle  -->
+    <Style
+        x:Key="TitleLabelStyle"
+        BasedOn="{StaticResource Heading1TextStyle}"
+        TargetType="Label" />
+
+    <!--  SubtitleLabelStyle → BodyLargeTextStyle with secondary color  -->
+    <Style
+        x:Key="SubtitleLabelStyle"
+        BasedOn="{StaticResource BodyLargeTextStyle}"
+        TargetType="Label">
         <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
     </Style>
 

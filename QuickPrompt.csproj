@@ -146,7 +146,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="Components\Buttons\DangerButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Components\Buttons\GhostButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Components\Buttons\PrimaryButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Components\Buttons\SecondaryButton.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Components\ComponentCatalogPage.xaml">

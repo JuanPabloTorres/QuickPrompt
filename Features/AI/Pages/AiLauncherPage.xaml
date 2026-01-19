@@ -1,183 +1,196 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:controls="clr-namespace:QuickPrompt.Controls"
-             xmlns:viewModels="clr-namespace:QuickPrompt.ViewModels"
-             xmlns:views="clr-namespace:QuickPrompt.Views"
-             x:Class="QuickPrompt.Features.AI.Pages.AiLauncherPage"
-             x:DataType="viewModels:AiLauncherViewModel"
-             Title="AI Engines"
-             BackgroundColor="{StaticResource AppBackground}">
+<ContentPage
+    x:Class="QuickPrompt.Features.AI.Pages.AiLauncherPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:QuickPrompt.Controls"
+    xmlns:viewModels="clr-namespace:QuickPrompt.ViewModels"
+    xmlns:views="clr-namespace:QuickPrompt.Views"
+    Title="AI Engines"
+    x:DataType="viewModels:AiLauncherViewModel"
+    BackgroundColor="{StaticResource AppBackground}">
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="20">
 
-            <!-- Header Section -->
+            <!--  Header Section  -->
             <VerticalStackLayout Spacing="8">
-                <Label Text="🚀 Launch AI Engine"
-                       Style="{StaticResource Heading1TextStyle}"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource PrimaryBlueDark}" />
-                <Label Text="Select an AI engine to send your prompt"
-                       Style="{StaticResource BodySmallTextStyle}"
-                       TextColor="{StaticResource TextSecondary}"
-                       Opacity="0.8" />
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource Heading1TextStyle}"
+                    Text="🚀 Launch AI Engine"
+                    TextColor="{StaticResource PrimaryBlueDark}" />
+                <Label
+                    Opacity="0.8"
+                    Style="{StaticResource BodySmallTextStyle}"
+                    Text="Select an AI engine to send your prompt"
+                    TextColor="{StaticResource TextSecondary}" />
             </VerticalStackLayout>
 
-            <!-- AI Providers Grid -->
+            <!--  AI Providers Grid  -->
             <VerticalStackLayout Spacing="12">
-                <Label Text="Available Engines"
-                       Style="{StaticResource BodyLargeTextStyle}"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource PrimaryBlueDark}"
-                       Margin="0,8,0,0" />
+                <Label
+                    Margin="0,8,0,0"
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodyLargeTextStyle}"
+                    Text="Available Engines"
+                    TextColor="{StaticResource PrimaryBlueDark}" />
 
-                <!-- ChatGPT -->
-                <controls:AIProviderButton 
-                    ProviderName="ChatGPT"
-                    ProviderDescription="OpenAI's conversational AI"
+                <!--  ChatGPT  -->
+                <controls:AIProviderButton
+                    Command="{Binding LaunchEngineCommand}"
+                    CommandParameter="ChatGPT"
                     ProviderColor="#10A37F"
+                    ProviderDescription="OpenAI's conversational AI"
                     ProviderMaterialIcon="&#xe0c3;"
-                    ShowDescription="True"
-                    ShowMaterialIcon="True"
+                    ProviderName="ChatGPT"
                     ShowArrow="True"
-                    Command="{Binding LaunchEngineCommand}"
-                    CommandParameter="ChatGPT" />
+                    ShowDescription="True"
+                    ShowMaterialIcon="True" />
 
-                <!-- Gemini -->
-                <controls:AIProviderButton 
-                    ProviderName="Gemini"
-                    ProviderDescription="Google's multimodal AI"
+                <!--  Gemini  -->
+                <controls:AIProviderButton
+                    Command="{Binding LaunchEngineCommand}"
+                    CommandParameter="Gemini"
                     ProviderColor="#8AB4F8"
+                    ProviderDescription="Google's multimodal AI"
                     ProviderMaterialIcon="&#xe8b5;"
-                    ShowDescription="True"
-                    ShowMaterialIcon="True"
+                    ProviderName="Gemini"
                     ShowArrow="True"
-                    Command="{Binding LaunchEngineCommand}"
-                    CommandParameter="Gemini" />
+                    ShowDescription="True"
+                    ShowMaterialIcon="True" />
 
-                <!-- Grok -->
-                <controls:AIProviderButton 
-                    ProviderName="Grok"
-                    ProviderDescription="X's real-time AI"
+                <!--  Grok  -->
+                <controls:AIProviderButton
+                    Command="{Binding LaunchEngineCommand}"
+                    CommandParameter="Grok"
                     ProviderColor="#000000"
+                    ProviderDescription="X's real-time AI"
                     ProviderMaterialIcon="&#xf06c;"
-                    ShowDescription="True"
-                    ShowMaterialIcon="True"
+                    ProviderName="Grok"
                     ShowArrow="True"
-                    Command="{Binding LaunchEngineCommand}"
-                    CommandParameter="Grok" />
+                    ShowDescription="True"
+                    ShowMaterialIcon="True" />
 
-                <!-- Copilot -->
-                <controls:AIProviderButton 
-                    ProviderName="Copilot"
-                    ProviderDescription="Microsoft's AI assistant"
-                    ProviderColor="#0078D4"
-                    ProviderMaterialIcon="&#xe8fd;"
-                    ShowDescription="True"
-                    ShowMaterialIcon="True"
-                    ShowArrow="True"
+                <!--  Copilot  -->
+                <controls:AIProviderButton
                     Command="{Binding LaunchEngineCommand}"
-                    CommandParameter="Copilot" />
+                    CommandParameter="Copilot"
+                    ProviderColor="#0078D4"
+                    ProviderDescription="Microsoft's AI assistant"
+                    ProviderMaterialIcon="&#xe8fd;"
+                    ProviderName="Copilot"
+                    ShowArrow="True"
+                    ShowDescription="True"
+                    ShowMaterialIcon="True" />
             </VerticalStackLayout>
 
-            <!-- Recent Prompts Section -->
-            <VerticalStackLayout Spacing="12" Margin="0,20,0,0">
+            <!--  Recent Prompts Section  -->
+            <VerticalStackLayout Margin="0,20,0,0" Spacing="12">
                 <Grid ColumnDefinitions="*,Auto">
-                    <Label Grid.Column="0"
-                           Text="Recent Prompts"
-                           Style="{StaticResource BodyLargeTextStyle}"
-                           FontAttributes="Bold"
-                           TextColor="{StaticResource PrimaryBlueDark}"
-                           VerticalOptions="Center" />
-                    
-                    <Button Grid.Column="1"
-                            Text="Clear All"
-                            Style="{StaticResource ButtonTextStyle}"
-                            BackgroundColor="Transparent"
-                            TextColor="{StaticResource Danger}"
-                            BorderWidth="0"
-                            Padding="8,4"
-                            Command="{Binding ClearCommand}"
-                            IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToBoolConverter}}" />
+                    <Label
+                        Grid.Column="0"
+                        FontAttributes="Bold"
+                        Style="{StaticResource BodyLargeTextStyle}"
+                        Text="Recent Prompts"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        VerticalOptions="Center" />
+
+                    <Button
+                        Grid.Column="1"
+                        Padding="8,4"
+                        BackgroundColor="Transparent"
+                        BorderWidth="0"
+                        Command="{Binding ClearCommand}"
+                        IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToBoolConverter}}"
+                        Style="{StaticResource ButtonTextStyle}"
+                        Text="Clear All"
+                        TextColor="{StaticResource Danger}" />
                 </Grid>
 
-                <!-- Empty State -->
-                <Border Padding="32,24"
-                        BackgroundColor="{StaticResource CardBackground}"
-                        StrokeThickness="1"
-                        Stroke="{StaticResource BorderColor}"
-                        IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToInverseBoolConverter}}">
+                <!--  Empty State  -->
+                <Border
+                    Padding="32,24"
+                    BackgroundColor="{StaticResource CardBackground}"
+                    IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToInverseBoolConverter}}"
+                    Stroke="{StaticResource BorderColor}"
+                    StrokeThickness="1">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="12" />
                     </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
-                        <Label Text="&#xf0eb;"
-                               FontFamily="MaterialIconsOutlined-Regular"
-                               FontSize="48"
-                               TextColor="{StaticResource TextSecondary}"
-                               Opacity="0.3"
-                               HorizontalOptions="Center" />
-                        <Label Text="No recent prompts"
-                               Style="{StaticResource BodyLargeTextStyle}"
-                               FontAttributes="Bold"
-                               TextColor="{StaticResource TextSecondary}"
-                               HorizontalOptions="Center" />
-                        <Label Text="Complete a prompt to see it here"
-                               Style="{StaticResource CaptionTextStyle}"
-                               TextColor="{StaticResource TextSecondary}"
-                               Opacity="0.7"
-                               HorizontalOptions="Center" />
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="12">
+                        <Label
+                            FontFamily="MaterialIconsOutlined-Regular"
+                            FontSize="48"
+                            HorizontalOptions="Center"
+                            Opacity="0.3"
+                            Text="&#xf0eb;"
+                            TextColor="{StaticResource TextSecondary}" />
+                        <Label
+                            FontAttributes="Bold"
+                            HorizontalOptions="Center"
+                            Style="{StaticResource BodyLargeTextStyle}"
+                            Text="No recent prompts"
+                            TextColor="{StaticResource TextSecondary}" />
+                        <Label
+                            HorizontalOptions="Center"
+                            Opacity="0.7"
+                            Style="{StaticResource CaptionTextStyle}"
+                            Text="Complete a prompt to see it here"
+                            TextColor="{StaticResource TextSecondary}" />
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Prompts List -->
-                <CollectionView ItemsSource="{Binding FinalPrompts}"
-                                SelectionMode="None"
-                                IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToBoolConverter}}">
+                <!--  Prompts List  -->
+                <CollectionView
+                    IsVisible="{Binding FinalPrompts.Count, Converter={StaticResource IntToBoolConverter}}"
+                    ItemsSource="{Binding FinalPrompts}"
+                    SelectionMode="None">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
                             <SwipeView>
-                                <!-- Swipe to Delete -->
+                                <!--  Swipe to Delete  -->
                                 <SwipeView.RightItems>
                                     <SwipeItems Mode="Execute">
-                                        <SwipeItem Text="Delete"
-                                                   BackgroundColor="{StaticResource Danger}"
-                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:AiLauncherViewModel}}, Path=DeleteFinalPromptCommand}"
-                                                   CommandParameter="{Binding .}" />
+                                        <SwipeItem
+                                            BackgroundColor="{StaticResource Danger}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:AiLauncherViewModel}}, Path=DeleteFinalPromptCommand}"
+                                            CommandParameter="{Binding .}"
+                                            Text="Delete" />
                                     </SwipeItems>
                                 </SwipeView.RightItems>
 
-                                <Border Padding="16"
-                                        BackgroundColor="{StaticResource CardBackground}"
-                                        StrokeThickness="1"
-                                        Stroke="{StaticResource BorderColor}"
-                                        Margin="0,4">
+                                <Border
+                                    Margin="0,4"
+                                    Padding="16"
+                                    BackgroundColor="{StaticResource CardBackground}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1">
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="8" />
                                     </Border.StrokeShape>
-                                    
+
                                     <Border.GestureRecognizers>
-                                        <TapGestureRecognizer 
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:AiLauncherViewModel}}, Path=SelectPromptCommand}"
-                                            CommandParameter="{Binding .}" />
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:AiLauncherViewModel}}, Path=SelectPromptCommand}" CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
 
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <Label Grid.Column="0"
-                                               Text="{Binding .}"
-                                               Style="{StaticResource BodySmallTextStyle}"
-                                               TextColor="{StaticResource TextPrimary}"
-                                               LineBreakMode="TailTruncation"
-                                               MaxLines="2"
-                                               VerticalOptions="Center" />
-                                        
-                                        <Label Grid.Column="1"
-                                               Text="&#xe5cc;"
-                                               FontFamily="MaterialIconsOutlined-Regular"
-                                               Style="{StaticResource Heading2TextStyle}"
-                                               TextColor="{StaticResource PrimaryBlueLight}"
-                                               VerticalOptions="Center" />
+                                        <Label
+                                            Grid.Column="0"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="2"
+                                            Style="{StaticResource BodySmallTextStyle}"
+                                            Text="{Binding .}"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            VerticalOptions="Center" />
+
+                                        <Label
+                                            Grid.Column="1"
+                                            FontFamily="MaterialIconsOutlined-Regular"
+                                            Style="{StaticResource Heading2TextStyle}"
+                                            Text="&#xe5cc;"
+                                            TextColor="{StaticResource PrimaryBlueLight}"
+                                            VerticalOptions="Center" />
                                     </Grid>
                                 </Border>
                             </SwipeView>
@@ -186,67 +199,74 @@
                 </CollectionView>
             </VerticalStackLayout>
 
-            <!-- Quick Actions -->
-            <VerticalStackLayout Spacing="12" Margin="0,20,0,20">
-                <Label Text="Quick Actions"
-                       Style="{StaticResource BodyLargeTextStyle}"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource PrimaryBlueDark}" />
+            <!--  Quick Actions  -->
+            <VerticalStackLayout Margin="0,20,0,20" Spacing="12">
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodyLargeTextStyle}"
+                    Text="Quick Actions"
+                    TextColor="{StaticResource PrimaryBlueDark}" />
 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                    <!-- Go to Quick Prompts -->
-                    <Border Grid.Column="0"
-                            Padding="16,12"
-                            BackgroundColor="{StaticResource PrimaryBlueLight}"
-                            StrokeThickness="0">
+                    <!--  Go to Quick Prompts  -->
+                    <Border
+                        Grid.Column="0"
+                        Padding="16,12"
+                        BackgroundColor="{StaticResource PrimaryBlueLight}"
+                        StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToQuickPromptsCommand}" />
                         </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
-                            <Label Text="&#xea0b;"
-                                   FontFamily="MaterialIconsOutlined-Regular"
-                                   FontSize="24"
-                                   TextColor="White"
-                                   HorizontalOptions="Center" />
-                            <Label Text="Quick"
-                                   Style="{StaticResource CaptionTextStyle}"
-                                   FontAttributes="Bold"
-                                   TextColor="White"
-                                   HorizontalOptions="Center" />
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="4">
+                            <Label
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                FontSize="24"
+                                HorizontalOptions="Center"
+                                Text="&#xea0b;"
+                                TextColor="White" />
+                            <Label
+                                FontAttributes="Bold"
+                                HorizontalOptions="Center"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="Quick"
+                                TextColor="White" />
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Go to Create -->
-                    <Border Grid.Column="1"
-                            Padding="16,12"
-                            BackgroundColor="{StaticResource PrimaryTeal}"
-                            StrokeThickness="0">
+                    <!--  Go to Create  -->
+                    <Border
+                        Grid.Column="1"
+                        Padding="16,12"
+                        BackgroundColor="{StaticResource PrimaryTeal}"
+                        StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToCreateCommand}" />
                         </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
-                            <Label Text="&#xe145;"
-                                   FontFamily="MaterialIconsOutlined-Regular"
-                                   FontSize="24"
-                                   TextColor="White"
-                                   HorizontalOptions="Center" />
-                            <Label Text="Create"
-                                   Style="{StaticResource CaptionTextStyle}"
-                                   FontAttributes="Bold"
-                                   TextColor="White"
-                                   HorizontalOptions="Center" />
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="4">
+                            <Label
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                FontSize="24"
+                                HorizontalOptions="Center"
+                                Text="&#xe145;"
+                                TextColor="White" />
+                            <Label
+                                FontAttributes="Bold"
+                                HorizontalOptions="Center"
+                                Style="{StaticResource CaptionTextStyle}"
+                                Text="Create"
+                                TextColor="White" />
                         </VerticalStackLayout>
                     </Border>
                 </Grid>
             </VerticalStackLayout>
 
-            <!-- Loading Overlay -->
+            <!--  Loading Overlay  -->
             <views:ReusableLoadingOverlay IsVisible="{Binding IsLoading}" />
 
         </VerticalStackLayout>
