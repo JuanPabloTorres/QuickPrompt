@@ -365,9 +365,6 @@ FodyWeavers.xsd
 # Excluir archivos de configuración sensibles
 appsettings.json
 
-# Android KeyStore
-key.keystore
-
 # ============================================
 # QuickPrompt - Custom Ignores
 # ============================================
@@ -392,6 +389,25 @@ FIX_*.md
 # Local development notes
 NOTES.md
 TODO.md
+
+# ============================================
+# SPRINT 1: SECURITY - Secrets Management
+# ============================================
+
+# Secrets files (NEVER commit real secrets)
+appsettings.json
+appsettings.*.json
+!appsettings.template.json
+
+# Firebase secrets
+Resources/Secrets/**
+*.keystore
+key.keystore
+
+# Environment-specific configs
+.env
+.env.local
+.env.production
 
 # ============================================
 # EXCEPT: Keep important documentation

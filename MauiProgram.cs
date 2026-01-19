@@ -93,7 +93,15 @@ namespace QuickPrompt
                 throw new FileNotFoundException($"El recurso incrustado '{resourceName}' no fue encontrado.");
             }
 
-            return new ConfigurationBuilder().AddJsonStream(stream).Build();
+            var builder = new ConfigurationBuilder()
+                .AddJsonStream(stream);
+
+            // ✅ SPRINT 1: Override with environment variables for secrets
+            // Environment variables use double underscore (__) as section delimiter
+            // Example: QUICKPROMPT_GPTApiKeys__Key1 maps to GPTApiKeys:Key1
+            builder.AddEnvironmentVariables(prefix: "QUICKPROMPT_");
+
+            return builder.Build();
         }
 
         // Registra los servicios necesarios en el contenedor de dependencias
