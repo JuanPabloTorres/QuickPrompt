@@ -36,4 +36,7 @@
     <presentationConverters:IntToBoolConverter x:Key="IntToBoolConverter" />
     <presentationConverters:IntToInverseBoolConverter x:Key="IntToInverseBoolConverter" />
 
+    <!--  🆕 Password Visibility Icon Converter  -->
+    <converters:PasswordVisibilityIconConverter x:Key="PasswordVisibilityIconConverter" />
+
 </ResourceDictionary>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="QuickPrompt.Components.Inputs.SearchInput"
+             x:Name="Root">
+
+    <!-- 
+    ==================================================================================
+    SearchInput Component
+    Version: 1.0.0
+    Phase: 3.3 - Input Components
+    Design System: 100% Compliant
+    
+    A search input field with search icon and optimized UX.
+    
+    Usage:
+        <inputs:SearchInput 
+            Placeholder="Search prompts..."
+            Text="{Binding SearchQuery}"
+            SearchCommand="{Binding SearchCommand}" />
+    
+    Design Tokens Used:
+        - Colors: PrimaryBlue, Gray400, TextPrimary, SurfaceCard
+        - Typography: BodyTextStyle
+        - Spacing: SpacingXs, ThicknessMd
+        - Sizing: InputHeightMedium, RadiusPill, IconSizeSm
+    ==================================================================================
+    -->
+
+    <Border x:Name="InputBorder"
+            BackgroundColor="{StaticResource SurfaceCard}"
+            Stroke="{Binding BorderColor, Source={x:Reference Root}}"
+            StrokeThickness="1"
+            Padding="{StaticResource ThicknessMd}"
+            HeightRequest="{StaticResource InputHeightMedium}">
+        
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{StaticResource RadiusPill}" />
+        </Border.StrokeShape>
+
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource SpacingSm}">
+            
+            <!-- Search Icon -->
+            <Image Grid.Column="0"
+                   WidthRequest="{StaticResource IconSizeSm}"
+                   HeightRequest="{StaticResource IconSizeSm}"
+                   VerticalOptions="Center">
+                <Image.Source>
+                    <FontImageSource 
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe8b6;"
+                        Color="{StaticResource Gray400}"
+                        Size="20" />
+                </Image.Source>
+            </Image>
+
+            <!-- Entry Field -->
+            <Entry Grid.Column="1"
+                   x:Name="InputEntry"
+                   Text="{Binding Text, Source={x:Reference Root}, Mode=TwoWay}"
+                   Placeholder="{Binding Placeholder, Source={x:Reference Root}}"
+                   PlaceholderColor="{StaticResource Gray400}"
+                   TextColor="{StaticResource TextPrimary}"
+                   BackgroundColor="Transparent"
+                   FontSize="16"
+                   VerticalOptions="Center"
+                   Focused="OnEntryFocused"
+                   Unfocused="OnEntryUnfocused"
+                   TextChanged="OnTextChanged"
+                   ReturnCommand="{Binding SearchCommand, Source={x:Reference Root}}"
+                   ReturnType="Search" />
+
+            <!-- Clear/Search Button -->
+            <ImageButton Grid.Column="2"
+                         Command="{Binding ClearCommand, Source={x:Reference Root}}"
+                         BackgroundColor="Transparent"
+                         Padding="0"
+                         WidthRequest="24"
+                         HeightRequest="24"
+                         VerticalOptions="Center"
+                         IsVisible="{Binding ShowClearButton, Source={x:Reference Root}}">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        FontFamily="MaterialIconsOutlined-Regular"
+                        Glyph="&#xe5cd;"
+                        Color="{StaticResource Gray400}"
+                        Size="20" />
+                </ImageButton.Source>
+            </ImageButton>
+
+        </Grid>
+    </Border>
+
+</ContentView>
