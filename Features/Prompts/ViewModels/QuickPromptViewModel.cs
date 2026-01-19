@@ -22,7 +22,9 @@ namespace QuickPrompt.ViewModels
     public partial class QuickPromptViewModel : BaseViewModel
     {
         // 🆕 Use Cases and Services (injected)
-        private readonly IPromptRepository _databaseService;
+        // ✅ FIXED: Use legacy IPromptRepository interface (from Services.ServiceInterfaces)
+        // DeletePromptUseCase uses Domain.Interfaces.IPromptRepository (injected via adapter)
+        private readonly Services.ServiceInterfaces.IPromptRepository _databaseService;
         private readonly DeletePromptUseCase _deletePromptUseCase;
         private readonly IDialogService _dialogService;
 
@@ -39,9 +41,9 @@ namespace QuickPrompt.ViewModels
         private string oldSelectCategory = string.Empty;
         private Filters oldDateFilter = Filters.All;
 
-        // Constructor with dependency injection
+        // ✅ FIXED: Constructor explicitly uses Services.ServiceInterfaces.IPromptRepository
         public QuickPromptViewModel(
-            IPromptRepository databaseService,
+            Services.ServiceInterfaces.IPromptRepository databaseService,
             DeletePromptUseCase deletePromptUseCase,
             IDialogService dialogService)
         {

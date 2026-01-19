@@ -58,6 +58,10 @@ namespace QuickPrompt.ViewModels
         {
         }
 
+        protected BaseViewModel(AdmobService admobService) : base(admobService)
+        {
+        }
+
         protected BaseViewModel(AppSettings appSettings)
         {
         }

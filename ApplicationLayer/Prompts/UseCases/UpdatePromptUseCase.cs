@@ -1,8 +1,8 @@
 using QuickPrompt.ApplicationLayer.Common;
-using QuickPrompt.Models;
-using QuickPrompt.Models.Enums;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Enums;
+using QuickPrompt.Domain.Interfaces;
 using QuickPrompt.Tools;
-using QuickPrompt.Services.ServiceInterfaces;
 
 namespace QuickPrompt.ApplicationLayer.Prompts.UseCases;
 
@@ -39,29 +39,29 @@ public class UpdatePromptUseCase
     public async Task<Result<PromptTemplate>> ExecuteAsync(UpdatePromptRequest request)
     {
         if (request == null)
-            return Result<PromptTemplate>.Failure("Request cannot be null", "InvalidRequest");
+            return Result<PromptTemplate>.Failure("Request cannot be null");
 
         if (request.PromptId == Guid.Empty)
-            return Result<PromptTemplate>.Failure("Invalid prompt ID", "InvalidRequest");
+            return Result<PromptTemplate>.Failure("Invalid prompt ID");
 
         // Validate required fields
         if (string.IsNullOrWhiteSpace(request.Title))
-            return Result<PromptTemplate>.Failure("Title is required", "ValidationError");
+            return Result<PromptTemplate>.Failure("Title is required");
 
         if (string.IsNullOrWhiteSpace(request.Template))
-            return Result<PromptTemplate>.Failure("Template is required", "ValidationError");
+            return Result<PromptTemplate>.Failure("Template is required");
 
         // Check if template contains angle brackets (variables)
         if (!AngleBraceTextHandler.ContainsAngleBraces(request.Template))
-            return Result<PromptTemplate>.Failure("Template must contain at least one variable using angle brackets <variable>", "ValidationError");
+            return Result<PromptTemplate>.Failure("Template must contain at least one variable using angle brackets <variable>");
 
         try
         {
             // Check if prompt exists
-            var existingPrompt = await _promptRepository.GetPromptByIdAsync(request.PromptId);
+            var existingPrompt = await _promptRepository.GetByIdAsync(request.PromptId);
 
             if (existingPrompt == null)
-                return Result<PromptTemplate>.Failure("Prompt not found", "NotFound");
+                return Result<PromptTemplate>.Failure("Prompt not found");
 
             // Parse category
             if (!Enum.TryParse(typeof(PromptCategory), request.Category, out var categoryObj))
@@ -73,25 +73,23 @@ public class UpdatePromptUseCase
             var newVariables = AngleBraceTextHandler.ExtractVariables(request.Template)
                 .ToDictionary(v => v, v => string.Empty);
 
-            // Update using repository method
-            var updatedPrompt = await _promptRepository.UpdatePromptAsync(
-                request.PromptId,
-                request.Title,
-                request.Template,
-                request.Description,
-                newVariables,
-                category);
+            // Update domain entity
+            existingPrompt.Title = request.Title;
+            existingPrompt.Description = request.Description;
+            existingPrompt.Category = category;
+            existingPrompt.UpdateTemplate(request.Template, newVariables);
 
-            if (updatedPrompt == null)
-                return Result<PromptTemplate>.Failure("Failed to update prompt", "UpdateFailed");
+            // Save changes
+            var success = await _promptRepository.UpdateAsync(existingPrompt);
 
-            return Result<PromptTemplate>.Success(updatedPrompt);
+            if (!success)
+                return Result<PromptTemplate>.Failure("Failed to update prompt");
+
+            return Result<PromptTemplate>.Success(existingPrompt);
         }
         catch (Exception ex)
         {
-            return Result<PromptTemplate>.Failure(
-                $"Failed to update prompt: {ex.Message}",
-                "DatabaseError");
+            return Result<PromptTemplate>.Failure($"Failed to update prompt: {ex.Message}");
         }
     }
 }

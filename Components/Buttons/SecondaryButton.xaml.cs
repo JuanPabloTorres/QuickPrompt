@@ -20,19 +20,21 @@ namespace QuickPrompt.Components.Buttons
         public static readonly BindableProperty CommandParameterProperty =
             BindableProperty.Create(nameof(CommandParameter), typeof(object), typeof(SecondaryButton), null);
 
+        // ? FIX: Don't access Application.Current.Resources in static field initializers
+        // Use a safe default color instead, then set the actual color in the constructor
         public static readonly BindableProperty BorderColorProperty =
             BindableProperty.Create(
                 nameof(BorderColor), 
                 typeof(Color), 
                 typeof(SecondaryButton), 
-                Application.Current?.Resources["PrimaryBlue"] as Color ?? Colors.Blue);
+                Colors.Blue); // Safe default
 
         public static readonly BindableProperty TextColorProperty =
             BindableProperty.Create(
                 nameof(TextColor), 
                 typeof(Color), 
                 typeof(SecondaryButton), 
-                Application.Current?.Resources["PrimaryBlue"] as Color ?? Colors.Blue);
+                Colors.Blue); // Safe default
 
         public static readonly BindableProperty ImageSourceProperty =
             BindableProperty.Create(
@@ -108,6 +110,10 @@ namespace QuickPrompt.Components.Buttons
         {
             InitializeComponent();
 
+            // ? FIX: Set colors from resources AFTER InitializeComponent
+            // This ensures Application.Current.Resources is available
+            InitializeColors();
+
             SemanticProperties.SetDescription(this, "Secondary action button");
             AutomationId = "SecondaryButton";
 
@@ -122,6 +128,43 @@ namespace QuickPrompt.Components.Buttons
 
         #endregion
 
+        #region Initialization
+
+        /// <summary>
+        /// Safely initialize colors from Application resources after the control is created
+        /// </summary>
+        private void InitializeColors()
+        {
+            try
+            {
+                if (Application.Current?.Resources != null)
+                {
+                    // Set default colors from Design System
+                    if (Application.Current.Resources.TryGetValue("PrimaryBlue", out var primaryBlue) && primaryBlue is Color blueColor)
+                    {
+                        BorderColor = blueColor;
+                        TextColor = blueColor;
+                    }
+
+                    // Set opacity from Design System
+                    if (Application.Current.Resources.TryGetValue("OpacityFull", out var opacityFull) && opacityFull is double opacity)
+                    {
+                        Opacity = opacity;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fallback to safe defaults if resource loading fails
+                System.Diagnostics.Debug.WriteLine($"[SecondaryButton.InitializeColors] Failed to load resources: {ex.Message}");
+                BorderColor = Colors.Blue;
+                TextColor = Colors.Blue;
+                Opacity = 1.0;
+            }
+        }
+
+        #endregion
+
         #region Event Handlers
 
         private async void OnButtonTapped(object sender, TappedEventArgs e)
@@ -129,10 +172,17 @@ namespace QuickPrompt.Components.Buttons
             if (!IsEnabled || sender is not Border border)
                 return;
 
-            var animationDuration = (int)Application.Current.Resources["AnimationDurationFast"];
+            try
+            {
+                var animationDuration = GetResourceValue("AnimationDurationFast", 200);
 
-            await border.ScaleTo(0.95, (uint)(animationDuration / 2), Easing.CubicOut);
-            await border.ScaleTo(1.0, (uint)(animationDuration / 2), Easing.CubicIn);
+                await border.ScaleTo(0.95, (uint)(animationDuration / 2), Easing.CubicOut);
+                await border.ScaleTo(1.0, (uint)(animationDuration / 2), Easing.CubicIn);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SecondaryButton.OnButtonTapped] Animation failed: {ex.Message}");
+            }
         }
 
         #endregion
@@ -153,18 +203,63 @@ namespace QuickPrompt.Components.Buttons
 
         private void UpdateVisualState()
         {
-            if (!IsEnabled)
+            try
             {
-                BorderColor = (Color)Application.Current.Resources["StateDisabledBackground"];
-                TextColor = (Color)Application.Current.Resources["StateDisabledText"];
-                Opacity = (double)Application.Current.Resources["OpacityDisabled"];
+                if (!IsEnabled)
+                {
+                    BorderColor = GetColorResource("StateDisabledBackground", Colors.LightGray);
+                    TextColor = GetColorResource("StateDisabledText", Colors.Gray);
+                    Opacity = GetResourceValue("OpacityDisabled", 0.5);
+                }
+                else
+                {
+                    BorderColor = GetColorResource("PrimaryBlue", Colors.Blue);
+                    TextColor = GetColorResource("PrimaryBlue", Colors.Blue);
+                    Opacity = GetResourceValue("OpacityFull", 1.0);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                BorderColor = (Color)Application.Current.Resources["PrimaryBlue"];
-                TextColor = (Color)Application.Current.Resources["PrimaryBlue"];
-                Opacity = (double)Application.Current.Resources["OpacityFull"];
+                System.Diagnostics.Debug.WriteLine($"[SecondaryButton.UpdateVisualState] Failed to update visual state: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Safely retrieve a color resource with fallback
+        /// </summary>
+        private Color GetColorResource(string key, Color fallback)
+        {
+            try
+            {
+                if (Application.Current?.Resources != null &&
+                    Application.Current.Resources.TryGetValue(key, out var resource) &&
+                    resource is Color color)
+                {
+                    return color;
+                }
+            }
+            catch { }
+
+            return fallback;
+        }
+
+        /// <summary>
+        /// Safely retrieve a numeric resource value with fallback
+        /// </summary>
+        private T GetResourceValue<T>(string key, T fallback)
+        {
+            try
+            {
+                if (Application.Current?.Resources != null &&
+                    Application.Current.Resources.TryGetValue(key, out var resource) &&
+                    resource is T value)
+                {
+                    return value;
+                }
+            }
+            catch { }
+
+            return fallback;
         }
 
         #endregion

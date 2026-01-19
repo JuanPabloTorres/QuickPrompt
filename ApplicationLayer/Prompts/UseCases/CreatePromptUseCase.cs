@@ -1,9 +1,9 @@
 using QuickPrompt.ApplicationLayer.Common;
 using QuickPrompt.ApplicationLayer.Common.Interfaces;
-using QuickPrompt.Models;
-using QuickPrompt.Models.Enums;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Enums;
+using QuickPrompt.Domain.Interfaces;
 using QuickPrompt.Tools;
-using QuickPrompt.Services.ServiceInterfaces;
 
 namespace QuickPrompt.ApplicationLayer.Prompts.UseCases;
 
@@ -39,18 +39,18 @@ public class CreatePromptUseCase
     public async Task<Result<PromptTemplate>> ExecuteAsync(CreatePromptRequest request)
     {
         if (request == null)
-            return Result<PromptTemplate>.Failure("Request cannot be null", "InvalidRequest");
+            return Result<PromptTemplate>.Failure("Request cannot be null");
 
         // Validate required fields
         if (string.IsNullOrWhiteSpace(request.Title))
-            return Result<PromptTemplate>.Failure("Title is required", "ValidationError");
+            return Result<PromptTemplate>.Failure("Title is required");
 
         if (string.IsNullOrWhiteSpace(request.Template))
-            return Result<PromptTemplate>.Failure("Template is required", "ValidationError");
+            return Result<PromptTemplate>.Failure("Template is required");
 
         // Check if template contains angle brackets (variables)
         if (!AngleBraceTextHandler.ContainsAngleBraces(request.Template))
-            return Result<PromptTemplate>.Failure("Template must contain at least one variable using angle brackets <variable>", "ValidationError");
+            return Result<PromptTemplate>.Failure("Template must contain at least one variable using angle brackets <variable>");
 
         // Parse category
         if (!Enum.TryParse(typeof(PromptCategory), request.Category, out var categoryObj))
@@ -60,23 +60,27 @@ public class CreatePromptUseCase
 
         try
         {
-            // Create prompt entity
-            var newPrompt = PromptTemplate.CreatePromptTemplate(
+            // Extract variables from template
+            var variables = AngleBraceTextHandler.ExtractVariables(request.Template)
+                .ToDictionary(v => v, v => string.Empty);
+
+            // Create domain entity
+            var newPrompt = PromptTemplate.Create(
                 request.Title,
-                request.Description,
                 request.Template,
+                request.Description,
+                variables,
                 category);
 
             // Save to repository
-            await _promptRepository.SavePromptAsync(newPrompt);
+            var promptId = await _promptRepository.AddAsync(newPrompt);
+            newPrompt.Id = promptId;
 
             return Result<PromptTemplate>.Success(newPrompt);
         }
         catch (Exception ex)
         {
-            return Result<PromptTemplate>.Failure(
-                $"Failed to create prompt: {ex.Message}",
-                "DatabaseError");
+            return Result<PromptTemplate>.Failure($"Failed to create prompt: {ex.Message}");
         }
     }
 }

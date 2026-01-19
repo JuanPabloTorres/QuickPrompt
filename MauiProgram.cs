@@ -3,24 +3,25 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Plugin.MauiMTAdmob;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.FinalPrompts.UseCases;
+using QuickPrompt.ApplicationLayer.Prompts.UseCases;
+using QuickPrompt.Constants;
+using QuickPrompt.Engines.Injection;
+using QuickPrompt.Engines.WebView;
+using QuickPrompt.History;
+using QuickPrompt.History.Repositories;
+using QuickPrompt.History.Sync;
+using QuickPrompt.Infrastructure.Services.Cache;
+using QuickPrompt.Infrastructure.Services.UI;
 using QuickPrompt.Models;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
 using QuickPrompt.Services.ServiceInterfaces;
-using QuickPrompt.ViewModels;
-using QuickPrompt.Engines.Injection;
-using QuickPrompt.History.Repositories;
-using QuickPrompt.History.Sync;
-using QuickPrompt.History;
 using QuickPrompt.Settings;
-using QuickPrompt.Engines.WebView;
-using QuickPrompt.Constants;
+using QuickPrompt.ViewModels;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Reflection;
-using QuickPrompt.ApplicationLayer.Common.Interfaces;
-using QuickPrompt.ApplicationLayer.Prompts.UseCases;
-using QuickPrompt.Infrastructure.Services.Cache;
-using QuickPrompt.Infrastructure.Services.UI;
 
 namespace QuickPrompt
 {
@@ -104,18 +105,50 @@ namespace QuickPrompt
             builder.Services.AddSingleton<ITabBarService, TabBarService>();
 
             // 🆕 PHASE 1: Use Cases
-            builder.Services.AddTransient<CreatePromptUseCase>();
-            builder.Services.AddTransient<UpdatePromptUseCase>();
-            builder.Services.AddTransient<DeletePromptUseCase>();
-            builder.Services.AddTransient<ExecutePromptUseCase>();
-            builder.Services.AddTransient<GetPromptByIdUseCase>();
+            // ✅ FIXED: Register Use Cases needed by ViewModels
+            builder.Services.AddTransient<CreatePromptUseCase>(); // Required by MainPageViewModel
+            builder.Services.AddTransient<DeletePromptUseCase>(); // Required by QuickPromptViewModel
+            builder.Services.AddTransient<GetPromptByIdUseCase>(); // Required by PromptDetailsPageViewModel & EditPromptPageViewModel
+            builder.Services.AddTransient<ExecutePromptUseCase>(); // Required by PromptDetailsPageViewModel
+            builder.Services.AddTransient<UpdatePromptUseCase>(); // Required by EditPromptPageViewModel
+            
+            // ✅ FIXED: Register FinalPrompt Use Cases for AiLauncherViewModel
+            builder.Services.AddTransient<GetAllFinalPromptsUseCase>();
+            builder.Services.AddTransient<DeleteFinalPromptUseCase>();
+            builder.Services.AddTransient<ClearAllFinalPromptsUseCase>();
+            
+            // ⚠️ TEMPORARILY DISABLED - Additional Use Cases not yet needed
+            // builder.Services.AddTransient<GetPromptsByBlockUseCase>();
+            // builder.Services.AddTransient<GetTotalPromptsCountUseCase>();
+            // builder.Services.AddTransient<ToggleFavoritePromptUseCase>();
+
+            // 🆕 PHASE 1: Final Prompts Use Cases
+            // ⚠️ TEMPORARILY DISABLED
+            // builder.Services.AddTransient<GetAllFinalPromptsUseCase>();
+            // builder.Services.AddTransient<DeleteFinalPromptUseCase>();
+            // builder.Services.AddTransient<ClearAllFinalPromptsUseCase>();
 
             // ✅ Database
             builder.Services.AddSingleton<DatabaseConnectionProvider>();
 
-            // ✅ Existing Repositories
+            // ✅ Repositories (Legacy only - Domain interfaces not yet implemented)
             builder.Services.AddSingleton<IPromptRepository, PromptRepository>();
             builder.Services.AddSingleton<IFinalPromptRepository, FinalPromptRepository>();
+            
+            // ✅ FIXED: Register Domain.Interfaces.IPromptRepository using adapter pattern
+            builder.Services.AddSingleton<QuickPrompt.Domain.Interfaces.IPromptRepository>(sp =>
+            {
+                var legacyRepo = sp.GetRequiredService<IPromptRepository>();
+                return new Infrastructure.Repositories.PromptRepositoryAdapter(legacyRepo);
+            });
+
+            // ✅ FIXED: Register Domain.Interfaces.IFinalPromptRepository using adapter pattern
+            builder.Services.AddSingleton<QuickPrompt.Domain.Interfaces.IFinalPromptRepository>(sp =>
+            {
+                var legacyRepo = sp.GetRequiredService<IFinalPromptRepository>();
+                return new Infrastructure.Repositories.FinalPromptRepositoryAdapter(legacyRepo);
+            });
+
             builder.Services.AddSingleton<DatabaseServiceManager>();
 
             // ✅ Existing Services
@@ -192,10 +225,15 @@ namespace QuickPrompt
             builder.Services.AddTransient<SettingViewModel>();
             builder.Services.AddScoped<PromptDetailsPageViewModel>();
             builder.Services.AddScoped<EditPromptPageViewModel>();
-            builder.Services.AddScoped<QuickPromptViewModel>();
+            
+            // ✅ FIXED: Register QuickPromptViewModel (was disabled, now enabled)
+            builder.Services.AddTransient<QuickPromptViewModel>();
+            
+            // ⚠️ TEMPORARILY DISABLED - PromptBuilderPageViewModel requires additional Use Cases
+            // PromptBuilderPageViewModel will not work until Phase 3 is complete
+            
             builder.Services.AddScoped<AdmobBannerViewModel>();
             builder.Services.AddTransient<AiLauncherViewModel>();
-            builder.Services.AddTransient<PromptBuilderPageViewModel>();
 
             // 🆕 NEW VIEWMODELS (Step 4)
             builder.Services.AddTransient<SettingsViewModel>();

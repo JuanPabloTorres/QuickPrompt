@@ -6,6 +6,7 @@ using QuickPrompt.ApplicationLayer.Prompts.UseCases;
 using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services;
+using QuickPrompt.Shared.Mappers;
 using QuickPrompt.Tools;
 using QuickPrompt.Tools.Messages;
 
@@ -37,7 +38,7 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
         GetPromptByIdUseCase getPromptByIdUseCase,
         UpdatePromptUseCase updatePromptUseCase,
         IDialogService dialogService,
-        AdmobService admobService)
+        AdmobService admobService) : base(admobService) // ✅ Pass AdmobService to base
     {
         _getPromptByIdUseCase = getPromptByIdUseCase ?? throw new ArgumentNullException(nameof(getPromptByIdUseCase));
         _updatePromptUseCase = updatePromptUseCase ?? throw new ArgumentNullException(nameof(updatePromptUseCase));
@@ -85,7 +86,7 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
             return;
         }
 
-        var prompt = result.Value;
+        var prompt = result.Value.ToLegacy(); // Convert Domain to Legacy
         PromptTemplate = prompt;
         PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template)
             .ToDictionary(v => v, v => string.Empty);
@@ -136,7 +137,7 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
             }
 
             // Update local instance
-            PromptTemplate = result.Value;
+            PromptTemplate = result.Value.ToLegacy(); // Convert Domain to Legacy
 
             // Show ad
             await _adMobService.ShowInterstitialAdAndWaitAsync();

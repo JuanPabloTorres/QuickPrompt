@@ -1,7 +1,7 @@
 using Moq;
 using QuickPrompt.ApplicationLayer.Prompts.UseCases;
-using QuickPrompt.Models;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Interfaces;
 using Xunit;
 
 namespace QuickPrompt.Tests.UseCases;
@@ -42,8 +42,7 @@ public class DeletePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Invalid prompt ID", result.Error);
-        Assert.Equal("InvalidRequest", result.ErrorCode);
-    }
+        }
 
     [Fact]
     public async Task ExecuteAsync_WithNonExistentPrompt_ReturnsFailure()
@@ -52,7 +51,7 @@ public class DeletePromptUseCaseTests
         var promptId = Guid.NewGuid();
         
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync((PromptTemplate?)null);
 
         // Act
@@ -61,8 +60,7 @@ public class DeletePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Prompt not found", result.Error);
-        Assert.Equal("NotFound", result.ErrorCode);
-    }
+        }
 
     #endregion
 
@@ -76,11 +74,11 @@ public class DeletePromptUseCaseTests
         var prompt = new PromptTemplate { Id = promptId };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(prompt);
 
         _mockRepository
-            .Setup(x => x.DeletePromptAsync(promptId))
+            .Setup(x => x.DeleteAsync(promptId))
             .ReturnsAsync(true);
 
         // Act
@@ -88,7 +86,7 @@ public class DeletePromptUseCaseTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _mockRepository.Verify(x => x.DeletePromptAsync(promptId), Times.Once);
+        _mockRepository.Verify(x => x.DeleteAsync(promptId), Times.Once);
     }
 
     [Fact]
@@ -99,11 +97,11 @@ public class DeletePromptUseCaseTests
         var prompt = new PromptTemplate { Id = promptId };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(prompt);
 
         _mockRepository
-            .Setup(x => x.DeletePromptAsync(promptId))
+            .Setup(x => x.DeleteAsync(promptId))
             .ReturnsAsync(false);
 
         // Act
@@ -112,8 +110,7 @@ public class DeletePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Failed to delete prompt", result.Error);
-        Assert.Equal("DeleteFailed", result.ErrorCode);
-    }
+        }
 
     #endregion
 
@@ -126,7 +123,7 @@ public class DeletePromptUseCaseTests
         var promptId = Guid.NewGuid();
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -135,8 +132,7 @@ public class DeletePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Failed to delete prompt", result.Error);
-        Assert.Equal("DatabaseError", result.ErrorCode);
-    }
+        }
 
     #endregion
 }

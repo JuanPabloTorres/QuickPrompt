@@ -1,7 +1,7 @@
 using QuickPrompt.ApplicationLayer.Common;
 using QuickPrompt.ApplicationLayer.Common.Interfaces;
-using QuickPrompt.Models;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Interfaces;
 
 namespace QuickPrompt.ApplicationLayer.Prompts.UseCases;
 
@@ -51,20 +51,18 @@ public class ExecutePromptUseCase
     public async Task<Result<ExecutePromptResponse>> ExecuteAsync(ExecutePromptRequest request)
     {
         if (request == null)
-            return Result<ExecutePromptResponse>.Failure("Request cannot be null", "InvalidRequest");
+            return Result<ExecutePromptResponse>.Failure("Request cannot be null");
 
         if (request.PromptId == Guid.Empty)
-            return Result<ExecutePromptResponse>.Failure("Invalid prompt ID", "InvalidRequest");
+            return Result<ExecutePromptResponse>.Failure("Invalid prompt ID");
 
         try
         {
             // Get the prompt template by Guid
-            var prompt = await _promptRepository.GetPromptByIdAsync(request.PromptId);
+            var prompt = await _promptRepository.GetByIdAsync(request.PromptId);
 
             if (prompt == null)
-                return Result<ExecutePromptResponse>.Failure(
-                    "Prompt not found",
-                    "NotFound");
+                return Result<ExecutePromptResponse>.Failure("Prompt not found");
 
             // Fill template with variables
             string completedText = prompt.Template;
@@ -80,17 +78,12 @@ public class ExecutePromptUseCase
                 await _cacheService.AddAsync(variable.Key, variable.Value);
             }
 
-            // Create FinalPrompt record
-            var finalPrompt = new FinalPrompt
-            {
-                SourcePromptId = prompt.Id,
-                CompletedText = completedText,
-                IsFavorite = false,
-                CreatedAt = DateTime.Now
-            };
+            // Create FinalPrompt domain entity
+            var finalPrompt = FinalPrompt.CreateFromTemplate(completedText, prompt.Id);
 
             // Save the final prompt
-            await _finalPromptRepository.SaveAsync(finalPrompt);
+            var finalPromptId = await _finalPromptRepository.AddAsync(finalPrompt);
+            finalPrompt.Id = finalPromptId;
 
             var response = new ExecutePromptResponse
             {
@@ -102,9 +95,7 @@ public class ExecutePromptUseCase
         }
         catch (Exception ex)
         {
-            return Result<ExecutePromptResponse>.Failure(
-                $"Failed to execute prompt: {ex.Message}",
-                "ExecutionError");
+            return Result<ExecutePromptResponse>.Failure($"Failed to execute prompt: {ex.Message}");
         }
     }
 }

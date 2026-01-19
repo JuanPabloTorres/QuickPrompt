@@ -8,6 +8,7 @@ using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Pages;
 using QuickPrompt.Services;
+using QuickPrompt.Shared.Mappers;
 using QuickPrompt.Tools;
 using System.Collections.ObjectModel;
 using System.Text;
@@ -43,7 +44,7 @@ public partial class PromptDetailsPageViewModel : BaseViewModel, IQueryAttributa
         ExecutePromptUseCase executePromptUseCase,
         IPromptCacheService promptCacheService,
         IDialogService dialogService,
-        AdmobService admobService)
+        AdmobService admobService) : base(admobService) // ✅ Pass AdmobService to base
     {
         _getPromptByIdUseCase = getPromptByIdUseCase ?? throw new ArgumentNullException(nameof(getPromptByIdUseCase));
         _executePromptUseCase = executePromptUseCase ?? throw new ArgumentNullException(nameof(executePromptUseCase));
@@ -86,7 +87,7 @@ public partial class PromptDetailsPageViewModel : BaseViewModel, IQueryAttributa
             Description = prompt.Description;
             PromptText = prompt.Template;
             PromptID = prompt.Id;
-            Category = prompt.Category;
+            Category = (PromptCategory)prompt.Category; // Cast Domain enum to Legacy enum
 
             // Initialize variables - cached suggestions will be loaded automatically via PromptVariableCache
             var variableList = new List<VariableInput>();

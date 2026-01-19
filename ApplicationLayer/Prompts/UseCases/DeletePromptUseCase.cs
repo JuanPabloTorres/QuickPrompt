@@ -1,5 +1,5 @@
 using QuickPrompt.ApplicationLayer.Common;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Interfaces;
 
 namespace QuickPrompt.ApplicationLayer.Prompts.UseCases;
 
@@ -23,29 +23,27 @@ public class DeletePromptUseCase
     public async Task<Result> ExecuteAsync(Guid promptId)
     {
         if (promptId == Guid.Empty)
-            return Result.Failure("Invalid prompt ID", "InvalidRequest");
+            return Result.Failure("Invalid prompt ID");
 
         try
         {
             // Check if prompt exists
-            var prompt = await _promptRepository.GetPromptByIdAsync(promptId);
+            var prompt = await _promptRepository.GetByIdAsync(promptId);
 
             if (prompt == null)
-                return Result.Failure("Prompt not found", "NotFound");
+                return Result.Failure("Prompt not found");
 
             // Delete the prompt
-            var deleted = await _promptRepository.DeletePromptAsync(promptId);
+            var deleted = await _promptRepository.DeleteAsync(promptId);
 
             if (!deleted)
-                return Result.Failure("Failed to delete prompt", "DeleteFailed");
+                return Result.Failure("Failed to delete prompt");
 
             return Result.Success();
         }
         catch (Exception ex)
         {
-            return Result.Failure(
-                $"Failed to delete prompt: {ex.Message}",
-                "DatabaseError");
+            return Result.Failure($"Failed to delete prompt: {ex.Message}");
         }
     }
 }

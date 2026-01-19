@@ -1,7 +1,8 @@
-﻿using QuickPrompt.Models;
+using QuickPrompt.Models;
 using QuickPrompt.Models.DTO;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Shared.Mappers;
 using SQLite;
 
 namespace QuickPrompt.Services
@@ -9,17 +10,12 @@ namespace QuickPrompt.Services
     public class FinalPromptRepository : IFinalPromptRepository
     {
         private SQLiteAsyncConnection _database;
-
         private readonly DatabaseConnectionProvider _dbProvider;
-
-
 
         public FinalPromptRepository(DatabaseConnectionProvider provider)
         {
             _dbProvider = provider;
-
             _database = _dbProvider.GetConnection();
-
             Task.Run(async () => await InitializeDatabaseAsync());
         }
 
@@ -46,7 +42,7 @@ namespace QuickPrompt.Services
             if (!tableInfo.Any(c => c.Name == "IsDeleted"))
                 await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN IsDeleted INTEGER DEFAULT 0");
 
-            // Actualizar valores nulos con timestamps válidos
+            // Actualizar valores nulos con timestamps v�lidos
             await _database.ExecuteAsync("UPDATE FinalPrompt SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
 
             await _database.ExecuteAsync("UPDATE FinalPrompt SET UpdatedAt = datetime('now') WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
@@ -85,7 +81,7 @@ namespace QuickPrompt.Services
             if (string.IsNullOrWhiteSpace(prompt.CompletedText))
                 return 0;
 
-            // Obtener todos y comparar en memoria (pequeño volumen, rendimiento aceptable)
+            // Obtener todos y comparar en memoria (peque�o volumen, rendimiento aceptable)
             var allPrompts = await _database.Table<FinalPrompt>().ToListAsync();
 
             bool alreadyExists = allPrompts
@@ -135,7 +131,7 @@ namespace QuickPrompt.Services
 
         public async Task RestoreDatabaseAsync()
         {
-            // Cierra cualquier operación pendiente antes de borrar
+            // Cierra cualquier operaci�n pendiente antes de borrar
             //await _database.CloseAsync();
 
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
@@ -143,7 +139,7 @@ namespace QuickPrompt.Services
             if (File.Exists(dbPath))
                 File.Delete(dbPath);
 
-            // Recrear la instancia de conexión y reiniciar base de datos
+            // Recrear la instancia de conexi�n y reiniciar base de datos
             var newConnection = new SQLiteAsyncConnection(dbPath);
 
             await InitializeDatabaseAsync();
@@ -153,7 +149,7 @@ namespace QuickPrompt.Services
         {
             _database = newConnection;
 
-            await InitializeDatabaseAsync(); // usa la nueva conexión para inicializar tabla PromptTemplate
+            await InitializeDatabaseAsync(); // usa la nueva conexi�n para inicializar tabla PromptTemplate
         }
 
         public async Task<FinalPrompt?> FindByCompletedTextAsync(string completedText)
@@ -174,7 +170,6 @@ namespace QuickPrompt.Services
             if (prompt == null)
                 return false;
             return await _database.DeleteAsync(prompt) > 0;
-
         }
     }
 }

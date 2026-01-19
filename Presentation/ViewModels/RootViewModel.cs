@@ -51,7 +51,13 @@ namespace QuickPrompt.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", errorMessage, "OK");
+                // ✅ Log detailed error information
+                System.Diagnostics.Debug.WriteLine($"[ExecuteWithLoadingAsync] Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ExecuteWithLoadingAsync] StackTrace: {ex.StackTrace}");
+                System.Diagnostics.Debug.WriteLine($"[ExecuteWithLoadingAsync] InnerException: {ex.InnerException?.Message}");
+                
+                // Show custom error message with details
+                await Shell.Current.DisplayAlert("Error", $"{errorMessage}\n\nDetails: {ex.Message}", "OK");
             }
             finally
             {
@@ -72,16 +78,36 @@ namespace QuickPrompt.ViewModels
 
         protected async void NavigateTo(string page, PromptTemplate selectedPrompt)
         {
-            await ExecuteWithLoadingAsync(async () =>
+            try
             {
-                if (selectedPrompt != null)
+                IsLoading = true;
+                
+                if (selectedPrompt == null)
                 {
-                    await NavigateToAsync(page, new Dictionary<string, object>
-            {
-                { "selectedId", selectedPrompt.Id }
-            });
+                    await Shell.Current.DisplayAlert("Error", "No prompt selected", "OK");
+                    return;
                 }
-            }, AppMessagesEng.GenericError);
+
+                await NavigateToAsync(page, new Dictionary<string, object>
+                {
+                    { "selectedId", selectedPrompt.Id }
+                });
+            }
+            catch (Exception ex)
+            {
+                // ✅ Show detailed error instead of generic message
+                System.Diagnostics.Debug.WriteLine($"[NavigateTo] Error navigating to {page}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[NavigateTo] StackTrace: {ex.StackTrace}");
+                System.Diagnostics.Debug.WriteLine($"[NavigateTo] InnerException: {ex.InnerException?.Message}");
+                
+                await Shell.Current.DisplayAlert("Error", 
+                    $"Failed to navigate to {page}:\n{ex.Message}", 
+                    "OK");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         [RelayCommand]

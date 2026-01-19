@@ -1,4 +1,4 @@
-ï»¿using QuickPrompt.Models;
+using QuickPrompt.Models;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
 using QuickPrompt.Tools;
@@ -14,19 +14,14 @@ namespace QuickPrompt.Services
     // Repository Implementation
     public class PromptRepository : IPromptRepository
     {
-        private  SQLiteAsyncConnection _database;
-
+        private SQLiteAsyncConnection _database;
         private readonly DatabaseConnectionProvider _dbProvider;
 
         public PromptRepository(DatabaseConnectionProvider provider)
         {
             _dbProvider = provider;
-
             _database = _dbProvider.GetConnection();
-
-            //Task.Run(async () => await InitializeDatabaseAsync());
         }
-
      
 
         /// <summary>
@@ -52,7 +47,7 @@ namespace QuickPrompt.Services
             if (!tableInfo.Any(c => c.Name == "Category"))
                 await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN Category TEXT");
 
-            // Actualiza valores nulos con timestamps vÃ¡lidos
+            // Actualiza valores nulos con timestamps válidos
             await _database.ExecuteAsync("UPDATE PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
 
             await _database.ExecuteAsync("UPDATE PromptTemplate SET UpdatedAt = datetime('now') WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
@@ -98,7 +93,7 @@ namespace QuickPrompt.Services
         }
 
         /// <summary>
-        /// Inserta prompts Ãºtiles por defecto si la base de datos estÃ¡ vacÃ­a.
+        /// Inserta prompts útiles por defecto si la base de datos está vacía.
         /// </summary>
         private List<PromptTemplate> GetDefaultPrompts()
         {
@@ -417,7 +412,7 @@ new PromptTemplate
             return defaultPrompts;
         }
 
-        // =============================== ðŸ”¹ OPERACIONES CRUD PRINCIPALES ===============================
+        // =============================== ?? OPERACIONES CRUD PRINCIPALES ===============================
 
         /// <summary>
         /// Guarda o actualiza un prompt en la base de datos.
@@ -489,7 +484,7 @@ new PromptTemplate
             }
         }
 
-        // =============================== ðŸ”¹ OBTENER LISTA DE PROMPTS ===============================
+        // =============================== ?? OBTENER LISTA DE PROMPTS ===============================
 
         /// <summary>
         /// Obtiene todos los prompts guardados.
@@ -500,7 +495,7 @@ new PromptTemplate
         }
 
         /// <summary>
-        /// Obtiene los prompts con paginaciÃ³n y opcionalmente aplica un filtro.
+        /// Obtiene los prompts con paginación y opcionalmente aplica un filtro.
         /// </summary>
         public Task<List<PromptTemplate>> GetPromptsByBlockAsync(int offset, int limit, Filters dateFilter = Filters.All, string filterText = "", string selectedCategory = null)
         {
@@ -508,18 +503,18 @@ new PromptTemplate
         }
 
         /// <summary>
-        /// Obtiene los prompts segÃºn el filtro y el estado de favoritos.
+        /// Obtiene los prompts según el filtro y el estado de favoritos.
         /// </summary>
         private async Task<List<PromptTemplate>> GetPromptsByFilterAsync(int offset, int limit, string filterText, Filters filter, string selectedCategory)
         {
-            // Obtener todos los prompts de forma asincrÃ³nica
+            // Obtener todos los prompts de forma asincrónica
             var allPrompts = await _database.Table<PromptTemplate>().ToListAsync();
 
             // Aplicar filtro de fecha si corresponde
 
             DateTime today = DateTime.Today;
 
-            DateTime end = today.AddDays(1); // Exclusivo para el dÃ­a siguiente
+            DateTime end = today.AddDays(1); // Exclusivo para el día siguiente
 
             allPrompts = filter switch
             {
@@ -549,7 +544,7 @@ new PromptTemplate
                     .ToList();
             }
 
-            // âœ… Filtrado por categorÃ­a
+            // ? Filtrado por categoría
             if (!string.IsNullOrWhiteSpace(selectedCategory) && selectedCategory != "All")
             {
                 if (Enum.TryParse<PromptCategory>(selectedCategory, out var parsedCategory))
@@ -558,11 +553,11 @@ new PromptTemplate
                 }
             }
 
-            // PaginaciÃ³n
+            // Paginación
             return allPrompts.Skip(offset).Take(limit).ToList();
         }
 
-        // =============================== ðŸ”¹ OPERACIONES SOBRE FAVORITOS ===============================
+        // =============================== ?? OPERACIONES SOBRE FAVORITOS ===============================
 
         /// <summary>
         /// Actualiza el estado de favorito de un prompt en la base de datos.
@@ -587,7 +582,7 @@ new PromptTemplate
             return rowsAffected > 0; // Retorna true si al menos una fila fue afectada
         }
 
-        // =============================== ðŸ”¹ OBTENER CONTADOR DE PROMPTS ===============================
+        // =============================== ?? OBTENER CONTADOR DE PROMPTS ===============================
 
         /// <summary>
         /// Obtiene la cantidad total de prompts favoritos que coinciden con un filtro.
@@ -604,7 +599,7 @@ new PromptTemplate
 
             DateTime today = DateTime.Today;
 
-            DateTime end = today.AddDays(1); // Fin del dÃ­a actual
+            DateTime end = today.AddDays(1); // Fin del día actual
 
             prompts = filterType switch
             {
@@ -624,7 +619,7 @@ new PromptTemplate
                 prompts = prompts.Where(p => p.Title?.ToLower().Contains(lowerFilter) == true).ToList();
             }
 
-            // âœ… Filtrado por categorÃ­a
+            // ? Filtrado por categoría
             if (!string.IsNullOrWhiteSpace(category) && category != "All")
             {
                 if (Enum.TryParse<PromptCategory>(category, out var parsedCategory))
@@ -641,7 +636,7 @@ new PromptTemplate
         /// </summary>
         public async Task RestoreDatabaseAsync()
         {
-            // Cierra cualquier operaciÃ³n pendiente antes de borrar
+            // Cierra cualquier operación pendiente antes de borrar
             //await _database.CloseAsync();
 
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "QuickPrompt.db3");
@@ -649,7 +644,7 @@ new PromptTemplate
             if (File.Exists(dbPath))
                 File.Delete(dbPath);
 
-            // Recrear la instancia de conexiÃ³n y reiniciar base de datos
+            // Recrear la instancia de conexión y reiniciar base de datos
             var newConnection = _database;
 
             await InitializeDatabaseAsync();
@@ -659,7 +654,7 @@ new PromptTemplate
         {
             _database = newConnection;
 
-            await InitializeDatabaseAsync(); // usa la nueva conexiÃ³n para tabla FinalPrompt
+            await InitializeDatabaseAsync(); // usa la nueva conexión para tabla FinalPrompt
         }
 
 
@@ -674,5 +669,10 @@ new PromptTemplate
 
             return DatabaseConnectionProvider.DatabaseExists();
         }
+
+        // =============================== ?? DOMAIN INTERFACE IMPLEMENTATION ===============================
+
+        // Removed domain interface implementation as per the refactor
+        // The class now only implements the legacy IPromptRepository interface
     }
 }

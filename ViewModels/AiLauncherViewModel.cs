@@ -3,6 +3,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.ApplicationLayer.FinalPrompts.UseCases;
 using QuickPrompt.Constants;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
@@ -11,12 +12,15 @@ namespace QuickPrompt.ViewModels
 {
     /// <summary>
     /// ViewModel for AI Engine Launcher page.
-    /// Refactored to use Use Cases and services - Phase 1.
+    /// Refactored to use Use Cases - Phase 1 (Complete).
     /// </summary>
     public partial class AiLauncherViewModel : BaseViewModel
     {
-        // 🆕 Services (injected)
-        private readonly IFinalPromptRepository _finalPromptRepository;
+        // 🆕 Use Cases (injected)
+        private readonly GetAllFinalPromptsUseCase _getAllFinalPromptsUseCase;
+        private readonly DeleteFinalPromptUseCase _deleteFinalPromptUseCase;
+        private readonly ClearAllFinalPromptsUseCase _clearAllFinalPromptsUseCase;
+        private readonly IFinalPromptRepository _finalPromptRepository; // Kept for specific queries
         private readonly IDialogService _dialogService;
 
         // Properties
@@ -26,9 +30,15 @@ namespace QuickPrompt.ViewModels
 
         // Constructor with dependency injection
         public AiLauncherViewModel(
+            GetAllFinalPromptsUseCase getAllFinalPromptsUseCase,
+            DeleteFinalPromptUseCase deleteFinalPromptUseCase,
+            ClearAllFinalPromptsUseCase clearAllFinalPromptsUseCase,
             IFinalPromptRepository finalPromptRepository,
             IDialogService dialogService)
         {
+            _getAllFinalPromptsUseCase = getAllFinalPromptsUseCase ?? throw new ArgumentNullException(nameof(getAllFinalPromptsUseCase));
+            _deleteFinalPromptUseCase = deleteFinalPromptUseCase ?? throw new ArgumentNullException(nameof(deleteFinalPromptUseCase));
+            _clearAllFinalPromptsUseCase = clearAllFinalPromptsUseCase ?? throw new ArgumentNullException(nameof(clearAllFinalPromptsUseCase));
             _finalPromptRepository = finalPromptRepository ?? throw new ArgumentNullException(nameof(finalPromptRepository));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         }
@@ -40,7 +50,15 @@ namespace QuickPrompt.ViewModels
             IsLoading = true;
             try
             {
-                var prompts = await _finalPromptRepository.GetAllAsync();
+                var result = await _getAllFinalPromptsUseCase.ExecuteAsync();
+
+                if (result.IsFailure)
+                {
+                    await _dialogService.ShowErrorAsync(result.Error);
+                    return;
+                }
+
+                var prompts = result.Value;
 
                 if (prompts is null || !prompts.Any())
                     return;
@@ -155,21 +173,19 @@ namespace QuickPrompt.ViewModels
             IsLoading = true;
             try
             {
-                var prompts = await _finalPromptRepository.GetAllAsync();
+                var result = await _clearAllFinalPromptsUseCase.ExecuteAsync();
 
-                if (prompts != null && prompts.Any())
+                if (result.IsFailure)
                 {
-                    foreach (var prompt in prompts)
-                    {
-                        await _finalPromptRepository.DeleteAsync(prompt.Id);
-                    }
+                    await _dialogService.ShowErrorAsync(result.Error);
+                    return;
                 }
 
                 FinalPrompts.Clear();
                 SelectedPrompt = string.Empty;
                 SelectedCategory = string.Empty;
 
-                var toast = Toast.Make("All prompts cleared", ToastDuration.Short);
+                var toast = Toast.Make($"{result.Value} prompts cleared", ToastDuration.Short);
                 await toast.Show();
             }
             catch (Exception ex)
@@ -226,7 +242,14 @@ namespace QuickPrompt.ViewModels
 
                 if (prompt is not null)
                 {
-                    await _finalPromptRepository.DeleteAsync(prompt.Id);
+                    var result = await _deleteFinalPromptUseCase.ExecuteAsync(prompt.Id);
+
+                    if (result.IsFailure)
+                    {
+                        await _dialogService.ShowErrorAsync(result.Error);
+                        return;
+                    }
+
                     FinalPrompts.Remove(promptText);
 
                     var toast = Toast.Make("Prompt removed", ToastDuration.Short);

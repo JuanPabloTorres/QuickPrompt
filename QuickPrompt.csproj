@@ -281,6 +281,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Infrastructure\Adapters\" />
     <Folder Include="Resources\Images\" />
     <Folder Include="Tests\Engines\" />
   </ItemGroup>

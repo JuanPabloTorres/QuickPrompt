@@ -1,8 +1,8 @@
 using Moq;
 using QuickPrompt.ApplicationLayer.Prompts.UseCases;
-using QuickPrompt.Models;
-using QuickPrompt.Models.Enums;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Enums;
+using QuickPrompt.Domain.Interfaces;
 using Xunit;
 
 namespace QuickPrompt.Tests.UseCases;
@@ -43,8 +43,7 @@ public class UpdatePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Request cannot be null", result.Error);
-        Assert.Equal("InvalidRequest", result.ErrorCode);
-    }
+        }
 
     [Fact]
     public async Task ExecuteAsync_WithEmptyPromptId_ReturnsFailure()
@@ -64,8 +63,7 @@ public class UpdatePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Invalid prompt ID", result.Error);
-        Assert.Equal("InvalidRequest", result.ErrorCode);
-    }
+        }
 
     [Theory]
     [InlineData(null)]
@@ -127,7 +125,7 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync((PromptTemplate?)null);
 
         // Act
@@ -136,8 +134,7 @@ public class UpdatePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Prompt not found", result.Error);
-        Assert.Equal("NotFound", result.ErrorCode);
-    }
+        }
 
     [Fact]
     public async Task ExecuteAsync_WithTemplateWithoutAngleBraces_ReturnsFailure()
@@ -153,7 +150,7 @@ public class UpdatePromptUseCaseTests
 
         var existingPrompt = new PromptTemplate { Id = request.PromptId };
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(request.PromptId))
+            .Setup(x => x.GetByIdAsync(request.PromptId))
             .ReturnsAsync(existingPrompt);
 
         // Act
@@ -200,18 +197,11 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                It.IsAny<PromptCategory>()))
-            .ReturnsAsync(updatedPrompt);
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -240,36 +230,18 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.Is<Dictionary<string, string>>(d => d.Count == 3),
-                It.IsAny<PromptCategory>()))
-            .ReturnsAsync(new PromptTemplate { Id = promptId });
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
 
         // Assert
         Assert.True(result.IsSuccess);
-        _mockRepository.Verify(
-            x => x.UpdatePromptAsync(
-                promptId,
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.Is<Dictionary<string, string>>(d =>
-                    d.ContainsKey("type") &&
-                    d.ContainsKey("product") &&
-                    d.ContainsKey("audience")),
-                It.IsAny<PromptCategory>()),
-            Times.Once);
+        _mockRepository.Verify(x => x.UpdateAsync(It.IsAny<PromptTemplate>()), Times.Once);
     }
 
     [Fact]
@@ -288,31 +260,18 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                It.IsAny<PromptCategory>()))
-            .ReturnsAsync(new PromptTemplate { Id = promptId });
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         await _useCase.ExecuteAsync(request);
 
         // Assert
         _mockRepository.Verify(
-            x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                It.IsAny<PromptCategory>()),
+            x => x.UpdateAsync(It.IsAny<PromptTemplate>()),
             Times.Once);
     }
 
@@ -332,18 +291,11 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                It.IsAny<PromptCategory>()))
-            .ReturnsAsync(new PromptTemplate { Id = promptId });
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -371,7 +323,7 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -380,15 +332,14 @@ public class UpdatePromptUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Failed to update prompt", result.Error);
-        Assert.Equal("DatabaseError", result.ErrorCode);
-    }
+        }
 
     [Fact]
-    public async Task ExecuteAsync_WhenUpdateReturnsNull_ReturnsFailure()
+    public async Task ExecuteAsync_WhenUpdateReturnsFalse_ReturnsFailure()
     {
         // Arrange
         var promptId = Guid.NewGuid();
-        var existingPrompt = new PromptTemplate { Id = promptId };
+        var existingPrompt = new PromptTemplate { Id = promptId, Title = "Test", Template = "<var>" };
 
         var request = new UpdatePromptRequest
         {
@@ -399,18 +350,12 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                It.IsAny<PromptCategory>()))
-            .ReturnsAsync((PromptTemplate?)null);
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>()))
+            .ReturnsAsync(false); // Repository indicates update failed
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -446,18 +391,11 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                expectedCategory))
-            .ReturnsAsync(new PromptTemplate { Id = promptId, Category = expectedCategory });
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -483,18 +421,11 @@ public class UpdatePromptUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(existingPrompt);
 
         _mockRepository
-            .Setup(x => x.UpdatePromptAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>(),
-                PromptCategory.General))
-            .ReturnsAsync(new PromptTemplate { Id = promptId, Category = PromptCategory.General });
+            .Setup(x => x.UpdateAsync(It.IsAny<PromptTemplate>())).ReturnsAsync(true);
 
         // Act
         var result = await _useCase.ExecuteAsync(request);

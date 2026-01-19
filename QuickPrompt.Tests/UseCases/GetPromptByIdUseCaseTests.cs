@@ -1,8 +1,8 @@
 using Moq;
 using QuickPrompt.ApplicationLayer.Prompts.UseCases;
-using QuickPrompt.Models;
-using QuickPrompt.Models.Enums;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Enums;
+using QuickPrompt.Domain.Interfaces;
 using Xunit;
 
 namespace QuickPrompt.Tests.UseCases;
@@ -43,7 +43,6 @@ public class GetPromptByIdUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Invalid prompt ID", result.Error);
-        Assert.Equal("InvalidRequest", result.ErrorCode);
     }
 
     [Fact]
@@ -53,7 +52,7 @@ public class GetPromptByIdUseCaseTests
         var promptId = Guid.NewGuid();
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync((PromptTemplate?)null);
 
         // Act
@@ -62,7 +61,6 @@ public class GetPromptByIdUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Prompt not found", result.Error);
-        Assert.Equal("NotFound", result.ErrorCode);
     }
 
     #endregion
@@ -84,7 +82,7 @@ public class GetPromptByIdUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(prompt);
 
         // Act
@@ -105,10 +103,10 @@ public class GetPromptByIdUseCaseTests
     {
         // Arrange
         var promptId = Guid.NewGuid();
-        var prompt = new PromptTemplate { Id = promptId };
+        var prompt = new PromptTemplate { Id = promptId, Title = "Test", Template = "<var>" };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(prompt);
 
         // Act
@@ -116,7 +114,7 @@ public class GetPromptByIdUseCaseTests
 
         // Assert
         _mockRepository.Verify(
-            x => x.GetPromptByIdAsync(promptId),
+            x => x.GetByIdAsync(promptId),
             Times.Once);
     }
 
@@ -128,6 +126,7 @@ public class GetPromptByIdUseCaseTests
         var prompt = new PromptTemplate
         {
             Id = promptId,
+            Title = "Test",
             Template = "<var1> and <var2>",
             Variables = new Dictionary<string, string>
             {
@@ -137,7 +136,7 @@ public class GetPromptByIdUseCaseTests
         };
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(prompt);
 
         // Act
@@ -162,7 +161,7 @@ public class GetPromptByIdUseCaseTests
         var promptId = Guid.NewGuid();
 
         _mockRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -171,7 +170,6 @@ public class GetPromptByIdUseCaseTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Failed to retrieve prompt", result.Error);
-        Assert.Equal("DatabaseError", result.ErrorCode);
     }
 
     #endregion

@@ -1,6 +1,6 @@
 using QuickPrompt.ApplicationLayer.Common;
-using QuickPrompt.Models;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Interfaces;
 
 namespace QuickPrompt.ApplicationLayer.Prompts.UseCases;
 
@@ -24,22 +24,20 @@ public class GetPromptByIdUseCase
     public async Task<Result<PromptTemplate>> ExecuteAsync(Guid promptId)
     {
         if (promptId == Guid.Empty)
-            return Result<PromptTemplate>.Failure("Invalid prompt ID", "InvalidRequest");
+            return Result<PromptTemplate>.Failure("Invalid prompt ID");
 
         try
         {
-            var prompt = await _promptRepository.GetPromptByIdAsync(promptId);
+            var prompt = await _promptRepository.GetByIdAsync(promptId);
 
             if (prompt == null)
-                return Result<PromptTemplate>.Failure("Prompt not found", "NotFound");
+                return Result<PromptTemplate>.Failure("Prompt not found");
 
             return Result<PromptTemplate>.Success(prompt);
         }
         catch (Exception ex)
         {
-            return Result<PromptTemplate>.Failure(
-                $"Failed to retrieve prompt: {ex.Message}",
-                "DatabaseError");
+            return Result<PromptTemplate>.Failure($"Failed to retrieve prompt: {ex.Message}");
         }
     }
 }

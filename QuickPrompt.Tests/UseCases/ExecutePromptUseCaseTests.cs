@@ -1,8 +1,8 @@
 using Moq;
 using QuickPrompt.ApplicationLayer.Common.Interfaces;
 using QuickPrompt.ApplicationLayer.Prompts.UseCases;
-using QuickPrompt.Models;
-using QuickPrompt.Services.ServiceInterfaces;
+using QuickPrompt.Domain.Entities;
+using QuickPrompt.Domain.Interfaces;
 using Xunit;
 
 namespace QuickPrompt.Tests.UseCases;
@@ -106,7 +106,7 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(request.PromptId))
+            .Setup(x => x.GetByIdAsync(request.PromptId))
             .ReturnsAsync((PromptTemplate?)null);
 
         // Act
@@ -142,12 +142,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -180,12 +180,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -216,12 +216,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -256,12 +256,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         await _useCase.ExecuteAsync(request);
@@ -294,12 +294,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         await _useCase.ExecuteAsync(request);
@@ -335,19 +335,19 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         await _useCase.ExecuteAsync(request);
 
         // Assert
         _mockFinalPromptRepository.Verify(
-            x => x.SaveAsync(It.Is<FinalPrompt>(fp =>
+            x => x.AddAsync(It.Is<FinalPrompt>(fp =>
                 fp.SourcePromptId == promptId &&
                 fp.CompletedText == "value" &&
                 fp.IsFavorite == false)),
@@ -372,12 +372,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -404,7 +404,7 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(It.IsAny<Guid>()))
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -433,11 +433,11 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
             .ThrowsAsync(new Exception("Save failed"));
 
         // Act
@@ -469,12 +469,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);
@@ -505,12 +505,12 @@ public class ExecutePromptUseCaseTests
         };
 
         _mockPromptRepository
-            .Setup(x => x.GetPromptByIdAsync(promptId))
+            .Setup(x => x.GetByIdAsync(promptId))
             .ReturnsAsync(template);
 
         _mockFinalPromptRepository
-            .Setup(x => x.SaveAsync(It.IsAny<FinalPrompt>()))
-            .ReturnsAsync(1);
+            .Setup(x => x.AddAsync(It.IsAny<FinalPrompt>()))
+            .ReturnsAsync(Guid.NewGuid());
 
         // Act
         var result = await _useCase.ExecuteAsync(request);

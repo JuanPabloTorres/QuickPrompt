@@ -1,4 +1,7 @@
-﻿using QuickPrompt.Services;
+﻿using Microsoft.Extensions.Logging;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
+using QuickPrompt.Infrastructure.Logging;
+using QuickPrompt.Services;
 
 namespace QuickPrompt
 {
@@ -6,96 +9,142 @@ namespace QuickPrompt
     {
         private readonly DatabaseServiceManager _databaseServiceManager;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<App>? _logger;
+        private readonly IDialogService _dialogService;
 
-        public App(DatabaseServiceManager databaseServiceManager, IServiceProvider serviceProvider)
+        public App(
+            DatabaseServiceManager databaseServiceManager, 
+            IServiceProvider serviceProvider,
+            ILogger<App>? logger, // Made nullable for safety
+            IDialogService dialogService)
         {
-            global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Starting...");
-
             try
             {
+                _logger = logger;
+                _logger?.LogInformation("[App.Constructor] Starting...");
+
                 InitializeComponent();
-                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] InitializeComponent completed");
+                _logger?.LogInformation("[App.Constructor] InitializeComponent completed");
 
                 _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
                 _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Dependencies injected");
+                _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+                _logger?.LogInformation("[App.Constructor] Dependencies injected");
 
-                // ✅ Database initialization in background with error handling
+                // Initialize global exception handler with null-safe logger
+                if (_logger != null)
+                {
+                    GlobalExceptionHandler.Initialize(_logger, async (title, message) =>
+                    {
+                        try
+                        {
+                            await MainThread.InvokeOnMainThreadAsync(async () =>
+                            {
+                                await _dialogService.ShowErrorAsync($"{title}: {message}");
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "[App] Failed to show error dialog");
+                            System.Diagnostics.Debug.WriteLine($"[App] Failed to show error dialog: {ex.Message}");
+                        }
+                    });
+                    _logger.LogInformation("[App.Constructor] Global exception handler initialized");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[App.Constructor] WARNING: Logger is null, using Debug fallback");
+                }
+
+                // Database initialization in background with error handling
                 Task.Run(async () =>
                 {
                     try
                     {
-                        global::System.Diagnostics.Debug.WriteLine("[App] Database initialization starting...");
+                        _logger?.LogInformation("[App] Database initialization starting...");
                         await _databaseServiceManager.InitializeAsync();
-                        global::System.Diagnostics.Debug.WriteLine("[App] Database initialization completed");
+                        _logger?.LogInformation("[App] Database initialization completed successfully");
                     }
                     catch (Exception ex)
                     {
-                        global::System.Diagnostics.Debug.WriteLine($"[App] Database initialization error: {ex.GetType().Name}: {ex.Message}");
+                        _logger?.LogError(ex, "[App] Database initialization failed");
+                        System.Diagnostics.Debug.WriteLine($"[App] Database initialization failed: {ex.Message}");
                         // Don't throw - app should continue without database error
                     }
                 });
 
-                global::System.Diagnostics.Debug.WriteLine("[App.Constructor] Constructor completed successfully");
+                _logger?.LogInformation("[App.Constructor] Constructor completed successfully");
             }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[App.Constructor] FATAL ERROR: {ex.GetType().Name}: {ex.Message}");
-                global::System.Diagnostics.Debug.WriteLine($"[App.Constructor] StackTrace: {ex.StackTrace}");
+                _logger?.LogCritical(ex, "[App.Constructor] FATAL ERROR during initialization");
+                System.Diagnostics.Debug.WriteLine($"[App.Constructor] FATAL: {ex.Message}");
                 throw;
             }
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Starting...");
+            _logger?.LogInformation("[App.CreateWindow] Starting...");
 
             try
             {
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Resolving AppShell from service provider...");
+                _logger?.LogInformation("[App.CreateWindow] Resolving AppShell from service provider...");
                 
-                // ✅ FIX: Use injected service provider directly instead of Handler.MauiContext
                 var appShell = _serviceProvider.GetRequiredService<AppShell>();
                 
                 if (appShell == null)
                 {
+                    _logger?.LogError("[App.CreateWindow] AppShell resolution returned null");
                     throw new InvalidOperationException("Failed to resolve AppShell from service provider");
                 }
 
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] AppShell resolved successfully");
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Creating Window...");
+                _logger?.LogInformation("[App.CreateWindow] AppShell resolved successfully");
                 
                 var window = new Window(appShell)
                 {
                     Title = "QuickPrompt"
                 };
                 
-                global::System.Diagnostics.Debug.WriteLine("[App.CreateWindow] Window created successfully");
+                _logger?.LogInformation("[App.CreateWindow] Window created successfully");
 
                 return window;
             }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] FATAL ERROR: {ex.GetType().Name}: {ex.Message}");
-                global::System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] StackTrace: {ex.StackTrace}");
+                _logger?.LogCritical(ex, "[App.CreateWindow] FATAL ERROR creating window");
+                System.Diagnostics.Debug.WriteLine($"[App.CreateWindow] FATAL: {ex.Message}");
                 throw;
             }
         }
 
         protected override void OnStart()
         {
-            global::System.Diagnostics.Debug.WriteLine("[App.OnStart] Starting...");
+            _logger?.LogInformation("[App.OnStart] Starting...");
 
             try
             {
                 PromptCacheCleanupService.RunCleanupIfDue();
-                global::System.Diagnostics.Debug.WriteLine("[App.OnStart] Cache cleanup completed");
+                _logger?.LogInformation("[App.OnStart] Cache cleanup completed");
             }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[App.OnStart] Error in cache cleanup: {ex.GetType().Name}: {ex.Message}");
+                _logger?.LogError(ex, "[App.OnStart] Error in cache cleanup");
+                System.Diagnostics.Debug.WriteLine($"[App.OnStart] Cache cleanup error: {ex.Message}");
                 // Don't throw - not critical
             }
+        }
+
+        protected override void OnSleep()
+        {
+            _logger?.LogInformation("[App.OnSleep] App entering sleep mode");
+            base.OnSleep();
+        }
+
+        protected override void OnResume()
+        {
+            _logger?.LogInformation("[App.OnResume] App resuming from sleep");
+            base.OnResume();
         }
     }
 }
