@@ -16,6 +16,20 @@ namespace QuickPrompt.Pages
             _viewModel = viewModel;
 
             BindingContext = viewModel;
+
+            // Subscribe to property changes for chip rendering
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+
+        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(_viewModel.IsVisualModeActive))
+            {
+                if (_viewModel.IsVisualModeActive && !string.IsNullOrWhiteSpace(_viewModel.PromptText))
+                {
+                    RenderPromptAsChips(_viewModel.PromptText);
+                }
+            }
         }
 
         protected override void OnAppearing()

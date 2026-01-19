@@ -295,4 +295,21 @@ public partial class MainPageViewModel : BaseViewModel
             IsLoading = false;
         }
     }
+
+    // ============================ MODE SWITCHING ============================
+
+    [RelayCommand]
+    private void SwitchToEditor()
+    {
+        IsVisualModeActive = false;
+    }
+
+    [RelayCommand]
+    private void SwitchToChips()
+    {
+        if (!string.IsNullOrWhiteSpace(PromptText))
+        {
+            IsVisualModeActive = true;
+        }
+    }
 }
