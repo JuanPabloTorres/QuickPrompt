@@ -97,9 +97,9 @@ namespace QuickPrompt
                 .AddJsonStream(stream);
 
             // ✅ SPRINT 1: Override with environment variables for secrets
-            // Environment variables use double underscore (__) as section delimiter
-            // Example: QUICKPROMPT_GPTApiKeys__Key1 maps to GPTApiKeys:Key1
-            builder.AddEnvironmentVariables(prefix: "QUICKPROMPT_");
+            // TODO: Install Microsoft.Extensions.Configuration.EnvironmentVariables package
+            // then uncomment the line below:
+            // builder.AddEnvironmentVariables(prefix: "QUICKPROMPT_");
 
             return builder.Build();
         }
