@@ -20,9 +20,12 @@ namespace QuickPrompt.Engines.Registry
             {
                 Name = "Gemini",
                 BaseUrl = "https://gemini.google.com/",
-                InputSelector = "[contenteditable='true']",
-                SubmitSelector = "button[aria-label*='Send']",
-                DelayMs = 4000,
+                // ? FIX: Selector más específico para el input contenteditable de Gemini
+                InputSelector = "div[contenteditable='true'][role='textbox'], div[contenteditable='true'][aria-label*='prompt'], [contenteditable='true']",
+                // ? FIX: Submit button selector más robusto con múltiples fallbacks
+                SubmitSelector = "button[aria-label*='Send'], button[aria-label*='Submit'], button:has(svg):not([disabled])",
+                // ? FIX: Aumentar delay para Gemini (JS framework tarda más en cargar)
+                DelayMs = 5000, // Aumentado de 4000 a 5000 para dar tiempo suficiente
                 FallbackStrategy = FallbackStrategy.Auto
             },
             ["Grok"] = new AiEngineDescriptor
