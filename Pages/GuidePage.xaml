@@ -53,15 +53,14 @@
                     <Label
                         Grid.Row="0"
                         FontAttributes="Bold"
-                        FontSize="30"
                         HorizontalTextAlignment="Center"
-                        Style="{StaticResource TitleLabelStyle}"
+                        Style="{StaticResource DisplayTextStyle}"
                         Text="¡Welcome to Quick Prompt!"
                         TextColor="White" />
 
                     <Label
                         FontAttributes="Italic"
-                        FontSize="16"
+                        Style="{StaticResource BodyLargeTextStyle}"
                         HorizontalOptions="Center"
                         Text="Learn. Create. Reuse. Repeat."
                         TextColor="White" />
@@ -102,17 +101,15 @@
                                     <Label
                                         Grid.Row="0"
                                         FontAttributes="Bold"
-                                        FontSize="20"
                                         HorizontalOptions="Center"
                                         HorizontalTextAlignment="Center"
                                         LineBreakMode="WordWrap"
-                                        Style="{StaticResource TitleLabelStyle}"
+                                        Style="{StaticResource Heading2TextStyle}"
                                         Text="{Binding Title}" />
                                     <Label
                                         Grid.Row="1"
-                                        FontSize="16"
                                         HorizontalTextAlignment="Center"
-                                        Style="{StaticResource SubtitleLabelStyle}"
+                                        Style="{StaticResource BodyLargeTextStyle}"
                                         Text="{Binding Description}"
                                         TextColor="Black" />
 
@@ -128,7 +125,7 @@
                                         Style="{StaticResource CardStyle}">
                                         <Label
                                             FontAttributes="Italic"
-                                            FontSize="14"
+                                            Style="{StaticResource BodySmallTextStyle}"
                                             HorizontalTextAlignment="Center"
                                             Text="{Binding Example}"
                                             TextColor="White" />
@@ -141,7 +138,7 @@
                                         BackgroundColor="{StaticResource PrimaryRed}"
                                         Clicked="OnNavigateToCreatePrompt"
                                         CornerRadius="10"
-                                        FontSize="16"
+                                        Style="{StaticResource BodyLargeTextStyle}"
                                         IsVisible="{Binding IsFinalStep}"
                                         Text="⚡ Create Your Prompt"
                                         TextColor="White" />
@@ -164,7 +161,7 @@
 
                 <Label
                     Grid.Row="3"
-                    FontSize="14"
+                    Style="{StaticResource BodySmallTextStyle}"
                     HorizontalTextAlignment="Center"
                     LineBreakMode="WordWrap"
                     Text="Swipe or tap the buttons to explore the guide and discover how to get the most out of QuickPrompt!"
