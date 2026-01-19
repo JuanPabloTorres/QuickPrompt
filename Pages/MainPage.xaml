@@ -8,7 +8,9 @@
     xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
     xmlns:inputs="clr-namespace:QuickPrompt.Components.Inputs"
     BackgroundColor="WhiteSmoke"
-    Shell.PresentationMode="Animated">
+    Shell.PresentationMode="Animated"
+    AutomationProperties.Name="Create Prompt Page"
+    AutomationProperties.HelpText="Create and customize AI prompts with variables">
 
     <Shell.TitleView>
 
@@ -33,6 +35,8 @@
             <ToolTipProperties.Text>
                 Click to Save data
             </ToolTipProperties.Text>
+            <AutomationProperties.Name>Save Prompt</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Save the current prompt to your library</AutomationProperties.HelpText>
         </ToolbarItem>
 
         <!--  Nuevo botón: Advanced Prompt Builder  -->
@@ -46,6 +50,8 @@
             <ToolTipProperties.Text>
                 Advanced Prompt Builder
             </ToolTipProperties.Text>
+            <AutomationProperties.Name>Advanced Builder</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Open the advanced step-by-step prompt builder</AutomationProperties.HelpText>
         </ToolbarItem>
 
 
@@ -56,11 +62,12 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe9fc;"
                     Color="{StaticResource PrimaryBlueDark}" />
-                <!--  Color asociado al botón Copiar  -->
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Import Json
             </ToolTipProperties.Text>
+            <AutomationProperties.Name>Import Prompt</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Import a prompt from JSON file</AutomationProperties.HelpText>
         </ToolbarItem>
 
         <!--  Botón para resetear posición del botón flotante  -->
@@ -74,6 +81,8 @@
             <ToolTipProperties.Text>
                 Reset Floating Button Position
             </ToolTipProperties.Text>
+            <AutomationProperties.Name>Reset Floating Button</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Reset the variable button to default position</AutomationProperties.HelpText>
         </ToolbarItem>
 
         <!--  Botón de Copiar  -->
@@ -83,18 +92,21 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5c9;"
                     Color="{StaticResource PrimaryRed}" />
-                <!--  Color asociado al botón Copiar  -->
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Clear Text
             </ToolTipProperties.Text>
+            <AutomationProperties.Name>Clear All Fields</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Clear all input fields and reset the form</AutomationProperties.HelpText>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
     <AbsoluteLayout>
 
         <!--  Contenido Principal Scrollable  -->
-        <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All">
+        <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
+                    AutomationProperties.Name="Prompt Creation Form"
+                    AutomationProperties.HelpText="Scroll to access all prompt fields">
             <Grid
                 Margin="10"
                 RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto"
@@ -112,17 +124,22 @@
                 <Label
                     Grid.Row="0"
                     Style="{StaticResource TitleLabelStyle}"
-                    Text="Prompt Management " />
+                    Text="Prompt Management "
+                    AutomationProperties.IsInAccessibleTree="True"
+                    AutomationProperties.Name="Page Title: Prompt Management" />
 
                 <!--  Explicación breve  -->
                 <Label
                     Grid.Row="1"
                     Style="{StaticResource BodySmallTextStyle}"
                     Text="Create your prompt by completing the title, description, and main prompt below. You can insert variables using the floating &lt;&gt; button."
-                    TextColor="Gray" />
+                    TextColor="Gray"
+                    AutomationProperties.IsInAccessibleTree="True"
+                    AutomationProperties.Name="Instructions" />
 
                 <!--  Línea divisoria  -->
-                <BoxView Grid.Row="2" Style="{StaticResource DividerLineStyle}" />
+                <BoxView Grid.Row="2" Style="{StaticResource DividerLineStyle}"
+                         AutomationProperties.IsInAccessibleTree="False" />
 
                 <!--  Campo: Title  -->
                 <inputs:TextInput 
@@ -130,7 +147,9 @@
                     Label="Title"
                     Placeholder="Example: Blog Post Generator"
                     Text="{Binding PromptTitle}"
-                    ShowLabel="True" />
+                    ShowLabel="True"
+                    AutomationProperties.Name="Prompt Title Input"
+                    AutomationProperties.HelpText="Enter a descriptive title for your prompt" />
 
                 <!--  Campo: Description  -->
                 <VerticalStackLayout Grid.Row="4">
@@ -139,13 +158,17 @@
                         HorizontalOptions="Start"
                         Style="{StaticResource BodySmallTextStyle}"
                         FontAttributes="Bold"
-                        Text="Description (optional)" />
+                        Text="Description (optional)"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Description Label" />
                     <Border Style="{StaticResource InputBorderStyle}">
                         <Editor
                             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                             Placeholder="Short explanation of what this prompt does..."
                             Style="{StaticResource InputEditorStyle}"
-                            Text="{Binding PromptDescription}" />
+                            Text="{Binding PromptDescription}"
+                            AutomationProperties.Name="Description Input"
+                            AutomationProperties.HelpText="Optional: Add a description explaining what this prompt does" />
                     </Border>
                 </VerticalStackLayout>
 
@@ -154,7 +177,9 @@
                     <Label
                         HorizontalOptions="Start"
                         Style="{StaticResource TitleLabelStyle}"
-                        Text="Category" />
+                        Text="Category"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Category Label" />
 
                     <Border Style="{StaticResource InputBorderStyle}">
                         <Picker
@@ -163,7 +188,9 @@
                             ItemDisplayBinding="{Binding .}"
                             ItemsSource="{Binding Categories}"
                             SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                            Style="{StaticResource InputPickerStyle}" />
+                            Style="{StaticResource InputPickerStyle}"
+                            AutomationProperties.Name="Category Picker"
+                            AutomationProperties.HelpText="Select a category for organizing your prompt" />
                     </Border>
                 </VerticalStackLayout>
 
@@ -175,7 +202,9 @@
                         Grid.Row="5"
                         HorizontalOptions="Start"
                         Style="{StaticResource TitleLabelStyle}"
-                        Text="Prompt Template " />
+                        Text="Prompt Template "
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Prompt Template Label" />
                     <Border Grid.Row="5" Style="{StaticResource InputBorderStyle}">
                         <Editor
                             x:Name="PromptRawEditor"
@@ -185,7 +214,9 @@
                             Placeholder="Example: Generate a message for &lt;recipient&gt; about &lt;subject&gt;"
                             SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
                             Style="{StaticResource PromptEditorStyle}"
-                            Text="{Binding PromptText}" />
+                            Text="{Binding PromptText}"
+                            AutomationProperties.Name="Prompt Template Input"
+                            AutomationProperties.HelpText="Enter your prompt text. Use angle brackets to mark variables like recipient or subject" />
                     </Border>
                 </VerticalStackLayout>
 
@@ -206,14 +237,18 @@
                         HorizontalTextAlignment="Center"
                         LineBreakMode="WordWrap"
                         Text="💡 Switch between visual and text modes to edit your prompt. Tap any &lt;variable&gt; chip to rename it."
-                        TextColor="Gray" />
+                        TextColor="Gray"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Mode Switching Tip" />
 
                     <!--  Botones de modo  -->
                     <HorizontalStackLayout Margin="5" HorizontalOptions="Center" Spacing="8">
 
                         <buttons:SecondaryButton
                             Text="Text Mode"
-                            Command="{Binding SwitchToEditorCommand}">
+                            Command="{Binding SwitchToEditorCommand}"
+                            AutomationProperties.Name="Switch to Text Mode"
+                            AutomationProperties.HelpText="Switch to text editing mode for raw prompt input">
                             <buttons:SecondaryButton.ImageSource>
                                 <FontImageSource
                                     FontFamily="MaterialIconsOutlined-Regular"
@@ -224,7 +259,9 @@
 
                         <buttons:PrimaryButton
                             Text="Visual Mode"
-                            Command="{Binding SwitchToChipsCommand}">
+                            Command="{Binding SwitchToChipsCommand}"
+                            AutomationProperties.Name="Switch to Visual Mode"
+                            AutomationProperties.HelpText="Switch to visual mode to edit variables as chips">
                             <buttons:PrimaryButton.ImageSource>
                                 <FontImageSource
                                     FontFamily="MaterialIconsOutlined-Regular"
@@ -235,7 +272,9 @@
                     </HorizontalStackLayout>
 
                     <!--  Contenedor de chips dentro de ScrollView que sí funciona  -->
-                    <ScrollView VerticalOptions="Fill">
+                    <ScrollView VerticalOptions="Fill"
+                                AutomationProperties.Name="Variable Chips Container"
+                                AutomationProperties.HelpText="Visual representation of prompt variables as editable chips">
                         <VerticalStackLayout Padding="5" Spacing="5">
                             <FlexLayout
                                 x:Name="PromptChipContainer"
@@ -256,7 +295,9 @@
                         Style="{StaticResource CaptionTextStyle}"
                         HorizontalTextAlignment="Center"
                         Text="💡 Tap on a variable chip (like &lt;topic&gt;) to edit its name."
-                        TextColor="Gray" />
+                        TextColor="Gray"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Chip Editing Tip" />
                 </VerticalStackLayout>
             </Grid>
         </ScrollView>
@@ -269,7 +310,9 @@
             AbsoluteLayout.LayoutFlags="None"
             Command="{Binding CreateVariableCommand}"
             IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-            Style="{StaticResource FloatingButtonStyle}">
+            Style="{StaticResource FloatingButtonStyle}"
+            AutomationProperties.Name="Create Variable Button"
+            AutomationProperties.HelpText="Tap to create a variable from selected text. You can also drag this button to reposition it">
 
             <Button.GestureRecognizers>
                 <PanGestureRecognizer PanUpdated="OnPanUpdated" />

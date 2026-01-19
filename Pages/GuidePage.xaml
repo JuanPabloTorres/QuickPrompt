@@ -5,7 +5,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:view="clr-namespace:QuickPrompt.Views"
     BackgroundColor="WhiteSmoke"
-    Routing.Route="GuidePage">
+    Routing.Route="GuidePage"
+    AutomationProperties.Name="QuickPrompt Guide Page"
+    AutomationProperties.HelpText="Onboarding guide for QuickPrompt application">
 
     <Shell.BackButtonBehavior>
         <BackButtonBehavior IsVisible="False" />
@@ -34,7 +36,8 @@
                 <GradientStop Offset="0.60" Color="{StaticResource PrimaryYellow}" />
             </LinearGradientBrush>
         </Border.Background>
-        <ScrollView>
+        <ScrollView AutomationProperties.Name="Guide Content"
+                    AutomationProperties.HelpText="Scroll to read the complete guide">
 
             <Grid
                 Padding="20"
@@ -56,14 +59,19 @@
                         HorizontalTextAlignment="Center"
                         Style="{StaticResource DisplayTextStyle}"
                         Text="¡Welcome to Quick Prompt!"
-                        TextColor="White" />
+                        TextColor="White"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Welcome Title"
+                        AutomationProperties.HelpText="Welcome to Quick Prompt application" />
 
                     <Label
                         FontAttributes="Italic"
                         Style="{StaticResource BodyLargeTextStyle}"
                         HorizontalOptions="Center"
                         Text="Learn. Create. Reuse. Repeat."
-                        TextColor="White" />
+                        TextColor="White"
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Application Tagline" />
 
 
 
@@ -78,7 +86,9 @@
                     IsSwipeEnabled="True"
                     ItemsSource="{Binding GuideSteps}"
                     Position="{Binding CurrentStepIndex, Mode=TwoWay}"
-                    PositionChanged="OnCarouselPositionChanged">
+                    PositionChanged="OnCarouselPositionChanged"
+                    AutomationProperties.Name="Guide Steps Carousel"
+                    AutomationProperties.HelpText="Swipe left or right to navigate through guide steps">
                     <CarouselView.ItemTemplate>
                         <DataTemplate>
                             <Border
@@ -105,13 +115,17 @@
                                         HorizontalTextAlignment="Center"
                                         LineBreakMode="WordWrap"
                                         Style="{StaticResource Heading2TextStyle}"
-                                        Text="{Binding Title}" />
+                                        Text="{Binding Title}"
+                                        AutomationProperties.IsInAccessibleTree="True"
+                                        AutomationProperties.Name="{Binding Title}" />
                                     <Label
                                         Grid.Row="1"
                                         HorizontalTextAlignment="Center"
                                         Style="{StaticResource BodyLargeTextStyle}"
                                         Text="{Binding Description}"
-                                        TextColor="Black" />
+                                        TextColor="Black"
+                                        AutomationProperties.IsInAccessibleTree="True"
+                                        AutomationProperties.Name="{Binding Description}" />
 
                                     <!--  Ejemplo resaltado si aplica  -->
                                     <Border
@@ -128,7 +142,10 @@
                                             Style="{StaticResource BodySmallTextStyle}"
                                             HorizontalTextAlignment="Center"
                                             Text="{Binding Example}"
-                                            TextColor="White" />
+                                            TextColor="White"
+                                            AutomationProperties.IsInAccessibleTree="True"
+                                            AutomationProperties.Name="Example"
+                                            AutomationProperties.HelpText="{Binding Example}" />
                                     </Border>
 
                                     <!--  Botón solo visible en el último paso  -->
@@ -141,7 +158,10 @@
                                         Style="{StaticResource BodyLargeTextStyle}"
                                         IsVisible="{Binding IsFinalStep}"
                                         Text="⚡ Create Your Prompt"
-                                        TextColor="White" />
+                                        TextColor="White"
+                                        AutomationProperties.IsInAccessibleTree="True"
+                                        AutomationProperties.Name="Create Your First Prompt Button"
+                                        AutomationProperties.HelpText="Tap to navigate to prompt creation page" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -157,7 +177,9 @@
                     HorizontalOptions="Center"
                     IndicatorColor="LightGray"
                     IndicatorSize="8"
-                    SelectedIndicatorColor="{StaticResource PrimaryRed}" />
+                    SelectedIndicatorColor="{StaticResource PrimaryRed}"
+                    AutomationProperties.Name="Step Indicator"
+                    AutomationProperties.HelpText="Shows current step position in the guide" />
 
                 <Label
                     Grid.Row="3"
@@ -165,7 +187,9 @@
                     HorizontalTextAlignment="Center"
                     LineBreakMode="WordWrap"
                     Text="Swipe or tap the buttons to explore the guide and discover how to get the most out of QuickPrompt!"
-                    TextColor="White" />
+                    TextColor="White"
+                    AutomationProperties.IsInAccessibleTree="True"
+                    AutomationProperties.Name="Navigation Instructions" />
 
                 <!--  Botones de navegación  -->
                 <Grid
@@ -178,7 +202,10 @@
                         Clicked="OnBackClicked"
                         IsEnabled="{Binding CanGoBack}"
                         Style="{StaticResource YellowButtonStyle}"
-                        Text="">
+                        Text=""
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Previous Step Button"
+                        AutomationProperties.HelpText="Go to previous guide step">
 
 
                         <Button.ImageSource>
@@ -194,7 +221,10 @@
                         Grid.Column="1"
                         Clicked="OnNextClicked"
                         Style="{StaticResource YellowButtonStyle}"
-                        Text="">
+                        Text=""
+                        AutomationProperties.IsInAccessibleTree="True"
+                        AutomationProperties.Name="Next Step Button"
+                        AutomationProperties.HelpText="Go to next guide step or start using QuickPrompt">
                         <Button.ImageSource>
                             <FontImageSource
                                 FontFamily="MaterialIconsOutlined-Regular"
