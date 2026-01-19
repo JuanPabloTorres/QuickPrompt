@@ -1,19 +1,27 @@
 ﻿using Microsoft.Maui.Controls.Shapes;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
 using QuickPrompt.Models;
 using QuickPrompt.ViewModels;
 using System.Text.RegularExpressions;
 
 namespace QuickPrompt.Pages
 {
+    /// <summary>
+    /// Main page for prompt creation with visual chip mode.
+    /// ✅ PHASE 2: Event cleanup to prevent memory leaks
+    /// ✅ PHASE 4: IThemeService for safe color access
+    /// </summary>
     public partial class MainPage : ContentPage
     {
         private MainPageViewModel _viewModel;
+        private readonly IThemeService _themeService;
 
-        public MainPage(MainPageViewModel viewModel)
+        public MainPage(MainPageViewModel viewModel, IThemeService themeService)
         {
             InitializeComponent();
 
             _viewModel = viewModel;
+            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
 
             BindingContext = viewModel;
 
@@ -227,9 +235,9 @@ namespace QuickPrompt.Pages
                 {
                     if (part.IsVariable)
                     {
-                        // ✅ Safely get color resources with fallback
-                        Color backgroundColor = GetColorResource("Info200", Color.FromRgba(173, 216, 230, 255)); // Light blue fallback
-                        Color textColor = GetColorResource("TextPrimary", Colors.Black);
+                        // ✅ PHASE 4: Use ThemeService with safe fallback
+                        Color backgroundColor = _themeService.GetColor("Info200", Color.FromRgba(173, 216, 230, 255));
+                        Color textColor = _themeService.GetColor("TextPrimary", Colors.Black);
 
                         var border = new Border
                         {
@@ -274,7 +282,8 @@ namespace QuickPrompt.Pages
                     }
                     else
                     {
-                        Color textColor = GetColorResource("TextPrimary", Colors.Black);
+                        // ✅ PHASE 4: Use ThemeService
+                        Color textColor = _themeService.GetColor("TextPrimary", Colors.Black);
 
                         PromptChipContainer.Children.Add(new Label
                         {
@@ -291,28 +300,6 @@ namespace QuickPrompt.Pages
                 System.Diagnostics.Debug.WriteLine($"[MainPage.RenderPromptAsChips] Error: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[MainPage.RenderPromptAsChips] StackTrace: {ex.StackTrace}");
             }
-        }
-
-        /// <summary>
-        /// Safely retrieves a color resource with fallback
-        /// </summary>
-        private Color GetColorResource(string resourceKey, Color fallback)
-        {
-            try
-            {
-                if (Application.Current?.Resources != null && 
-                    Application.Current.Resources.TryGetValue(resourceKey, out var resource) && 
-                    resource is Color color)
-                {
-                    return color;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.GetColorResource] Failed to get resource '{resourceKey}': {ex.Message}");
-            }
-
-            return fallback;
         }
 
         private void UpdateRawPrompt(List<PromptPart> parts)

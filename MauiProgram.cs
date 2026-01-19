@@ -103,6 +103,9 @@ namespace QuickPrompt
             builder.Services.AddSingleton<IDialogService, DialogService>();
             builder.Services.AddSingleton<IPromptCacheService, PromptCacheService>();
             builder.Services.AddSingleton<ITabBarService, TabBarService>();
+            
+            // ✅ PHASE 4: Theme Service
+            builder.Services.AddSingleton<IThemeService, ThemeService>();
 
             // 🆕 PHASE 1: Use Cases
             // ✅ FIXED: Register Use Cases needed by ViewModels

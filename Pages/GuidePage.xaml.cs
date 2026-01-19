@@ -12,15 +12,17 @@ public partial class GuidePage : ContentPage, IQueryAttributable
 {
     private readonly ITabBarService _tabBarService;
     private readonly IDialogService _dialogService;
+    private readonly IThemeService _themeService;
 
     public ObservableCollection<GuideStep> GuideSteps { get; } = new();
 
-    public GuidePage(ITabBarService tabBarService, IDialogService dialogService)
+    public GuidePage(ITabBarService tabBarService, IDialogService dialogService, IThemeService themeService)
     {
         InitializeComponent();
 
         _tabBarService = tabBarService ?? throw new ArgumentNullException(nameof(tabBarService));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
 
         BindingContext = this;
 
@@ -110,9 +112,9 @@ public partial class GuidePage : ContentPage, IQueryAttributable
         {
             NextButton.Text = "⚡ Start Now";
             NextButton.ImageSource = null;
-            // ✅ Use Design System token instead of hardcoded color
-            NextButton.BackgroundColor = (Color)Application.Current.Resources["PrimaryBlueDark"];
-            NextButton.TextColor = (Color)Application.Current.Resources["White"];
+            // ✅ PHASE 4: Use ThemeService instead of hardcoded resource access
+            NextButton.BackgroundColor = _themeService.GetColor("PrimaryBlueDark");
+            NextButton.TextColor = _themeService.GetColor("White");
         }
         else
         {
@@ -121,10 +123,10 @@ public partial class GuidePage : ContentPage, IQueryAttributable
             {
                 FontFamily = "MaterialIconsOutlined-Regular",
                 Glyph = "\ue5e1",
-                Color = (Color)Application.Current.Resources["White"]
+                Color = _themeService.GetColor("White")
             };
-            // ✅ Use Design System token instead of hardcoded color
-            NextButton.BackgroundColor = (Color)Application.Current.Resources["PrimaryYellow"];
+            // ✅ PHASE 4: Use ThemeService
+            NextButton.BackgroundColor = _themeService.GetColor("PrimaryYellow");
         }
     }
 

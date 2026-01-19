@@ -13,6 +13,7 @@ namespace QuickPrompt.ViewModels
     /// ViewModel for the Prompt Builder wizard.
     /// Refactored to use Use Cases and services - Phase 1.
     /// ✅ PHASE 2: IDisposable implemented to fix memory leaks
+    /// ✅ PHASE 4: IThemeService for eliminating hardcoded colors
     /// </summary>
     public partial class PromptBuilderPageViewModel : BaseViewModel, IDisposable
     {
@@ -20,6 +21,7 @@ namespace QuickPrompt.ViewModels
         private readonly CreatePromptUseCase _createPromptUseCase;
         private readonly IDialogService _dialogService;
         private readonly AdmobService _adMobService;
+        private readonly IThemeService _themeService;
 
         // ✅ PHASE 2: Disposal tracking
         private bool _disposed = false;
@@ -46,15 +48,17 @@ namespace QuickPrompt.ViewModels
         public PromptBuilderPageViewModel(
             CreatePromptUseCase createPromptUseCase,
             IDialogService dialogService,
-            AdmobService adMobService) : base(adMobService)
+            AdmobService adMobService,
+            IThemeService themeService) : base(adMobService)
         {
             _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             _adMobService = adMobService ?? throw new ArgumentNullException(nameof(adMobService));
+            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
 
-            // ✅ Initialize colors from Design System tokens
-            nextButtonBackground = (Color)Application.Current.Resources["Gray400"];
-            nextButtonTextColor = (Color)Application.Current.Resources["White"];
+            // ✅ PHASE 4: Initialize colors from ThemeService (safe, testable)
+            nextButtonBackground = _themeService.GetColor("Gray400");
+            nextButtonTextColor = _themeService.GetColor("White");
 
             InitializeSteps();
         }
@@ -192,9 +196,9 @@ namespace QuickPrompt.ViewModels
                 CanGoNext = true;
                 NextButtonText = "⚡ Complete";
                 NextButtonIcon = string.Empty;
-                // ✅ Use Design System token
-                NextButtonBackground = (Color)Application.Current.Resources["PrimaryBlueDark"];
-                NextButtonTextColor = (Color)Application.Current.Resources["White"];
+                // ✅ PHASE 4: Use ThemeService instead of Application.Current.Resources
+                NextButtonBackground = _themeService.GetColor("PrimaryBlueDark");
+                NextButtonTextColor = _themeService.GetColor("White");
                 return;
             }
 
@@ -204,17 +208,17 @@ namespace QuickPrompt.ViewModels
             {
                 NextButtonText = string.Empty;
                 NextButtonIcon = "\ue5e1";
-                // ✅ Use Design System token
-                NextButtonBackground = (Color)Application.Current.Resources["PrimaryYellow"];
-                NextButtonTextColor = (Color)Application.Current.Resources["White"];
+                // ✅ PHASE 4: Use ThemeService
+                NextButtonBackground = _themeService.GetColor("PrimaryYellow");
+                NextButtonTextColor = _themeService.GetColor("White");
             }
             else
             {
                 NextButtonText = string.Empty;
                 NextButtonIcon = "\ue5e1";
-                // ✅ Use Design System token
-                NextButtonBackground = (Color)Application.Current.Resources["StateDisabledBackground"];
-                NextButtonTextColor = (Color)Application.Current.Resources["StateDisabledText"];
+                // ✅ PHASE 4: Use ThemeService
+                NextButtonBackground = _themeService.GetColor("StateDisabledBackground");
+                NextButtonTextColor = _themeService.GetColor("StateDisabledText");
             }
         }
 

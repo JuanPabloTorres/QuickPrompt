@@ -6,8 +6,11 @@
     xmlns:views="clr-namespace:QuickPrompt.Views">
 
     <Style x:Key="baseBtn" TargetType="Button">
-        <Setter Property="HeightRequest" Value="40" />
-        <Setter Property="WidthRequest" Value="40" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA - Minimum touch target 44dp -->
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="WidthRequest" Value="44" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+        <Setter Property="MinimumWidthRequest" Value="44" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="CornerRadius" Value="30" />
         <Setter Property="Padding" Value="10,5" />
@@ -41,6 +44,8 @@
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="MinimumWidthRequest" Value="120" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA -->
+        <Setter Property="MinimumHeightRequest" Value="44" />
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
@@ -74,6 +79,8 @@
         <Setter Property="BorderColor" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="BorderWidth" Value="2" />
         <Setter Property="MinimumWidthRequest" Value="120" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA -->
+        <Setter Property="MinimumHeightRequest" Value="44" />
 
         <Style.Triggers>
             <Trigger TargetType="Button" Property="IsPressed" Value="True">
@@ -267,7 +274,9 @@
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="HorizontalOptions" Value="Fill" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA - Changed from 50 to minimum 44 -->
         <Setter Property="HeightRequest" Value="50" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
 
         <Style.Triggers>
             <Trigger TargetType="Button" Property="IsPressed" Value="True">
@@ -296,6 +305,9 @@
         <Setter Property="Padding" Value="10" />
         <Setter Property="BorderColor" Value="{StaticResource PrimaryBlueDark}" />
         <Setter Property="BorderWidth" Value="1" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA -->
+        <Setter Property="MinimumHeightRequest" Value="44" />
+        <Setter Property="MinimumWidthRequest" Value="44" />
 
         <Style.Triggers>
             <Trigger TargetType="Button" Property="IsPressed" Value="True">
@@ -310,6 +322,9 @@
         <Setter Property="CornerRadius" Value="30" />
         <Setter Property="WidthRequest" Value="50" />
         <Setter Property="HeightRequest" Value="50" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA - Already compliant -->
+        <Setter Property="MinimumWidthRequest" Value="44" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
         <Setter Property="ZIndex" Value="999" />
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryRed}" />
         <Setter Property="TextColor" Value="White" />
@@ -334,6 +349,8 @@
         <Setter Property="TextTransform" Value="Uppercase" />
         <Setter Property="TextColor" Value="{StaticResource TextLight}" />
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryBlueDark}" />
+        <!-- ✅ PHASE 4: WCAG 2.1 AA -->
+        <Setter Property="MinimumHeightRequest" Value="44" />
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow
