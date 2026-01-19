@@ -278,12 +278,35 @@ namespace QuickPrompt.Engines.Injection
         }} else if (input.isContentEditable || input.getAttribute('contenteditable') === 'true') {{
             console.log('[QuickPrompt] [Injection] Type: CONTENTEDITABLE');
             
-            // Clear existing content
+            // ? GEMINI FIX: Clear existing content (important for Quill editor)
             input.innerHTML = '';
+            input.textContent = '';
             
-            // Set content via multiple properties for compatibility
-            input.textContent = CONFIG.prompt;
-            input.innerText = CONFIG.prompt;
+            // ? GEMINI FIX: For Quill editor, we need to insert content into the <p> tag
+            // Check if this is a Quill editor (has ql-editor class)
+            if (input.classList.contains('ql-editor')) {{
+                console.log('[QuickPrompt] [Injection] Detected Quill Editor (Gemini)');
+                
+                // Create a text node with the prompt
+                const textNode = document.createTextNode(CONFIG.prompt);
+                
+                // Find or create the <p> container
+                let paragraph = input.querySelector('p');
+                if (!paragraph) {{
+                    paragraph = document.createElement('p');
+                    input.appendChild(paragraph);
+                }}
+                
+                // Clear <br> tags and set content
+                paragraph.innerHTML = '';
+                paragraph.appendChild(textNode);
+                
+                console.log('[QuickPrompt] [Injection] Quill editor content set via <p> tag');
+            }} else {{
+                // Standard contenteditable handling
+                input.textContent = CONFIG.prompt;
+                input.innerText = CONFIG.prompt;
+            }}
             
             console.log('[QuickPrompt] [Injection] Content set, textContent length:', 
                 (input.textContent || '').length);
@@ -307,6 +330,12 @@ namespace QuickPrompt.Engines.Injection
             }}));
             
             input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            
+            // ? GEMINI FIX: Additional event for Quill editor
+            if (input.classList.contains('ql-editor')) {{
+                input.dispatchEvent(new Event('text-change', {{ bubbles: true }}));
+                console.log('[QuickPrompt] [Injection] Quill text-change event dispatched');
+            }}
             
             console.log('[QuickPrompt] [Injection] All events dispatched for CONTENTEDITABLE');
         }}

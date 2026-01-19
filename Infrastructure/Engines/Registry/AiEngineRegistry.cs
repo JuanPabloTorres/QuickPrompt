@@ -20,8 +20,9 @@ namespace QuickPrompt.Engines.Registry
             {
                 Name = "Gemini",
                 BaseUrl = "https://gemini.google.com/",
-                // ? FIX: Selector más específico para el input contenteditable de Gemini
-                InputSelector = "div[contenteditable='true'][role='textbox'], div[contenteditable='true'][aria-label*='prompt'], [contenteditable='true']",
+                // ? FIX DEFINITIVO: Selector específico para Quill editor de Gemini
+                // Gemini usa <rich-textarea> con <div class="ql-editor" contenteditable="true" role="textbox">
+                InputSelector = "div.ql-editor[contenteditable='true'][role='textbox'], div.ql-editor[contenteditable='true'], div[aria-label*='prompt'][contenteditable='true']",
                 // ? FIX: Submit button selector más robusto con múltiples fallbacks
                 SubmitSelector = "button[aria-label*='Send'], button[aria-label*='Submit'], button:has(svg):not([disabled])",
                 // ? FIX: Aumentar delay para Gemini (JS framework tarda más en cargar)
