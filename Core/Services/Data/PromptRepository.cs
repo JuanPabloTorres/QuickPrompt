@@ -434,8 +434,9 @@ new PromptTemplate
 
         /// <summary>
         /// Obtiene un prompt por su ID.
+        /// ? SPRINT 2: Nullable return type for null-safety
         /// </summary>
-        public Task<PromptTemplate> GetPromptByIdAsync(Guid id)
+        public Task<PromptTemplate?> GetPromptByIdAsync(Guid id)
         {
             return _database.Table<PromptTemplate>().FirstOrDefaultAsync(p => p.Id == id);
         }
@@ -462,13 +463,17 @@ new PromptTemplate
 
         /// <summary>
         /// Actualiza un prompt existente con nuevos valores.
+        /// ? SPRINT 2: Nullable return type - returns null if prompt not found
         /// </summary>
-        public async Task<PromptTemplate> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory)
+        public async Task<PromptTemplate?> UpdatePromptAsync(Guid id, string newTitle, string newTemplate, string newDescription, Dictionary<string, string> newVariables, PromptCategory selectedCategory)
         {
             var prompt = await GetPromptByIdAsync(id);
 
             if (prompt == null)
-                throw new KeyNotFoundException(AppMessagesEng.Prompts.PromptNotFound);
+            {
+                System.Diagnostics.Debug.WriteLine($"[PromptRepository] Prompt {id} not found for update");
+                return null; // ? Null-safe return
+            }
 
             prompt.Title = newTitle;
 
@@ -490,6 +495,7 @@ new PromptTemplate
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine($"[PromptRepository] Update failed for prompt {id}");
                 return null;
             }
         }

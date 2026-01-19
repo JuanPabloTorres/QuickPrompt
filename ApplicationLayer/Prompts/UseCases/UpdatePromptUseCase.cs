@@ -57,11 +57,11 @@ public class UpdatePromptUseCase
 
         try
         {
-            // Check if prompt exists
+            // ? SPRINT 2: Null-safe check - prompt might not exist
             var existingPrompt = await _promptRepository.GetByIdAsync(request.PromptId);
 
             if (existingPrompt == null)
-                return Result<PromptTemplate>.Failure("Prompt not found");
+                return Result<PromptTemplate>.Failure($"Prompt with ID {request.PromptId} not found");
 
             // Parse category
             if (!Enum.TryParse(typeof(PromptCategory), request.Category, out var categoryObj))
@@ -79,16 +79,18 @@ public class UpdatePromptUseCase
             existingPrompt.Category = category;
             existingPrompt.UpdateTemplate(request.Template, newVariables);
 
-            // Save changes
+            // ? SPRINT 2: Save changes (repository method is already null-safe)
             var success = await _promptRepository.UpdateAsync(existingPrompt);
 
             if (!success)
-                return Result<PromptTemplate>.Failure("Failed to update prompt");
+                return Result<PromptTemplate>.Failure("Failed to update prompt in database");
 
             return Result<PromptTemplate>.Success(existingPrompt);
         }
         catch (Exception ex)
         {
+            // ? SPRINT 2: Enhanced error logging
+            System.Diagnostics.Debug.WriteLine($"[UpdatePromptUseCase] Error updating prompt {request.PromptId}: {ex.Message}");
             return Result<PromptTemplate>.Failure($"Failed to update prompt: {ex.Message}");
         }
     }

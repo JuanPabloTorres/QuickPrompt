@@ -86,6 +86,14 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
             return;
         }
 
+        // ✅ SPRINT 2: Null-safe check - Value should exist if IsSuccess
+        if (result.Value == null)
+        {
+            await _dialogService.ShowErrorAsync("Prompt data is null");
+            await GoBackAsync();
+            return;
+        }
+
         var prompt = result.Value.ToLegacy(); // Convert Domain to Legacy
         PromptTemplate = prompt;
         PromptTemplate.Variables = AngleBraceTextHandler.ExtractVariables(prompt.Template)
