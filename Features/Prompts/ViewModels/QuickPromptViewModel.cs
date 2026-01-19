@@ -272,15 +272,24 @@ namespace QuickPrompt.ViewModels
             IsLoading = true;
             try
             {
-                foreach (var prompt in SelectedPromptsToDelete.ToList())
+                // ✅ SPRINT 3: Parallel delete for better performance
+                // Convert to list to avoid collection modification during iteration
+                var promptsToDelete = SelectedPromptsToDelete.ToList();
+                
+                // Execute all deletes in parallel
+                var deleteTasks = promptsToDelete.Select(async prompt =>
                 {
                     var result = await _deletePromptUseCase.ExecuteAsync(prompt.Prompt.Id);
-                    
-                    if (result.IsSuccess)
-                    {
-                        Prompts.Remove(prompt);
-                        SelectedPromptsToDelete.Remove(prompt);
-                    }
+                    return new { Prompt = prompt, Success = result.IsSuccess };
+                }).ToList();
+
+                var deleteResults = await Task.WhenAll(deleteTasks);
+
+                // Remove successful deletes from collections
+                foreach (var result in deleteResults.Where(r => r.Success))
+                {
+                    Prompts.Remove(result.Prompt);
+                    SelectedPromptsToDelete.Remove(result.Prompt);
                 }
 
                 blockHandler.Data = Prompts;
