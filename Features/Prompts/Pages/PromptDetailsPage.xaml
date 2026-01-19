@@ -51,7 +51,7 @@
         <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
-                    FontFamily="MaterialIconsOutlined.Regular"
+                    FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5c9;"
                     Color="{StaticResource PrimaryRed}" />
                 <!--  Color asociado al botón Copiar  -->
@@ -245,7 +245,7 @@
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
+                            Glyph="&#xe0ca;"
                             Color="{StaticResource TextLight}" />
                     </Button.ImageSource>
                 </Button>
@@ -266,7 +266,7 @@
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
+                            Glyph="&#xe86c;"
                             Color="{StaticResource TextLight}" />
                     </Button.ImageSource>
                 </Button>
@@ -287,7 +287,7 @@
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
+                            Glyph="&#xe887;"
                             Color="{StaticResource TextLight}" />
                     </Button.ImageSource>
                 </Button>
@@ -308,7 +308,7 @@
                     <Button.ImageSource>
                         <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf06c;"
+                            Glyph="&#xf02b;"
                             Color="{StaticResource TextLight}" />
                     </Button.ImageSource>
                 </Button>
