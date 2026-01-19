@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
+             xmlns:controls="clr-namespace:QuickPrompt.Controls"
+             x:Class="QuickPrompt.Components.ComponentCatalogPage"
+             Title="Component Catalog"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <!-- 
+    ==================================================================================
+    Component Catalog Page
+    Version: 1.0.0
+    Phase: 3 - Component Library
+    
+    Showcase and documentation for all Design System components.
+    Interactive examples with code snippets.
+    ==================================================================================
+    -->
+
+    <ScrollView>
+        <VerticalStackLayout Padding="{StaticResource ThicknessMd}" Spacing="{StaticResource SpacingLg}">
+
+            <!-- Page Header -->
+            <VerticalStackLayout Spacing="{StaticResource SpacingXs}">
+                <Label Text="?? Component Catalog"
+                       Style="{StaticResource DisplayTextStyle}"
+                       TextColor="{StaticResource PrimaryBlueDark}" />
+                <Label Text="QuickPrompt Design System Components"
+                       Style="{StaticResource BodyLargeTextStyle}"
+                       TextColor="{StaticResource TextSecondary}" />
+            </VerticalStackLayout>
+
+            <!-- Divider -->
+            <BoxView Style="{StaticResource DividerLineStyle}" />
+
+            <!-- ===============================================
+                 SECTION 1: BUTTONS
+                 =============================================== -->
+            <VerticalStackLayout Spacing="{StaticResource SpacingMd}">
+                
+                <!-- Section Header -->
+                <Label Text="Buttons"
+                       Style="{StaticResource Heading1TextStyle}"
+                       TextColor="{StaticResource PrimaryBlueDark}" />
+                
+                <Label Text="Action components for user interactions"
+                       Style="{StaticResource BodySmallTextStyle}"
+                       TextColor="{StaticResource TextSecondary}" />
+
+                <!-- PrimaryButton Examples -->
+                <Border BackgroundColor="{StaticResource CardBackground}"
+                        Padding="{StaticResource ThicknessMd}"
+                        StrokeThickness="1"
+                        Stroke="{StaticResource BorderLight}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="{StaticResource SpacingSm}">
+                        
+                        <!-- Component Title -->
+                        <Label Text="PrimaryButton"
+                               Style="{StaticResource Heading2TextStyle}"
+                               TextColor="{StaticResource PrimaryBlueDark}" />
+
+                        <Label Text="Primary call-to-action button"
+                               Style="{StaticResource BodySmallTextStyle}"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <!-- Divider -->
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="{StaticResource BorderLight}"
+                                 Margin="0,8" />
+
+                        <!-- Examples -->
+                        <Label Text="Examples:"
+                               Style="{StaticResource BodyTextStyle}"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+
+                        <!-- Basic Button -->
+                        <buttons:PrimaryButton 
+                            Text="Basic Button"
+                            Command="{Binding ShowToastCommand}"
+                            CommandParameter="Basic button tapped!" />
+
+                        <!-- Button with Icon -->
+                        <buttons:PrimaryButton 
+                            Text="Create Prompt"
+                            Command="{Binding ShowToastCommand}"
+                            CommandParameter="Create button tapped!">
+                            <buttons:PrimaryButton.ImageSource>
+                                <FontImageSource 
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe145;"
+                                    Color="White" />
+                            </buttons:PrimaryButton.ImageSource>
+                        </buttons:PrimaryButton>
+
+                        <!-- Disabled Button -->
+                        <buttons:PrimaryButton 
+                            Text="Disabled Button"
+                            IsEnabled="False" />
+
+                        <!-- Custom Color -->
+                        <buttons:PrimaryButton 
+                            Text="Custom Color (Teal)"
+                            BackgroundColor="{StaticResource PrimaryTeal}"
+                            Command="{Binding ShowToastCommand}"
+                            CommandParameter="Custom color button tapped!" />
+
+                        <!-- Code Example -->
+                        <Border BackgroundColor="{StaticResource Gray100}"
+                                Padding="{StaticResource ThicknessSm}"
+                                Margin="0,8,0,0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                            </Border.StrokeShape>
+                            <Label FontFamily="Consolas"
+                                   Style="{StaticResource CaptionTextStyle}"
+                                   TextColor="{StaticResource TextPrimary}">
+                                <Label.Text>
+                                    <![CDATA[
+<buttons:PrimaryButton 
+    Text="Save Changes"
+    Command="{Binding SaveCommand}" />
+                                    ]]>
+                                </Label.Text>
+                            </Label>
+                        </Border>
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+
+            <!-- ===============================================
+                 SECTION 2: EXISTING COMPONENTS
+                 =============================================== -->
+            <VerticalStackLayout Spacing="{StaticResource SpacingMd}">
+                
+                <Label Text="Existing Components"
+                       Style="{StaticResource Heading1TextStyle}"
+                       TextColor="{StaticResource PrimaryBlueDark}" />
+                
+                <Label Text="Already built and Design System compliant"
+                       Style="{StaticResource BodySmallTextStyle}"
+                       TextColor="{StaticResource TextSecondary}" />
+
+                <!-- StatusBadge Examples -->
+                <Border BackgroundColor="{StaticResource CardBackground}"
+                        Padding="{StaticResource ThicknessMd}"
+                        StrokeThickness="1"
+                        Stroke="{StaticResource BorderLight}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="{StaticResource SpacingSm}">
+                        
+                        <Label Text="StatusBadge"
+                               Style="{StaticResource Heading2TextStyle}"
+                               TextColor="{StaticResource PrimaryBlueDark}" />
+
+                        <Label Text="Status indicators for feedback"
+                               Style="{StaticResource BodySmallTextStyle}"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="{StaticResource BorderLight}"
+                                 Margin="0,8" />
+
+                        <!-- Badge Examples -->
+                        <HorizontalStackLayout Spacing="{StaticResource SpacingXs}">
+                            <controls:StatusBadge 
+                                Text="Success"
+                                Icon="&#xe86c;"
+                                BadgeColor="{StaticResource SuccessColor}"
+                                TextColor="White" />
+
+                            <controls:StatusBadge 
+                                Text="Error"
+                                Icon="&#xe001;"
+                                BadgeColor="{StaticResource ErrorColor}"
+                                TextColor="White" />
+
+                            <controls:StatusBadge 
+                                Text="Warning"
+                                Icon="&#xe002;"
+                                BadgeColor="{StaticResource WarningColor}"
+                                TextColor="{StaticResource TextPrimary}" />
+
+                            <controls:StatusBadge 
+                                Text="Info"
+                                Icon="&#xe88e;"
+                                BadgeColor="{StaticResource InfoColor}"
+                                TextColor="White" />
+                        </HorizontalStackLayout>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- EmptyStateView Example -->
+                <Border BackgroundColor="{StaticResource CardBackground}"
+                        Padding="{StaticResource ThicknessMd}"
+                        StrokeThickness="1"
+                        Stroke="{StaticResource BorderLight}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="{StaticResource SpacingSm}">
+                        
+                        <Label Text="EmptyStateView"
+                               Style="{StaticResource Heading2TextStyle}"
+                               TextColor="{StaticResource PrimaryBlueDark}" />
+
+                        <Label Text="Empty state placeholder"
+                               Style="{StaticResource BodySmallTextStyle}"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="{StaticResource BorderLight}"
+                                 Margin="0,8" />
+
+                        <!-- EmptyStateView Example -->
+                        <controls:EmptyStateView 
+                            Icon="&#xf0eb;"
+                            Title="No items found"
+                            Description="Try creating your first item"
+                            ButtonText="Create Item"
+                            ShowButton="True" />
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+
+            <!-- ===============================================
+                 SECTION 3: DESIGN TOKENS
+                 =============================================== -->
+            <VerticalStackLayout Spacing="{StaticResource SpacingMd}">
+                
+                <Label Text="Design Tokens"
+                       Style="{StaticResource Heading1TextStyle}"
+                       TextColor="{StaticResource PrimaryBlueDark}" />
+                
+                <Label Text="Foundation tokens used by all components"
+                       Style="{StaticResource BodySmallTextStyle}"
+                       TextColor="{StaticResource TextSecondary}" />
+
+                <!-- Colors -->
+                <Border BackgroundColor="{StaticResource CardBackground}"
+                        Padding="{StaticResource ThicknessMd}"
+                        StrokeThickness="1"
+                        Stroke="{StaticResource BorderLight}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout Spacing="{StaticResource SpacingSm}">
+                        
+                        <Label Text="Colors"
+                               Style="{StaticResource Heading2TextStyle}"
+                               TextColor="{StaticResource PrimaryBlueDark}" />
+
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                            
+                            <!-- Primary Colors -->
+                            <Border Grid.Row="0" Grid.Column="0" 
+                                    BackgroundColor="{StaticResource PrimaryBlue}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="PrimaryBlue"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="White"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Border Grid.Row="0" Grid.Column="1" 
+                                    BackgroundColor="{StaticResource PrimaryYellow}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="PrimaryYellow"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Border Grid.Row="0" Grid.Column="2" 
+                                    BackgroundColor="{StaticResource PrimaryTeal}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="PrimaryTeal"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="White"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <!-- Semantic Colors -->
+                            <Border Grid.Row="1" Grid.Column="0" 
+                                    BackgroundColor="{StaticResource SuccessColor}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="Success"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="White"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Border Grid.Row="1" Grid.Column="1" 
+                                    BackgroundColor="{StaticResource WarningColor}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="Warning"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Border Grid.Row="1" Grid.Column="2" 
+                                    BackgroundColor="{StaticResource ErrorColor}"
+                                    HeightRequest="60">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="{StaticResource RadiusSm}" />
+                                </Border.StrokeShape>
+                                <Label Text="Error"
+                                       Style="{StaticResource CaptionTextStyle}"
+                                       TextColor="White"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                        </Grid>
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+
+            <!-- Footer -->
+            <Label Text="Built with ?? using QuickPrompt Design System"
+                   Style="{StaticResource CaptionTextStyle}"
+                   TextColor="{StaticResource TextSecondary}"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

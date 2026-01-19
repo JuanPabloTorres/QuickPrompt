@@ -146,6 +146,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="Components\Buttons\PrimaryButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Components\ComponentCatalogPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Features\AI\Pages\AiLauncherPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
