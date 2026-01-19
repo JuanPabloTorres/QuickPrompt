@@ -42,7 +42,7 @@ namespace QuickPrompt.ViewModels
         public PromptBuilderPageViewModel(
             CreatePromptUseCase createPromptUseCase,
             IDialogService dialogService,
-            AdmobService adMobService)
+            AdmobService adMobService) : base(adMobService) // ✅ Pass AdmobService to base
         {
             _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));

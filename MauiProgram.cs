@@ -229,8 +229,8 @@ namespace QuickPrompt
             // ✅ FIXED: Register QuickPromptViewModel (was disabled, now enabled)
             builder.Services.AddTransient<QuickPromptViewModel>();
             
-            // ⚠️ TEMPORARILY DISABLED - PromptBuilderPageViewModel requires additional Use Cases
-            // PromptBuilderPageViewModel will not work until Phase 3 is complete
+            // ✅ FIXED: Register PromptBuilderPageViewModel
+            builder.Services.AddTransient<PromptBuilderPageViewModel>();
             
             builder.Services.AddScoped<AdmobBannerViewModel>();
             builder.Services.AddTransient<AiLauncherViewModel>();
@@ -251,6 +251,7 @@ namespace QuickPrompt
             builder.Services.AddTransient<SettingPage>();
             builder.Services.AddTransient<GuidePage>();
             builder.Services.AddScoped<QuickPromptPage>();
+            builder.Services.AddTransient<PromptBuilderPage>(); // ✅ Add PromptBuilderPage
 
             // 🆕 AI PAGES
             builder.Services.AddTransient<EngineWebViewPage>();
