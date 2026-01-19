@@ -15,7 +15,7 @@
         <Grid>
             <Label
                 FontFamily="Designer"
-                FontSize="18"
+                Style="{StaticResource Heading3TextStyle}"
                 Text="Quick Prompt "
                 TextColor="{StaticResource PrimaryBlueDark}"
                 VerticalOptions="Center" />
@@ -141,8 +141,7 @@
                                     <Label
                                         Grid.Column="0"
                                         FontAttributes="Bold"
-                                        FontSize="22"
-                                        Style="{StaticResource TitleLabelStyle}"
+                                        Style="{StaticResource Heading2TextStyle}"
                                         Text="{Binding Prompt.Title}" />
 
                                     <Button
@@ -167,7 +166,7 @@
                                     Padding="6,2"
                                     BackgroundColor="{StaticResource PrimaryRed}"
                                     FontAttributes="Bold"
-                                    FontSize="13"
+                                    Style="{StaticResource BodySmallTextStyle}"
                                     HorizontalOptions="Start"
                                     Text="{Binding Prompt.Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
                                     TextColor="White"
@@ -178,8 +177,7 @@
 
                                 <!--  Prompt Description  -->
                                 <Label
-                                    FontSize="16"
-                                    Style="{StaticResource SubtitleLabelStyle}"
+                                    Style="{StaticResource BodyLargeTextStyle}"
                                     Text="{Binding Prompt.Description}" />
 
                                 <!--  Action Buttons & Selection  -->
