@@ -19,33 +19,73 @@ namespace QuickPrompt.Services
             Task.Run(async () => await InitializeDatabaseAsync());
         }
 
+        /// <summary>
+        /// Inicializa la base de datos y crea las tablas necesarias si no existen.
+        /// ? PHASE 2: Uses DatabaseMigrationManager for structured schema evolution.
+        /// </summary>
         public async Task InitializeDatabaseAsync()
         {
-            // Crear tabla si no existe
-            await _database.CreateTableAsync<FinalPrompt>();
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Starting database initialization...");
 
-            // Verificar columnas y agregarlas si faltan
-            var tableInfo = await _database.GetTableInfoAsync(nameof(FinalPrompt));
+                // ? PHASE 2: Create tables first
+                await _database.CreateTableAsync<FinalPrompt>();
+                System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] FinalPrompt table created/verified");
 
-            if (!tableInfo.Any(c => c.Name == "CompletedText"))
-                await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN CompletedText TEXT DEFAULT ''");
+                // ? PHASE 2: Apply structured migrations for FinalPrompt table
+                // Note: FinalPrompt uses the same migration framework but different version tracking
+                var tableInfo = await _database.GetTableInfoAsync(nameof(FinalPrompt));
 
-            if (!tableInfo.Any(c => c.Name == "SourcePromptId"))
-                await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN SourcePromptId TEXT DEFAULT");
+                if (!tableInfo.Any(c => c.Name == "CompletedText"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Adding CompletedText column");
+                    await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN CompletedText TEXT DEFAULT ''");
+                }
 
-            if (!tableInfo.Any(c => c.Name == "CreatedAt"))
-                await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN CreatedAt TEXT DEFAULT ''");
+                if (!tableInfo.Any(c => c.Name == "SourcePromptId"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Adding SourcePromptId column");
+                    await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN SourcePromptId TEXT DEFAULT ''");
+                }
 
-            if (!tableInfo.Any(c => c.Name == "UpdatedAt"))
-                await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN UpdatedAt TEXT DEFAULT ''");
+                if (!tableInfo.Any(c => c.Name == "CreatedAt"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Adding CreatedAt column");
+                    await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN CreatedAt TEXT DEFAULT ''");
+                }
 
-            if (!tableInfo.Any(c => c.Name == "IsDeleted"))
-                await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN IsDeleted INTEGER DEFAULT 0");
+                if (!tableInfo.Any(c => c.Name == "UpdatedAt"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Adding UpdatedAt column");
+                    await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN UpdatedAt TEXT DEFAULT ''");
+                }
 
-            // Actualizar valores nulos con timestamps válidos
-            await _database.ExecuteAsync("UPDATE FinalPrompt SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
+                if (!tableInfo.Any(c => c.Name == "IsDeleted"))
+                {
+                    System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Adding IsDeleted column");
+                    await _database.ExecuteAsync("ALTER TABLE FinalPrompt ADD COLUMN IsDeleted INTEGER DEFAULT 0");
+                }
 
-            await _database.ExecuteAsync("UPDATE FinalPrompt SET UpdatedAt = datetime('now') WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
+                // Actualizar valores nulos con timestamps válidos
+                await _database.ExecuteAsync(@"
+                    UPDATE FinalPrompt 
+                    SET CreatedAt = datetime('now') 
+                    WHERE CreatedAt IS NULL OR CreatedAt = ''");
+
+                await _database.ExecuteAsync(@"
+                    UPDATE FinalPrompt 
+                    SET UpdatedAt = datetime('now') 
+                    WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
+
+                System.Diagnostics.Debug.WriteLine("[FinalPromptRepository] Database initialization completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FinalPromptRepository] CRITICAL: Database initialization failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[FinalPromptRepository] StackTrace: {ex.StackTrace}");
+                throw new InvalidOperationException("Failed to initialize FinalPrompt database. Application cannot continue.", ex);
+            }
         }
 
         public async Task<List<FinalPrompt>> GetAllAsync()

@@ -12,13 +12,17 @@ namespace QuickPrompt.ViewModels
     /// <summary>
     /// ViewModel for the Prompt Builder wizard.
     /// Refactored to use Use Cases and services - Phase 1.
+    /// ✅ PHASE 2: IDisposable implemented to fix memory leaks
     /// </summary>
-    public partial class PromptBuilderPageViewModel : BaseViewModel
+    public partial class PromptBuilderPageViewModel : BaseViewModel, IDisposable
     {
         // 🆕 Use Cases and Services (injected)
         private readonly CreatePromptUseCase _createPromptUseCase;
         private readonly IDialogService _dialogService;
         private readonly AdmobService _adMobService;
+
+        // ✅ PHASE 2: Disposal tracking
+        private bool _disposed = false;
 
         // Properties
         public ObservableCollection<string> AvailableFormats { get; } = new ObservableCollection<string>
@@ -42,7 +46,7 @@ namespace QuickPrompt.ViewModels
         public PromptBuilderPageViewModel(
             CreatePromptUseCase createPromptUseCase,
             IDialogService dialogService,
-            AdmobService adMobService) : base(adMobService) // ✅ Pass AdmobService to base
+            AdmobService adMobService) : base(adMobService)
         {
             _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
@@ -74,6 +78,7 @@ namespace QuickPrompt.ViewModels
                 contextStep, taskStep, examplesStep, formatStep, limitsStep, previewStep
             };
 
+            // ✅ PHASE 2: Register event handlers (will be unregistered in Dispose)
             foreach (var step in Steps)
             {
                 step.PropertyChanged += Step_PropertyChanged;
@@ -325,6 +330,50 @@ namespace QuickPrompt.ViewModels
             UpdatePreviewStep();
             var preview = Steps.First(s => s.Type == StepType.Preview);
             await _dialogService.ShowAlertAsync("Prompt Preview", preview.PreviewContent);
+        }
+
+        // ✅ PHASE 2: IDisposable Implementation
+        /// <summary>
+        /// Disposes resources and unsubscribes event handlers to prevent memory leaks.
+        /// Called automatically when ViewModel is no longer needed.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Protected dispose pattern implementation.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // ✅ Unsubscribe from all event handlers
+                if (Steps != null)
+                {
+                    foreach (var step in Steps)
+                    {
+                        step.PropertyChanged -= Step_PropertyChanged;
+                    }
+                }
+
+                // Clear collections to release references
+                Steps?.Clear();
+                AvailableFormats?.Clear();
+            }
+
+            _disposed = true;
+        }
+
+        // ✅ PHASE 2: Destructor for safety (should not be called if Dispose is called properly)
+        ~PromptBuilderPageViewModel()
+        {
+            Dispose(disposing: false);
         }
     }
 }

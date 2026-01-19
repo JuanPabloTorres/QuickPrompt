@@ -182,19 +182,10 @@
     <MauiXaml Update="Features\AI\Pages\AiLauncherPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
-    <MauiXaml Update="Pages\EditPromptPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
     <MauiXaml Update="Pages\GuidePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\PromptBuilderPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\PromptDetailsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
-    <MauiXaml Update="Pages\QuickPromptPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
     <MauiXaml Update="Pages\SettingPage.xaml">
@@ -263,24 +254,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Pages\EditPromptPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Pages\FavoritesPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Pages\LoadPromptsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Pages\PromptDetailsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Pages\QPages.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Infrastructure\Adapters\" />
     <Folder Include="Resources\Images\" />
     <Folder Include="Tests\Engines\" />
@@ -295,8 +268,6 @@
     <None Include=".github\pull_request_template.md" />
     <None Include=".github\workflows\ci-cd.yml" />
     <None Include="QuickPrompt.Tests\QuickPrompt.Tests.csproj" />
-    <None Include="Tests\QuickPrompt.Tests.csproj" />
-    <None Include="Tests\QuickPrompt.Tests.sln" />
   </ItemGroup>
 
 
@@ -329,6 +300,134 @@
   </ItemGroup>
 
 </Project>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

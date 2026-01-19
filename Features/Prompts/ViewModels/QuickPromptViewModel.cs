@@ -18,15 +18,17 @@ namespace QuickPrompt.ViewModels
     /// <summary>
     /// ViewModel for the Quick Prompt page (main list).
     /// Refactored to use Use Cases and services - Phase 1.
+    /// ✅ PHASE 2: IDisposable implemented to fix WeakReferenceMessenger leak
     /// </summary>
-    public partial class QuickPromptViewModel : BaseViewModel
+    public partial class QuickPromptViewModel : BaseViewModel, IDisposable
     {
         // 🆕 Use Cases and Services (injected)
-        // ✅ FIXED: Use legacy IPromptRepository interface (from Services.ServiceInterfaces)
-        // DeletePromptUseCase uses Domain.Interfaces.IPromptRepository (injected via adapter)
         private readonly Services.ServiceInterfaces.IPromptRepository _databaseService;
         private readonly DeletePromptUseCase _deletePromptUseCase;
         private readonly IDialogService _dialogService;
+
+        // ✅ PHASE 2: Disposal tracking
+        private bool _disposed = false;
 
         // Properties
         public ObservableCollection<PromptTemplateViewModel> SelectedPromptsToDelete { get; set; } = new();
@@ -41,7 +43,6 @@ namespace QuickPrompt.ViewModels
         private string oldSelectCategory = string.Empty;
         private Filters oldDateFilter = Filters.All;
 
-        // ✅ FIXED: Constructor explicitly uses Services.ServiceInterfaces.IPromptRepository
         public QuickPromptViewModel(
             Services.ServiceInterfaces.IPromptRepository databaseService,
             DeletePromptUseCase deletePromptUseCase,
@@ -332,6 +333,48 @@ namespace QuickPrompt.ViewModels
         {
             SelectedDateFilter = filter;
             FilterPromptsCommand.Execute(null);
+        }
+
+        // ============================ PHASE 2: IDisposable Implementation ============================
+
+        /// <summary>
+        /// Disposes resources and unregisters from WeakReferenceMessenger to prevent memory leaks.
+        /// Called automatically when ViewModel is no longer needed.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Protected dispose pattern implementation.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // ✅ Unregister from messenger to prevent memory leaks
+                WeakReferenceMessenger.Default.Unregister<UpdatedPromptMessage>(this);
+
+                // Clear collections to release references
+                Prompts?.Clear();
+                SelectedPromptsToDelete?.Clear();
+                blockHandler?.Data?.Clear();
+            }
+
+            _disposed = true;
+        }
+
+        /// <summary>
+        /// Destructor for safety (should not be called if Dispose is called properly)
+        /// </summary>
+        ~QuickPromptViewModel()
+        {
+            Dispose(disposing: false);
         }
     }
 }

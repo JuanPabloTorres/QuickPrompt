@@ -2,7 +2,7 @@ name: .NET MAUI CI/CD
 
 on:
   push:
-    branches: [ main, develop, refactor/statement-of-work ]
+    branches: [ main, develop, refactor/statement-of-work, refactor/uxAndVisual ]
   pull_request:
     branches: [ main, develop ]
 

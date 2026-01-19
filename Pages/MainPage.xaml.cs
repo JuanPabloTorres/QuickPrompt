@@ -55,7 +55,6 @@ namespace QuickPrompt.Pages
                 }
 
                 // ✅ Posicionar floating button después de que la página se haya renderizado
-                // Usar Loaded event o delay para asegurar que las dimensiones estén disponibles
                 Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
                 {
                     PositionFloatingButton();
@@ -65,6 +64,25 @@ namespace QuickPrompt.Pages
             {
                 System.Diagnostics.Debug.WriteLine($"[MainPage.OnAppearing] Error: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"[MainPage.OnAppearing] StackTrace: {ex.StackTrace}");
+            }
+        }
+
+        // ✅ PHASE 2: Unsubscribe event handlers to prevent memory leaks
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+
+            try
+            {
+                // Unsubscribe from ViewModel events
+                if (_viewModel != null)
+                {
+                    _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MainPage.OnDisappearing] Error: {ex.Message}");
             }
         }
 

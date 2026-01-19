@@ -26,55 +26,65 @@ namespace QuickPrompt.Services
 
         /// <summary>
         /// Inicializa la base de datos y crea las tablas necesarias si no existen.
+        /// ? PHASE 2: Uses DatabaseMigrationManager for structured schema evolution.
         /// </summary>
         public async Task InitializeDatabaseAsync()
         {
-            // Crear tabla si no existe
-            await _database.CreateTableAsync<PromptTemplate>();
-
-            // Verificar columnas y agregarlas si faltan
-            var tableInfo = await _database.GetTableInfoAsync(nameof(PromptTemplate));
-
-            if (!tableInfo.Any(c => c.Name == "CreatedAt"))
-                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN CreatedAt TEXT DEFAULT ''");
-
-            if (!tableInfo.Any(c => c.Name == "UpdatedAt"))
-                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN UpdatedAt TEXT DEFAULT ''");
-
-            if (!tableInfo.Any(c => c.Name == "IsDeleted"))
-                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN IsDeleted INTEGER DEFAULT 0");
-
-            if (!tableInfo.Any(c => c.Name == "Category"))
-                await _database.ExecuteAsync("ALTER TABLE PromptTemplate ADD COLUMN Category TEXT");
-
-            // Actualiza valores nulos con timestamps válidos
-            await _database.ExecuteAsync("UPDATE PromptTemplate SET CreatedAt = datetime('now') WHERE CreatedAt IS NULL OR CreatedAt = ''");
-
-            await _database.ExecuteAsync("UPDATE PromptTemplate SET UpdatedAt = datetime('now') WHERE UpdatedAt IS NULL OR UpdatedAt = ''");
-
-            // Si la base de datos existe y no tiene los datos iniciales, insertarlos
-            if (DatabaseExists())
+            try
             {
-                int count = await _database.Table<PromptTemplate>().CountAsync();
+                System.Diagnostics.Debug.WriteLine("[PromptRepository] Starting database initialization...");
 
-                // Si no hay datos, insertar los prompts por defecto
-                if (count == 0)
-                    await InsertDefaultPromptsAsync();
+                // ? PHASE 2: Create tables first
+                await _database.CreateTableAsync<PromptTemplate>();
+                System.Diagnostics.Debug.WriteLine("[PromptRepository] PromptTemplate table created/verified");
 
-                if (count > 0)
+                // ? PHASE 2: Apply structured migrations
+                var migrationManager = new DatabaseMigrationManager(_database);
+                await migrationManager.MigrateToLatestAsync();
+                System.Diagnostics.Debug.WriteLine("[PromptRepository] Database migrations completed");
+
+                // Insert default prompts if database is empty
+                if (DatabaseExists())
                 {
-                    var prompts = await _database.Table<PromptTemplate>().ToListAsync();
+                    int count = await _database.Table<PromptTemplate>().CountAsync();
 
-                    foreach (var prompt in prompts)
+                    if (count == 0)
                     {
-                        if (prompt.Category == 0 || !Enum.IsDefined(typeof(PromptCategory), prompt.Category))
-                        {
-                            prompt.Category = PromptCategory.General;
+                        System.Diagnostics.Debug.WriteLine("[PromptRepository] Database is empty, inserting default prompts...");
+                        await InsertDefaultPromptsAsync();
+                        System.Diagnostics.Debug.WriteLine("[PromptRepository] Default prompts inserted");
+                    }
 
-                            await _database.UpdateAsync(prompt);
+                    // Fix categories for existing prompts
+                    if (count > 0)
+                    {
+                        var prompts = await _database.Table<PromptTemplate>().ToListAsync();
+                        bool needsUpdate = false;
+
+                        foreach (var prompt in prompts)
+                        {
+                            if (prompt.Category == 0 || !Enum.IsDefined(typeof(PromptCategory), prompt.Category))
+                            {
+                                prompt.Category = PromptCategory.General;
+                                await _database.UpdateAsync(prompt);
+                                needsUpdate = true;
+                            }
+                        }
+
+                        if (needsUpdate)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[PromptRepository] Fixed invalid categories");
                         }
                     }
                 }
+
+                System.Diagnostics.Debug.WriteLine("[PromptRepository] Database initialization completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PromptRepository] CRITICAL: Database initialization failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[PromptRepository] StackTrace: {ex.StackTrace}");
+                throw new InvalidOperationException("Failed to initialize database. Application cannot continue.", ex);
             }
         }
 

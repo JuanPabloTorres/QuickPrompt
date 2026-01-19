@@ -11,6 +11,9 @@ namespace QuickPrompt.Engines.WebView
         private readonly IWebViewInjectionService _injectionService;
         private readonly ExecutionHistoryIntegration _historyIntegration;
         private bool _injectionAttempted = false;
+        
+        // ✅ PHASE 2: Track WebView reference for disposal
+        private MauiWebView? _webView;
 
         public EngineWebViewPage(IWebViewInjectionService injectionService, ExecutionHistoryIntegration historyIntegration)
         {
@@ -44,6 +47,108 @@ namespace QuickPrompt.Engines.WebView
             {
                 System.Diagnostics.Debug.WriteLine("[EngineWebViewPage] ERROR: Missing EngineName or Prompt in navigation parameters");
             }
+        }
+
+        // ✅ PHASE 2: Override OnAppearing to track WebView reference
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+            
+            // Store WebView reference from XAML for later disposal
+            _webView = this.FindByName<MauiWebView>("EngineWebView");
+        }
+
+        // ✅ PHASE 2: WebView Lifecycle Management - Dispose on page disappear
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[EngineWebViewPage] OnDisappearing - Cleaning up WebView");
+
+                if (_webView != null)
+                {
+                    // Unsubscribe from events
+                    _webView.Navigated -= OnWebViewNavigated;
+                    _webView.Navigating -= OnWebViewNavigating;
+
+                    // Stop loading any pending requests
+                    try
+                    {
+                        _webView.Eval("window.stop();");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[EngineWebViewPage] Error stopping WebView: {ex.Message}");
+                    }
+
+                    // Navigate to blank to release resources
+                    _webView.Source = "about:blank";
+
+                    #if ANDROID
+                    // Android-specific cleanup
+                    try
+                    {
+                        if (_webView.Handler?.PlatformView is Android.Webkit.WebView androidWebView)
+                        {
+                            androidWebView.StopLoading();
+                            androidWebView.LoadUrl("about:blank");
+                            androidWebView.ClearCache(true);
+                            androidWebView.ClearHistory();
+                            
+                            // Disconnect handler to release native view
+                            _webView.Handler?.DisconnectHandler();
+                            
+                            System.Diagnostics.Debug.WriteLine("[EngineWebViewPage] Android WebView cleaned up");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[EngineWebViewPage] Android cleanup error: {ex.Message}");
+                    }
+                    #endif
+
+                    #if IOS || MACCATALYST
+                    // iOS-specific cleanup
+                    try
+                    {
+                        if (_webView.Handler?.PlatformView is WebKit.WKWebView iosWebView)
+                        {
+                            iosWebView.StopLoading();
+                            iosWebView.LoadRequest(new Foundation.NSUrlRequest(new Foundation.NSUrl("about:blank")));
+                            
+                            // Disconnect handler
+                            _webView.Handler?.DisconnectHandler();
+                            
+                            System.Diagnostics.Debug.WriteLine("[EngineWebViewPage] iOS WebView cleaned up");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[EngineWebViewPage] iOS cleanup error: {ex.Message}");
+                    }
+                    #endif
+
+                    // Clear reference
+                    _webView = null;
+                }
+
+                // Clear ViewModel
+                _viewModel = null;
+                BindingContext = null;
+
+                System.Diagnostics.Debug.WriteLine("[EngineWebViewPage] Cleanup completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EngineWebViewPage] OnDisappearing error: {ex.Message}");
+            }
+        }
+
+        private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"[EngineWebViewPage] Navigating to: {e.Url}");
         }
 
         private async void OnWebViewNavigated(object sender, WebNavigatedEventArgs e)

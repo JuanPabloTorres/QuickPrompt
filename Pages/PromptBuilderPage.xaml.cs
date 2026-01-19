@@ -44,4 +44,16 @@ public partial class PromptBuilderPage : ContentPage
         // Cuando el usuario desliza el Carousel, sincronizamos el CurrentStep
         viewModel.CurrentStep = e.CurrentPosition;
     }
+
+    // ✅ PHASE 2: Dispose ViewModel when page disappears
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+
+        // Dispose ViewModel to release event handlers and prevent memory leaks
+        if (viewModel is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+    }
 }
