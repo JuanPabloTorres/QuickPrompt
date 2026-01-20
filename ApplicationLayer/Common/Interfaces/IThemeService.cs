@@ -5,6 +5,7 @@ namespace QuickPrompt.ApplicationLayer.Common.Interfaces;
 /// <summary>
 /// Service for accessing theme resources (colors, brushes) in a testable, safe way.
 /// ? PHASE 4: Eliminates hardcoded colors and provides fallback mechanism.
+/// ? UX IMPROVEMENTS: Added Dark Mode support with persistence.
 /// </summary>
 public interface IThemeService
 {
@@ -40,14 +41,26 @@ public interface IThemeService
     bool HasColorResource(string key);
 
     /// <summary>
-    /// Gets the current theme mode (Light or Dark).
+    /// Gets the current theme mode (Light, Dark, or Unspecified).
     /// </summary>
     /// <returns>Current app theme</returns>
     AppTheme GetCurrentTheme();
 
     /// <summary>
-    /// Sets the application theme.
+    /// Sets the application theme and persists the preference.
     /// </summary>
-    /// <param name="theme">Theme to apply</param>
+    /// <param name="theme">Theme to apply (Light, Dark, or Unspecified for system)</param>
     void SetTheme(AppTheme theme);
+
+    /// <summary>
+    /// Loads the saved theme preference from storage.
+    /// Should be called on app startup.
+    /// </summary>
+    void LoadSavedTheme();
+
+    /// <summary>
+    /// Gets the effective theme (resolves Unspecified to actual Light/Dark based on system).
+    /// </summary>
+    /// <returns>Effective theme (Light or Dark)</returns>
+    AppTheme GetEffectiveTheme();
 }

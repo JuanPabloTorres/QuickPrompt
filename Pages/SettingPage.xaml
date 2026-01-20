@@ -3,10 +3,9 @@
     x:Class="QuickPrompt.Pages.SettingPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    BackgroundColor="GhostWhite">
+    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}">
 
     <Shell.TitleView>
-
         <Label
             FontFamily="Nasa21"
             FontSize="18"
@@ -15,75 +14,271 @@
             VerticalOptions="Center" />
     </Shell.TitleView>
 
-    <VerticalStackLayout>
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="20">
 
-        <TableView HorizontalOptions="Fill" Intent="Settings">
-            <TableRoot>
+            <!--  ✅ UX IMPROVEMENTS: Appearance Section  -->
+            <Border
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                StrokeThickness="1"
+                Padding="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="0">
+                    <!--  Section Header  -->
+                    <Label
+                        Text="🎨 Appearance"
+                        FontFamily="Nasa21"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        Padding="16,16,16,8" />
+                    
+                    <BoxView
+                        HeightRequest="1"
+                        Color="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                        Margin="16,0" />
+                    
+                    <!--  Theme Picker  -->
+                    <VerticalStackLayout Padding="16" Spacing="8">
+                        <Label
+                            Text="Theme"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        
+                        <Border
+                            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}"
+                            StrokeThickness="1"
+                            Padding="4,0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+                            <Picker
+                                ItemsSource="{Binding ThemeOptions}"
+                                SelectedIndex="{Binding SelectedThemeIndex, Mode=TwoWay}"
+                                FontFamily="Nasa21"
+                                FontSize="15"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                HeightRequest="46"
+                                VerticalOptions="Center" />
+                        </Border>
+                        
+                        <Label
+                            Text="Choose between light, dark, or match your device's theme"
+                            FontFamily="Nasa21"
+                            FontSize="12"
+                            TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}"
+                            Margin="0,4,0,0" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
 
-                <!--  Sección para la guia del usuario  -->
-                <TableSection Title="User Guide" TextColor="{StaticResource PrimaryBlueDark}">
-                    <ViewCell Tapped="OnGuideTapped">
-                        <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
+            <!--  User Guide Section  -->
+            <Border
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                StrokeThickness="1"
+                Padding="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="0">
+                    <Label
+                        Text="📚 User Guide"
+                        FontFamily="Nasa21"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        Padding="16,16,16,8" />
+                    
+                    <BoxView
+                        HeightRequest="1"
+                        Color="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                        Margin="16,0" />
+                    
+                    <Border Padding="16,12" BackgroundColor="Transparent">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnGuideTapped" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="12">
                             <Label
-                                FontAttributes="Bold"
-                                Text="Getting Started with Quick Prompt"
-                                TextColor="{StaticResource AppBlack}"
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Text="&#xe8fd;"
+                                FontSize="24"
+                                TextColor="{StaticResource InfoColor}"
+                                VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center" HorizontalOptions="FillAndExpand">
+                                <Label
+                                    Text="Getting Started"
+                                    FontFamily="Nasa21"
+                                    FontSize="15"
+                                    FontAttributes="Bold"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                                <Label
+                                    Text="Learn how to use QuickPrompt"
+                                    FontFamily="Nasa21"
+                                    FontSize="12"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                            </VerticalStackLayout>
+                            <Label
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Text="&#xe5e1;"
+                                FontSize="20"
+                                TextColor="{StaticResource Gray400}"
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
-                    </ViewCell>
-                    <!--  Enlace a políticas y detalles  -->
-                    <ViewCell>
-                        <ViewCell.View>
-                            <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
+                    </Border>
+                    
+                    <BoxView
+                        HeightRequest="1"
+                        Color="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                        Margin="16,0" />
+                    
+                    <Border Padding="16,12" BackgroundColor="Transparent">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenGuideLinkCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="12">
+                            <Label
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Text="&#xe8e8;"
+                                FontSize="24"
+                                TextColor="{StaticResource InfoColor}"
+                                VerticalOptions="Center" />
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center" HorizontalOptions="FillAndExpand">
                                 <Label
+                                    Text="Privacy Policy &amp; Information"
+                                    FontFamily="Nasa21"
+                                    FontSize="15"
                                     FontAttributes="Bold"
-                                    Text="View Privacy Policy and App Information"
-                                    TextColor="{StaticResource AppBlack}">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding OpenGuideLinkCommand}" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-                            </HorizontalStackLayout>
-                        </ViewCell.View>
-                    </ViewCell>
-                </TableSection>
+                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                                <Label
+                                    Text="View our privacy policy and app details"
+                                    FontFamily="Nasa21"
+                                    FontSize="12"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                            </VerticalStackLayout>
+                            <Label
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Text="&#xe5e1;"
+                                FontSize="20"
+                                TextColor="{StaticResource Gray400}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
 
-
-
-
-                <!--  Sección para borrar la base de datos  -->
-                <TableSection Title="Database" TextColor="{StaticResource PrimaryBlueDark}">
-                    <ViewCell>
+            <!--  Database Section  -->
+            <Border
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                StrokeThickness="1"
+                Padding="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="0">
+                    <Label
+                        Text="🗄️ Database"
+                        FontFamily="Nasa21"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        Padding="16,16,16,8" />
+                    
+                    <BoxView
+                        HeightRequest="1"
+                        Color="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                        Margin="16,0" />
+                    
+                    <VerticalStackLayout Padding="16" Spacing="12">
                         <Button
                             Command="{Binding RestoreDatabaseCommand}"
-                            Style="{StaticResource DatabaseActionButton}"
-                            Text="Restore Database">
-
+                            Text="Restore Database"
+                            FontFamily="Nasa21"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            BackgroundColor="{StaticResource WarningColor}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            HeightRequest="48">
                             <Button.ImageSource>
                                 <FontImageSource
                                     FontFamily="MaterialIconsOutlined-Regular"
                                     Glyph="&#xe92b;"
-                                    Color="{StaticResource White}" />
+                                    Color="White"
+                                    Size="20" />
                             </Button.ImageSource>
                         </Button>
-                    </ViewCell>
-                </TableSection>
+                        
+                        <Label
+                            Text="⚠️ This will reset all your data to factory defaults"
+                            FontFamily="Nasa21"
+                            FontSize="12"
+                            TextColor="{StaticResource WarningDark}"
+                            HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
 
-                <!--  Sección de Información  -->
-                <TableSection Title="App Information" TextColor="{StaticResource PrimaryBlueDark}">
-                    <ViewCell>
-                        <HorizontalStackLayout Padding="10" HorizontalOptions="Center">
+            <!--  App Information Section  -->
+            <Border
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                StrokeThickness="1"
+                Padding="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="0">
+                    <Label
+                        Text="ℹ️ App Information"
+                        FontFamily="Nasa21"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        Padding="16,16,16,8" />
+                    
+                    <BoxView
+                        HeightRequest="1"
+                        Color="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+                        Margin="16,0" />
+                    
+                    <HorizontalStackLayout Padding="16" Spacing="8" HorizontalOptions="Center">
+                        <Label
+                            Text="Version:"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        <Label
+                            Text="{Binding AppVersion}"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
 
-                            <Label Style="{StaticResource VersionLabelStyle}" Text="{Binding AppVersion, Mode=TwoWay}" />
-                        </HorizontalStackLayout>
-                    </ViewCell>
-                </TableSection>
-            </TableRoot>
-        </TableView>
-        <!--  Indicador de Carga  -->
-        <ActivityIndicator
-            IsRunning="{Binding IsLoading}"
-            IsVisible="{Binding IsLoading}"
-            Style="{StaticResource LoadingIndicatorStyle}" />
-    </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <!--  Loading Overlay  -->
+    <ActivityIndicator
+        IsRunning="{Binding IsLoading}"
+        IsVisible="{Binding IsLoading}"
+        Color="{StaticResource PrimaryColor}"
+        WidthRequest="50"
+        HeightRequest="50"
+        HorizontalOptions="Center"
+        VerticalOptions="Center" />
 </ContentPage>

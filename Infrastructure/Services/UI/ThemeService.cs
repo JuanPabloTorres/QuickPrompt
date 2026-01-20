@@ -6,9 +6,12 @@ namespace QuickPrompt.Infrastructure.Services.UI;
 /// <summary>
 /// Implementation of IThemeService for accessing theme resources safely.
 /// ? PHASE 4: Provides testable, crash-safe access to theme colors and brushes.
+/// ? UX IMPROVEMENTS: Added Dark Mode support with persistence.
 /// </summary>
 public class ThemeService : IThemeService
 {
+    private const string ThemePreferenceKey = "app_theme_preference";
+    
     // Default fallback colors
     private static readonly Color DefaultPrimary = Color.FromArgb("#512BD4");
     private static readonly Color DefaultSecondary = Color.FromArgb("#DFD8F7");
@@ -121,12 +124,12 @@ public class ThemeService : IThemeService
     {
         try
         {
-            return Application.Current?.RequestedTheme ?? AppTheme.Light;
+            return Application.Current?.UserAppTheme ?? AppTheme.Unspecified;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[ThemeService] Error getting theme: {ex.Message}");
-            return AppTheme.Light;
+            return AppTheme.Unspecified;
         }
     }
 
@@ -137,12 +140,67 @@ public class ThemeService : IThemeService
             if (Application.Current != null)
             {
                 Application.Current.UserAppTheme = theme;
+                
+                // Persist theme preference
+                Preferences.Set(ThemePreferenceKey, (int)theme);
+                
                 System.Diagnostics.Debug.WriteLine($"[ThemeService] Theme changed to: {theme}");
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[ThemeService] Error setting theme: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Loads the saved theme preference from storage.
+    /// Should be called on app startup.
+    /// </summary>
+    public void LoadSavedTheme()
+    {
+        try
+        {
+            if (Preferences.ContainsKey(ThemePreferenceKey))
+            {
+                var savedTheme = (AppTheme)Preferences.Get(ThemePreferenceKey, (int)AppTheme.Unspecified);
+                SetTheme(savedTheme);
+                System.Diagnostics.Debug.WriteLine($"[ThemeService] Loaded saved theme: {savedTheme}");
+            }
+            else
+            {
+                // First run - use system preference
+                SetTheme(AppTheme.Unspecified);
+                System.Diagnostics.Debug.WriteLine("[ThemeService] No saved theme, using system preference");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ThemeService] Error loading saved theme: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Gets the effective theme (resolves Unspecified to actual Light/Dark).
+    /// </summary>
+    public AppTheme GetEffectiveTheme()
+    {
+        try
+        {
+            var userTheme = Application.Current?.UserAppTheme ?? AppTheme.Unspecified;
+            
+            if (userTheme == AppTheme.Unspecified)
+            {
+                // Return system theme
+                return Application.Current?.RequestedTheme ?? AppTheme.Light;
+            }
+            
+            return userTheme;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ThemeService] Error getting effective theme: {ex.Message}");
+            return AppTheme.Light;
         }
     }
 

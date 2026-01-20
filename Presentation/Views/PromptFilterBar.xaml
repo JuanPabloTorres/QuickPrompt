@@ -9,14 +9,14 @@
 
     <Border
         Padding="16"
-        BackgroundColor="{StaticResource CardBackground}"
+        BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
         StrokeThickness="0">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="12" />
         </Border.StrokeShape>
         <Border.Shadow>
             <Shadow
-                Brush="{StaticResource AppBlack}"
+                Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}"
                 Opacity="0.08"
                 Radius="12"
                 Offset="0,4" />
@@ -24,19 +24,20 @@
 
         <VerticalStackLayout Spacing="16">
 
-            <!--  Search Section  -->
+            <!--  ✅ UX IMPROVEMENTS: Enhanced Search Section  -->
             <VerticalStackLayout Spacing="8">
                 <Label
                     FontAttributes="Bold"
-                    Style="{StaticResource BodySmallTextStyle}"
+                    FontSize="13"
+                    FontFamily="Nasa21"
                     Text="🔍 Search"
-                    TextColor="{StaticResource TextPrimary}" />
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
 
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                     <Border
                         Grid.Column="0"
-                        BackgroundColor="{StaticResource SurfaceBackground}"
-                        Stroke="{StaticResource BorderLight}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                         StrokeThickness="1">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
@@ -46,13 +47,13 @@
                             ClearButtonVisibility="WhileEditing"
                             FontFamily="Nasa21"
                             FontSize="14"
-                            HeightRequest="{StaticResource InputHeightMedium}"
+                            HeightRequest="48"
                             Placeholder="Search by title or description..."
-                            PlaceholderColor="{StaticResource TextSecondary}"
+                            PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                             ReturnCommand="{Binding SearchCommand, Source={x:Reference Root}}"
                             ReturnType="Search"
                             Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}"
-                            TextColor="{StaticResource TextPrimary}"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                             VerticalOptions="Center" />
                     </Border>
 
@@ -70,26 +71,29 @@
                                 FontFamily="MaterialIconsOutlined-Regular"
                                 Glyph="&#xe8b6;"
                                 Size="20"
-                                Color="{StaticResource White}" />
+                                Color="White" />
                         </Button.ImageSource>
                     </Button>
                 </Grid>
             </VerticalStackLayout>
 
             <!--  Divider  -->
-            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+            <BoxView 
+                BackgroundColor="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}" 
+                HeightRequest="1" />
 
             <!--  Category Filter Section  -->
             <VerticalStackLayout Spacing="8">
                 <Label
                     FontAttributes="Bold"
-                    Style="{StaticResource BodySmallTextStyle}"
+                    FontSize="13"
+                    FontFamily="Nasa21"
                     Text="📁 Category"
-                    TextColor="{StaticResource TextPrimary}" />
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
 
                 <Border
-                    BackgroundColor="{StaticResource SurfaceBackground}"
-                    Stroke="{StaticResource BorderLight}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
+                    Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                     StrokeThickness="1">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="8" />
@@ -99,25 +103,28 @@
                         Title="All Categories"
                         FontFamily="Nasa21"
                         FontSize="14"
-                        HeightRequest="{StaticResource InputHeightMedium}"
+                        HeightRequest="48"
                         ItemsSource="{Binding Categories, Source={x:Reference Root}}"
                         SelectedItem="{Binding SelectedCategory, Source={x:Reference Root}, Mode=TwoWay}"
-                        TextColor="{StaticResource TextPrimary}"
-                        TitleColor="{StaticResource TextSecondary}"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                        TitleColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                         VerticalOptions="Center" />
                 </Border>
             </VerticalStackLayout>
 
             <!--  Divider  -->
-            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+            <BoxView 
+                BackgroundColor="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}" 
+                HeightRequest="1" />
 
             <!--  Quick Filters Section  -->
             <VerticalStackLayout Spacing="12">
                 <Label
                     FontAttributes="Bold"
-                    Style="{StaticResource BodySmallTextStyle}"
+                    FontSize="13"
+                    FontFamily="Nasa21"
                     Text="⚡ Quick Filters"
-                    TextColor="{StaticResource TextPrimary}" />
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
 
                 <!--  Favorites Row  -->
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
@@ -126,7 +133,7 @@
                     <Border
                         Grid.Column="0"
                         BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Favorites}}"
-                        Stroke="{StaticResource BorderLight}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                         StrokeThickness="1">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
@@ -154,7 +161,7 @@
                                 FontFamily="Nasa21"
                                 FontSize="13"
                                 Text="Favorites"
-                                TextColor="{StaticResource TextPrimary}"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
@@ -163,7 +170,7 @@
                     <Border
                         Grid.Column="1"
                         BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.NonFavorites}}"
-                        Stroke="{StaticResource BorderLight}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                         StrokeThickness="1">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
@@ -183,7 +190,7 @@
                                         FontFamily="MaterialIconsOutlined-Regular"
                                         Glyph="&#xe3e6;"
                                         Size="18"
-                                        Color="{StaticResource TextSecondary}" />
+                                        Color="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                                 </Image.Source>
                             </Image>
                             <Label
@@ -191,7 +198,7 @@
                                 FontFamily="Nasa21"
                                 FontSize="13"
                                 Text="Regular"
-                                TextColor="{StaticResource TextPrimary}"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
@@ -204,7 +211,7 @@
                     <Border
                         Grid.Column="0"
                         BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Today}}"
-                        Stroke="{StaticResource BorderLight}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                         StrokeThickness="1">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
@@ -232,7 +239,7 @@
                                 FontFamily="Nasa21"
                                 FontSize="13"
                                 Text="Today"
-                                TextColor="{StaticResource TextPrimary}"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
@@ -241,7 +248,7 @@
                     <Border
                         Grid.Column="1"
                         BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Last7Days}}"
-                        Stroke="{StaticResource BorderLight}"
+                        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                         StrokeThickness="1">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
@@ -269,7 +276,7 @@
                                 FontFamily="Nasa21"
                                 FontSize="13"
                                 Text="Last 7 Days"
-                                TextColor="{StaticResource TextPrimary}"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
@@ -278,7 +285,7 @@
                 <!--  All Filter Button  -->
                 <Border
                     BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.All}}"
-                    Stroke="{StaticResource BorderLight}"
+                    Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                     StrokeThickness="1">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="8" />
@@ -306,7 +313,7 @@
                             FontFamily="Nasa21"
                             FontSize="13"
                             Text="All Prompts"
-                            TextColor="{StaticResource TextPrimary}"
+                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                             VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </Border>

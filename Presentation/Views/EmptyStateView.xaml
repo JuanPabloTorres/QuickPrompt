@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="QuickPrompt.Views.EmptyStateView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
+
+    <Border
+        Padding="32"
+        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+        Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
+        StrokeThickness="1"
+        Margin="16">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="16" />
+        </Border.StrokeShape>
+
+        <VerticalStackLayout
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            Spacing="20">
+
+            <!--  Icon  -->
+            <Label
+                FontFamily="MaterialIconsOutlined-Regular"
+                Text="{Binding Icon, Source={x:Reference Root}}"
+                FontSize="64"
+                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                HorizontalOptions="Center"
+                Opacity="0.6" />
+
+            <!--  Title  -->
+            <Label
+                Text="{Binding Title, Source={x:Reference Root}}"
+                FontFamily="Nasa21"
+                FontSize="20"
+                FontAttributes="Bold"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center" />
+
+            <!--  Message  -->
+            <Label
+                Text="{Binding Message, Source={x:Reference Root}}"
+                FontFamily="Nasa21"
+                FontSize="14"
+                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                MaximumWidthRequest="300"
+                LineBreakMode="WordWrap" />
+
+            <!--  Action Button (Optional)  -->
+            <Button
+                Text="{Binding ActionText, Source={x:Reference Root}}"
+                Command="{Binding ActionCommand, Source={x:Reference Root}}"
+                IsVisible="{Binding HasAction, Source={x:Reference Root}}"
+                FontFamily="Nasa21"
+                FontSize="15"
+                FontAttributes="Bold"
+                BackgroundColor="{StaticResource PrimaryColor}"
+                TextColor="White"
+                CornerRadius="8"
+                Padding="24,12"
+                HorizontalOptions="Center"
+                Margin="0,8,0,0" />
+
+        </VerticalStackLayout>
+    </Border>
+
+</ContentView>

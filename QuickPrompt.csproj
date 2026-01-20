@@ -194,6 +194,9 @@
     <MauiXaml Update="PopUps\LottieMessagePopup.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Presentation\Views\EmptyStateView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Resources\Styles\AppColors.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

@@ -11,12 +11,14 @@ namespace QuickPrompt
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<App>? _logger;
         private readonly IDialogService _dialogService;
+        private readonly IThemeService _themeService;
 
         public App(
             DatabaseServiceManager databaseServiceManager, 
             IServiceProvider serviceProvider,
-            ILogger<App>? logger, // Made nullable for safety
-            IDialogService dialogService)
+            ILogger<App>? logger,
+            IDialogService dialogService,
+            IThemeService themeService)
         {
             try
             {
@@ -29,7 +31,12 @@ namespace QuickPrompt
                 _databaseServiceManager = databaseServiceManager ?? throw new ArgumentNullException(nameof(databaseServiceManager));
                 _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
                 _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+                _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
                 _logger?.LogInformation("[App.Constructor] Dependencies injected");
+
+                // ✅ UX IMPROVEMENTS: Load saved theme preference
+                _themeService.LoadSavedTheme();
+                _logger?.LogInformation($"[App.Constructor] Theme loaded: {_themeService.GetEffectiveTheme()}");
 
                 // Initialize global exception handler with null-safe logger
                 if (_logger != null)
@@ -69,7 +76,6 @@ namespace QuickPrompt
                     {
                         _logger?.LogError(ex, "[App] Database initialization failed");
                         System.Diagnostics.Debug.WriteLine($"[App] Database initialization failed: {ex.Message}");
-                        // Don't throw - app should continue without database error
                     }
                 });
 
@@ -131,7 +137,6 @@ namespace QuickPrompt
             {
                 _logger?.LogError(ex, "[App.OnStart] Error in cache cleanup");
                 System.Diagnostics.Debug.WriteLine($"[App.OnStart] Cache cleanup error: {ex.Message}");
-                // Don't throw - not critical
             }
         }
 

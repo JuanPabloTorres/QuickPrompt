@@ -5,8 +5,8 @@
     <!--
         ==================================================================================
         QuickPrompt Design System - Color Tokens
-        Version: 1.0
-        Phase: 2 - Foundation
+        Version: 2.0 - Dark Mode Support Added
+        Phase: 3 - UX Improvements
         Based on: docs/design-system/DESIGN_TOKENS.md
         ==================================================================================
     -->
@@ -16,6 +16,7 @@
         PRIMARY COLOR PALETTE - Brand Amber/Gold
         Base: #EFB036 (Preserve existing brand color)
         Usage: Primary actions, CTA, brand moments
+        Note: Primary colors remain consistent across themes for brand recognition
         ============================================================================
     -->
 
@@ -25,23 +26,14 @@
     <Color x:Key="Primary300">#FAB668</Color>
     <Color x:Key="Primary400">#F69D3B</Color>
     <Color x:Key="Primary500">#EFB036</Color>
-    <!--  BASE - Current brand color  -->
     <Color x:Key="Primary600">#D68A1F</Color>
     <Color x:Key="Primary700">#B36915</Color>
     <Color x:Key="Primary800">#8F4D0F</Color>
     <Color x:Key="Primary900">#6B340A</Color>
 
-    <!--  Primary - Semantic Aliases  -->
-    <Color x:Key="PrimaryColor">#EFB036</Color>
-    <Color x:Key="PrimaryLight">#F69D3B</Color>
-    <Color x:Key="PrimaryDark">#D68A1F</Color>
-    <Color x:Key="PrimaryText">#B36915</Color>
-
     <!--
         ============================================================================
         SECONDARY COLOR PALETTE - Professional Blue-Gray
-        Evolved from: #23486A (original brand color)
-        Usage: Secondary actions, navigation, supporting elements
         ============================================================================
     -->
 
@@ -53,120 +45,67 @@
     <Color x:Key="Secondary500">#627D98</Color>
     <Color x:Key="Secondary600">#486581</Color>
     <Color x:Key="Secondary700">#334E68</Color>
-    <!--  Closest to original #23486A  -->
     <Color x:Key="Secondary800">#243B53</Color>
     <Color x:Key="Secondary900">#102A43</Color>
 
-    <!--  Secondary - Semantic Aliases  -->
-    <Color x:Key="SecondaryColor">#486581</Color>
-    <Color x:Key="SecondaryLight">#627D98</Color>
-    <Color x:Key="SecondaryDark">#334E68</Color>
-    <Color x:Key="SecondaryText">#243B53</Color>
-
     <!--
         ============================================================================
-        SEMANTIC COLORS - Success (Green)
-        Usage: Success toasts, confirmation messages, valid input states
+        SEMANTIC COLORS - Success, Error, Warning, Info
+        Note: Semantic colors remain consistent for accessibility
         ============================================================================
     -->
 
+    <!-- Success (Green) -->
     <Color x:Key="Success50">#ECFDF5</Color>
     <Color x:Key="Success100">#D1FAE5</Color>
     <Color x:Key="Success200">#A7F3D0</Color>
     <Color x:Key="Success300">#6EE7B7</Color>
     <Color x:Key="Success400">#34D399</Color>
     <Color x:Key="Success500">#10B981</Color>
-    <!--  BASE  -->
     <Color x:Key="Success600">#059669</Color>
     <Color x:Key="Success700">#047857</Color>
     <Color x:Key="Success800">#065F46</Color>
     <Color x:Key="Success900">#064E3B</Color>
 
-    <!--  Success - Semantic Aliases  -->
-    <Color x:Key="SuccessColor">#10B981</Color>
-    <Color x:Key="SuccessLight">#34D399</Color>
-    <Color x:Key="SuccessDark">#059669</Color>
-    <Color x:Key="SuccessText">#047857</Color>
-
-    <!--
-        ============================================================================
-        SEMANTIC COLORS - Error (Red)
-        Usage: Error messages, validation failures, destructive actions
-        ============================================================================
-    -->
-
+    <!-- Error (Red) -->
     <Color x:Key="Error50">#FEF2F2</Color>
     <Color x:Key="Error100">#FEE2E2</Color>
     <Color x:Key="Error200">#FECACA</Color>
     <Color x:Key="Error300">#FCA5A5</Color>
     <Color x:Key="Error400">#F87171</Color>
     <Color x:Key="Error500">#EF4444</Color>
-    <!--  BASE  -->
     <Color x:Key="Error600">#DC2626</Color>
     <Color x:Key="Error700">#B91C1C</Color>
     <Color x:Key="Error800">#991B1B</Color>
     <Color x:Key="Error900">#7F1D1D</Color>
 
-    <!--  Error - Semantic Aliases  -->
-    <Color x:Key="ErrorColor">#EF4444</Color>
-    <Color x:Key="ErrorLight">#F87171</Color>
-    <Color x:Key="ErrorDark">#DC2626</Color>
-    <Color x:Key="ErrorText">#B91C1C</Color>
-
-    <!--
-        ============================================================================
-        SEMANTIC COLORS - Warning (Amber)
-        Usage: Warning messages, caution states, important notices
-        ============================================================================
-    -->
-
+    <!-- Warning (Amber) -->
     <Color x:Key="Warning50">#FFFBEB</Color>
     <Color x:Key="Warning100">#FEF3C7</Color>
     <Color x:Key="Warning200">#FDE68A</Color>
     <Color x:Key="Warning300">#FCD34D</Color>
     <Color x:Key="Warning400">#FBBF24</Color>
     <Color x:Key="Warning500">#F59E0B</Color>
-    <!--  BASE  -->
     <Color x:Key="Warning600">#D97706</Color>
     <Color x:Key="Warning700">#B45309</Color>
     <Color x:Key="Warning800">#92400E</Color>
     <Color x:Key="Warning900">#78350F</Color>
 
-    <!--  Warning - Semantic Aliases  -->
-    <Color x:Key="WarningColor">#F59E0B</Color>
-    <Color x:Key="WarningLight">#FBBF24</Color>
-    <Color x:Key="WarningDark">#D97706</Color>
-    <Color x:Key="WarningText">#B45309</Color>
-
-    <!--
-        ============================================================================
-        SEMANTIC COLORS - Info (Blue)
-        Usage: Informational messages, tips, helpful guidance, links
-        ============================================================================
-    -->
-
+    <!-- Info (Blue) -->
     <Color x:Key="Info50">#EFF6FF</Color>
     <Color x:Key="Info100">#DBEAFE</Color>
     <Color x:Key="Info200">#BFDBFE</Color>
     <Color x:Key="Info300">#93C5FD</Color>
     <Color x:Key="Info400">#60A5FA</Color>
     <Color x:Key="Info500">#3B82F6</Color>
-    <!--  BASE  -->
     <Color x:Key="Info600">#2563EB</Color>
     <Color x:Key="Info700">#1D4ED8</Color>
     <Color x:Key="Info800">#1E40AF</Color>
     <Color x:Key="Info900">#1E3A8A</Color>
 
-    <!--  Info - Semantic Aliases  -->
-    <Color x:Key="InfoColor">#3B82F6</Color>
-    <Color x:Key="InfoLight">#60A5FA</Color>
-    <Color x:Key="InfoDark">#2563EB</Color>
-    <Color x:Key="InfoText">#1D4ED8</Color>
-
     <!--
         ============================================================================
-        NEUTRAL COLORS - Gray Scale
-        Usage: Backgrounds, text, borders, dividers
+        NEUTRAL COLORS - Gray Scale (Light Mode)
         ============================================================================
     -->
 
@@ -182,7 +121,25 @@
     <Color x:Key="Gray900">#111827</Color>
     <Color x:Key="Gray950">#0C0A09</Color>
 
-    <!--  Pure Colors  -->
+    <!--
+        ============================================================================
+        DARK MODE - Gray Scale (Inverted)
+        Usage: Dark mode backgrounds and surfaces
+        ============================================================================
+    -->
+
+    <Color x:Key="DarkGray50">#1A1A1A</Color>
+    <Color x:Key="DarkGray100">#212121</Color>
+    <Color x:Key="DarkGray200">#2A2A2A</Color>
+    <Color x:Key="DarkGray300">#363636</Color>
+    <Color x:Key="DarkGray400">#4A4A4A</Color>
+    <Color x:Key="DarkGray500">#6B7280</Color>
+    <Color x:Key="DarkGray600">#9CA3AF</Color>
+    <Color x:Key="DarkGray700">#D1D5DB</Color>
+    <Color x:Key="DarkGray800">#E5E7EB</Color>
+    <Color x:Key="DarkGray900">#F3F4F6</Color>
+
+    <!-- Pure Colors -->
     <Color x:Key="White">#FFFFFF</Color>
     <Color x:Key="Black">#000000</Color>
     <Color x:Key="OffBlack">#1A1A1A</Color>
@@ -191,11 +148,66 @@
 
     <!--
         ============================================================================
-        SURFACE COLORS (Light Mode)
-        Usage: App backgrounds, cards, elevated elements
+        THEME-AWARE SEMANTIC COLORS
+        These colors automatically switch between light and dark mode
         ============================================================================
     -->
 
+    <!-- Primary - Semantic Aliases (Theme Aware) -->
+    <Color x:Key="PrimaryColor">#EFB036</Color>
+    <Color x:Key="PrimaryLight">#F69D3B</Color>
+    <Color x:Key="PrimaryDark">#D68A1F</Color>
+    <Color x:Key="PrimaryText">#B36915</Color>
+
+    <!-- Secondary - Semantic Aliases (Theme Aware) -->
+    <Color x:Key="SecondaryColor">#486581</Color>
+    <Color x:Key="SecondaryLight">#627D98</Color>
+    <Color x:Key="SecondaryDark">#334E68</Color>
+    <Color x:Key="SecondaryText">#243B53</Color>
+
+    <!-- Success - Semantic Aliases -->
+    <Color x:Key="SuccessColor">#10B981</Color>
+    <Color x:Key="SuccessLight">#34D399</Color>
+    <Color x:Key="SuccessDark">#059669</Color>
+    <Color x:Key="SuccessText">#047857</Color>
+
+    <!-- Error - Semantic Aliases -->
+    <Color x:Key="ErrorColor">#EF4444</Color>
+    <Color x:Key="ErrorLight">#F87171</Color>
+    <Color x:Key="ErrorDark">#DC2626</Color>
+    <Color x:Key="ErrorText">#B91C1C</Color>
+
+    <!-- Warning - Semantic Aliases -->
+    <Color x:Key="WarningColor">#F59E0B</Color>
+    <Color x:Key="WarningLight">#FBBF24</Color>
+    <Color x:Key="WarningDark">#D97706</Color>
+    <Color x:Key="WarningText">#B45309</Color>
+
+    <!-- Info - Semantic Aliases -->
+    <Color x:Key="InfoColor">#3B82F6</Color>
+    <Color x:Key="InfoLight">#60A5FA</Color>
+    <Color x:Key="InfoDark">#2563EB</Color>
+    <Color x:Key="InfoText">#1D4ED8</Color>
+
+    <!--
+        ============================================================================
+        SURFACE COLORS - Theme Aware (Auto-switching)
+        ============================================================================
+    -->
+
+    <!-- Light Mode Surfaces -->
+    <Color x:Key="SurfaceBackgroundLight">#F9FAFB</Color>
+    <Color x:Key="SurfaceCardLight">#FFFFFF</Color>
+    <Color x:Key="SurfaceElevatedLight">#FFFFFF</Color>
+    <Color x:Key="SurfaceInputLight">#FFFFFF</Color>
+
+    <!-- Dark Mode Surfaces -->
+    <Color x:Key="SurfaceBackgroundDark">#1A1A1A</Color>
+    <Color x:Key="SurfaceCardDark">#212121</Color>
+    <Color x:Key="SurfaceElevatedDark">#2A2A2A</Color>
+    <Color x:Key="SurfaceInputDark">#2A2A2A</Color>
+
+    <!-- Theme-Aware Aliases (Use these in XAML with AppThemeBinding) -->
     <Color x:Key="SurfaceBackground">#F9FAFB</Color>
     <Color x:Key="SurfaceCard">#FFFFFF</Color>
     <Color x:Key="SurfaceElevated">#FFFFFF</Color>
@@ -203,109 +215,142 @@
 
     <!--
         ============================================================================
-        TEXT COLORS
-        Usage: All text elements throughout the app
+        TEXT COLORS - Theme Aware
         ============================================================================
     -->
 
+    <!-- Light Mode Text -->
+    <Color x:Key="TextPrimaryLight">#111827</Color>
+    <Color x:Key="TextSecondaryLight">#4B5563</Color>
+    <Color x:Key="TextTertiaryLight">#6B7280</Color>
+    <Color x:Key="TextDisabledLight">#9CA3AF</Color>
+    <Color x:Key="TextInverseLight">#FFFFFF</Color>
+    <Color x:Key="TextLinkLight">#2563EB</Color>
+    <Color x:Key="TextLinkHoverLight">#1D4ED8</Color>
+    <Color x:Key="TextLinkVisitedLight">#1E40AF</Color>
+    <Color x:Key="PrimaryDarkTextLight">#1F2937</Color>
+    <Color x:Key="SecondaryDarkTextLight">#374151</Color>
+
+    <!-- Dark Mode Text -->
+    <Color x:Key="TextPrimaryDark">#F3F4F6</Color>
+    <Color x:Key="TextSecondaryDark">#D1D5DB</Color>
+    <Color x:Key="TextTertiaryDark">#9CA3AF</Color>
+    <Color x:Key="TextDisabledDark">#6B7280</Color>
+    <Color x:Key="TextInverseDark">#111827</Color>
+    <Color x:Key="TextLinkDark">#60A5FA</Color>
+    <Color x:Key="TextLinkHoverDark">#93C5FD</Color>
+    <Color x:Key="TextLinkVisitedDark">#BFDBFE</Color>
+    <Color x:Key="PrimaryDarkTextDark">#E5E7EB</Color>
+    <Color x:Key="SecondaryDarkTextDark">#D1D5DB</Color>
+
+    <!-- Theme-Aware Aliases -->
     <Color x:Key="TextPrimary">#111827</Color>
-    <!--  Gray900  -->
     <Color x:Key="TextSecondary">#4B5563</Color>
-    <!--  Gray600  -->
     <Color x:Key="TextTertiary">#6B7280</Color>
-    <!--  Gray500  -->
     <Color x:Key="TextDisabled">#9CA3AF</Color>
-    <!--  Gray400  -->
     <Color x:Key="TextInverse">#FFFFFF</Color>
-    <!--  White  -->
     <Color x:Key="TextLink">#2563EB</Color>
-    <!--  Info600  -->
     <Color x:Key="TextLinkHover">#1D4ED8</Color>
-    <!--  Info700  -->
     <Color x:Key="TextLinkVisited">#1E40AF</Color>
-    <!--  Info800  -->
     <Color x:Key="PrimaryDarkText">#1F2937</Color>
     <Color x:Key="SecondaryDarkText">#374151</Color>
 
     <!--
         ============================================================================
-        BORDER COLORS
-        Usage: Input borders, card borders, dividers
+        BORDER COLORS - Theme Aware
         ============================================================================
     -->
 
+    <!-- Light Mode Borders -->
+    <Color x:Key="BorderDefaultLight">#D1D5DB</Color>
+    <Color x:Key="BorderLightLight">#E5E7EB</Color>
+    <Color x:Key="BorderDarkLight">#9CA3AF</Color>
+
+    <!-- Dark Mode Borders -->
+    <Color x:Key="BorderDefaultDark">#4A4A4A</Color>
+    <Color x:Key="BorderLightDark">#363636</Color>
+    <Color x:Key="BorderDarkDark">#6B7280</Color>
+
+    <!-- Theme-Aware Aliases -->
     <Color x:Key="BorderDefault">#D1D5DB</Color>
-    <!--  Gray300  -->
     <Color x:Key="BorderLight">#E5E7EB</Color>
-    <!--  Gray200  -->
     <Color x:Key="BorderDark">#9CA3AF</Color>
     <Color x:Key="BorderFocus">#EFB036</Color>
-    <!--  Primary500  -->
     <Color x:Key="BorderError">#EF4444</Color>
-    <!--  Error500  -->
     <Color x:Key="BorderSuccess">#10B981</Color>
-    <!--  Success500  -->
     <Color x:Key="BorderWarning">#F59E0B</Color>
-    <!--  Warning500  -->
 
     <!--
         ============================================================================
-        STATE COLORS
-        Usage: Disabled states, hover states, pressed states
+        STATE COLORS - Theme Aware
         ============================================================================
     -->
 
+    <!-- Light Mode States -->
+    <Color x:Key="StateDisabledBackgroundLight">#E5E7EB</Color>
+    <Color x:Key="StateDisabledTextLight">#9CA3AF</Color>
+    <Color x:Key="StateDisabledBorderLight">#D1D5DB</Color>
+    <Color x:Key="StateHoverBackgroundLight">#F3F4F6</Color>
+    <Color x:Key="StatePressedBackgroundLight">#E5E7EB</Color>
+
+    <!-- Dark Mode States -->
+    <Color x:Key="StateDisabledBackgroundDark">#2A2A2A</Color>
+    <Color x:Key="StateDisabledTextDark">#6B7280</Color>
+    <Color x:Key="StateDisabledBorderDark">#4A4A4A</Color>
+    <Color x:Key="StateHoverBackgroundDark">#2A2A2A</Color>
+    <Color x:Key="StatePressedBackgroundDark">#363636</Color>
+
+    <!-- Theme-Aware Aliases -->
     <Color x:Key="StateDisabledBackground">#E5E7EB</Color>
-    <!--  Gray200  -->
     <Color x:Key="StateDisabledText">#9CA3AF</Color>
-    <!--  Gray400  -->
     <Color x:Key="StateDisabledBorder">#D1D5DB</Color>
-    <!--  Gray300  -->
     <Color x:Key="StateHoverBackground">#F3F4F6</Color>
-    <!--  Gray100  -->
     <Color x:Key="StatePressedBackground">#E5E7EB</Color>
-    <!--  Gray200  -->
 
     <!--
         ============================================================================
-        LEGACY COLOR ALIASES
-        Maintained for backward compatibility - Phase 4 will migrate these away
+        LEGACY COLOR ALIASES - Theme Aware
+        Maintained for backward compatibility
         ============================================================================
     -->
 
-    <!--  Map old PrimaryYellow to new Primary500  -->
     <Color x:Key="PrimaryYellow">#EFB036</Color>
-
-    <!--  Map old PrimaryBlueLight to new Secondary500  -->
     <Color x:Key="PrimaryBlueLight">#627D98</Color>
-
-    <!--  ✅ ADD: Missing PrimaryBlue resource (maps to Secondary600)  -->
     <Color x:Key="PrimaryBlue">#486581</Color>
-
-    <!--  Map old PrimaryBlueDark to new Secondary700 (preserves brand recognition)  -->
     <Color x:Key="PrimaryBlueDark">#334E68</Color>
-
-    <!--  Map old PrimaryTeal to new Secondary400 (close match)  -->
     <Color x:Key="PrimaryTeal">#829AB1</Color>
-
-    <!--  Map old PrimaryRed to new Error600  -->
     <Color x:Key="PrimaryRed">#DC2626</Color>
 
-    <!--  Map old grays  -->
+    <!-- Light Mode Legacy -->
+    <Color x:Key="PrimaryGrayLight">#F9FAFB</Color>
+    <Color x:Key="NeutralGrayLight">#E5E7EB</Color>
+    <Color x:Key="TextDarkLight">#111827</Color>
+    <Color x:Key="TextLightLight">#FFFFFF</Color>
+    <Color x:Key="AppBlackLight">#111827</Color>
+    <Color x:Key="AppBackgroundLight">#F9FAFB</Color>
+    <Color x:Key="CardBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="BorderColorLight">#D1D5DB</Color>
+
+    <!-- Dark Mode Legacy -->
+    <Color x:Key="PrimaryGrayDark">#212121</Color>
+    <Color x:Key="NeutralGrayDark">#363636</Color>
+    <Color x:Key="TextDarkDark">#F3F4F6</Color>
+    <Color x:Key="TextLightDark">#111827</Color>
+    <Color x:Key="AppBlackDark">#F3F4F6</Color>
+    <Color x:Key="AppBackgroundDark">#1A1A1A</Color>
+    <Color x:Key="CardBackgroundDark">#212121</Color>
+    <Color x:Key="BorderColorDark">#4A4A4A</Color>
+
+    <!-- Theme-Aware Legacy Aliases -->
     <Color x:Key="PrimaryGray">#F9FAFB</Color>
     <Color x:Key="NeutralGray">#E5E7EB</Color>
-
-    <!--  Map old text colors  -->
     <Color x:Key="TextDark">#111827</Color>
     <Color x:Key="TextLight">#FFFFFF</Color>
     <Color x:Key="AppBlack">#111827</Color>
-
-    <!--  Map old background/surface colors  -->
     <Color x:Key="AppBackground">#F9FAFB</Color>
     <Color x:Key="CardBackground">#FFFFFF</Color>
     <Color x:Key="BorderColor">#D1D5DB</Color>
 
-    <!--  Map old semantic colors  -->
     <Color x:Key="Success">#10B981</Color>
     <Color x:Key="Danger">#EF4444</Color>
     <Color x:Key="Warning">#F59E0B</Color>
