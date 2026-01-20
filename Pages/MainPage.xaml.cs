@@ -112,12 +112,16 @@ public partial class MainPage : ContentPage
                 return;
             }
             
-            int cursorPos = _viewModel.CursorPosition;
-            int selectionLen = _viewModel.SelectionLength;
+            // ✅ FIX: Use Editor properties directly instead of ViewModel
+            int cursorPos = editor.CursorPosition;
+            int selectionLen = editor.SelectionLength;
             
-            System.Diagnostics.Debug.WriteLine($"[Selection] Cursor: {cursorPos}, Length: {selectionLen}, Text Length: {editor.Text.Length}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] Editor.Cursor: {cursorPos}, Editor.Length: {selectionLen}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] ViewModel.Cursor: {_viewModel.CursorPosition}, ViewModel.Length: {_viewModel.SelectionLength}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] Text Length: {editor.Text.Length}");
             
-            var selectedText = GetSelectedTextFromViewModel();
+            // ✅ FIX: Get text directly from Editor
+            var selectedText = GetSelectedTextFromEditor(editor);
             
             System.Diagnostics.Debug.WriteLine($"[Selection] Raw selectedText: '{selectedText}'");
             System.Diagnostics.Debug.WriteLine($"[Selection] selectedText is null: {selectedText == null}");
@@ -177,6 +181,27 @@ public partial class MainPage : ContentPage
                 FloatingUndoVariableButton.IsVisible = false;
             }
         });
+    }
+
+    private string GetSelectedTextFromEditor(Editor editor)
+    {
+        if (string.IsNullOrEmpty(editor.Text))
+            return string.Empty;
+
+        int start = editor.CursorPosition;
+        int length = editor.SelectionLength;
+
+        System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] Start: {start}, Length: {length}, Total: {editor.Text.Length}");
+
+        if (length <= 0 || start < 0 || start + length > editor.Text.Length)
+        {
+            System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] INVALID: Returning empty");
+            return string.Empty;
+        }
+
+        var result = editor.Text.Substring(start, length);
+        System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] Returning: '{result}'");
+        return result;
     }
 
     private string GetSelectedTextFromViewModel()
