@@ -135,7 +135,13 @@ public partial class EditPromptPage : ContentPage
     private bool IsSelectionAVariable(string fullText, int cursorPos, int selectionLen, string selectedText)
     {
         if (IsTextAVariable(selectedText)) return true;
-        return IsSelectionWrappedInBrackets(fullText, cursorPos, selectionLen);
+        bool wrapped = IsSelectionWrappedInBrackets(fullText, cursorPos, selectionLen);
+        if (wrapped)
+        {
+            ExpandSelectionToIncludeBrackets(fullText, ref cursorPos, ref selectionLen);
+            return true;
+        }
+        return false;
     }
 
     private bool IsSelectionWrappedInBrackets(string fullText, int cursorPos, int selectionLen)
