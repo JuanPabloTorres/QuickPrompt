@@ -222,7 +222,7 @@ namespace QuickPrompt
             // ✅ Config
             var appSettingsModel = new AppSettings
             {
-                Version = appSettings["AppSettings:Version"] ?? "1.0.0",
+                Version = "Quick Prompt v5.0.0",
             };
 
             builder.Services.Configure<AdMobSettings>(options =>
