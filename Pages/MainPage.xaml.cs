@@ -60,6 +60,7 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             FloatingVariableButton.IsVisible = false;
+            FloatingUndoVariableButton.IsVisible = false;
             _selectedText = string.Empty;
         });
     }
@@ -88,16 +89,36 @@ public partial class MainPage : ContentPage
             var editor = PromptRawEditor;
             var selectedText = GetSelectedText(editor);
             
-            // Validate selection: must have text and be complete words
-            if (string.IsNullOrWhiteSpace(selectedText) || !IsValidWordSelection(editor, selectedText))
+            // Check if selection is empty
+            if (string.IsNullOrWhiteSpace(selectedText))
             {
                 FloatingVariableButton.IsVisible = false;
+                FloatingUndoVariableButton.IsVisible = false;
                 _selectedText = string.Empty;
                 return;
             }
 
             _selectedText = selectedText.Trim();
-            FloatingVariableButton.IsVisible = true;
+            
+            // ✅ NEW: Check if selected text is already a variable
+            if (IsExistingVariable(selectedText))
+            {
+                // Show UNDO button for existing variables
+                FloatingVariableButton.IsVisible = false;
+                FloatingUndoVariableButton.IsVisible = true;
+            }
+            else if (IsValidWordSelection(editor, selectedText))
+            {
+                // Show CREATE button for valid text selections
+                FloatingVariableButton.IsVisible = true;
+                FloatingUndoVariableButton.IsVisible = false;
+            }
+            else
+            {
+                // Invalid selection - hide both buttons
+                FloatingVariableButton.IsVisible = false;
+                FloatingUndoVariableButton.IsVisible = false;
+            }
         });
     }
 
@@ -113,6 +134,12 @@ public partial class MainPage : ContentPage
             return string.Empty;
 
         return editor.Text.Substring(start, length);
+    }
+
+    private bool IsExistingVariable(string text)
+    {
+        var trimmed = text.Trim();
+        return trimmed.StartsWith("<") && trimmed.EndsWith(">") && trimmed.Length > 2;
     }
 
     private bool IsValidWordSelection(Editor editor, string selectedText)
@@ -137,7 +164,7 @@ public partial class MainPage : ContentPage
                                   char.IsPunctuation(editor.Text[start + length]);
 
         // Selection should not be already a variable (wrapped in < >)
-        bool isNotAlreadyVariable = !selectedText.Trim().StartsWith("<") || !selectedText.Trim().EndsWith(">");
+        bool isNotAlreadyVariable = !IsExistingVariable(selectedText);
 
         return startsAtWordBoundary && endsAtWordBoundary && isNotAlreadyVariable;
     }
@@ -199,6 +226,57 @@ public partial class MainPage : ContentPage
             // ✅ IMPROVEMENT: Position cursor after the new variable
             await Task.Delay(50); // Small delay to ensure text is updated
             editor.CursorPosition = selectionStart + variableName.Length + 2;
+            editor.SelectionLength = 0;
+        }
+
+        _selectedText = string.Empty;
+    }
+
+    private async void OnUndoVariableFromSelection(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_selectedText) || !IsExistingVariable(_selectedText))
+        {
+            FloatingUndoVariableButton.IsVisible = false;
+            return;
+        }
+
+        var editor = PromptRawEditor;
+        int selectionStart = editor.CursorPosition;
+        int selectionLength = editor.SelectionLength;
+
+        // ✅ Hide button immediately
+        FloatingUndoVariableButton.IsVisible = false;
+
+        // Ask for confirmation
+        bool confirm = await DisplayAlert(
+            "🔄 Remove Variable",
+            $"Convert '{_selectedText}' back to plain text?",
+            "Remove",
+            "Cancel");
+
+        if (!confirm)
+        {
+            _selectedText = string.Empty;
+            editor.SelectionLength = 0;
+            return;
+        }
+
+        // Remove < > from the variable
+        var plainText = _selectedText.Trim('<', '>');
+
+        // Replace variable with plain text
+        if (selectionStart >= 0 && selectionLength > 0 && 
+            !string.IsNullOrEmpty(editor.Text) && 
+            selectionStart + selectionLength <= editor.Text.Length)
+        {
+            var newText = editor.Text.Remove(selectionStart, selectionLength)
+                                     .Insert(selectionStart, plainText);
+            
+            _viewModel.PromptText = newText;
+            
+            // Position cursor after the plain text
+            await Task.Delay(50);
+            editor.CursorPosition = selectionStart + plainText.Length;
             editor.SelectionLength = 0;
         }
 
