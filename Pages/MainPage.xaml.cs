@@ -31,6 +31,17 @@ public partial class MainPage : ContentPage
             else
                 MainThread.BeginInvokeOnMainThread(() => PromptChipContainer.Children.Clear());
         }
+        
+        // ✅ Monitor selection changes from ViewModel
+        if (e.PropertyName == nameof(_viewModel.SelectionLength) || 
+            e.PropertyName == nameof(_viewModel.CursorPosition))
+        {
+            System.Diagnostics.Debug.WriteLine($"[VM PropertyChanged] Cursor: {_viewModel.CursorPosition}, Length: {_viewModel.SelectionLength}");
+            if (_selectionCheckTimer != null && _selectionCheckTimer.Enabled)
+            {
+                CheckTextSelection();
+            }
+        }
     }
 
     protected override void OnAppearing()
@@ -51,11 +62,13 @@ public partial class MainPage : ContentPage
 
     private void OnEditorFocused(object sender, FocusEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine("[Editor] Focused - Starting selection monitoring");
         StartSelectionMonitoring();
     }
 
     private void OnEditorUnfocused(object sender, FocusEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine("[Editor] Unfocused - Stopping monitoring");
         StopSelectionMonitoring();
         MainThread.BeginInvokeOnMainThread(() =>
         {
@@ -67,9 +80,10 @@ public partial class MainPage : ContentPage
 
     private void StartSelectionMonitoring()
     {
-        _selectionCheckTimer = new System.Timers.Timer(300); // Check every 300ms
+        _selectionCheckTimer = new System.Timers.Timer(300);
         _selectionCheckTimer.Elapsed += (s, e) => CheckTextSelection();
         _selectionCheckTimer.Start();
+        System.Diagnostics.Debug.WriteLine("[Timer] Selection monitoring started");
     }
 
     private void StopSelectionMonitoring()
@@ -79,6 +93,7 @@ public partial class MainPage : ContentPage
             _selectionCheckTimer.Stop();
             _selectionCheckTimer.Dispose();
             _selectionCheckTimer = null;
+            System.Diagnostics.Debug.WriteLine("[Timer] Selection monitoring stopped");
         }
     }
 
@@ -96,9 +111,15 @@ public partial class MainPage : ContentPage
                 return;
             }
             
-            var selectedText = GetSelectedText(editor);
+            int cursorPos = _viewModel.CursorPosition;
+            int selectionLen = _viewModel.SelectionLength;
             
-            // Check if selection is empty
+            System.Diagnostics.Debug.WriteLine($"[Selection] Cursor: {cursorPos}, Length: {selectionLen}, Text Length: {editor.Text.Length}");
+            
+            var selectedText = GetSelectedTextFromViewModel();
+            
+            System.Diagnostics.Debug.WriteLine($"[Selection] Text: '{selectedText}' (len: {selectedText?.Length ?? 0})");
+            
             if (string.IsNullOrWhiteSpace(selectedText))
             {
                 FloatingVariableButton.IsVisible = false;
@@ -109,47 +130,42 @@ public partial class MainPage : ContentPage
 
             _selectedText = selectedText;
             
-            // ✅ DEBUG: Log to see what we're detecting
-            System.Diagnostics.Debug.WriteLine($"Selected text: '{selectedText}'");
-            System.Diagnostics.Debug.WriteLine($"Is existing variable: {IsExistingVariable(selectedText)}");
+            var isVariable = IsExistingVariable(selectedText);
+            System.Diagnostics.Debug.WriteLine($"[Detection] IsVariable: {isVariable}");
             
-            // ✅ NEW: Check if selected text is already a variable
-            if (IsExistingVariable(selectedText))
+            if (isVariable)
             {
-                System.Diagnostics.Debug.WriteLine("Showing UNDO button (red)");
-                // Show UNDO button for existing variables
+                System.Diagnostics.Debug.WriteLine(">>> SHOWING RED BUTTON (Remove Variable) <<<");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = true;
             }
             else if (IsValidWordSelection(editor, selectedText))
             {
-                System.Diagnostics.Debug.WriteLine("Showing CREATE button (blue)");
-                // Show CREATE button for valid text selections
+                System.Diagnostics.Debug.WriteLine(">>> SHOWING BLUE BUTTON (Make Variable) <<<");
                 FloatingVariableButton.IsVisible = true;
                 FloatingUndoVariableButton.IsVisible = false;
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("Invalid selection - hiding both buttons");
-                // Invalid selection - hide both buttons
+                System.Diagnostics.Debug.WriteLine(">>> HIDING BOTH BUTTONS (Invalid) <<<");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = false;
             }
         });
     }
 
-    private string GetSelectedText(Editor editor)
+    private string GetSelectedTextFromViewModel()
     {
-        if (string.IsNullOrEmpty(editor.Text))
+        if (string.IsNullOrEmpty(_viewModel.PromptText))
             return string.Empty;
 
-        int start = editor.CursorPosition;
-        int length = editor.SelectionLength;
+        int start = _viewModel.CursorPosition;
+        int length = _viewModel.SelectionLength;
 
-        if (length <= 0 || start < 0 || start + length > editor.Text.Length)
+        if (length <= 0 || start < 0 || start + length > _viewModel.PromptText.Length)
             return string.Empty;
 
-        return editor.Text.Substring(start, length);
+        return _viewModel.PromptText.Substring(start, length);
     }
 
     private bool IsExistingVariable(string text)
@@ -159,13 +175,13 @@ public partial class MainPage : ContentPage
             
         var trimmed = text.Trim();
         
-        // ✅ FIX: More robust variable detection
         bool hasAngleBrackets = trimmed.StartsWith("<") && trimmed.EndsWith(">");
-        bool hasContent = trimmed.Length > 2; // At least <x>
-        bool noNestedBrackets = !trimmed.Substring(1, trimmed.Length - 2).Contains('<') && 
+        bool hasContent = trimmed.Length > 2;
+        bool noNestedBrackets = trimmed.Length > 2 && 
+                               !trimmed.Substring(1, trimmed.Length - 2).Contains('<') && 
                                !trimmed.Substring(1, trimmed.Length - 2).Contains('>');
         
-        System.Diagnostics.Debug.WriteLine($"IsExistingVariable check: text='{trimmed}', hasAngleBrackets={hasAngleBrackets}, hasContent={hasContent}, noNested={noNestedBrackets}");
+        System.Diagnostics.Debug.WriteLine($"[IsExistingVariable] '{trimmed}': brackets={hasAngleBrackets}, content={hasContent}, noNested={noNestedBrackets}");
         
         return hasAngleBrackets && hasContent && noNestedBrackets;
     }
@@ -175,14 +191,12 @@ public partial class MainPage : ContentPage
         if (string.IsNullOrWhiteSpace(selectedText))
             return false;
 
-        int start = editor.CursorPosition;
-        int length = editor.SelectionLength;
+        int start = _viewModel.CursorPosition;
+        int length = _viewModel.SelectionLength;
 
-        // Must have actual selection
         if (length <= 0)
             return false;
 
-        // Check if selection starts and ends at word boundaries
         bool startsAtWordBoundary = start == 0 || 
                                     char.IsWhiteSpace(editor.Text[start - 1]) || 
                                     char.IsPunctuation(editor.Text[start - 1]);
@@ -191,26 +205,27 @@ public partial class MainPage : ContentPage
                                   char.IsWhiteSpace(editor.Text[start + length]) || 
                                   char.IsPunctuation(editor.Text[start + length]);
 
-        // Selection should not be already a variable (wrapped in < >)
         bool isNotAlreadyVariable = !IsExistingVariable(selectedText);
+
+        System.Diagnostics.Debug.WriteLine($"[IsValidWord] starts={startsAtWordBoundary}, ends={endsAtWordBoundary}, notVar={isNotAlreadyVariable}");
 
         return startsAtWordBoundary && endsAtWordBoundary && isNotAlreadyVariable;
     }
 
     private async void OnCreateVariableFromSelection(object sender, EventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[CreateVariable] Called with: '{_selectedText}'");
+        
         if (string.IsNullOrWhiteSpace(_selectedText))
         {
             FloatingVariableButton.IsVisible = false;
             return;
         }
 
-        // Store selection info before dialog
         var editor = PromptRawEditor;
-        int selectionStart = editor.CursorPosition;
-        int selectionLength = editor.SelectionLength;
+        int selectionStart = _viewModel.CursorPosition;
+        int selectionLength = _viewModel.SelectionLength;
 
-        // Get variable name from user
         var variableName = await DisplayPromptAsync(
             "✨ Create Variable",
             "Enter variable name:",
@@ -219,42 +234,39 @@ public partial class MainPage : ContentPage
             accept: "Create",
             cancel: "Cancel");
 
-        // ✅ IMPROVEMENT: Hide button regardless of user choice (Create or Cancel)
         FloatingVariableButton.IsVisible = false;
 
-        // ✅ IMPROVEMENT: If user cancelled, clear selection and return
         if (string.IsNullOrWhiteSpace(variableName))
         {
+            System.Diagnostics.Debug.WriteLine("[CreateVariable] Cancelled by user");
             _selectedText = string.Empty;
-            editor.SelectionLength = 0; // Clear selection
+            _viewModel.SelectionLength = 0;
             return;
         }
 
-        // ✅ IMPROVEMENT: Clean variable name (remove spaces, special chars)
         variableName = Regex.Replace(variableName, @"[^\w]", "_").Trim('_');
         
-        // ✅ IMPROVEMENT: Don't create if name is empty after cleaning
         if (string.IsNullOrWhiteSpace(variableName))
         {
+            System.Diagnostics.Debug.WriteLine("[CreateVariable] Invalid name after cleaning");
             _selectedText = string.Empty;
-            editor.SelectionLength = 0;
+            _viewModel.SelectionLength = 0;
             return;
         }
 
-        // Replace selected text with variable
         if (selectionStart >= 0 && selectionLength > 0 && 
-            !string.IsNullOrEmpty(editor.Text) && 
-            selectionStart + selectionLength <= editor.Text.Length)
+            !string.IsNullOrEmpty(_viewModel.PromptText) && 
+            selectionStart + selectionLength <= _viewModel.PromptText.Length)
         {
-            var newText = editor.Text.Remove(selectionStart, selectionLength)
-                                     .Insert(selectionStart, $"<{variableName}>");
+            var newText = _viewModel.PromptText.Remove(selectionStart, selectionLength)
+                                                .Insert(selectionStart, $"<{variableName}>");
             
             _viewModel.PromptText = newText;
+            System.Diagnostics.Debug.WriteLine($"[CreateVariable] Created: {newText}");
             
-            // ✅ IMPROVEMENT: Position cursor after the new variable
-            await Task.Delay(50); // Small delay to ensure text is updated
-            editor.CursorPosition = selectionStart + variableName.Length + 2;
-            editor.SelectionLength = 0;
+            await Task.Delay(50);
+            _viewModel.CursorPosition = selectionStart + variableName.Length + 2;
+            _viewModel.SelectionLength = 0;
         }
 
         _selectedText = string.Empty;
@@ -262,20 +274,19 @@ public partial class MainPage : ContentPage
 
     private async void OnUndoVariableFromSelection(object sender, EventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[UndoVariable] Called with: '{_selectedText}'");
+        
         if (string.IsNullOrWhiteSpace(_selectedText) || !IsExistingVariable(_selectedText))
         {
             FloatingUndoVariableButton.IsVisible = false;
             return;
         }
 
-        var editor = PromptRawEditor;
-        int selectionStart = editor.CursorPosition;
-        int selectionLength = editor.SelectionLength;
+        int selectionStart = _viewModel.CursorPosition;
+        int selectionLength = _viewModel.SelectionLength;
 
-        // ✅ Hide button immediately
         FloatingUndoVariableButton.IsVisible = false;
 
-        // Ask for confirmation
         bool confirm = await DisplayAlert(
             "🔄 Remove Variable",
             $"Convert '{_selectedText}' back to plain text?",
@@ -284,28 +295,27 @@ public partial class MainPage : ContentPage
 
         if (!confirm)
         {
+            System.Diagnostics.Debug.WriteLine("[UndoVariable] Cancelled by user");
             _selectedText = string.Empty;
-            editor.SelectionLength = 0;
+            _viewModel.SelectionLength = 0;
             return;
         }
 
-        // Remove < > from the variable
         var plainText = _selectedText.Trim('<', '>');
 
-        // Replace variable with plain text
         if (selectionStart >= 0 && selectionLength > 0 && 
-            !string.IsNullOrEmpty(editor.Text) && 
-            selectionStart + selectionLength <= editor.Text.Length)
+            !string.IsNullOrEmpty(_viewModel.PromptText) && 
+            selectionStart + selectionLength <= _viewModel.PromptText.Length)
         {
-            var newText = editor.Text.Remove(selectionStart, selectionLength)
-                                     .Insert(selectionStart, plainText);
+            var newText = _viewModel.PromptText.Remove(selectionStart, selectionLength)
+                                                .Insert(selectionStart, plainText);
             
             _viewModel.PromptText = newText;
+            System.Diagnostics.Debug.WriteLine($"[UndoVariable] Removed: {newText}");
             
-            // Position cursor after the plain text
             await Task.Delay(50);
-            editor.CursorPosition = selectionStart + plainText.Length;
-            editor.SelectionLength = 0;
+            _viewModel.CursorPosition = selectionStart + plainText.Length;
+            _viewModel.SelectionLength = 0;
         }
 
         _selectedText = string.Empty;
@@ -321,7 +331,6 @@ public partial class MainPage : ContentPage
         {
             PromptChipContainer.Children.Clear();
 
-            // If no prompt text, show empty state message
             if (string.IsNullOrWhiteSpace(_viewModel?.PromptText))
             {
                 PromptChipContainer.Children.Add(new Label
@@ -338,14 +347,11 @@ public partial class MainPage : ContentPage
             }
 
             var parts = ParsePrompt(_viewModel.PromptText);
-
-            // Get current theme colors
             var isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
             var chipTextColor = _themeService.GetColor("PrimaryBlueDark");
             var chipBackgroundColor = _themeService.GetColor(isDark ? "SurfaceElevatedDark" : "SurfaceElevatedLight");
             var chipBorderColor = _themeService.GetColor("PrimaryBlueLight");
 
-            // Always render all parts (text and variables)
             foreach (var part in parts)
             {
                 PromptChipContainer.Children.Add(part.IsVariable
