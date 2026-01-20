@@ -353,7 +353,7 @@
                                 </Border.GestureRecognizers>
                                 <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
                                     <Label
-                                        FontFamily="MaterialIconsOutlined"
+                                        FontFamily="MaterialIconsOutlined-Regular"
                                         FontSize="28"
                                         HorizontalOptions="Center"
                                         Text="&#xea0b;"
@@ -382,7 +382,7 @@
                                 </Border.GestureRecognizers>
                                 <VerticalStackLayout HorizontalOptions="Center" Spacing="6">
                                     <Label
-                                        FontFamily="MaterialIconsOutlined"
+                                        FontFamily="MaterialIconsOutlined-Regular"
                                         FontSize="28"
                                         HorizontalOptions="Center"
                                         Text="&#xe145;"

@@ -29,7 +29,7 @@
             <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe65e;"
+                    Glyph="&#xef42;"
                     Size="24"
                     Color="{AppThemeBinding Light={StaticResource PrimaryBlueLight}, Dark={StaticResource PrimaryBlueDark}}" />
             </ShellContent.Icon>
