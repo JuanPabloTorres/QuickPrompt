@@ -10,7 +10,7 @@
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
     AutomationProperties.HelpText="Browse and manage your saved prompts"
     AutomationProperties.Name="Quick Prompt Page"
-    BackgroundColor="{StaticResource SurfaceBackground}"
+    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
     Shell.PresentationMode="Animated">
 
     <Shell.TitleView>
@@ -23,7 +23,7 @@
             VerticalOptions="Center" />
     </Shell.TitleView>
 
-    <!--  Barra de herramientas  -->
+    <!--  Toolbar  -->
     <ContentPage.ToolbarItems>
 
         <ToolbarItem Command="{Binding LoadInitialPromptsCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
@@ -53,7 +53,7 @@
 
     <Grid RowDefinitions="Auto,Auto,*">
 
-        <!--  Overlay de carga  -->
+        <!--  Loading Overlay  -->
         <views:ReusableLoadingOverlay
             x:Name="LoadingOverlay"
             Grid.Row="0"
@@ -74,7 +74,7 @@
             SelectedCategory="{Binding SelectedCategory}"
             SelectedFilter="{Binding SelectedDateFilter}" />
 
-        <!--  Lista de Prompts  -->
+        <!--  Prompts List  -->
         <ScrollView Grid.Row="2">
             <VerticalStackLayout Padding="16,0,16,32" Spacing="16">
 
@@ -99,7 +99,7 @@
                     <CollectionView.Header>
                         <VerticalStackLayout Spacing="12">
 
-                            <!--  Header con Select All  -->
+                            <!--  Header with Select All  -->
                             <Grid ColumnDefinitions="*,Auto">
                                 <Label
                                     Grid.Column="0"
@@ -125,25 +125,27 @@
                             </Grid>
 
                             <!--  Divider  -->
-                            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+                            <BoxView 
+                                BackgroundColor="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}" 
+                                HeightRequest="1" />
 
                         </VerticalStackLayout>
                     </CollectionView.Header>
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <!--  Using StandardCard component  -->
+                            <!--  Prompt Card  -->
                             <Border
                                 Margin="0,0,0,12"
                                 Padding="16"
-                                BackgroundColor="{StaticResource CardBackground}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                                 StrokeThickness="0">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12" />
                                 </Border.StrokeShape>
                                 <Border.Shadow>
                                     <Shadow
-                                        Brush="{StaticResource AppBlack}"
+                                        Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}"
                                         Opacity="0.1"
                                         Radius="8"
                                         Offset="0,2" />
@@ -176,7 +178,7 @@
                                                     FontFamily="MaterialIconsOutlined-Regular"
                                                     Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
                                                     Size="20"
-                                                    Color="{StaticResource White}" />
+                                                    Color="White" />
                                             </Button.ImageSource>
                                         </Button>
                                     </Grid>
@@ -195,7 +197,7 @@
                                             FontAttributes="Bold"
                                             Style="{StaticResource CaptionTextStyle}"
                                             Text="{Binding Prompt.Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
-                                            TextColor="{StaticResource White}" />
+                                            TextColor="White" />
                                     </Border>
 
                                     <!--  Description  -->
@@ -204,10 +206,12 @@
                                         MaxLines="3"
                                         Style="{StaticResource BodyTextStyle}"
                                         Text="{Binding Prompt.Description}"
-                                        TextColor="{StaticResource TextSecondary}" />
+                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
 
                                     <!--  Divider  -->
-                                    <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+                                    <BoxView 
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}" 
+                                        HeightRequest="1" />
 
                                     <!--  Action Buttons Row  -->
                                     <Grid ColumnDefinitions="*,*,*,*,Auto" ColumnSpacing="8">
@@ -230,7 +234,7 @@
                                                     FontFamily="MaterialIconsOutlined-Regular"
                                                     Glyph="&#xe913;"
                                                     Size="20"
-                                                    Color="{StaticResource White}" />
+                                                    Color="White" />
                                             </Button.ImageSource>
                                         </Button>
 
@@ -252,7 +256,7 @@
                                                     FontFamily="MaterialIconsOutlined-Regular"
                                                     Glyph="&#xe3c9;"
                                                     Size="20"
-                                                    Color="{StaticResource White}" />
+                                                    Color="White" />
                                             </Button.ImageSource>
                                         </Button>
 
@@ -273,7 +277,7 @@
                                                     FontFamily="MaterialIconsOutlined-Regular"
                                                     Glyph="&#xe92b;"
                                                     Size="20"
-                                                    Color="{StaticResource White}" />
+                                                    Color="White" />
                                             </Button.ImageSource>
                                         </Button>
 
@@ -295,7 +299,7 @@
                                                     FontFamily="MaterialIconsOutlined-Regular"
                                                     Glyph="&#xe80d;"
                                                     Size="20"
-                                                    Color="{StaticResource White}" />
+                                                    Color="White" />
                                             </Button.ImageSource>
                                         </Button>
 
@@ -320,14 +324,16 @@
                         <VerticalStackLayout Padding="0,16" Spacing="16">
 
                             <!--  Divider  -->
-                            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+                            <BoxView 
+                                BackgroundColor="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}" 
+                                HeightRequest="1" />
 
                             <!--  Total Count  -->
                             <Label
                                 HorizontalOptions="Center"
                                 Style="{StaticResource BodySmallTextStyle}"
                                 Text="{Binding Prompts.Count, StringFormat='Total: {0} prompts'}"
-                                TextColor="{StaticResource TextSecondary}" />
+                                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
 
                             <!--  Load More Button  -->
                             <Button

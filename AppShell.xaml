@@ -18,6 +18,21 @@
     </Shell.Behaviors>
 
     <TabBar>
+
+        <ShellContent
+            Title="AI"
+            ContentTemplate="{DataTemplate aiPages:AiLauncherPage}"
+            Route="AIWeb">
+            <ShellContent.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIconsOutlined-Regular"
+                    Glyph="&#xe86c;"
+                    Size="24"
+                    Color="{StaticResource PrimaryBlueLight}" />
+            </ShellContent.Icon>
+        </ShellContent>
+
+
         <ShellContent
             Title="Quick"
             ContentTemplate="{DataTemplate pages:QuickPromptPage}"
@@ -44,18 +59,6 @@
             </ShellContent.Icon>
         </ShellContent>
 
-        <ShellContent
-            Title="AI"
-            ContentTemplate="{DataTemplate aiPages:AiLauncherPage}"
-            Route="AIWeb">
-            <ShellContent.Icon>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe86c;"
-                    Size="24"
-                    Color="{StaticResource PrimaryBlueLight}" />
-            </ShellContent.Icon>
-        </ShellContent>
 
         <ShellContent
             Title="Settings"
