@@ -84,6 +84,32 @@
                 </Border>
             </VerticalStackLayout>
 
+            <!--  Description  -->
+            <VerticalStackLayout Spacing="6">
+                <Label 
+                    Text="Description" 
+                    FontSize="15" 
+                    FontFamily="Nasa21" 
+                    FontAttributes="Bold" 
+                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                <Border 
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}" 
+                    Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
+                    StrokeThickness="1" 
+                    Padding="12">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Editor
+                        Placeholder="Optional description..."
+                        Text="{Binding PromptDescription, Mode=TwoWay}"
+                        FontSize="15" FontFamily="Nasa21"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
+                        PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                        BackgroundColor="Transparent"
+                        AutoSize="TextChanges" 
+                        MinimumHeightRequest="80" />
+                </Border>
+            </VerticalStackLayout>
+
             <!--  Category  -->
             <VerticalStackLayout Spacing="6">
                 <Label 
