@@ -143,6 +143,125 @@ public partial class MainPageViewModel : BaseViewModel
         await NavigateToAsync(nameof(PromptBuilderPage));
     }
 
+    // ============================ CONTEXT MENU COMMANDS ============================
+
+    [RelayCommand]
+    private async Task CreateVariableFromMenu(object parameter)
+    {
+        if (parameter is not Editor editor)
+            return;
+
+        var selectedText = GetEditorSelectedText(editor);
+        
+        if (string.IsNullOrWhiteSpace(selectedText))
+        {
+            await _dialogService.ShowErrorAsync("Please select text first");
+            return;
+        }
+
+        // Check if already a variable
+        if (IsTextAlreadyVariable(selectedText))
+        {
+            await _dialogService.ShowErrorAsync("Selected text is already a variable");
+            return;
+        }
+
+        // Get variable name
+        var variableName = await Application.Current.MainPage.DisplayPromptAsync(
+            "✨ Create Variable",
+            "Enter variable name:",
+            initialValue: selectedText.Replace(" ", "_"),
+            placeholder: "variable_name",
+            accept: "Create",
+            cancel: "Cancel");
+
+        if (string.IsNullOrWhiteSpace(variableName))
+            return;
+
+        // Clean name
+        variableName = System.Text.RegularExpressions.Regex.Replace(variableName, @"[^\w]", "_").Trim('_');
+
+        if (string.IsNullOrWhiteSpace(variableName))
+            return;
+
+        // Replace in text
+        var newText = PromptText.Remove(editor.CursorPosition, editor.SelectionLength)
+                                .Insert(editor.CursorPosition, $"<{variableName}>");
+        
+        PromptText = newText;
+        
+        // Clear selection
+        await Task.Delay(50);
+        editor.CursorPosition = editor.CursorPosition + variableName.Length + 2;
+        editor.SelectionLength = 0;
+    }
+
+    [RelayCommand]
+    private async Task RemoveVariableFromMenu(object parameter)
+    {
+        if (parameter is not Editor editor)
+            return;
+
+        var selectedText = GetEditorSelectedText(editor);
+        
+        if (string.IsNullOrWhiteSpace(selectedText))
+        {
+            await _dialogService.ShowErrorAsync("Please select text first");
+            return;
+        }
+
+        // Check if it's a variable
+        if (!IsTextAlreadyVariable(selectedText))
+        {
+            await _dialogService.ShowErrorAsync("Selected text is not a variable");
+            return;
+        }
+
+        // Confirm
+        bool confirm = await Application.Current.MainPage.DisplayAlert(
+            "🔄 Remove Variable",
+            $"Convert '{selectedText}' back to plain text?",
+            "Remove",
+            "Cancel");
+
+        if (!confirm)
+            return;
+
+        // Remove brackets
+        var plainText = selectedText.Trim('<', '>');
+
+        // Replace in text
+        var newText = PromptText.Remove(editor.CursorPosition, editor.SelectionLength)
+                                .Insert(editor.CursorPosition, plainText);
+        
+        PromptText = newText;
+        
+        // Clear selection
+        await Task.Delay(50);
+        editor.CursorPosition = editor.CursorPosition + plainText.Length;
+        editor.SelectionLength = 0;
+    }
+
+    private string GetEditorSelectedText(Editor editor)
+    {
+        if (string.IsNullOrEmpty(editor.Text) || editor.SelectionLength <= 0)
+            return string.Empty;
+
+        int start = editor.CursorPosition;
+        int length = editor.SelectionLength;
+
+        if (start < 0 || start + length > editor.Text.Length)
+            return string.Empty;
+
+        return editor.Text.Substring(start, length);
+    }
+
+    private bool IsTextAlreadyVariable(string text)
+    {
+        var trimmed = text.Trim();
+        return trimmed.StartsWith("<") && trimmed.EndsWith(">") && trimmed.Length > 2;
+    }
+
     // ============================ VARIABLE HANDLING ============================
 
     private async void EncloseSelectedTextWithBraces()

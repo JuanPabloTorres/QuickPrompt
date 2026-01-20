@@ -177,11 +177,7 @@
                             FontAttributes="Bold" 
                             TextColor="{AppThemeBinding Light=#1D4ED8, Dark=#93C5FD}" />
                         <Label 
-                            Text="• Select text → floating button appears automatically" 
-                            FontSize="12" 
-                            TextColor="{AppThemeBinding Light=#2563EB, Dark=#BFDBFE}" />
-                        <Label 
-                            Text="• Blue button for text, Red button for variables" 
+                            Text="• Select text → long press → choose from menu" 
                             FontSize="12" 
                             TextColor="{AppThemeBinding Light=#2563EB, Dark=#BFDBFE}" />
                         <Label 
@@ -200,106 +196,31 @@
                     IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}">
                     <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                     
-                    <Grid>
-                        <Editor
-                            x:Name="PromptRawEditor"
-                            Placeholder="Write your prompt here...&#x0a;&#x0a;Example: Create a &lt;format&gt; about &lt;topic&gt; for &lt;audience&gt;"
-                            Text="{Binding PromptText, Mode=TwoWay}"
-                            CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                            SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                            FontSize="15" FontFamily="Nasa21"
-                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
-                            PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
-                            BackgroundColor="Transparent"
-                            AutoSize="TextChanges"
-                            MinimumHeightRequest="180"
-                            Focused="OnEditorFocused"
-                            Unfocused="OnEditorUnfocused" />
-                        
-                        <!--  ✨ Floating Variable Button  -->
-                        <Border
-                            x:Name="FloatingVariableButton"
-                            IsVisible="False"
-                            BackgroundColor="{StaticResource PrimaryBlue}"
-                            Padding="12,6"
-                            HorizontalOptions="Start"
-                            VerticalOptions="Start"
-                            Margin="10,5,0,0"
-                            ZIndex="1000"
-                            InputTransparent="False">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="6" />
-                            </Border.StrokeShape>
-                            <Border.Shadow>
-                                <Shadow 
-                                    Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
-                                    Opacity="0.3" 
-                                    Radius="8" 
-                                    Offset="0,2" />
-                            </Border.Shadow>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnCreateVariableFromSelection" />
-                            </Border.GestureRecognizers>
-                            
-                            <HorizontalStackLayout Spacing="6">
-                                <Label
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Text="&#xe146;"
-                                    FontSize="16"
-                                    TextColor="White"
-                                    VerticalOptions="Center" />
-                                <Label
-                                    Text="Make Variable"
-                                    FontFamily="Nasa21"
-                                    FontSize="13"
-                                    FontAttributes="Bold"
-                                    TextColor="White"
-                                    VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </Border>
-                        
-                        <!--  ✨ Floating Undo Variable Button  -->
-                        <Border
-                            x:Name="FloatingUndoVariableButton"
-                            IsVisible="False"
-                            BackgroundColor="{StaticResource PrimaryRed}"
-                            Padding="12,6"
-                            HorizontalOptions="Start"
-                            VerticalOptions="Start"
-                            Margin="10,5,0,0"
-                            ZIndex="1000"
-                            InputTransparent="False">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="6" />
-                            </Border.StrokeShape>
-                            <Border.Shadow>
-                                <Shadow 
-                                    Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
-                                    Opacity="0.3" 
-                                    Radius="8" 
-                                    Offset="0,2" />
-                            </Border.Shadow>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnUndoVariableFromSelection" />
-                            </Border.GestureRecognizers>
-                            
-                            <HorizontalStackLayout Spacing="6">
-                                <Label
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Text="&#xe14c;"
-                                    FontSize="16"
-                                    TextColor="White"
-                                    VerticalOptions="Center" />
-                                <Label
-                                    Text="Remove Variable"
-                                    FontFamily="Nasa21"
-                                    FontSize="13"
-                                    FontAttributes="Bold"
-                                    TextColor="White"
-                                    VerticalOptions="Center" />
-                            </HorizontalStackLayout>
-                        </Border>
-                    </Grid>
+                    <Editor
+                        x:Name="PromptRawEditor"
+                        Placeholder="Write your prompt here...&#x0a;&#x0a;Example: Create a &lt;format&gt; about &lt;topic&gt; for &lt;audience&gt;"
+                        Text="{Binding PromptText, Mode=TwoWay}"
+                        CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                        SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                        FontSize="15" FontFamily="Nasa21"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
+                        PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                        BackgroundColor="Transparent"
+                        AutoSize="TextChanges"
+                        MinimumHeightRequest="180">
+                        <FlyoutBase.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem 
+                                    Text="➕ Make Variable" 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.CreateVariableFromMenuCommand}"
+                                    CommandParameter="{Binding Source={x:Reference PromptRawEditor}}" />
+                                <MenuFlyoutItem 
+                                    Text="✖ Remove Variable" 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveVariableFromMenuCommand}"
+                                    CommandParameter="{Binding Source={x:Reference PromptRawEditor}}" />
+                            </MenuFlyout>
+                        </FlyoutBase.ContextFlyout>
+                    </Editor>
                 </Border>
 
                 <!--  Visual Mode  -->
