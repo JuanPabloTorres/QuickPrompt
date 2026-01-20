@@ -13,6 +13,9 @@ public partial class MainPage : ContentPage
     private string _selectedText = string.Empty;
     private System.Timers.Timer? _selectionCheckTimer;
 
+    private int _capturedCursorPosition;
+    private int _capturedSelectionLength;
+
     public MainPage(MainPageViewModel viewModel, IThemeService themeService)
     {
         InitializeComponent();
@@ -31,17 +34,6 @@ public partial class MainPage : ContentPage
             else
                 MainThread.BeginInvokeOnMainThread(() => PromptChipContainer.Children.Clear());
         }
-
-        // ✅ Monitor selection changes from ViewModel
-        if (e.PropertyName == nameof(_viewModel.SelectionLength) ||
-            e.PropertyName == nameof(_viewModel.CursorPosition))
-        {
-            System.Diagnostics.Debug.WriteLine($"[VM PropertyChanged] Cursor: {_viewModel.CursorPosition}, Length: {_viewModel.SelectionLength}");
-            if (_selectionCheckTimer != null && _selectionCheckTimer.Enabled)
-            {
-                CheckTextSelection();
-            }
-        }
     }
 
     protected override void OnAppearing()
@@ -58,7 +50,7 @@ public partial class MainPage : ContentPage
         StopSelectionMonitoring();
     }
 
-    #region Floating Variable Button
+    #region Selection Monitoring
 
     private void OnEditorFocused(object sender, FocusEventArgs e)
     {
@@ -72,8 +64,7 @@ public partial class MainPage : ContentPage
         StopSelectionMonitoring();
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            FloatingVariableButton.IsVisible = false;
-            FloatingUndoVariableButton.IsVisible = false;
+            // Clear selected text when editor loses focus
             _selectedText = string.Empty;
         });
     }
@@ -102,153 +93,106 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             var editor = PromptRawEditor;
-            
+
             if (editor == null || string.IsNullOrEmpty(editor.Text))
             {
                 System.Diagnostics.Debug.WriteLine("[CheckTextSelection] EARLY EXIT: Editor null or empty text");
-                FloatingVariableButton.IsVisible = false;
-                FloatingUndoVariableButton.IsVisible = false;
                 _selectedText = string.Empty;
                 return;
             }
-            
-            // ✅ FIX: Use Editor properties directly instead of ViewModel
+
             int cursorPos = editor.CursorPosition;
             int selectionLen = editor.SelectionLength;
-            
+
             System.Diagnostics.Debug.WriteLine($"[Selection] Editor.Cursor: {cursorPos}, Editor.Length: {selectionLen}");
-            System.Diagnostics.Debug.WriteLine($"[Selection] ViewModel.Cursor: {_viewModel.CursorPosition}, ViewModel.Length: {_viewModel.SelectionLength}");
-            System.Diagnostics.Debug.WriteLine($"[Selection] Text Length: {editor.Text.Length}");
-            
-            // ✅ FIX: Get text directly from Editor
+
             var selectedText = GetSelectedTextFromEditor(editor);
-            
-            System.Diagnostics.Debug.WriteLine($"[Selection] Raw selectedText: '{selectedText}'");
-            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText is null: {selectedText == null}");
-            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText is empty: {selectedText == string.Empty}");
-            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText length: {selectedText?.Length ?? -1}");
-            System.Diagnostics.Debug.WriteLine($"[Selection] IsNullOrWhiteSpace: {string.IsNullOrWhiteSpace(selectedText)}");
-            
+
             if (string.IsNullOrWhiteSpace(selectedText))
             {
                 System.Diagnostics.Debug.WriteLine("[CheckTextSelection] EARLY EXIT: selectedText is null or whitespace");
-                FloatingVariableButton.IsVisible = false;
-                FloatingUndoVariableButton.IsVisible = false;
                 _selectedText = string.Empty;
                 return;
             }
 
             _selectedText = selectedText;
-            
-            System.Diagnostics.Debug.WriteLine($"[Detection] PASSED null check, continuing...");
-            
-            // ✅ ULTRA SIMPLIFIED: Direct check
-            var trimmed = selectedText.Trim();
-            
-            System.Diagnostics.Debug.WriteLine($"[Detection] Trimmed: '{trimmed}'");
-            System.Diagnostics.Debug.WriteLine($"[Detection] Trimmed Length: {trimmed.Length}");
-            
-            if (trimmed.Length > 0)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Detection] First char: '{trimmed[0]}' (ASCII: {(int)trimmed[0]})");
-                System.Diagnostics.Debug.WriteLine($"[Detection] Last char: '{trimmed[trimmed.Length - 1]}' (ASCII: {(int)trimmed[trimmed.Length - 1]})");
-            }
-            
-            bool startsWithBracket = trimmed.Length > 0 && trimmed[0] == '<';
-            bool endsWithBracket = trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '>';
-            bool isVariable = startsWithBracket && endsWithBracket && trimmed.Length > 2;
-            
-            System.Diagnostics.Debug.WriteLine($"[Detection] Starts: {startsWithBracket}, Ends: {endsWithBracket}, IsVariable: {isVariable}");
-            
-            if (isVariable)
-            {
-                System.Diagnostics.Debug.WriteLine(">>> SHOWING RED BUTTON (Remove Variable) <<<");
-                System.Diagnostics.Debug.WriteLine($">>> Setting FloatingUndoVariableButton.IsVisible = true <<<");
-                FloatingVariableButton.IsVisible = false;
-                FloatingUndoVariableButton.IsVisible = true;
-                System.Diagnostics.Debug.WriteLine($">>> FloatingUndoVariableButton.IsVisible is now: {FloatingUndoVariableButton.IsVisible} <<<");
-            }
-            else if (selectionLen > 0)
-            {
-                System.Diagnostics.Debug.WriteLine(">>> SHOWING BLUE BUTTON (Make Variable) <<<");
-                FloatingVariableButton.IsVisible = true;
-                FloatingUndoVariableButton.IsVisible = false;
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine(">>> HIDING BOTH BUTTONS <<<");
-                FloatingVariableButton.IsVisible = false;
-                FloatingUndoVariableButton.IsVisible = false;
-            }
+            _capturedCursorPosition = cursorPos;
+            _capturedSelectionLength = selectionLen;
+
+            // ✅ NUEVA LÓGICA: Detectar si es una variable (directa o contextual)
+            bool isVariable = IsSelectionAVariable(editor.Text, cursorPos, selectionLen, selectedText);
+
+            System.Diagnostics.Debug.WriteLine($"[Detection] Selected: '{selectedText}', IsVariable: {isVariable}");
+            // Inline chips handle actions; no floating buttons
         });
+    }
+
+    /// <summary>
+    /// Detecta si la selección es una variable (directa o envuelta)
+    /// </summary>
+    private bool IsSelectionAVariable(string fullText, int cursorPos, int selectionLen, string selectedText)
+    {
+        if (IsTextAVariable(selectedText)) return true;
+        bool wrapped = IsSelectionWrappedInBrackets(fullText, cursorPos, selectionLen);
+        if (wrapped)
+        {
+            ExpandSelectionToIncludeBrackets(fullText, ref cursorPos, ref selectionLen);
+            return true;
+        }
+        return false;
+    }
+
+    private bool IsSelectionWrappedInBrackets(string fullText, int cursorPos, int selectionLen)
+    {
+        if (cursorPos < 1 || cursorPos + selectionLen >= fullText.Length) return false;
+        char before = fullText[cursorPos - 1];
+        char after = fullText[cursorPos + selectionLen];
+        return before == '<' && after == '>';
+    }
+
+    private void ExpandSelectionToIncludeBrackets(string fullText, ref int cursorPos, ref int selectionLen)
+    {
+        int newStart = cursorPos - 1;
+        int newLen = selectionLen + 2;
+        if (newStart >= 0 && newStart + newLen <= fullText.Length)
+        {
+            _capturedCursorPosition = newStart;
+            _capturedSelectionLength = newLen;
+            _selectedText = fullText.Substring(newStart, newLen);
+        }
+    }
+
+    private bool IsTextAVariable(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var t = text.Trim();
+        if (t.Length < 3) return false;
+        if (t[0] != '<' || t[^1] != '>') return false;
+        var inner = t.Substring(1, t.Length - 2);
+        if (string.IsNullOrWhiteSpace(inner)) return false;
+        if (inner.Contains('<') || inner.Contains('>')) return false;
+        return true;
     }
 
     private string GetSelectedTextFromEditor(Editor editor)
     {
-        if (string.IsNullOrEmpty(editor.Text))
-            return string.Empty;
-
+        if (string.IsNullOrEmpty(editor.Text)) return string.Empty;
         int start = editor.CursorPosition;
         int length = editor.SelectionLength;
-
-        System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] Start: {start}, Length: {length}, Total: {editor.Text.Length}");
-
-        if (length <= 0 || start < 0 || start + length > editor.Text.Length)
-        {
-            System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] INVALID: Returning empty");
-            return string.Empty;
-        }
-
-        var result = editor.Text.Substring(start, length);
-        System.Diagnostics.Debug.WriteLine($"[GetSelectedTextFromEditor] Returning: '{result}'");
-        return result;
+        if (length <= 0 || start < 0 || start + length > editor.Text.Length) return string.Empty;
+        return editor.Text.Substring(start, length);
     }
 
-    private string GetSelectedTextFromViewModel()
-    {
-        if (string.IsNullOrEmpty(_viewModel.PromptText))
-            return string.Empty;
-
-        int start = _viewModel.CursorPosition;
-        int length = _viewModel.SelectionLength;
-
-        if (length <= 0 || start < 0 || start + length > _viewModel.PromptText.Length)
-            return string.Empty;
-
-        return _viewModel.PromptText.Substring(start, length);
-    }
-
-    private bool IsExistingVariable(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return false;
-
-        var trimmed = text.Trim();
-
-        bool hasAngleBrackets = trimmed.StartsWith("<") && trimmed.EndsWith(">");
-        bool hasContent = trimmed.Length > 2;
-        bool noNestedBrackets = trimmed.Length > 2 &&
-                               !trimmed.Substring(1, trimmed.Length - 2).Contains('<') &&
-                               !trimmed.Substring(1, trimmed.Length - 2).Contains('>');
-
-        System.Diagnostics.Debug.WriteLine($"[IsExistingVariable] '{trimmed}': brackets={hasAngleBrackets}, content={hasContent}, noNested={noNestedBrackets}");
-
-        return hasAngleBrackets && hasContent && noNestedBrackets;
-    }
+    private bool IsExistingVariable(string text) => IsTextAVariable(text);
 
     private async void OnCreateVariableFromSelection(object sender, EventArgs e)
     {
         System.Diagnostics.Debug.WriteLine($"[CreateVariable] Called with: '{_selectedText}'");
-
-        if (string.IsNullOrWhiteSpace(_selectedText))
-        {
-            FloatingVariableButton.IsVisible = false;
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(_selectedText)) return;
 
         var editor = PromptRawEditor;
-        int selectionStart = _viewModel.CursorPosition;
-        int selectionLength = _viewModel.SelectionLength;
+        int selectionStart = _capturedCursorPosition;
+        int selectionLength = _capturedSelectionLength;
 
         var variableName = await DisplayPromptAsync(
             "✨ Create Variable",
@@ -258,23 +202,31 @@ public partial class MainPage : ContentPage
             accept: "Create",
             cancel: "Cancel");
 
-        FloatingVariableButton.IsVisible = false;
-
+        _selectedText = string.Empty;
         if (string.IsNullOrWhiteSpace(variableName))
         {
-            System.Diagnostics.Debug.WriteLine("[CreateVariable] Cancelled by user");
-            _selectedText = string.Empty;
-            _viewModel.SelectionLength = 0;
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (editor != null)
+                {
+                    editor.SelectionLength = 0;
+                    _viewModel.SelectionLength = 0;
+                }
+            });
             return;
         }
 
         variableName = Regex.Replace(variableName, @"[^\w]", "_").Trim('_');
-
         if (string.IsNullOrWhiteSpace(variableName))
         {
-            System.Diagnostics.Debug.WriteLine("[CreateVariable] Invalid name after cleaning");
-            _selectedText = string.Empty;
-            _viewModel.SelectionLength = 0;
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (editor != null)
+                {
+                    editor.SelectionLength = 0;
+                    _viewModel.SelectionLength = 0;
+                }
+            });
             return;
         }
 
@@ -283,33 +235,27 @@ public partial class MainPage : ContentPage
             selectionStart + selectionLength <= _viewModel.PromptText.Length)
         {
             var newText = _viewModel.PromptText.Remove(selectionStart, selectionLength)
-                                                .Insert(selectionStart, $"<{variableName}>");
-
+                                               .Insert(selectionStart, $"<{variableName}>");
             _viewModel.PromptText = newText;
-            System.Diagnostics.Debug.WriteLine($"[CreateVariable] Created: {newText}");
 
             await Task.Delay(50);
             _viewModel.CursorPosition = selectionStart + variableName.Length + 2;
             _viewModel.SelectionLength = 0;
+            if (editor != null)
+            {
+                editor.CursorPosition = _viewModel.CursorPosition;
+                editor.SelectionLength = 0;
+            }
         }
-
-        _selectedText = string.Empty;
     }
 
     private async void OnUndoVariableFromSelection(object sender, EventArgs e)
     {
         System.Diagnostics.Debug.WriteLine($"[UndoVariable] Called with: '{_selectedText}'");
+        if (string.IsNullOrWhiteSpace(_selectedText) || !IsExistingVariable(_selectedText)) return;
 
-        if (string.IsNullOrWhiteSpace(_selectedText) || !IsExistingVariable(_selectedText))
-        {
-            FloatingUndoVariableButton.IsVisible = false;
-            return;
-        }
-
-        int selectionStart = _viewModel.CursorPosition;
-        int selectionLength = _viewModel.SelectionLength;
-
-        FloatingUndoVariableButton.IsVisible = false;
+        int selectionStart = _capturedCursorPosition;
+        int selectionLength = _capturedSelectionLength;
 
         bool confirm = await DisplayAlert(
             "🔄 Remove Variable",
@@ -317,32 +263,42 @@ public partial class MainPage : ContentPage
             "Remove",
             "Cancel");
 
+        _selectedText = string.Empty;
         if (!confirm)
         {
-            System.Diagnostics.Debug.WriteLine("[UndoVariable] Cancelled by user");
-            _selectedText = string.Empty;
-            _viewModel.SelectionLength = 0;
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                var editor = PromptRawEditor;
+                if (editor != null)
+                {
+                    editor.SelectionLength = 0;
+                    _viewModel.SelectionLength = 0;
+                }
+            });
             return;
         }
 
-        var plainText = _selectedText.Trim('<', '>');
-
-        if (selectionStart >= 0 && selectionLength > 0 &&
-            !string.IsNullOrEmpty(_viewModel.PromptText) &&
+        if (!string.IsNullOrEmpty(_viewModel.PromptText) &&
+            selectionStart >= 0 && selectionLength > 0 &&
             selectionStart + selectionLength <= _viewModel.PromptText.Length)
         {
+            var selectedVariable = _viewModel.PromptText.Substring(selectionStart, selectionLength);
+            var plainText = selectedVariable.Trim().Trim('<', '>');
             var newText = _viewModel.PromptText.Remove(selectionStart, selectionLength)
-                                                .Insert(selectionStart, plainText);
-
+                                               .Insert(selectionStart, plainText);
             _viewModel.PromptText = newText;
-            System.Diagnostics.Debug.WriteLine($"[UndoVariable] Removed: {newText}");
 
             await Task.Delay(50);
-            _viewModel.CursorPosition = selectionStart + plainText.Length;
+            var newCursor = selectionStart + plainText.Length;
+            _viewModel.CursorPosition = newCursor;
             _viewModel.SelectionLength = 0;
+            var editor = PromptRawEditor;
+            if (editor != null)
+            {
+                editor.CursorPosition = newCursor;
+                editor.SelectionLength = 0;
+            }
         }
-
-        _selectedText = string.Empty;
     }
 
     #endregion

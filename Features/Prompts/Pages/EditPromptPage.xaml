@@ -19,14 +19,6 @@
     </Shell.TitleView>
 
     <ContentPage.ToolbarItems>
-        <!--  Create Variable  -->
-        <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding HasTextSelected}">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe146;" Color="{StaticResource PrimaryRed}" Size="24" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>Create Variable</ToolTipProperties.Text>
-        </ToolbarItem>
-
         <!--  Save  -->
         <ToolbarItem Command="{Binding UpdateChangesCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
@@ -36,6 +28,7 @@
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
+    <!--  ✨ Main content only -->
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
 
@@ -52,7 +45,7 @@
                     Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
                     StrokeThickness="1" 
                     Padding="12,0">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                     <Grid HeightRequest="46">
                         <Entry
                             Text="{Binding PromptTemplate.Title, Mode=TwoWay}"
@@ -78,7 +71,7 @@
                     Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
                     StrokeThickness="1" 
                     Padding="12">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                     <Editor
                         Placeholder="Optional description..."
                         Text="{Binding PromptTemplate.Description, Mode=TwoWay}"
@@ -103,7 +96,7 @@
                     Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
                     StrokeThickness="1" 
                     Padding="4,0">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                     <Picker
                         Title="Select category"
                         ItemsSource="{Binding Categories}"
@@ -115,55 +108,92 @@
                 </Border>
             </VerticalStackLayout>
 
-            <!--  Template  -->
+            <!--  Template header compact  -->
             <VerticalStackLayout Spacing="8">
-                <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="Auto,*">
                     <Label 
                         Text="Template" 
                         FontSize="15" 
                         FontFamily="Nasa21" 
                         FontAttributes="Bold" 
-                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
-                    <HorizontalStackLayout Grid.Column="1" Spacing="4">
-                        <Border Padding="12,6" BackgroundColor="{StaticResource Gray100}" StrokeThickness="0">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding SwitchToEditorCommand}" />
-                            </Border.GestureRecognizers>
-                            <Label Text="✏️ Text" FontSize="12" TextColor="{StaticResource PrimaryBlue}" />
-                        </Border>
-                        <Border Padding="12,6" BackgroundColor="{StaticResource PrimaryBlue}" StrokeThickness="0">
-                            <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding SwitchToChipsCommand}" />
-                            </Border.GestureRecognizers>
-                            <Label Text="🎨 Visual" FontSize="12" TextColor="White" />
-                        </Border>
-                    </HorizontalStackLayout>
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                        VerticalOptions="Center" />
+                    <ScrollView Grid.Column="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never" WidthRequest="320" HorizontalOptions="End">
+                        <HorizontalStackLayout Spacing="6" Padding="0" VerticalOptions="Center">
+                            <!-- Text chip -->
+                            <Border Padding="10,6" BackgroundColor="{StaticResource Gray100}" StrokeThickness="0">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SwitchToEditorCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <Label Text="✏️" FontSize="12" />
+                                    <Label Text="Text" FontSize="12" TextColor="{StaticResource PrimaryBlue}" />
+                                </HorizontalStackLayout>
+                            </Border>
+                            <!-- Visual chip -->
+                            <Border Padding="10,6" BackgroundColor="{StaticResource PrimaryBlue}" StrokeThickness="0">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SwitchToChipsCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <Label Text="🎨" FontSize="12" TextColor="White" />
+                                    <Label Text="Visual" FontSize="12" TextColor="White" />
+                                </HorizontalStackLayout>
+                            </Border>
+                            <!-- Make Variable chip -->
+                            <Border BackgroundColor="{StaticResource Gray100}" Padding="10,6" StrokeThickness="0" IsEnabled="{Binding HasTextSelected}">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCreateVariableFromSelection" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <Label FontFamily="MaterialIconsOutlined-Regular" Text="&#xe146;" FontSize="14" TextColor="{StaticResource PrimaryBlue}" />
+                                    <Label Text="Variable" FontFamily="Nasa21" FontSize="12" TextColor="{StaticResource PrimaryBlueDark}" />
+                                </HorizontalStackLayout>
+                            </Border>
+                            <!-- Remove chip -->
+                            <Border BackgroundColor="{StaticResource Gray100}" Padding="10,6" StrokeThickness="0" IsEnabled="{Binding HasTextSelected}">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnUndoVariableFromSelection" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                    <Label FontFamily="MaterialIconsOutlined-Regular" Text="&#xe14c;" FontSize="14" TextColor="{StaticResource PrimaryRed}" />
+                                    <Label Text="Remove" FontFamily="Nasa21" FontSize="12" TextColor="{StaticResource PrimaryRed}" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </HorizontalStackLayout>
+                    </ScrollView>
                 </Grid>
 
                 <!--  Instructions  -->
                 <Border
-                    BackgroundColor="{AppThemeBinding Light=#EFF6FF, Dark=#1E3A5F}"
-                    Stroke="{AppThemeBinding Light=#BFDBFE, Dark=#3B82F6}"
+                    BackgroundColor="{AppThemeBinding Light=#F1F5F9, Dark=#0F172A}"
+                    Stroke="{AppThemeBinding Light=#CBD5E1, Dark=#334155}"
                     StrokeThickness="1"
                     Padding="12"
                     IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
                     <VerticalStackLayout Spacing="6">
                         <Label 
                             Text="💡 How to create variables:" 
                             FontSize="13" 
                             FontAttributes="Bold" 
-                            TextColor="{AppThemeBinding Light=#1D4ED8, Dark=#93C5FD}" />
+                            TextColor="{AppThemeBinding Light=#0F172A, Dark=#E2E8F0}" />
                         <Label 
-                            Text="• Select text → tap ➕ in toolbar" 
+                            Text="• Select text → floating button appears automatically" 
                             FontSize="12" 
-                            TextColor="{AppThemeBinding Light=#2563EB, Dark=#BFDBFE}" />
+                            TextColor="{AppThemeBinding Light=#1F2937, Dark=#CBD5E1}" />
+                        <Label 
+                            Text="• Blue button for text, Red button for variables" 
+                            FontSize="12" 
+                            TextColor="{AppThemeBinding Light=#1F2937, Dark=#CBD5E1}" />
                         <Label 
                             Text="• Or type directly: &lt;variable_name&gt;" 
                             FontSize="12" 
-                            TextColor="{AppThemeBinding Light=#2563EB, Dark=#BFDBFE}" />
+                            TextColor="{AppThemeBinding Light=#1F2937, Dark=#CBD5E1}" />
                     </VerticalStackLayout>
                 </Border>
 
@@ -174,7 +204,8 @@
                     StrokeThickness="1" 
                     Padding="12"
                     IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}">
-                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                    
                     <Editor
                         x:Name="PromptRawEditor"
                         Placeholder="Your prompt template..."
@@ -185,7 +216,9 @@
                         TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
                         PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                         BackgroundColor="Transparent"
-                        AutoSize="TextChanges" MinimumHeightRequest="150" />
+                        AutoSize="TextChanges" MinimumHeightRequest="150"
+                        Focused="OnEditorFocused"
+                        Unfocused="OnEditorUnfocused" />
                 </Border>
 
                 <!--  Visual Mode  -->
@@ -208,8 +241,8 @@
                     TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}"
                     HorizontalOptions="Center"
                     IsVisible="{Binding IsVisualModeActive}" />
-            </VerticalStackLayout>
 
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

@@ -1,271 +1,367 @@
-# ?? Floating Button Testing Guide
+# ?? Guía de Pruebas: Detección de Variables Mejorada
 
-## ? **Build Status: SUCCESSFUL**
-- Branch: `dev`
-- Commit: `a0bb8f4`
-- All XAML controls regenerated correctly
-- Both buttons (`FloatingVariableButton` and `FloatingUndoVariableButton`) are now available
+## ?? Problema Resuelto
 
----
+**Problema original:** Cuando el usuario seleccionaba `<variable>` (texto envuelto en angle brackets), el botón rojo "Remove Variable" NO aparecía. En su lugar, aparecía el botón azul "Make Variable".
 
-## ?? **CÓMO PROBAR EL BOTÓN ROJO (Remove Variable)**
+**Causa raíz:** La lógica de detección estaba usando `Trim()` pero no estaba verificando correctamente si el texto seleccionado completo era una variable.
 
-### **Requisitos Previos**
-1. ? App ejecutándose en Debug mode (F5)
-2. ? Visual Studio Output window abierto
-3. ? Output window en modo "Debug"
-4. ? Estás en la página "Create Prompt"
+## ? Nueva Lógica Implementada
 
----
+### Método `IsTextAVariable(string text)`
 
-### **?? TEST 1: Crear y Luego Deshacer Variable**
+Este método detecta si un texto es una variable válida con la siguiente lógica:
 
-#### **Paso 1: Crear una Variable**
-```
-1. En MainPage, campo "Prompt Template"
-2. Escribe: "Create a blog post"
-3. Selecciona: "blog"
-4. ? Botón AZUL debe aparecer: "Make Variable"
-5. Tap en botón azul
-6. Ingresa nombre: "format"
-7. ? Texto cambia a: "Create a <format> post"
-```
-
-#### **Paso 2: Deshacer la Variable**
-```
-8. Selecciona COMPLETAMENTE: "<format>" (incluye < y >)
-   ?? CRÍTICO: Debes seleccionar desde < hasta >
-   
-9. Mantén la selección por 1 segundo
-10. ? Botón ROJO debe aparecer: "Remove Variable"
-11. Tap en botón rojo
-12. Confirma "Remove"
-13. ? Texto cambia a: "Create a format post"
-```
-
-**Expected Output Logs:**
-```
-[Editor] Focused - Starting selection monitoring
-[Timer] Selection monitoring started
-[VM PropertyChanged] Cursor: 10, Length: 8
-[Selection] Cursor: 10, Length: 8, Text Length: 23
-[Selection] Text: '<format>' (len: 8)
-[IsExistingVariable] '<format>': brackets=True, content=True, noNested=True
-[Detection] IsVariable: True
->>> SHOWING RED BUTTON (Remove Variable) <<<
-```
-
----
-
-### **?? TEST 2: Variable Existente Desde el Principio**
-
-#### **Escenario**
-```
-1. Escribe directamente: "Write <article> about <topic>"
-2. Selecciona: "<topic>" (incluye < y >)
-3. ? Botón ROJO debe aparecer
-4. Tap ? Confirma "Remove"
-5. ? Resultado: "Write <article> about topic"
-```
-
-**Expected Output:**
-```
-[Selection] Text: '<topic>' (len: 7)
-[IsExistingVariable] '<topic>': brackets=True, content=True, noNested=True
-[Detection] IsVariable: True
->>> SHOWING RED BUTTON (Remove Variable) <<<
-```
-
----
-
-### **?? TEST 3: Alternar Entre Botones**
-
-#### **Escenario**
-```
-1. Escribe: "Create <format> post"
-2. Selecciona: "post" ? ? Botón AZUL
-3. Deselecciona
-4. Selecciona: "<format>" ? ? Botón ROJO
-5. Deselecciona
-6. Selecciona: "Create" ? ? Botón AZUL
-```
-
----
-
-## ?? **TROUBLESHOOTING**
-
-### **Problema 1: Botón ROJO No Aparece**
-
-#### **Causa Posible: Selección Incompleta**
-```
-? Selección: "<forma" (sin >)
-? Solución: Incluye el > en la selección
-```
-
-#### **Causa Posible: Editor Sin Foco**
-```
-? Timer no corriendo
-? Solución: Tap en el Editor antes de seleccionar
-```
-
-#### **Causa Posible: Modo Visual Activo**
-```
-? Estás en modo "?? Visual"
-? Solución: Cambia a modo "?? Text"
-```
-
----
-
-### **Problema 2: Ningún Log en Output Window**
-
-#### **Verificaciones**
-```
-1. ? Output window está abierto (View ? Output)
-2. ? Dropdown dice "Debug" (no "Build" ni otro)
-3. ? App está en Debug mode (F5, no Ctrl+F5)
-4. ? Has dado tap en el Editor (para darle foco)
-```
-
----
-
-## ?? **VALIDACIONES IMPLEMENTADAS**
-
-### **Para Botón AZUL (Crear Variable)** ??
 ```csharp
-? Texto no empieza con <
-? Texto no termina con >
-? Selección en límites de palabra
-? Longitud > 0
+1. Trim del texto (eliminar espacios al inicio/final)
+2. Verificar longitud mínima: 3 caracteres (<x>)
+3. Verificar que empiece con '<'
+4. Verificar que termine con '>'
+5. Extraer contenido interno (sin los brackets)
+6. Verificar que el contenido NO esté vacío
+7. Verificar que NO haya brackets anidados (< o > dentro)
 ```
 
-### **Para Botón ROJO (Deshacer Variable)** ??
+### Métodos Helper
+
 ```csharp
-? Texto empieza con <
-? Texto termina con >
-? Longitud > 2 (al menos <x>)
-? Sin brackets anidados
+ShowCreateButton()  // Muestra botón azul "Make Variable"
+ShowUndoButton()    // Muestra botón rojo "Remove Variable"
+HideAllButtons()    // Oculta ambos botones
 ```
 
----
+## ?? Casos de Prueba
 
-## ?? **EJEMPLOS DE SELECCIÓN**
-
-| Texto Original | Selección | Botón Esperado | Razón |
-|----------------|-----------|----------------|-------|
-| `Create post` | `post` | ?? AZUL | Texto normal |
-| `Create <format>` | `<format>` | ?? ROJO | Variable existente |
-| `Write <topic>` | `topic` | ?? AZUL | Sin brackets |
-| `Write <topic>` | `<topic` | ? Ninguno | Incompleto |
-| `Write <topic>` | `topic>` | ? Ninguno | Incompleto |
-| `Text <var>` | `<var>` | ?? ROJO | Variable válida |
-
----
-
-## ?? **CÓMO SELECCIONAR CORRECTAMENTE EN MÓVIL**
-
-### **En Android/iOS**
+### ? Caso 1: Seleccionar Variable Completa
+**Texto en el editor:**
 ```
-1. Mantén presionado el dedo en el <
-2. Arrastra hasta después del >
-3. Suelta cuando todo esté resaltado
-4. Los "handles" de selección deben estar:
-   - Handle izquierdo: antes de <
-   - Handle derecho: después de >
+Write about <topic> for <audience>
 ```
 
-### **En Windows**
-```
-1. Click y mantén en el <
-2. Arrastra hasta después del >
-3. Suelta
-4. Todo debe estar resaltado: [<topic>]
-```
+**Acción:** Seleccionar exactamente `<topic>` (incluidos los brackets)
 
----
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+- ? Botón azul debe estar oculto
 
-## ?? **DEBUG CHECKLIST**
-
-Si el botón ROJO sigue sin aparecer, verifica esto en el Output window:
-
-### **1. Timer Iniciado** ?
+**Logging esperado:**
 ```
-Busca: "[Timer] Selection monitoring started"
-Si NO lo ves ? El Editor no tiene foco
-```
-
-### **2. Selección Detectada** ?
-```
-Busca: "[Selection] Text: '<topic>' (len: 7)"
-Si len: 0 ? La selección no se captura
-Si texto diferente ? Selección incorrecta
-```
-
-### **3. Variable Detectada** ?
-```
-Busca: "[IsExistingVariable] '<topic>': brackets=True, content=True, noNested=True"
-Si alguno es False ? Validación falló
-```
-
-### **4. Decisión de Botón** ?
-```
-Busca: ">>> SHOWING RED BUTTON (Remove Variable) <<<"
-Si ves otro mensaje ? El botón elegido fue diferente
-```
-
----
-
-## ?? **CONFIRMACIÓN VISUAL**
-
-Cuando funcione correctamente, deberías ver:
-
-### **UI**
-```
-????????????????????????????????????????
-? Create a <format> post               ?  ? Editor
-?                                      ?
-?  ???????????????????????            ?
-?  ? ? Remove Variable  ?  ? Botón ROJO (arriba-izquierda)
-?  ???????????????????????            ?
-?                                      ?
-????????????????????????????????????????
-```
-
-### **Output Window**
-```
-[Selection] Text: '<format>' (len: 8)
-[IsExistingVariable] '<format>': brackets=True, content=True, noNested=True
-[Detection] IsVariable: True
+[IsTextAVariable] Original: '<topic>' (len=7)
+[IsTextAVariable] Trimmed: '<topic>' (len=7)
+[IsTextAVariable] Starts with '<': True
+[IsTextAVariable] Ends with '>': True
+[IsTextAVariable] Inner content: 'topic'
+[IsTextAVariable] Has nested brackets: False
+[IsTextAVariable] TRUE: Valid variable
 >>> SHOWING RED BUTTON (Remove Variable) <<<
 ```
 
 ---
 
-## ?? **SI SIGUE SIN FUNCIONAR**
-
-Por favor comparte:
-
-1. ? **Texto completo que escribiste**
-2. ? **Exactamente qué seleccionaste** (incluye < y >?)
-3. ? **TODOS los logs del Output window** (copia todo)
-4. ? **Plataforma de testing** (Android/iOS/Windows)
-5. ? **Screenshot de la selección** (si es posible)
-
-Con esa información puedo diagnosticar el problema exacto.
-
----
-
-## ? **ESTADO ACTUAL**
-
+### ? Caso 2: Seleccionar Variable con Espacios
+**Texto en el editor:**
 ```
-Branch: dev
-Commit: a0bb8f4
-Build: ? SUCCESS
-XAML: ? Regenerated
-Controls: ? FloatingVariableButton + FloatingUndoVariableButton
-Logging: ? Comprehensive
-Status: ? READY TO TEST
+  <variable_name>  
+```
+
+**Acción:** Seleccionar `  <variable_name>  ` (con espacios)
+
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+- Se hace trim automáticamente
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: '  <variable_name>  ' (len=19)
+[IsTextAVariable] Trimmed: '<variable_name>' (len=15)
+[IsTextAVariable] TRUE: Valid variable
 ```
 
 ---
 
-**¡El código está listo! Por favor prueba siguiendo estos pasos y comparte el resultado.** ??
+### ? Caso 3: Seleccionar Texto Normal
+**Texto en el editor:**
+```
+This is a test phrase
+```
+
+**Acción:** Seleccionar `test`
+
+**Resultado Esperado:**
+- ? Botón rojo oculto
+- ? Botón AZUL "Make Variable" debe aparecer
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: 'test' (len=4)
+[IsTextAVariable] Trimmed: 'test' (len=4)
+[IsTextAVariable] Starts with '<': False
+[IsTextAVariable] Ends with '>': False
+[IsTextAVariable] FALSE: No angle brackets
+>>> SHOWING BLUE BUTTON (Make Variable) <<<
+```
+
+---
+
+### ? Caso 4: Seleccionar Solo Parte de Variable
+**Texto en el editor:**
+```
+Write about <topic> today
+```
+
+**Acción:** Seleccionar solo `topic` (SIN los brackets)
+
+**Resultado Esperado:**
+- ? Botón rojo oculto
+- ? Botón AZUL "Make Variable" debe aparecer
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: 'topic' (len=5)
+[IsTextAVariable] FALSE: No angle brackets
+>>> SHOWING BLUE BUTTON (Make Variable) <<<
+```
+
+---
+
+### ? Caso 5: Variable con Guiones Bajos
+**Texto en el editor:**
+```
+Create a <content_type> about <main_subject>
+```
+
+**Acción:** Seleccionar `<content_type>`
+
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: '<content_type>' (len=14)
+[IsTextAVariable] Inner content: 'content_type'
+[IsTextAVariable] TRUE: Valid variable
+>>> SHOWING RED BUTTON (Remove Variable) <<<
+```
+
+---
+
+### ? Caso 6: Brackets Anidados (Inválido)
+**Texto en el editor:**
+```
+<<nested>>
+```
+
+**Acción:** Seleccionar `<<nested>>`
+
+**Resultado Esperado:**
+- ? Botón rojo oculto
+- ? Botón AZUL "Make Variable" debe aparecer (tratar como texto normal)
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: '<<nested>>' (len=10)
+[IsTextAVariable] Trimmed: '<<nested>>' (len=10)
+[IsTextAVariable] Inner content: '<nested>'
+[IsTextAVariable] Has nested brackets: True
+[IsTextAVariable] FALSE: Nested brackets found
+>>> SHOWING BLUE BUTTON (Make Variable) <<<
+```
+
+---
+
+### ? Caso 7: Solo Brackets Vacíos
+**Texto en el editor:**
+```
+<>
+```
+
+**Acción:** Seleccionar `<>`
+
+**Resultado Esperado:**
+- ? Botón rojo oculto
+- ? Botón AZUL "Make Variable" debe aparecer
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: '<>' (len=2)
+[IsTextAVariable] Trimmed: '<>' (len=2)
+[IsTextAVariable] FALSE: Too short
+>>> SHOWING BLUE BUTTON (Make Variable) <<<
+```
+
+---
+
+### ? Caso 8: Variable de Un Carácter
+**Texto en el editor:**
+```
+<x>
+```
+
+**Acción:** Seleccionar `<x>`
+
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+
+**Logging esperado:**
+```
+[IsTextAVariable] Original: '<x>' (len=3)
+[IsTextAVariable] Inner content: 'x'
+[IsTextAVariable] TRUE: Valid variable
+>>> SHOWING RED BUTTON (Remove Variable) <<<
+```
+
+---
+
+### ? Caso 9: Multiple Variables - Primera
+**Texto en el editor:**
+```
+Write <format> about <topic> for <audience>
+```
+
+**Acción:** Seleccionar `<format>`
+
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+
+---
+
+### ? Caso 10: Multiple Variables - Última
+**Texto en el editor:**
+```
+Write <format> about <topic> for <audience>
+```
+
+**Acción:** Seleccionar `<audience>`
+
+**Resultado Esperado:**
+- ? Botón ROJO "Remove Variable" debe aparecer
+
+---
+
+## ?? Flujo Completo de Interacción
+
+### Escenario 1: Crear Variable desde Cero
+
+1. **Escribir texto:** `marketing strategy`
+2. **Seleccionar:** `marketing strategy`
+3. **Verificar:** Botón AZUL aparece
+4. **Click:** Botón azul
+5. **Ingresar nombre:** `topic`
+6. **Resultado:** Texto se convierte en `<topic>`
+
+### Escenario 2: Remover Variable Existente
+
+1. **Texto inicial:** `Write about <subject> today`
+2. **Seleccionar:** `<subject>` (completo con brackets)
+3. **Verificar:** Botón ROJO aparece
+4. **Click:** Botón rojo
+5. **Confirmar:** "Remove"
+6. **Resultado:** Texto se convierte en `Write about subject today`
+
+### Escenario 3: Modificar Variable Existente
+
+1. **Texto inicial:** `Create <old_name>`
+2. **Seleccionar:** `<old_name>`
+3. **Botón ROJO aparece**
+4. **Opción A - Remover:** Click botón rojo ? `Create old_name`
+5. **Opción B - Editar en Visual Mode:** Cambiar a modo Visual ? Click en chip ? Editar nombre
+
+---
+
+## ?? Tabla de Verdad de Detección
+
+| Texto Seleccionado | Empieza con `<` | Termina con `>` | Longitud ? 3 | Sin anidados | Resultado |
+|-------------------|-----------------|----------------|-------------|-------------|-----------|
+| `<var>`           | ?              | ?             | ?          | ?          | ?? UNDO   |
+| `var`             | ?              | ?             | ?          | ?          | ?? CREATE |
+| `<va`             | ?              | ?             | ?          | ?          | ?? CREATE |
+| `var>`            | ?              | ?             | ?          | ?          | ?? CREATE |
+| `<>`              | ?              | ?             | ?          | ?          | ?? CREATE |
+| `<<x>>`           | ?              | ?             | ?          | ?          | ?? CREATE |
+| `  <var>  `       | ?              | ?             | ?          | ?          | ?? UNDO   |
+| `<x>`             | ?              | ?             | ?          | ?          | ?? UNDO   |
+
+---
+
+## ?? Debugging
+
+### Habilitar Logging
+
+El código ya incluye logging extensivo. Para ver los logs:
+
+**Visual Studio:**
+1. Abrir ventana "Output"
+2. Seleccionar "Debug" en el dropdown
+3. Ejecutar la app en modo Debug
+
+**Logs clave a buscar:**
+```
+[Selection] Editor.Cursor: X, Editor.Length: Y
+[IsTextAVariable] Original: 'texto' (len=N)
+[IsTextAVariable] TRUE/FALSE: [razón]
+>>> SHOWING RED/BLUE BUTTON <<<
+```
+
+### Si el botón NO aparece:
+
+1. Verificar que el Editor esté enfocado
+2. Verificar los logs de `[CheckTextSelection]`
+3. Verificar que `SelectionLength > 0`
+4. Verificar el output de `IsTextAVariable`
+
+### Si aparece el botón incorrecto:
+
+1. Revisar el texto exacto seleccionado en logs
+2. Verificar caracteres invisibles (espacios, tabs)
+3. Usar logging de `[IsTextAVariable]` para ver cada paso
+
+---
+
+## ? Checklist de Testing
+
+- [ ] Seleccionar `<variable>` completo ? Botón rojo
+- [ ] Seleccionar `variable` sin brackets ? Botón azul
+- [ ] Seleccionar parte de `<variable>` (solo texto) ? Botón azul
+- [ ] Seleccionar texto con espacios al inicio/final ? Funcionamiento correcto
+- [ ] Seleccionar variable de un carácter `<x>` ? Botón rojo
+- [ ] Seleccionar brackets vacíos `<>` ? Botón azul
+- [ ] Seleccionar brackets anidados `<<x>>` ? Botón azul
+- [ ] Crear variable desde texto ? Funciona correctamente
+- [ ] Remover variable existente ? Funciona correctamente
+- [ ] Timer de detección funciona cada 300ms
+- [ ] Botones se ocultan al desenfocar el Editor
+- [ ] Logging muestra información útil para debugging
+
+---
+
+## ?? Notas de Implementación
+
+### Cambios Principales
+
+1. **Método `IsTextAVariable()`:**
+   - Reemplaza la lógica inline de detección
+   - Logging detallado paso a paso
+   - Validaciones claras y ordenadas
+
+2. **Métodos Helper de UI:**
+   - `ShowCreateButton()` - Simplifica mostrar botón azul
+   - `ShowUndoButton()` - Simplifica mostrar botón rojo
+   - `HideAllButtons()` - Centraliza el ocultamiento
+
+3. **Eliminación de código duplicado:**
+   - `IsExistingVariable()` ahora llama a `IsTextAVariable()`
+   - Lógica centralizada en un solo lugar
+
+### Beneficios
+
+? **Claridad:** Fácil de entender qué hace cada paso  
+? **Debugging:** Logging exhaustivo para troubleshooting  
+? **Mantenibilidad:** Un solo lugar para modificar la lógica  
+? **Testabilidad:** Casos de prueba bien definidos  
+? **Robustez:** Manejo de edge cases
+
+---
+
+**Última actualización:** 2024  
+**Archivo modificado:** `Pages\MainPage.xaml.cs`  
+**Estado:** ? Listo para testing
