@@ -87,6 +87,15 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             var editor = PromptRawEditor;
+            
+            if (editor == null || string.IsNullOrEmpty(editor.Text))
+            {
+                FloatingVariableButton.IsVisible = false;
+                FloatingUndoVariableButton.IsVisible = false;
+                _selectedText = string.Empty;
+                return;
+            }
+            
             var selectedText = GetSelectedText(editor);
             
             // Check if selection is empty
@@ -98,23 +107,30 @@ public partial class MainPage : ContentPage
                 return;
             }
 
-            _selectedText = selectedText.Trim();
+            _selectedText = selectedText;
+            
+            // ✅ DEBUG: Log to see what we're detecting
+            System.Diagnostics.Debug.WriteLine($"Selected text: '{selectedText}'");
+            System.Diagnostics.Debug.WriteLine($"Is existing variable: {IsExistingVariable(selectedText)}");
             
             // ✅ NEW: Check if selected text is already a variable
             if (IsExistingVariable(selectedText))
             {
+                System.Diagnostics.Debug.WriteLine("Showing UNDO button (red)");
                 // Show UNDO button for existing variables
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = true;
             }
             else if (IsValidWordSelection(editor, selectedText))
             {
+                System.Diagnostics.Debug.WriteLine("Showing CREATE button (blue)");
                 // Show CREATE button for valid text selections
                 FloatingVariableButton.IsVisible = true;
                 FloatingUndoVariableButton.IsVisible = false;
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine("Invalid selection - hiding both buttons");
                 // Invalid selection - hide both buttons
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = false;
@@ -138,8 +154,20 @@ public partial class MainPage : ContentPage
 
     private bool IsExistingVariable(string text)
     {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+            
         var trimmed = text.Trim();
-        return trimmed.StartsWith("<") && trimmed.EndsWith(">") && trimmed.Length > 2;
+        
+        // ✅ FIX: More robust variable detection
+        bool hasAngleBrackets = trimmed.StartsWith("<") && trimmed.EndsWith(">");
+        bool hasContent = trimmed.Length > 2; // At least <x>
+        bool noNestedBrackets = !trimmed.Substring(1, trimmed.Length - 2).Contains('<') && 
+                               !trimmed.Substring(1, trimmed.Length - 2).Contains('>');
+        
+        System.Diagnostics.Debug.WriteLine($"IsExistingVariable check: text='{trimmed}', hasAngleBrackets={hasAngleBrackets}, hasContent={hasContent}, noNested={noNestedBrackets}");
+        
+        return hasAngleBrackets && hasContent && noNestedBrackets;
     }
 
     private bool IsValidWordSelection(Editor editor, string selectedText)
