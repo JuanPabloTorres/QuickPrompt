@@ -10,6 +10,8 @@ public partial class MainPage : ContentPage
 {
     private readonly MainPageViewModel _viewModel;
     private readonly IThemeService _themeService;
+    private string _selectedText = string.Empty;
+    private System.Timers.Timer? _selectionCheckTimer;
 
     public MainPage(MainPageViewModel viewModel, IThemeService themeService)
     {
@@ -42,7 +44,147 @@ public partial class MainPage : ContentPage
     {
         base.OnDisappearing();
         if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        StopSelectionMonitoring();
     }
+
+    #region Floating Variable Button
+
+    private void OnEditorFocused(object sender, FocusEventArgs e)
+    {
+        StartSelectionMonitoring();
+    }
+
+    private void OnEditorUnfocused(object sender, FocusEventArgs e)
+    {
+        StopSelectionMonitoring();
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            FloatingVariableButton.IsVisible = false;
+        });
+    }
+
+    private void StartSelectionMonitoring()
+    {
+        _selectionCheckTimer = new System.Timers.Timer(300); // Check every 300ms
+        _selectionCheckTimer.Elapsed += (s, e) => CheckTextSelection();
+        _selectionCheckTimer.Start();
+    }
+
+    private void StopSelectionMonitoring()
+    {
+        if (_selectionCheckTimer != null)
+        {
+            _selectionCheckTimer.Stop();
+            _selectionCheckTimer.Dispose();
+            _selectionCheckTimer = null;
+        }
+    }
+
+    private void CheckTextSelection()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var editor = PromptRawEditor;
+            var selectedText = GetSelectedText(editor);
+            
+            // Validate selection: must have text and be complete words
+            if (string.IsNullOrWhiteSpace(selectedText) || !IsValidWordSelection(editor, selectedText))
+            {
+                FloatingVariableButton.IsVisible = false;
+                _selectedText = string.Empty;
+                return;
+            }
+
+            _selectedText = selectedText.Trim();
+            FloatingVariableButton.IsVisible = true;
+        });
+    }
+
+    private string GetSelectedText(Editor editor)
+    {
+        if (string.IsNullOrEmpty(editor.Text))
+            return string.Empty;
+
+        int start = editor.CursorPosition;
+        int length = editor.SelectionLength;
+
+        if (length <= 0 || start < 0 || start + length > editor.Text.Length)
+            return string.Empty;
+
+        return editor.Text.Substring(start, length);
+    }
+
+    private bool IsValidWordSelection(Editor editor, string selectedText)
+    {
+        if (string.IsNullOrWhiteSpace(selectedText))
+            return false;
+
+        int start = editor.CursorPosition;
+        int length = editor.SelectionLength;
+
+        // Must have actual selection
+        if (length <= 0)
+            return false;
+
+        // Check if selection starts and ends at word boundaries
+        bool startsAtWordBoundary = start == 0 || 
+                                    char.IsWhiteSpace(editor.Text[start - 1]) || 
+                                    char.IsPunctuation(editor.Text[start - 1]);
+
+        bool endsAtWordBoundary = (start + length >= editor.Text.Length) || 
+                                  char.IsWhiteSpace(editor.Text[start + length]) || 
+                                  char.IsPunctuation(editor.Text[start + length]);
+
+        // Selection should not be already a variable (wrapped in < >)
+        bool isNotAlreadyVariable = !selectedText.Trim().StartsWith("<") || !selectedText.Trim().EndsWith(">");
+
+        return startsAtWordBoundary && endsAtWordBoundary && isNotAlreadyVariable;
+    }
+
+    private async void OnCreateVariableFromSelection(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_selectedText))
+            return;
+
+        // Hide the button
+        FloatingVariableButton.IsVisible = false;
+
+        // Get variable name from user
+        var variableName = await DisplayPromptAsync(
+            "✨ Create Variable",
+            "Enter variable name:",
+            initialValue: _selectedText.Replace(" ", "_"),
+            placeholder: "variable_name",
+            accept: "Create",
+            cancel: "Cancel");
+
+        if (string.IsNullOrWhiteSpace(variableName))
+            return;
+
+        // Clean variable name (remove spaces, special chars)
+        variableName = Regex.Replace(variableName, @"[^\w]", "_");
+
+        // Replace selected text with variable
+        var editor = PromptRawEditor;
+        int start = editor.CursorPosition;
+        int length = editor.SelectionLength;
+
+        if (start >= 0 && length > 0 && !string.IsNullOrEmpty(editor.Text) && start + length <= editor.Text.Length)
+        {
+            var newText = editor.Text.Remove(start, length)
+                                     .Insert(start, $"<{variableName}>");
+            
+            _viewModel.PromptText = newText;
+            
+            // Position cursor after the new variable
+            editor.CursorPosition = start + variableName.Length + 2;
+            editor.SelectionLength = 0;
+        }
+
+        _selectedText = string.Empty;
+    }
+
+    #endregion
 
     #region Chips Rendering
 
@@ -70,11 +212,17 @@ public partial class MainPage : ContentPage
 
             var parts = ParsePrompt(_viewModel.PromptText);
 
+            // Get current theme colors
+            var isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
+            var chipTextColor = _themeService.GetColor("PrimaryBlueDark");
+            var chipBackgroundColor = _themeService.GetColor(isDark ? "SurfaceElevatedDark" : "SurfaceElevatedLight");
+            var chipBorderColor = _themeService.GetColor("PrimaryBlueLight");
+
             // Always render all parts (text and variables)
             foreach (var part in parts)
             {
                 PromptChipContainer.Children.Add(part.IsVariable
-                    ? CreateChip(part, parts)
+                    ? CreateChip(part, parts, chipTextColor, chipBackgroundColor, chipBorderColor)
                     : CreateTextSpan(part.Text));
             }
         });
@@ -99,23 +247,23 @@ public partial class MainPage : ContentPage
         return parts;
     }
 
-    private Border CreateChip(PromptPart part, List<PromptPart> allParts)
+    private Border CreateChip(PromptPart part, List<PromptPart> allParts, Color textColor, Color bgColor, Color borderColor)
     {
         var lbl = new Label
         {
             Text = part.Text,
             FontSize = 14,
             FontFamily = "Nasa21",
-            TextColor = Color.FromArgb("#1D4ED8"), // Blue for variables
+            TextColor = textColor,
             VerticalTextAlignment = TextAlignment.Center,
             FontAttributes = FontAttributes.Bold
         };
 
         var chip = new Border
         {
-            BackgroundColor = Color.FromArgb("#DBEAFE"), // Light blue background
+            BackgroundColor = bgColor,
             StrokeShape = new RoundRectangle { CornerRadius = 16 },
-            Stroke = Color.FromArgb("#93C5FD"), // Blue border
+            Stroke = borderColor,
             StrokeThickness = 1,
             Padding = new Thickness(14, 8),
             Margin = new Thickness(4),
@@ -147,15 +295,21 @@ public partial class MainPage : ContentPage
         return chip;
     }
 
-    private Label CreateTextSpan(string text) => new()
+    private Label CreateTextSpan(string text)
     {
-        Text = text,
-        FontSize = 14,
-        FontFamily = "Nasa21",
-        TextColor = Color.FromArgb("#111827"), // Dark text
-        VerticalTextAlignment = TextAlignment.Center,
-        Margin = new Thickness(2, 4)
-    };
+        var isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
+        var textColor = _themeService.GetColor(isDark ? "TextPrimaryDark" : "TextPrimaryLight");
+        
+        return new Label
+        {
+            Text = text,
+            FontSize = 14,
+            FontFamily = "Nasa21",
+            TextColor = textColor,
+            VerticalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(2, 4)
+        };
+    }
 
     #endregion
 }
