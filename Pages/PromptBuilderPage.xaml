@@ -6,7 +6,7 @@
     xmlns:models="clr-namespace:QuickPrompt.Models"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     x:Name="PageRef"
-    BackgroundColor="{StaticResource SurfaceBackground}"
+    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
     Shell.PresentationMode="Animated">
 
     <Shell.BackButtonBehavior>
@@ -37,13 +37,13 @@
                 FontSize="24" 
                 FontFamily="Nasa21" 
                 FontAttributes="Bold"
-                TextColor="#1F2937"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                 HorizontalTextAlignment="Center" />
             <Label 
                 Text="Follow the steps to create a high-quality prompt"
                 FontSize="14"
                 FontFamily="Nasa21"
-                TextColor="#6B7280"
+                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
 
@@ -59,13 +59,17 @@
                     <Border 
                         Margin="8"
                         Padding="20"
-                        BackgroundColor="White"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                         StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="16" />
                         </Border.StrokeShape>
                         <Border.Shadow>
-                            <Shadow Brush="Black" Opacity="0.1" Radius="10" Offset="0,4" />
+                            <Shadow 
+                                Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                                Opacity="0.1" 
+                                Radius="10" 
+                                Offset="0,4" />
                         </Border.Shadow>
 
                         <ScrollView>
@@ -76,29 +80,44 @@
                                     FontSize="20"
                                     FontFamily="Nasa21"
                                     FontAttributes="Bold"
-                                    TextColor="#1F2937"
+                                    TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                     HorizontalTextAlignment="Center" />
 
                                 <!-- Preview Step -->
                                 <VerticalStackLayout IsVisible="{Binding IsPreviewStep}" Spacing="12">
-                                    <Label Text="Review your prompt:" FontSize="14" TextColor="#6B7280" />
-                                    <Border Padding="16" BackgroundColor="#F9FAFB" StrokeThickness="1" Stroke="#E5E7EB">
+                                    <Label 
+                                        Text="Review your prompt:" 
+                                        FontSize="14" 
+                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                                    <Border 
+                                        Padding="16" 
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}" 
+                                        StrokeThickness="1" 
+                                        Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                                        <Label Text="{Binding PreviewContent}" FontSize="14" TextColor="#1F2937" LineBreakMode="WordWrap" />
+                                        <Label 
+                                            Text="{Binding PreviewContent}" 
+                                            FontSize="14" 
+                                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
+                                            LineBreakMode="WordWrap" />
                                     </Border>
                                 </VerticalStackLayout>
 
                                 <!-- Text Step -->
                                 <VerticalStackLayout IsVisible="{Binding IsTextStep}" Spacing="8">
-                                    <Border Padding="12" BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1">
+                                    <Border 
+                                        Padding="12" 
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}" 
+                                        Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
+                                        StrokeThickness="1">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                                         <Editor
                                             Placeholder="{Binding Placeholder}"
                                             Text="{Binding InputText, Mode=TwoWay}"
                                             FontSize="15"
                                             FontFamily="Nasa21"
-                                            TextColor="#1F2937"
-                                            PlaceholderColor="#9CA3AF"
+                                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                            PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                                             BackgroundColor="Transparent"
                                             AutoSize="TextChanges"
                                             MinimumHeightRequest="120" />
@@ -107,15 +126,25 @@
 
                                 <!-- Format Step -->
                                 <VerticalStackLayout IsVisible="{Binding IsFormatStep}" Spacing="8">
-                                    <Label Text="Select format:" FontSize="14" FontFamily="Nasa21" TextColor="#1F2937" FontAttributes="Bold" />
-                                    <Border Padding="4" BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1">
+                                    <Label 
+                                        Text="Select format:" 
+                                        FontSize="14" 
+                                        FontFamily="Nasa21" 
+                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" 
+                                        FontAttributes="Bold" />
+                                    <Border 
+                                        Padding="4" 
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}" 
+                                        Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
+                                        StrokeThickness="1">
                                         <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
                                         <Picker
                                             Title="{Binding Placeholder}"
                                             ItemsSource="{Binding AvailableFormats}"
                                             SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
                                             FontSize="15"
-                                            TextColor="#1F2937" />
+                                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                            TitleColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                                     </Border>
                                 </VerticalStackLayout>
                             </VerticalStackLayout>
@@ -131,7 +160,7 @@
             Grid.Row="2"
             Margin="0,8"
             HorizontalOptions="Center"
-            IndicatorColor="#D1D5DB"
+            IndicatorColor="{AppThemeBinding Light=#D1D5DB, Dark=#4B5563}"
             SelectedIndicatorColor="{StaticResource PrimaryBlue}"
             IndicatorSize="8" />
 
@@ -142,8 +171,8 @@
                 Grid.Column="0"
                 Clicked="OnBackClicked"
                 Text="← Back"
-                BackgroundColor="#E5E7EB"
-                TextColor="#374151"
+                BackgroundColor="{AppThemeBinding Light=#E5E7EB, Dark=#374151}"
+                TextColor="{AppThemeBinding Light=#374151, Dark=#E5E7EB}"
                 FontFamily="Nasa21"
                 CornerRadius="12"
                 HeightRequest="48" />

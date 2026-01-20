@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:view="clr-namespace:QuickPrompt.Views"
-    BackgroundColor="{StaticResource SurfaceBackground}"
+    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
     Routing.Route="GuidePage">
 
     <Shell.BackButtonBehavior>
@@ -28,13 +28,13 @@
                 FontSize="24" 
                 FontFamily="Nasa21" 
                 FontAttributes="Bold"
-                TextColor="#1F2937"
+                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                 HorizontalTextAlignment="Center" />
             <Label 
                 Text="Learn. Create. Reuse. Repeat."
                 FontSize="14"
                 FontFamily="Nasa21"
-                TextColor="#6B7280"
+                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
 
@@ -50,13 +50,17 @@
                     <Border 
                         Margin="8"
                         Padding="24"
-                        BackgroundColor="White"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                         StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="16" />
                         </Border.StrokeShape>
                         <Border.Shadow>
-                            <Shadow Brush="Black" Opacity="0.1" Radius="10" Offset="0,4" />
+                            <Shadow 
+                                Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                                Opacity="0.1" 
+                                Radius="10" 
+                                Offset="0,4" />
                         </Border.Shadow>
 
                         <VerticalStackLayout Spacing="16" VerticalOptions="Center">
@@ -66,7 +70,7 @@
                                 FontSize="20"
                                 FontFamily="Nasa21"
                                 FontAttributes="Bold"
-                                TextColor="#1F2937"
+                                TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                                 HorizontalTextAlignment="Center" />
 
                             <!-- Description -->
@@ -74,15 +78,15 @@
                                 Text="{Binding Description}"
                                 FontSize="15"
                                 FontFamily="Nasa21"
-                                TextColor="#4B5563"
+                                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                                 HorizontalTextAlignment="Center"
                                 LineBreakMode="WordWrap" />
 
                             <!-- Example (if exists) -->
                             <Border
                                 Padding="16"
-                                BackgroundColor="#EFF6FF"
-                                Stroke="#BFDBFE"
+                                BackgroundColor="{AppThemeBinding Light=#EFF6FF, Dark=#1E3A5F}"
+                                Stroke="{AppThemeBinding Light=#BFDBFE, Dark=#3B82F6}"
                                 StrokeThickness="1"
                                 IsVisible="{Binding HasExample}">
                                 <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
@@ -91,7 +95,7 @@
                                     FontSize="14"
                                     FontFamily="Nasa21"
                                     FontAttributes="Italic"
-                                    TextColor="#1D4ED8"
+                                    TextColor="{AppThemeBinding Light=#1D4ED8, Dark=#93C5FD}"
                                     HorizontalTextAlignment="Center" />
                             </Border>
 
@@ -119,7 +123,7 @@
             Grid.Row="2"
             Margin="0,8"
             HorizontalOptions="Center"
-            IndicatorColor="#D1D5DB"
+            IndicatorColor="{AppThemeBinding Light=#D1D5DB, Dark=#4B5563}"
             SelectedIndicatorColor="{StaticResource PrimaryRed}"
             IndicatorSize="8" />
 
@@ -129,7 +133,7 @@
                 Text="Swipe or use buttons to navigate"
                 FontSize="12"
                 FontFamily="Nasa21"
-                TextColor="#9CA3AF"
+                TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}"
                 HorizontalTextAlignment="Center" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -138,8 +142,8 @@
                     Grid.Column="0"
                     Clicked="OnBackClicked"
                     Text="← Back"
-                    BackgroundColor="#E5E7EB"
-                    TextColor="#374151"
+                    BackgroundColor="{AppThemeBinding Light=#E5E7EB, Dark=#374151}"
+                    TextColor="{AppThemeBinding Light=#374151, Dark=#E5E7EB}"
                     FontFamily="Nasa21"
                     CornerRadius="12"
                     HeightRequest="48" />
