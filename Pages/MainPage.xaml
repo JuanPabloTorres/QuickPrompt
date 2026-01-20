@@ -3,328 +3,177 @@
     x:Class="QuickPrompt.Pages.MainPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     xmlns:views="clr-namespace:QuickPrompt.Views"
-    xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
-    xmlns:inputs="clr-namespace:QuickPrompt.Components.Inputs"
-    BackgroundColor="WhiteSmoke"
-    Shell.PresentationMode="Animated"
-    AutomationProperties.Name="Create Prompt Page"
-    AutomationProperties.HelpText="Create and customize AI prompts with variables">
+    BackgroundColor="{StaticResource SurfaceBackground}"
+    Shell.PresentationMode="Animated">
 
     <Shell.TitleView>
-
         <Label
-            FontFamily="Designer"
-            FontSize="18"
-            Text="Create"
+            FontFamily="Nasa21"
+            FontSize="20"
+            Text="Create Prompt"
             TextColor="{StaticResource PrimaryBlueDark}"
             VerticalOptions="Center" />
     </Shell.TitleView>
 
-    <!--  Barra de herramientas  -->
     <ContentPage.ToolbarItems>
-        <!--  Botón de Guardar  -->
+        <!--  PRIMARY: Create Variable (most used)  -->
+        <ToolbarItem Command="{Binding CreateVariableCommand}" IsEnabled="{Binding HasTextSelected}">
+            <ToolbarItem.IconImageSource>
+                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe146;" Color="{StaticResource PrimaryRed}" Size="24" />
+            </ToolbarItem.IconImageSource>
+            <ToolTipProperties.Text>Create Variable</ToolTipProperties.Text>
+        </ToolbarItem>
+
+        <!--  PRIMARY: Save  -->
         <ToolbarItem Command="{Binding SavePromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe86c;"
-                    Color="{StaticResource PrimaryBlueDark}" />
+                <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe86c;" Color="{StaticResource PrimaryBlueDark}" Size="24" />
             </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Click to Save data
-            </ToolTipProperties.Text>
-            <AutomationProperties.Name>Save Prompt</AutomationProperties.Name>
-            <AutomationProperties.HelpText>Save the current prompt to your library</AutomationProperties.HelpText>
+            <ToolTipProperties.Text>Save Prompt</ToolTipProperties.Text>
         </ToolbarItem>
 
-        <!--  Nuevo botón: Advanced Prompt Builder  -->
-        <ToolbarItem Command="{Binding GoToAdvancedBuilderCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xea3c;"
-                    Color="{StaticResource PrimaryBlueDark}" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Advanced Prompt Builder
-            </ToolTipProperties.Text>
-            <AutomationProperties.Name>Advanced Builder</AutomationProperties.Name>
-            <AutomationProperties.HelpText>Open the advanced step-by-step prompt builder</AutomationProperties.HelpText>
-        </ToolbarItem>
+        <!--  SECONDARY: Advanced Builder (in overflow menu)  -->
+        <ToolbarItem 
+            Text="Advanced Builder"
+            Order="Secondary"
+            Command="{Binding GoToAdvancedBuilderCommand}" 
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
 
+        <!--  SECONDARY: Import JSON (in overflow menu)  -->
+        <ToolbarItem 
+            Text="Import JSON"
+            Order="Secondary"
+            Command="{Binding ImportPromptCommand}" 
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
 
-        <!--  Import Json  -->
-        <ToolbarItem Command="{Binding ImportPromptCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe9fc;"
-                    Color="{StaticResource PrimaryBlueDark}" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Import Json
-            </ToolTipProperties.Text>
-            <AutomationProperties.Name>Import Prompt</AutomationProperties.Name>
-            <AutomationProperties.HelpText>Import a prompt from JSON file</AutomationProperties.HelpText>
-        </ToolbarItem>
-
-        <!--  Botón para resetear posición del botón flotante  -->
-        <ToolbarItem Clicked="ResetFloatingButtonPosition">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe8aa;"
-                    Color="{StaticResource PrimaryBlueDark}" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Reset Floating Button Position
-            </ToolTipProperties.Text>
-            <AutomationProperties.Name>Reset Floating Button</AutomationProperties.Name>
-            <AutomationProperties.HelpText>Reset the variable button to default position</AutomationProperties.HelpText>
-        </ToolbarItem>
-
-        <!--  Botón de Copiar  -->
-        <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe5c9;"
-                    Color="{StaticResource PrimaryRed}" />
-            </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Click to Clear Text
-            </ToolTipProperties.Text>
-            <AutomationProperties.Name>Clear All Fields</AutomationProperties.Name>
-            <AutomationProperties.HelpText>Clear all input fields and reset the form</AutomationProperties.HelpText>
-        </ToolbarItem>
+        <!--  SECONDARY: Clear All (in overflow menu)  -->
+        <ToolbarItem 
+            Text="Clear All"
+            Order="Secondary"
+            Command="{Binding ClearTextCommand}" 
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
     </ContentPage.ToolbarItems>
 
-    <AbsoluteLayout>
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
 
-        <!--  Contenido Principal Scrollable  -->
-        <ScrollView AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
-                    AutomationProperties.Name="Prompt Creation Form"
-                    AutomationProperties.HelpText="Scroll to access all prompt fields">
-            <Grid
-                Margin="10"
-                RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto"
-                RowSpacing="10">
+            <!--  Title  -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Title" FontSize="15" FontFamily="Nasa21" FontAttributes="Bold" TextColor="#111827" />
+                <Border BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1" Padding="12,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Grid HeightRequest="46">
+                        <Entry
+                            Text="{Binding PromptTitle, Mode=TwoWay}"
+                            Placeholder="My awesome prompt..."
+                            FontSize="15" FontFamily="Nasa21"
+                            TextColor="#111827" PlaceholderColor="#9CA3AF"
+                            BackgroundColor="Transparent" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
 
-                <!--  Overlay de carga  -->
-                <views:ReusableLoadingOverlay
-                    x:Name="LoadingOverlay"
-                    Grid.Row="0"
-                    Grid.RowSpan="8"
-                    IsVisible="{Binding IsLoading}"
-                    Message="Loading..." />
+            <!--  Category  -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Category" FontSize="15" FontFamily="Nasa21" FontAttributes="Bold" TextColor="#111827" />
+                <Border BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1" Padding="4,0">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Picker
+                        Title="Select category"
+                        ItemsSource="{Binding Categories}"
+                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                        FontSize="15" TextColor="#111827" TitleColor="#9CA3AF"
+                        HeightRequest="46" VerticalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
 
-                <!--  Título principal  -->
-                <Label
-                    Grid.Row="0"
-                    Style="{StaticResource TitleLabelStyle}"
-                    Text="Prompt Management "
-                    AutomationProperties.IsInAccessibleTree="True"
-                    AutomationProperties.Name="Page Title: Prompt Management" />
-
-                <!--  Explicación breve  -->
-                <Label
-                    Grid.Row="1"
-                    Style="{StaticResource BodySmallTextStyle}"
-                    Text="Create your prompt by completing the title, description, and main prompt below. You can insert variables using the floating &lt;&gt; button."
-                    TextColor="Gray"
-                    AutomationProperties.IsInAccessibleTree="True"
-                    AutomationProperties.Name="Instructions" />
-
-                <!--  Línea divisoria  -->
-                <BoxView Grid.Row="2" Style="{StaticResource DividerLineStyle}"
-                         AutomationProperties.IsInAccessibleTree="False" />
-
-                <!--  Campo: Title  -->
-                <inputs:TextInput 
-                    Grid.Row="3"
-                    Label="Title"
-                    Placeholder="Example: Blog Post Generator"
-                    Text="{Binding PromptTitle}"
-                    ShowLabel="True"
-                    AutomationProperties.Name="Prompt Title Input"
-                    AutomationProperties.HelpText="Enter a descriptive title for your prompt" />
-
-                <!--  Campo: Description  -->
-                <VerticalStackLayout Grid.Row="4">
-                    <Label
-                        FontSize="14"
-                        HorizontalOptions="Start"
-                        Style="{StaticResource BodySmallTextStyle}"
-                        FontAttributes="Bold"
-                        Text="Description (optional)"
-                        AutomationProperties.IsInAccessibleTree="True"
-                        AutomationProperties.Name="Description Label" />
-                    <Border Style="{StaticResource InputBorderStyle}">
-                        <Editor
-                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                            Placeholder="Short explanation of what this prompt does..."
-                            Style="{StaticResource InputEditorStyle}"
-                            Text="{Binding PromptDescription}"
-                            AutomationProperties.Name="Description Input"
-                            AutomationProperties.HelpText="Optional: Add a description explaining what this prompt does" />
-                    </Border>
-                </VerticalStackLayout>
-
-                <!--  Campo: Categoría  -->
-                <VerticalStackLayout Grid.Row="5">
-                    <Label
-                        HorizontalOptions="Start"
-                        Style="{StaticResource TitleLabelStyle}"
-                        Text="Category"
-                        AutomationProperties.IsInAccessibleTree="True"
-                        AutomationProperties.Name="Category Label" />
-
-                    <Border Style="{StaticResource InputBorderStyle}">
-                        <Picker
-                            Title="Select category"
-                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                            ItemDisplayBinding="{Binding .}"
-                            ItemsSource="{Binding Categories}"
-                            SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                            Style="{StaticResource InputPickerStyle}"
-                            AutomationProperties.Name="Category Picker"
-                            AutomationProperties.HelpText="Select a category for organizing your prompt" />
-                    </Border>
-                </VerticalStackLayout>
-
-
-                <!--  Campo: Prompt  -->
-                <VerticalStackLayout Grid.Row="6">
-
-                    <Label
-                        Grid.Row="5"
-                        HorizontalOptions="Start"
-                        Style="{StaticResource TitleLabelStyle}"
-                        Text="Prompt Template "
-                        AutomationProperties.IsInAccessibleTree="True"
-                        AutomationProperties.Name="Prompt Template Label" />
-                    <Border Grid.Row="5" Style="{StaticResource InputBorderStyle}">
-                        <Editor
-                            x:Name="PromptRawEditor"
-                            CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
-                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                            IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}"
-                            Placeholder="Example: Generate a message for &lt;recipient&gt; about &lt;subject&gt;"
-                            SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
-                            Style="{StaticResource PromptEditorStyle}"
-                            Text="{Binding PromptText}"
-                            AutomationProperties.Name="Prompt Template Input"
-                            AutomationProperties.HelpText="Enter your prompt text. Use angle brackets to mark variables like recipient or subject" />
-                    </Border>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Grid.Row="7" Padding="5">
-
-                    <!--  Condición para mostrar el bloque  -->
-                    <VerticalStackLayout.IsVisible>
-                        <MultiBinding Converter="{StaticResource PromptReadyToShowConverter}">
-                            <Binding Path="IsLoading" />
-                            <Binding Path="PromptText" />
-                        </MultiBinding>
-                    </VerticalStackLayout.IsVisible>
-
-                    <!--  Guía inicial para el usuario  -->
-                    <Label
-                        Margin="5"
-                        Style="{StaticResource BodySmallTextStyle}"
-                        HorizontalTextAlignment="Center"
-                        LineBreakMode="WordWrap"
-                        Text="💡 Switch between visual and text modes to edit your prompt. Tap any &lt;variable&gt; chip to rename it."
-                        TextColor="Gray"
-                        AutomationProperties.IsInAccessibleTree="True"
-                        AutomationProperties.Name="Mode Switching Tip" />
-
-                    <!--  Botones de modo  -->
-                    <HorizontalStackLayout Margin="5" HorizontalOptions="Center" Spacing="8">
-
-                        <buttons:SecondaryButton
-                            Text="Text Mode"
-                            Command="{Binding SwitchToEditorCommand}"
-                            AutomationProperties.Name="Switch to Text Mode"
-                            AutomationProperties.HelpText="Switch to text editing mode for raw prompt input">
-                            <buttons:SecondaryButton.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xe5d8;"
-                                    Color="{StaticResource PrimaryBlue}" />
-                            </buttons:SecondaryButton.ImageSource>
-                        </buttons:SecondaryButton>
-
-                        <buttons:PrimaryButton
-                            Text="Visual Mode"
-                            Command="{Binding SwitchToChipsCommand}"
-                            AutomationProperties.Name="Switch to Visual Mode"
-                            AutomationProperties.HelpText="Switch to visual mode to edit variables as chips">
-                            <buttons:PrimaryButton.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xe5db;"
-                                    Color="White" />
-                            </buttons:PrimaryButton.ImageSource>
-                        </buttons:PrimaryButton>
+            <!--  Prompt Template  -->
+            <VerticalStackLayout Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Prompt Template" FontSize="15" FontFamily="Nasa21" FontAttributes="Bold" TextColor="#111827" />
+                    <HorizontalStackLayout Grid.Column="1" Spacing="4">
+                        <Border Padding="12,6" BackgroundColor="{StaticResource Gray100}" StrokeThickness="0">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SwitchToEditorCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="✏️ Text" FontSize="12" TextColor="{StaticResource PrimaryBlue}" />
+                        </Border>
+                        <Border Padding="12,6" BackgroundColor="{StaticResource PrimaryBlue}" StrokeThickness="0">
+                            <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SwitchToChipsCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="🎨 Visual" FontSize="12" TextColor="White" />
+                        </Border>
                     </HorizontalStackLayout>
+                </Grid>
 
-                    <!--  Contenedor de chips dentro de ScrollView que sí funciona  -->
-                    <ScrollView VerticalOptions="Fill"
-                                AutomationProperties.Name="Variable Chips Container"
-                                AutomationProperties.HelpText="Visual representation of prompt variables as editable chips">
-                        <VerticalStackLayout Padding="5" Spacing="5">
-                            <FlexLayout
-                                x:Name="PromptChipContainer"
-                                AlignItems="Center"
-                                BackgroundColor="GhostWhite"
-                                Direction="Row"
-                                IsVisible="{Binding IsVisualModeActive}"
-                                JustifyContent="Start"
-                                Style="{StaticResource InputBorderStyle}"
-                                Wrap="Wrap" />
-                        </VerticalStackLayout>
-                    </ScrollView>
+                <!--  Instructions  -->
+                <Border
+                    BackgroundColor="#EFF6FF"
+                    Stroke="#BFDBFE"
+                    StrokeThickness="1"
+                    Padding="12"
+                    IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="💡 How to create variables:" FontSize="13" FontAttributes="Bold" TextColor="#1D4ED8" />
+                        <Label Text="• Select text → tap ➕ in toolbar" FontSize="12" TextColor="#2563EB" />
+                        <Label Text="• Or type directly: &lt;variable_name&gt;" FontSize="12" TextColor="#2563EB" />
+                    </VerticalStackLayout>
+                </Border>
 
-                    <!--  Consejo visual debajo del contenedor  -->
-                    <Label
-                        x:Name="ChipHintLabel"
-                        Margin="5"
-                        Style="{StaticResource CaptionTextStyle}"
-                        HorizontalTextAlignment="Center"
-                        Text="💡 Tap on a variable chip (like &lt;topic&gt;) to edit its name."
-                        TextColor="Gray"
-                        AutomationProperties.IsInAccessibleTree="True"
-                        AutomationProperties.Name="Chip Editing Tip" />
-                </VerticalStackLayout>
-            </Grid>
-        </ScrollView>
+                <!--  Text Editor  -->
+                <Border 
+                    BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1" Padding="12"
+                    IsVisible="{Binding IsVisualModeActive, Converter={StaticResource InverseBoolConverter}}">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                    <Editor
+                        x:Name="PromptRawEditor"
+                        Placeholder="Write your prompt here...&#x0a;&#x0a;Example: Create a &lt;format&gt; about &lt;topic&gt; for &lt;audience&gt;"
+                        Text="{Binding PromptText, Mode=TwoWay}"
+                        CursorPosition="{Binding CursorPosition, Mode=TwoWay}"
+                        SelectionLength="{Binding SelectionLength, Mode=TwoWay}"
+                        FontSize="15" FontFamily="Nasa21"
+                        TextColor="#111827" PlaceholderColor="#9CA3AF"
+                        BackgroundColor="Transparent"
+                        AutoSize="TextChanges"
+                        MinimumHeightRequest="180" />
+                </Border>
 
-        <!--  Botón flotante  -->
-        <Button
-            x:Name="FloatingButton"
-            Margin="20"
-            AbsoluteLayout.LayoutBounds="0,0,50,50"
-            AbsoluteLayout.LayoutFlags="None"
-            Command="{Binding CreateVariableCommand}"
-            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-            Style="{StaticResource FloatingButtonStyle}"
-            AutomationProperties.Name="Create Variable Button"
-            AutomationProperties.HelpText="Tap to create a variable from selected text. You can also drag this button to reposition it">
+                <!--  Visual Mode  -->
+                <Border
+                    IsVisible="{Binding IsVisualModeActive}"
+                    BackgroundColor="White" Stroke="#D1D5DB" StrokeThickness="1"
+                    Padding="12" MinimumHeightRequest="120">
+                    <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+                    <FlexLayout
+                        x:Name="PromptChipContainer"
+                        Wrap="Wrap" Direction="Row"
+                        AlignItems="Center" JustifyContent="Start" />
+                </Border>
 
-            <Button.GestureRecognizers>
-                <PanGestureRecognizer PanUpdated="OnPanUpdated" />
-                <TapGestureRecognizer Tapped="OnFloatingButtonTapped" />
-            </Button.GestureRecognizers>
+                <Label
+                    Text="👆 Tap any chip to edit the variable name"
+                    FontSize="12" FontFamily="Nasa21"
+                    TextColor="#6B7280"
+                    HorizontalOptions="Center"
+                    IsVisible="{Binding IsVisualModeActive}" />
+            </VerticalStackLayout>
 
-            <Button.ImageSource>
-                <FontImageSource
-                    FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe86f;"
-                    Color="{StaticResource White}" />
-            </Button.ImageSource>
-        </Button>
-    </AbsoluteLayout>
+            <!--  Variable Count  -->
+            <Border 
+                BackgroundColor="#F0FDF4" Stroke="#BBF7D0" StrokeThickness="1" Padding="12"
+                IsVisible="{Binding VariableCount, Converter={StaticResource IntToBoolConverter}}">
+                <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
+                <Label 
+                    Text="{Binding VariableCount, StringFormat='✅ {0} variable(s) detected'}"
+                    FontSize="13" FontFamily="Nasa21" TextColor="#15803D"
+                    HorizontalTextAlignment="Center" />
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

@@ -8,7 +8,7 @@
     <Shell.TitleView>
 
         <Label
-            FontFamily="Designer"
+            FontFamily="Nasa21"
             FontSize="18"
             Text="Settings"
             TextColor="{StaticResource PrimaryBlueDark}"

@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Components.Inputs.TextInput"
-             x:Name="Root">
+<ContentView
+    x:Class="QuickPrompt.Components.Inputs.TextInput"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
 
-    <!-- 
+    <!--
     ==================================================================================
     TextInput Component
     Version: 1.0.0
     Phase: 3.3 - Input Components
     Design System: 100% Compliant
-    
+
     A standard text input field with label, placeholder, error states, and validation.
-    
+
     Usage:
-        <inputs:TextInput 
+        <inputs:TextInput
             Label="Email"
             Placeholder="Enter your email"
             Text="{Binding Email}"
             ErrorText="{Binding EmailError}"
             HasError="{Binding HasEmailError}" />
-    
+
     Design Tokens Used:
         - Colors: PrimaryBlue, Danger, Gray400, TextPrimary, TextSecondary
         - Typography: BodySmallTextStyle, CaptionTextStyle, BodyTextStyle
@@ -30,79 +31,85 @@
     -->
 
     <VerticalStackLayout Spacing="{StaticResource SpacingXs}">
-        
-        <!-- Label -->
-        <Label Text="{Binding Label, Source={x:Reference Root}}"
-               Style="{StaticResource BodySmallTextStyle}"
-               FontAttributes="Bold"
-               TextColor="{StaticResource TextPrimary}"
-               IsVisible="{Binding ShowLabel, Source={x:Reference Root}}" />
 
-        <!-- Input Field Border -->
-        <Border x:Name="InputBorder"
-                BackgroundColor="{StaticResource SurfaceCard}"
-                Stroke="{Binding BorderColor, Source={x:Reference Root}}"
-                StrokeThickness="1"
-                Padding="{StaticResource ThicknessMd}"
-                HeightRequest="{StaticResource InputHeightMedium}">
-            
+        <!--  Label  -->
+        <Label
+            FontAttributes="Bold"
+            IsVisible="{Binding ShowLabel, Source={x:Reference Root}}"
+            Style="{StaticResource BodySmallTextStyle}"
+            Text="{Binding Label, Source={x:Reference Root}}"
+            TextColor="{StaticResource TextPrimary}" />
+
+        <!--  Input Field Border  -->
+        <Border
+            x:Name="InputBorder"
+            Padding="{StaticResource ThicknessMd}"
+            BackgroundColor="{StaticResource SurfaceCard}"
+            HeightRequest="{StaticResource InputHeightMedium}"
+            Stroke="{Binding BorderColor, Source={x:Reference Root}}"
+            StrokeThickness="1">
+
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
             </Border.StrokeShape>
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource SpacingXs}">
-                
-                <!-- Entry Field -->
-                <Entry Grid.Column="0"
-                       x:Name="InputEntry"
-                       Text="{Binding Text, Source={x:Reference Root}, Mode=TwoWay}"
-                       Placeholder="{Binding Placeholder, Source={x:Reference Root}}"
-                       PlaceholderColor="{StaticResource Gray400}"
-                       TextColor="{StaticResource TextPrimary}"
-                       Keyboard="{Binding Keyboard, Source={x:Reference Root}}"
-                       IsPassword="{Binding IsPassword, Source={x:Reference Root}}"
-                       MaxLength="{Binding MaxLength, Source={x:Reference Root}}"
-                       BackgroundColor="Transparent"
-                       FontSize="16"
-                       VerticalOptions="Center"
-                       Focused="OnEntryFocused"
-                       Unfocused="OnEntryUnfocused"
-                       TextChanged="OnTextChanged" />
 
-                <!-- Clear Button -->
-                <ImageButton Grid.Column="1"
-                             Command="{Binding ClearCommand, Source={x:Reference Root}}"
-                             BackgroundColor="Transparent"
-                             Padding="0"
-                             WidthRequest="24"
-                             HeightRequest="24"
-                             VerticalOptions="Center"
-                             IsVisible="{Binding ShowClearButton, Source={x:Reference Root}}">
+                <!--  Entry Field  -->
+                <Entry
+                    x:Name="InputEntry"
+                    Grid.Column="0"
+                    BackgroundColor="Transparent"
+                    Focused="OnEntryFocused"
+                    FontSize="16"
+                    IsPassword="{Binding IsPassword, Source={x:Reference Root}}"
+                    Keyboard="{Binding Keyboard, Source={x:Reference Root}}"
+                    MaxLength="{Binding MaxLength, Source={x:Reference Root}}"
+                    Placeholder="{Binding Placeholder, Source={x:Reference Root}}"
+                    PlaceholderColor="{StaticResource Gray400}"
+                    Text="{Binding Text, Source={x:Reference Root}, Mode=TwoWay}"
+                    TextChanged="OnTextChanged"
+                    TextColor="{StaticResource TextPrimary}"
+                    Unfocused="OnEntryUnfocused"
+                    VerticalOptions="Center" />
+
+                <!--  Clear Button  -->
+                <ImageButton
+                    Grid.Column="1"
+                    Padding="0"
+                    BackgroundColor="Transparent"
+                    Command="{Binding ClearCommand, Source={x:Reference Root}}"
+                    HeightRequest="24"
+                    IsVisible="{Binding ShowClearButton, Source={x:Reference Root}}"
+                    VerticalOptions="Center"
+                    WidthRequest="24">
                     <ImageButton.Source>
-                        <FontImageSource 
+                        <FontImageSource
                             FontFamily="MaterialIconsOutlined-Regular"
                             Glyph="&#xe5cd;"
-                            Color="{StaticResource Gray400}"
-                            Size="20" />
+                            Size="20"
+                            Color="{StaticResource Gray400}" />
                     </ImageButton.Source>
                 </ImageButton>
 
             </Grid>
         </Border>
 
-        <!-- Error Message -->
-        <Label Text="{Binding ErrorText, Source={x:Reference Root}}"
-               Style="{StaticResource CaptionTextStyle}"
-               TextColor="{StaticResource Danger}"
-               IsVisible="{Binding HasError, Source={x:Reference Root}}"
-               LineBreakMode="WordWrap" />
+        <!--  Error Message  -->
+        <Label
+            IsVisible="{Binding HasError, Source={x:Reference Root}}"
+            LineBreakMode="WordWrap"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{Binding ErrorText, Source={x:Reference Root}}"
+            TextColor="{StaticResource Danger}" />
 
-        <!-- Helper Text -->
-        <Label Text="{Binding HelperText, Source={x:Reference Root}}"
-               Style="{StaticResource CaptionTextStyle}"
-               TextColor="{StaticResource TextSecondary}"
-               IsVisible="{Binding ShowHelperText, Source={x:Reference Root}}"
-               LineBreakMode="WordWrap" />
+        <!--  Helper Text  -->
+        <Label
+            IsVisible="{Binding ShowHelperText, Source={x:Reference Root}}"
+            LineBreakMode="WordWrap"
+            Style="{StaticResource CaptionTextStyle}"
+            Text="{Binding HelperText, Source={x:Reference Root}}"
+            TextColor="{StaticResource TextSecondary}" />
 
     </VerticalStackLayout>
 

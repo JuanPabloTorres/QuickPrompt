@@ -7,185 +7,312 @@
     x:Name="Root"
     IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
 
+    <Border
+        Padding="16"
+        BackgroundColor="{StaticResource CardBackground}"
+        StrokeThickness="0">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="12" />
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow
+                Brush="{StaticResource AppBlack}"
+                Opacity="0.08"
+                Radius="12"
+                Offset="0,4" />
+        </Border.Shadow>
 
-    <VerticalStackLayout Spacing="12">
+        <VerticalStackLayout Spacing="16">
 
-        <!--  Título de filtros  -->
-        <Label
-            HorizontalOptions="Start"
-            Style="{StaticResource TitleLabelStyle}"
-            Text="Filters: " />
+            <!--  Search Section  -->
+            <VerticalStackLayout Spacing="8">
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodySmallTextStyle}"
+                    Text="🔍 Search"
+                    TextColor="{StaticResource TextPrimary}" />
 
-        <!--  Contenedor de botones de filtros  -->
-        <Grid
-            ColumnDefinitions="*,*"
-            ColumnSpacing="10"
-            RowDefinitions="Auto,Auto,Auto"
-            RowSpacing="10">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Border
+                        Grid.Column="0"
+                        BackgroundColor="{StaticResource SurfaceBackground}"
+                        Stroke="{StaticResource BorderLight}"
+                        StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
 
-            <!--  Primera fila: Favorites / Not Favorites  -->
-            <Button
-                Grid.Row="0"
-                Grid.Column="0"
-                Command="{Binding SelectFilterCommand}"
-                CommandParameter="{x:Static enums:Filters.Favorites}"
-                Style="{StaticResource FilterButtonStyle}"
-                Text="Favorites"
-                TextColor="{StaticResource AppBlack}">
-                <Button.Triggers>
-                    <DataTrigger
-                        Binding="{Binding SelectedDateFilter}"
-                        TargetType="Button"
-                        Value="{x:Static enums:Filters.Favorites}">
-                        <Setter Property="BackgroundColor" Value="LightGray" />
-                        <Setter Property="BorderColor" Value="Gray" />
-                        <Setter Property="TextColor" Value="White" />
-                    </DataTrigger>
-                </Button.Triggers>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe3e7;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>
+                        <Entry
+                            ClearButtonVisibility="WhileEditing"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            HeightRequest="{StaticResource InputHeightMedium}"
+                            Placeholder="Search by title or description..."
+                            PlaceholderColor="{StaticResource TextSecondary}"
+                            ReturnCommand="{Binding SearchCommand, Source={x:Reference Root}}"
+                            ReturnType="Search"
+                            Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}"
+                            TextColor="{StaticResource TextPrimary}"
+                            VerticalOptions="Center" />
+                    </Border>
 
-            <Button
-                Grid.Row="0"
-                Grid.Column="1"
-                Command="{Binding SelectFilterCommand}"
-                CommandParameter="{x:Static enums:Filters.NonFavorites}"
-                Style="{StaticResource FilterButtonStyle}"
-                Text="Not Favorites"
-                TextColor="{StaticResource AppBlack}">
-                <Button.Triggers>
-                    <DataTrigger
-                        Binding="{Binding SelectedDateFilter}"
-                        TargetType="Button"
-                        Value="{x:Static enums:Filters.NonFavorites}">
-                        <Setter Property="BackgroundColor" Value="LightGray" />
-                        <Setter Property="BorderColor" Value="Gray" />
-                        <Setter Property="TextColor" Value="White" />
-                    </DataTrigger>
-                </Button.Triggers>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe3e6;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>
+                    <Button
+                        Grid.Column="1"
+                        Padding="0"
+                        BackgroundColor="{StaticResource PrimaryBlueDark}"
+                        Command="{Binding SearchCommand, Source={x:Reference Root}}"
+                        CornerRadius="8"
+                        HeightRequest="48"
+                        ToolTipProperties.Text="Search"
+                        WidthRequest="48">
+                        <Button.ImageSource>
+                            <FontImageSource
+                                FontFamily="MaterialIconsOutlined-Regular"
+                                Glyph="&#xe8b6;"
+                                Size="20"
+                                Color="{StaticResource White}" />
+                        </Button.ImageSource>
+                    </Button>
+                </Grid>
+            </VerticalStackLayout>
 
-            <!--  Segunda fila: Today / Last 7 Days  -->
-            <Button
-                Grid.Row="1"
-                Grid.Column="0"
-                Command="{Binding SelectFilterCommand}"
-                CommandParameter="{x:Static enums:Filters.Today}"
-                Style="{StaticResource FilterButtonStyle}"
-                Text="Today"
-                TextColor="{StaticResource AppBlack}">
-                <Button.Triggers>
-                    <DataTrigger
-                        Binding="{Binding SelectedDateFilter}"
-                        TargetType="Button"
-                        Value="{x:Static enums:Filters.Today}">
-                        <Setter Property="BackgroundColor" Value="LightGray" />
-                        <Setter Property="BorderColor" Value="Gray" />
-                        <Setter Property="TextColor" Value="White" />
-                    </DataTrigger>
-                </Button.Triggers>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe8df;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>
+            <!--  Divider  -->
+            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
 
-            <Button
-                Grid.Row="1"
-                Grid.Column="1"
-                Command="{Binding SelectFilterCommand}"
-                CommandParameter="{x:Static enums:Filters.Last7Days}"
-                Style="{StaticResource FilterButtonStyle}"
-                Text="Last 7 Days"
-                TextColor="{StaticResource AppBlack}">
-                <Button.Triggers>
-                    <DataTrigger
-                        Binding="{Binding SelectedDateFilter}"
-                        TargetType="Button"
-                        Value="{x:Static enums:Filters.Last7Days}">
-                        <Setter Property="BackgroundColor" Value="LightGray" />
-                        <Setter Property="BorderColor" Value="Gray" />
-                        <Setter Property="TextColor" Value="White" />
-                    </DataTrigger>
-                </Button.Triggers>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe916;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>
+            <!--  Category Filter Section  -->
+            <VerticalStackLayout Spacing="8">
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodySmallTextStyle}"
+                    Text="📁 Category"
+                    TextColor="{StaticResource TextPrimary}" />
 
-            <!--  Tercera fila: All  -->
-            <Button
-                Grid.Row="2"
-                Grid.ColumnSpan="2"
-                Command="{Binding SelectFilterCommand}"
-                CommandParameter="{x:Static enums:Filters.All}"
-                Style="{StaticResource FilterButtonStyle}"
-                Text="All"
-                TextColor="{StaticResource AppBlack}">
-                <Button.Triggers>
-                    <DataTrigger
-                        Binding="{Binding SelectedDateFilter}"
-                        TargetType="Button"
-                        Value="{x:Static enums:Filters.All}">
-                        <Setter Property="BackgroundColor" Value="LightGray" />
-                        <Setter Property="BorderColor" Value="Gray" />
-                        <Setter Property="TextColor" Value="White" />
-                    </DataTrigger>
-                </Button.Triggers>
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe8ef;"
-                        Color="{StaticResource AppBlack}" />
-                </Button.ImageSource>
-            </Button>
-        </Grid>
+                <Border
+                    BackgroundColor="{StaticResource SurfaceBackground}"
+                    Stroke="{StaticResource BorderLight}"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
 
-        <Border Style="{StaticResource InputBorderStyle}">
-            <Picker
-                Title="Filter by category"
-                ItemsSource="{Binding Categories, Source={x:Reference Root}}"
-                SelectedItem="{Binding SelectedCategory, Source={x:Reference Root}, Mode=TwoWay}"
-                Style="{StaticResource InputPickerStyle}" />
-        </Border>
+                    <Picker
+                        Title="All Categories"
+                        FontFamily="Nasa21"
+                        FontSize="14"
+                        HeightRequest="{StaticResource InputHeightMedium}"
+                        ItemsSource="{Binding Categories, Source={x:Reference Root}}"
+                        SelectedItem="{Binding SelectedCategory, Source={x:Reference Root}, Mode=TwoWay}"
+                        TextColor="{StaticResource TextPrimary}"
+                        TitleColor="{StaticResource TextSecondary}"
+                        VerticalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
 
-        <!--  Campo de búsqueda  -->
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="5">
-            <Border Grid.Column="0" Style="{StaticResource InputBorderStyle}">
-                <Entry
-                    Placeholder="Type your search here..."
-                    Style="{StaticResource SearchEntryStyle}"
-                    Text="{Binding SearchText, Source={x:Reference Root}, Mode=TwoWay}" />
-            </Border>
+            <!--  Divider  -->
+            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
 
-            <Button
-                Grid.Column="1"
-                Command="{Binding SearchCommand, Source={x:Reference Root}}"
-                Style="{StaticResource SearchButtonStyle}">
-                <Button.ImageSource>
-                    <FontImageSource
-                        FontFamily="MaterialIconsOutlined-Regular"
-                        Glyph="&#xe8b6;"
-                        Color="{StaticResource White}" />
-                </Button.ImageSource>
-            </Button>
-        </Grid>
-    </VerticalStackLayout>
+            <!--  Quick Filters Section  -->
+            <VerticalStackLayout Spacing="12">
+                <Label
+                    FontAttributes="Bold"
+                    Style="{StaticResource BodySmallTextStyle}"
+                    Text="⚡ Quick Filters"
+                    TextColor="{StaticResource TextPrimary}" />
+
+                <!--  Favorites Row  -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+
+                    <!--  Favorites Button  -->
+                    <Border
+                        Grid.Column="0"
+                        BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Favorites}}"
+                        Stroke="{StaticResource BorderLight}"
+                        StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static enums:Filters.Favorites}" />
+                        </Border.GestureRecognizers>
+
+                        <HorizontalStackLayout
+                            Padding="12,10"
+                            HorizontalOptions="Center"
+                            Spacing="8">
+                            <Image>
+                                <Image.Source>
+                                    <FontImageSource
+                                        FontFamily="MaterialIconsOutlined-Regular"
+                                        Glyph="&#xe3e7;"
+                                        Size="18"
+                                        Color="{StaticResource PrimaryYellow}" />
+                                </Image.Source>
+                            </Image>
+                            <Label
+                                FontAttributes="Bold"
+                                FontFamily="Nasa21"
+                                FontSize="13"
+                                Text="Favorites"
+                                TextColor="{StaticResource TextPrimary}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!--  Non-Favorites Button  -->
+                    <Border
+                        Grid.Column="1"
+                        BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.NonFavorites}}"
+                        Stroke="{StaticResource BorderLight}"
+                        StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static enums:Filters.NonFavorites}" />
+                        </Border.GestureRecognizers>
+
+                        <HorizontalStackLayout
+                            Padding="12,10"
+                            HorizontalOptions="Center"
+                            Spacing="8">
+                            <Image>
+                                <Image.Source>
+                                    <FontImageSource
+                                        FontFamily="MaterialIconsOutlined-Regular"
+                                        Glyph="&#xe3e6;"
+                                        Size="18"
+                                        Color="{StaticResource TextSecondary}" />
+                                </Image.Source>
+                            </Image>
+                            <Label
+                                FontAttributes="Bold"
+                                FontFamily="Nasa21"
+                                FontSize="13"
+                                Text="Regular"
+                                TextColor="{StaticResource TextPrimary}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!--  Date Filters Row  -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+
+                    <!--  Today Button  -->
+                    <Border
+                        Grid.Column="0"
+                        BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Today}}"
+                        Stroke="{StaticResource BorderLight}"
+                        StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static enums:Filters.Today}" />
+                        </Border.GestureRecognizers>
+
+                        <HorizontalStackLayout
+                            Padding="12,10"
+                            HorizontalOptions="Center"
+                            Spacing="8">
+                            <Image>
+                                <Image.Source>
+                                    <FontImageSource
+                                        FontFamily="MaterialIconsOutlined-Regular"
+                                        Glyph="&#xe8df;"
+                                        Size="18"
+                                        Color="{StaticResource PrimaryTeal}" />
+                                </Image.Source>
+                            </Image>
+                            <Label
+                                FontAttributes="Bold"
+                                FontFamily="Nasa21"
+                                FontSize="13"
+                                Text="Today"
+                                TextColor="{StaticResource TextPrimary}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!--  Last 7 Days Button  -->
+                    <Border
+                        Grid.Column="1"
+                        BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.Last7Days}}"
+                        Stroke="{StaticResource BorderLight}"
+                        StrokeThickness="1">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static enums:Filters.Last7Days}" />
+                        </Border.GestureRecognizers>
+
+                        <HorizontalStackLayout
+                            Padding="12,10"
+                            HorizontalOptions="Center"
+                            Spacing="8">
+                            <Image>
+                                <Image.Source>
+                                    <FontImageSource
+                                        FontFamily="MaterialIconsOutlined-Regular"
+                                        Glyph="&#xe916;"
+                                        Size="18"
+                                        Color="{StaticResource Info600}" />
+                                </Image.Source>
+                            </Image>
+                            <Label
+                                FontAttributes="Bold"
+                                FontFamily="Nasa21"
+                                FontSize="13"
+                                Text="Last 7 Days"
+                                TextColor="{StaticResource TextPrimary}"
+                                VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!--  All Filter Button  -->
+                <Border
+                    BackgroundColor="{Binding SelectedDateFilter, Converter={StaticResource FilterToColorConverter}, ConverterParameter={x:Static enums:Filters.All}}"
+                    Stroke="{StaticResource BorderLight}"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectFilterCommand}" CommandParameter="{x:Static enums:Filters.All}" />
+                    </Border.GestureRecognizers>
+
+                    <HorizontalStackLayout
+                        Padding="12,10"
+                        HorizontalOptions="Center"
+                        Spacing="8">
+                        <Image>
+                            <Image.Source>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe8ef;"
+                                    Size="18"
+                                    Color="{StaticResource PrimaryBlueDark}" />
+                            </Image.Source>
+                        </Image>
+                        <Label
+                            FontAttributes="Bold"
+                            FontFamily="Nasa21"
+                            FontSize="13"
+                            Text="All Prompts"
+                            TextColor="{StaticResource TextPrimary}"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </Border>
 
 </ContentView>

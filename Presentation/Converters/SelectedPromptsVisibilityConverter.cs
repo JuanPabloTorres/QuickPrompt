@@ -10,24 +10,25 @@ using System.Threading.Tasks;
 
 namespace QuickPrompt.Converters
 {
+    /// <summary>
+    /// Converts selected prompts count to boolean visibility.
+    /// Returns true if at least one prompt is selected, false otherwise.
+    /// </summary>
     public class SelectedPromptsVisibilityConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-      {
-            // Verificar si la lista de prompts seleccionados no está vacía
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
             if (value is int selectedPromptsCount)
             {
-
-               
-                return selectedPromptsCount >= 1 ;
+                return selectedPromptsCount >= 1;
             }
 
             return false;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("SelectedPromptsVisibilityConverter does not support two-way binding.");
         }
     }
 }

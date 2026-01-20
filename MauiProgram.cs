@@ -66,10 +66,16 @@ namespace QuickPrompt
                 .UseSkiaSharp()
                 .ConfigureFonts(fonts =>
                 {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    // ✅ PRIMARY FONT: Nasa21 - Used throughout the application
+                    fonts.AddFont("Nasa21.ttf", "Nasa21");
+                    
+                    // ✅ ICON FONTS: Material Icons for UI elements
                     fonts.AddFont("MaterialIconsOutlined-Regular.otf", "MaterialIconsOutlined-Regular");
                     fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons-Regular");
+                    
+                    // ⚠️ DEPRECATED: Legacy fonts - kept for backward compatibility, will be removed in Phase 5
+                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                     fonts.AddFont("Designer.otf", "Designer");
                 });
         }

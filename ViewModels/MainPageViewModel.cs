@@ -13,6 +13,7 @@ namespace QuickPrompt.ViewModels;
 /// <summary>
 /// ViewModel for the main prompt creation page.
 /// Refactored to use Use Cases and services - Phase 1.
+/// ✅ FIXED: Added missing properties and proper inheritance initialization
 /// </summary>
 public partial class MainPageViewModel : BaseViewModel
 {
@@ -29,11 +30,11 @@ public partial class MainPageViewModel : BaseViewModel
     [ObservableProperty] private string promptDescription = string.Empty;
     [ObservableProperty] private string selectedCategory = string.Empty;
 
-    // Constructor with dependency injection
+    // Constructor with dependency injection - ✅ FIXED: Pass admobService to base
     public MainPageViewModel(
         CreatePromptUseCase createPromptUseCase,
         IDialogService dialogService,
-        AdmobService admobService)
+        AdmobService admobService) : base(admobService) // ✅ FIX: Pass to base
     {
         _createPromptUseCase = createPromptUseCase ?? throw new ArgumentNullException(nameof(createPromptUseCase));
         _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
@@ -49,13 +50,26 @@ public partial class MainPageViewModel : BaseViewModel
 
         try
         {
+            // ✅ Validate required fields
+            if (string.IsNullOrWhiteSpace(PromptTitle))
+            {
+                await _dialogService.ShowErrorAsync("Title is required");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(PromptText))
+            {
+                await _dialogService.ShowErrorAsync("Prompt template is required");
+                return;
+            }
+
             // Create request
             var request = new CreatePromptRequest
             {
                 Title = PromptTitle,
                 Description = PromptDescription,
                 Template = PromptText,
-                Category = SelectedCategory
+                Category = string.IsNullOrWhiteSpace(SelectedCategory) ? "General" : SelectedCategory
             };
 
             // Execute use case
@@ -301,15 +315,23 @@ public partial class MainPageViewModel : BaseViewModel
     [RelayCommand]
     private void SwitchToEditor()
     {
+        System.Diagnostics.Debug.WriteLine("[MainPageViewModel.SwitchToEditor] Switching to text editor mode");
         IsVisualModeActive = false;
     }
 
     [RelayCommand]
     private void SwitchToChips()
     {
+        System.Diagnostics.Debug.WriteLine($"[MainPageViewModel.SwitchToChips] Attempting to switch to visual mode. PromptText: {PromptText?.Length ?? 0} chars");
+        
         if (!string.IsNullOrWhiteSpace(PromptText))
         {
             IsVisualModeActive = true;
+            System.Diagnostics.Debug.WriteLine("[MainPageViewModel.SwitchToChips] Visual mode activated");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("[MainPageViewModel.SwitchToChips] Cannot activate visual mode - PromptText is empty");
         }
     }
 }

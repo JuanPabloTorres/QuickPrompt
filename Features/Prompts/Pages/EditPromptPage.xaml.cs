@@ -1,4 +1,5 @@
-using Microsoft.Maui.Controls.Shapes;
+Ôªøusing Microsoft.Maui.Controls.Shapes;
+using QuickPrompt.ApplicationLayer.Common.Interfaces;
 using QuickPrompt.Models;
 using QuickPrompt.ViewModels;
 using System.Text.RegularExpressions;
@@ -7,229 +8,152 @@ namespace QuickPrompt.Pages;
 
 public partial class EditPromptPage : ContentPage
 {
-    public EditPromptPageViewModel _viewModel;
+    private readonly EditPromptPageViewModel _viewModel;
+    private readonly IThemeService _themeService;
 
-    private bool _buttonPositioned = false;
-
-    public EditPromptPage(EditPromptPageViewModel viewModel)
+    public EditPromptPage(EditPromptPageViewModel viewModel, IThemeService themeService)
     {
         InitializeComponent();
-
         _viewModel = viewModel;
-
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
         BindingContext = viewModel;
-
-        // Subscribe to property changes for chip rendering
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(_viewModel.IsVisualModeActive))
+        {
+            if (_viewModel.IsVisualModeActive)
+                RenderChips();
+            else
+                MainThread.BeginInvokeOnMainThread(() => PromptChipContainer.Children.Clear());
+        }
     }
 
     protected override void OnAppearing()
     {
-        _viewModel.Initialize(); // Inicializar AdMob cuando la p·gina aparece
-
-        // Solo se activa cuando se renderiza completamente
-        this.SizeChanged += OnPageSizeChanged;
+        base.OnAppearing();
+        _viewModel?.Initialize();
+        if (_viewModel?.IsVisualModeActive == true) RenderChips();
     }
 
-    private void OnPageSizeChanged(object sender, EventArgs e)
+    protected override void OnDisappearing()
     {
-        if (_buttonPositioned || this.Width <= 0 || this.Height <= 0)
-            return;
-
-        const double buttonSize = 50;
-        const double visiblePortion = 40;
-        const double offset = 12;
-
-        double y = (this.Height - buttonSize) / 2;
-        double x = this.Width - visiblePortion - offset;
-
-        AbsoluteLayout.SetLayoutBounds(FloatingButton, new Rect(x, y, buttonSize, buttonSize));
-
-        _buttonPositioned = true;
+        base.OnDisappearing();
+        if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
-    private void ResetFloatingButtonPosition(object sender, EventArgs e)
+    #region Chips Rendering
+
+    private void RenderChips()
     {
-        const double buttonSize = 50;
-
-        const double visiblePortion = 40;
-
-        double y = (this.Height - buttonSize) / 2;
-
-        double x = this.Width - visiblePortion - 12;
-
-        AbsoluteLayout.SetLayoutBounds(FloatingButton, new Rect(x, y, buttonSize, buttonSize));
-    }
-
-    private void OnPanUpdated(object sender, PanUpdatedEventArgs e)
-    {
-        if (e.StatusType == GestureStatus.Running && sender is Button btn)
+        MainThread.BeginInvokeOnMainThread(() =>
         {
-            var layoutBounds = AbsoluteLayout.GetLayoutBounds(btn);
+            PromptChipContainer.Children.Clear();
+            var template = _viewModel?.PromptTemplate?.Template;
 
-            var newX = layoutBounds.X + e.TotalX;
+            if (string.IsNullOrWhiteSpace(template))
+            {
+                PromptChipContainer.Children.Add(new Label
+                {
+                    Text = "üìù Write your prompt in Text mode first.\nUse <variable_name> syntax to create variables.",
+                    FontSize = 13,
+                    FontFamily = "Nasa21",
+                    TextColor = Color.FromArgb("#6B7280"),
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    LineBreakMode = LineBreakMode.WordWrap,
+                    Margin = new Thickness(8)
+                });
+                return;
+            }
 
-            var newY = layoutBounds.Y + e.TotalY;
-
-            // Limita movimiento si quieres
-            newX = Math.Max(0, Math.Min(this.Width - btn.Width, newX));
-
-            newY = Math.Max(0, Math.Min(this.Height - btn.Height, newY));
-
-            AbsoluteLayout.SetLayoutBounds(btn, new Rect(newX, newY, layoutBounds.Width, layoutBounds.Height));
-        }
+            var parts = ParsePrompt(template);
+            foreach (var part in parts)
+            {
+                PromptChipContainer.Children.Add(part.IsVariable
+                    ? CreateChip(part, parts)
+                    : CreateTextSpan(part.Text));
+            }
+        });
     }
 
-    private async void OnFloatingButtonTapped(object sender, EventArgs e)
-    {
-        if (FloatingButton == null)
-            return;
-
-        // AnimaciÛn r·pida: achica y vuelve a tamaÒo
-        await FloatingButton.ScaleTo(0.85, 100, Easing.CubicOut);
-
-        await FloatingButton.ScaleTo(1.0, 100, Easing.CubicIn);
-
-        // Ejecutar comando
-        if (_viewModel?.CreateVariableCommand?.CanExecute(null) == true)
-        {
-            _viewModel.CreateVariableCommand.Execute(null);
-        }
-    }
-
-    private async void OnBackClicked(object sender, EventArgs e)
-    {
-        await Shell.Current.GoToAsync("..");
-    }
-
-    public List<PromptPart> ParsePrompt(string rawText)
+    private List<PromptPart> ParsePrompt(string text)
     {
         var parts = new List<PromptPart>();
         var regex = new Regex(@"<[^>]+>");
-        int lastIndex = 0;
+        int lastIdx = 0;
 
-        foreach (Match match in regex.Matches(rawText))
+        foreach (Match m in regex.Matches(text))
         {
-            if (match.Index > lastIndex)
-            {
-                parts.Add(new PromptPart
-                {
-                    Text = rawText.Substring(lastIndex, match.Index - lastIndex),
-                    IsVariable = false
-                });
-            }
-
-            parts.Add(new PromptPart
-            {
-                Text = match.Value,
-                IsVariable = true
-            });
-
-            lastIndex = match.Index + match.Length;
+            if (m.Index > lastIdx)
+                parts.Add(new PromptPart { Text = text[lastIdx..m.Index], IsVariable = false });
+            parts.Add(new PromptPart { Text = m.Value, IsVariable = true });
+            lastIdx = m.Index + m.Length;
         }
-
-        if (lastIndex < rawText.Length)
-        {
-            parts.Add(new PromptPart
-            {
-                Text = rawText.Substring(lastIndex),
-                IsVariable = false
-            });
-        }
+        if (lastIdx < text.Length)
+            parts.Add(new PromptPart { Text = text[lastIdx..], IsVariable = false });
 
         return parts;
     }
 
-    private void RenderPromptAsChips(string promptText)
+    private Border CreateChip(PromptPart part, List<PromptPart> allParts)
     {
-        PromptChipContainer.Children.Clear();
-
-        if (string.IsNullOrWhiteSpace(promptText))
-            return;
-
-        var parts = ParsePrompt(promptText);
-
-        foreach (var part in parts)
+        var lbl = new Label
         {
-            if (part.IsVariable)
-            {
-                var border = new Border
-                {
-                    // ? Use Design System token
-                    BackgroundColor = (Color)Application.Current.Resources["Info200"],
-                    StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                    Padding = new Thickness(10),
-                    Margin = new Thickness(4),
-                    Content = new Label
-                    {
-                        Text = part.Text,
-                        FontSize = 12,
-                        // ? Use Design System token
-                        TextColor = (Color)Application.Current.Resources["TextPrimary"]
-                    }
-                };
+            Text = part.Text,
+            FontSize = 14,
+            FontFamily = "Nasa21",
+            TextColor = Color.FromArgb("#1D4ED8"),
+            VerticalTextAlignment = TextAlignment.Center,
+            FontAttributes = FontAttributes.Bold
+        };
 
-                border.GestureRecognizers.Add(new TapGestureRecognizer
-                {
-                    Command = new Command(async () =>
-                    {
-                        var result = await DisplayPromptAsync("Edit Variable", "Rename It:", $"Changed This Name:{part.Text.Trim('<', '>')}");
-
-                        if (!string.IsNullOrWhiteSpace(result))
-                        {
-                            part.Text = $"<{result}>";
-                            ((Label)border.Content).Text = part.Text;
-                            UpdateRawPrompt(parts);
-                        }
-                    })
-                });
-
-                PromptChipContainer.Children.Add(border);
-            }
-            else
-            {
-                PromptChipContainer.Children.Add(new Label
-                {
-                    Text = part.Text,
-                    FontSize = 14,
-                    // ? Use Design System token
-                    TextColor = (Color)Application.Current.Resources["TextPrimary"],
-                    Margin = new Thickness(2, 4)
-                });
-            }
-        }
-    }
-
-    private void UpdateRawPrompt(List<PromptPart> parts)
-    {
-        var updated = string.Join("", parts.Select(p => p.Text));
-
-        _viewModel.PromptTemplate.Template = updated; // si usas binding, se actualiza
-    }
-
-    private void SwitchToChips(object sender, EventArgs e)
-    {
-        if (!string.IsNullOrWhiteSpace(_viewModel.PromptTemplate.Template))
+        var chip = new Border
         {
-            _viewModel.IsVisualModeActive = true;
+            BackgroundColor = Color.FromArgb("#DBEAFE"),
+            StrokeShape = new RoundRectangle { CornerRadius = 16 },
+            Stroke = Color.FromArgb("#93C5FD"),
+            StrokeThickness = 1,
+            Padding = new Thickness(14, 8),
+            Margin = new Thickness(4),
+            Content = lbl
+        };
 
-            RenderPromptAsChips(_viewModel.PromptTemplate.Template);
-        }
-    }
-
-    private void SwitchToEditor(object sender, EventArgs e)
-    {
-        _viewModel.IsVisualModeActive = false;
-    }
-
-    private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(_viewModel.IsVisualModeActive))
+        chip.GestureRecognizers.Add(new TapGestureRecognizer
         {
-            if (_viewModel.IsVisualModeActive && !string.IsNullOrWhiteSpace(_viewModel.PromptTemplate?.Template))
+            Command = new Command(async () =>
             {
-                RenderPromptAsChips(_viewModel.PromptTemplate.Template);
-            }
-        }
+                await chip.ScaleTo(0.95, 50);
+                await chip.ScaleTo(1.0, 50);
+
+                var result = await DisplayPromptAsync(
+                    "‚úèÔ∏è Edit Variable",
+                    "Enter new variable name:",
+                    initialValue: part.Text.Trim('<', '>'),
+                    placeholder: "variable_name");
+
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    part.Text = $"<{result}>";
+                    lbl.Text = part.Text;
+                    _viewModel.PromptTemplate.Template = string.Join("", allParts.Select(p => p.Text));
+                }
+            })
+        });
+
+        return chip;
     }
+
+    private Label CreateTextSpan(string text) => new()
+    {
+        Text = text,
+        FontSize = 14,
+        FontFamily = "Nasa21",
+        TextColor = Color.FromArgb("#111827"),
+        VerticalTextAlignment = TextAlignment.Center,
+        Margin = new Thickness(2, 4)
+    };
+
+    #endregion
 }

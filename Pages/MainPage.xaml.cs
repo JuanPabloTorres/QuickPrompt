@@ -4,343 +4,158 @@ using QuickPrompt.Models;
 using QuickPrompt.ViewModels;
 using System.Text.RegularExpressions;
 
-namespace QuickPrompt.Pages
+namespace QuickPrompt.Pages;
+
+public partial class MainPage : ContentPage
 {
-    /// <summary>
-    /// Main page for prompt creation with visual chip mode.
-    /// ✅ PHASE 2: Event cleanup to prevent memory leaks
-    /// ✅ PHASE 4: IThemeService for safe color access
-    /// </summary>
-    public partial class MainPage : ContentPage
+    private readonly MainPageViewModel _viewModel;
+    private readonly IThemeService _themeService;
+
+    public MainPage(MainPageViewModel viewModel, IThemeService themeService)
     {
-        private MainPageViewModel _viewModel;
-        private readonly IThemeService _themeService;
+        InitializeComponent();
+        _viewModel = viewModel;
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+        BindingContext = viewModel;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
 
-        public MainPage(MainPageViewModel viewModel, IThemeService themeService)
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(_viewModel.IsVisualModeActive) || e.PropertyName == nameof(_viewModel.PromptText))
         {
-            InitializeComponent();
-
-            _viewModel = viewModel;
-            _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
-
-            BindingContext = viewModel;
-
-            // Subscribe to property changes for chip rendering
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        }
-
-        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            try
-            {
-                if (e.PropertyName == nameof(_viewModel.IsVisualModeActive))
-                {
-                    if (_viewModel.IsVisualModeActive && !string.IsNullOrWhiteSpace(_viewModel.PromptText))
-                    {
-                        RenderPromptAsChips(_viewModel.PromptText);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.OnViewModelPropertyChanged] Error: {ex.Message}");
-            }
-        }
-
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-
-            try
-            {
-                // ✅ Inicializar AdMob con manejo de errores
-                _viewModel?.Initialize();
-
-                // ✅ Validar antes de procesar chips
-                if (!string.IsNullOrEmpty(_viewModel?.PromptText))
-                {
-                    RenderPromptAsChips(_viewModel.PromptText);
-                }
-
-                // ✅ Posicionar floating button después de que la página se haya renderizado
-                Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
-                {
-                    PositionFloatingButton();
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.OnAppearing] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[MainPage.OnAppearing] StackTrace: {ex.StackTrace}");
-            }
-        }
-
-        // ✅ PHASE 2: Unsubscribe event handlers to prevent memory leaks
-        protected override void OnDisappearing()
-        {
-            base.OnDisappearing();
-
-            try
-            {
-                // Unsubscribe from ViewModel events
-                if (_viewModel != null)
-                {
-                    _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.OnDisappearing] Error: {ex.Message}");
-            }
-        }
-
-        private void PositionFloatingButton()
-        {
-            try
-            {
-                // ✅ Validar que el botón existe y que las dimensiones son válidas
-                if (FloatingButton == null || this.Width <= 0 || this.Height <= 0)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MainPage.PositionFloatingButton] Cannot position button. Width={this.Width}, Height={this.Height}, Button={FloatingButton != null}");
-                    return;
-                }
-
-                const double buttonSize = 50;
-                const double visiblePortion = 40;
-
-                // Centro de la pantalla (vertical)
-                double y = (this.Height - buttonSize) / 2;
-
-                // Parte derecha sobresaliendo 10px
-                double x = this.Width - visiblePortion - 12;
-
-                AbsoluteLayout.SetLayoutBounds(FloatingButton, new Rect(x, y, buttonSize, buttonSize));
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.PositionFloatingButton] Error: {ex.Message}");
-            }
-        }
-
-        private void ResetFloatingButtonPosition(object sender, EventArgs e)
-        {
-            PositionFloatingButton();
-        }
-
-        private void OnPanUpdated(object sender, PanUpdatedEventArgs e)
-        {
-            if (e.StatusType == GestureStatus.Running && sender is Button btn)
-            {
-                try
-                {
-                    var layoutBounds = AbsoluteLayout.GetLayoutBounds(btn);
-
-                    var newX = layoutBounds.X + e.TotalX;
-                    var newY = layoutBounds.Y + e.TotalY;
-
-                    // Limita movimiento
-                    newX = Math.Max(0, Math.Min(this.Width - btn.Width, newX));
-                    newY = Math.Max(0, Math.Min(this.Height - btn.Height, newY));
-
-                    AbsoluteLayout.SetLayoutBounds(btn, new Rect(newX, newY, layoutBounds.Width, layoutBounds.Height));
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MainPage.OnPanUpdated] Error: {ex.Message}");
-                }
-            }
-        }
-
-        private async void OnFloatingButtonTapped(object sender, EventArgs e)
-        {
-            try
-            {
-                if (FloatingButton == null)
-                    return;
-
-                // Animación rápida: achica y vuelve a tamaño
-                await FloatingButton.ScaleTo(0.85, 100, Easing.CubicOut);
-                await FloatingButton.ScaleTo(1.0, 100, Easing.CubicIn);
-
-                // Ejecutar comando
-                if (_viewModel?.CreateVariableCommand?.CanExecute(null) == true)
-                {
-                    _viewModel.CreateVariableCommand.Execute(null);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.OnFloatingButtonTapped] Error: {ex.Message}");
-            }
-        }
-
-        public List<PromptPart> ParsePrompt(string rawText)
-        {
-            var parts = new List<PromptPart>();
-            
-            try
-            {
-                var regex = new Regex(@"<[^>]+>");
-                int lastIndex = 0;
-
-                foreach (Match match in regex.Matches(rawText))
-                {
-                    if (match.Index > lastIndex)
-                    {
-                        parts.Add(new PromptPart
-                        {
-                            Text = rawText.Substring(lastIndex, match.Index - lastIndex),
-                            IsVariable = false
-                        });
-                    }
-
-                    parts.Add(new PromptPart
-                    {
-                        Text = match.Value,
-                        IsVariable = true
-                    });
-
-                    lastIndex = match.Index + match.Length;
-                }
-
-                if (lastIndex < rawText.Length)
-                {
-                    parts.Add(new PromptPart
-                    {
-                        Text = rawText.Substring(lastIndex),
-                        IsVariable = false
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.ParsePrompt] Error: {ex.Message}");
-            }
-
-            return parts;
-        }
-
-        private void RenderPromptAsChips(string promptText)
-        {
-            try
-            {
-                PromptChipContainer.Children.Clear();
-
-                if (string.IsNullOrWhiteSpace(promptText))
-                    return;
-
-                var parts = ParsePrompt(promptText);
-
-                foreach (var part in parts)
-                {
-                    if (part.IsVariable)
-                    {
-                        // ✅ PHASE 4: Use ThemeService with safe fallback
-                        Color backgroundColor = _themeService.GetColor("Info200", Color.FromRgba(173, 216, 230, 255));
-                        Color textColor = _themeService.GetColor("TextPrimary", Colors.Black);
-
-                        var border = new Border
-                        {
-                            BackgroundColor = backgroundColor,
-                            StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                            Padding = new Thickness(10, 5),
-                            Margin = new Thickness(4),
-                            Content = new Label
-                            {
-                                Text = part.Text,
-                                FontSize = 14,
-                                TextColor = textColor
-                            }
-                        };
-
-                        border.GestureRecognizers.Add(new TapGestureRecognizer
-                        {
-                            Command = new Command(async () =>
-                            {
-                                try
-                                {
-                                    var result = await DisplayPromptAsync("Edit Variable", "Rename It:", initialValue: part.Text.Trim('<', '>'));
-
-                                    if (!string.IsNullOrWhiteSpace(result))
-                                    {
-                                        part.Text = $"<{result}>";
-                                        if (border.Content is Label label)
-                                        {
-                                            label.Text = part.Text;
-                                        }
-                                        UpdateRawPrompt(parts);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    System.Diagnostics.Debug.WriteLine($"[MainPage.RenderPromptAsChips.TapGesture] Error: {ex.Message}");
-                                }
-                            })
-                        });
-
-                        PromptChipContainer.Children.Add(border);
-                    }
-                    else
-                    {
-                        // ✅ PHASE 4: Use ThemeService
-                        Color textColor = _themeService.GetColor("TextPrimary", Colors.Black);
-
-                        PromptChipContainer.Children.Add(new Label
-                        {
-                            Text = part.Text,
-                            FontSize = 14,
-                            TextColor = textColor,
-                            Margin = new Thickness(2, 4)
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.RenderPromptAsChips] Error: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[MainPage.RenderPromptAsChips] StackTrace: {ex.StackTrace}");
-            }
-        }
-
-        private void UpdateRawPrompt(List<PromptPart> parts)
-        {
-            try
-            {
-                var updated = string.Join("", parts.Select(p => p.Text));
-                _viewModel.PromptText = updated;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.UpdateRawPrompt] Error: {ex.Message}");
-            }
-        }
-
-        private void SwitchToChips(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(_viewModel.PromptText))
-                {
-                    _viewModel.IsVisualModeActive = true;
-                    RenderPromptAsChips(_viewModel.PromptText);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.SwitchToChips] Error: {ex.Message}");
-            }
-        }
-
-        private void SwitchToEditor(object sender, EventArgs e)
-        {
-            try
-            {
-                _viewModel.IsVisualModeActive = false;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MainPage.SwitchToEditor] Error: {ex.Message}");
-            }
+            if (_viewModel.IsVisualModeActive)
+                RenderChips();
+            else
+                MainThread.BeginInvokeOnMainThread(() => PromptChipContainer.Children.Clear());
         }
     }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _viewModel?.Initialize();
+        if (_viewModel?.IsVisualModeActive == true) RenderChips();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        if (_viewModel != null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+    }
+
+    #region Chips Rendering
+
+    private void RenderChips()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            PromptChipContainer.Children.Clear();
+
+            // If no prompt text, show empty state message
+            if (string.IsNullOrWhiteSpace(_viewModel?.PromptText))
+            {
+                PromptChipContainer.Children.Add(new Label
+                {
+                    Text = "📝 Write your prompt in Text mode first.\nUse <variable_name> syntax to create variables.",
+                    FontSize = 13,
+                    FontFamily = "Nasa21",
+                    TextColor = Color.FromArgb("#6B7280"),
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    LineBreakMode = LineBreakMode.WordWrap,
+                    Margin = new Thickness(8)
+                });
+                return;
+            }
+
+            var parts = ParsePrompt(_viewModel.PromptText);
+
+            // Always render all parts (text and variables)
+            foreach (var part in parts)
+            {
+                PromptChipContainer.Children.Add(part.IsVariable
+                    ? CreateChip(part, parts)
+                    : CreateTextSpan(part.Text));
+            }
+        });
+    }
+
+    private List<PromptPart> ParsePrompt(string text)
+    {
+        var parts = new List<PromptPart>();
+        var regex = new Regex(@"<[^>]+>");
+        int lastIdx = 0;
+
+        foreach (Match m in regex.Matches(text))
+        {
+            if (m.Index > lastIdx)
+                parts.Add(new PromptPart { Text = text[lastIdx..m.Index], IsVariable = false });
+            parts.Add(new PromptPart { Text = m.Value, IsVariable = true });
+            lastIdx = m.Index + m.Length;
+        }
+        if (lastIdx < text.Length)
+            parts.Add(new PromptPart { Text = text[lastIdx..], IsVariable = false });
+
+        return parts;
+    }
+
+    private Border CreateChip(PromptPart part, List<PromptPart> allParts)
+    {
+        var lbl = new Label
+        {
+            Text = part.Text,
+            FontSize = 14,
+            FontFamily = "Nasa21",
+            TextColor = Color.FromArgb("#1D4ED8"), // Blue for variables
+            VerticalTextAlignment = TextAlignment.Center,
+            FontAttributes = FontAttributes.Bold
+        };
+
+        var chip = new Border
+        {
+            BackgroundColor = Color.FromArgb("#DBEAFE"), // Light blue background
+            StrokeShape = new RoundRectangle { CornerRadius = 16 },
+            Stroke = Color.FromArgb("#93C5FD"), // Blue border
+            StrokeThickness = 1,
+            Padding = new Thickness(14, 8),
+            Margin = new Thickness(4),
+            Content = lbl
+        };
+
+        chip.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(async () =>
+            {
+                await chip.ScaleTo(0.95, 50);
+                await chip.ScaleTo(1.0, 50);
+
+                var result = await DisplayPromptAsync(
+                    "✏️ Edit Variable",
+                    "Enter new variable name:",
+                    initialValue: part.Text.Trim('<', '>'),
+                    placeholder: "variable_name");
+
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    part.Text = $"<{result}>";
+                    lbl.Text = part.Text;
+                    _viewModel.PromptText = string.Join("", allParts.Select(p => p.Text));
+                }
+            })
+        });
+
+        return chip;
+    }
+
+    private Label CreateTextSpan(string text) => new()
+    {
+        Text = text,
+        FontSize = 14,
+        FontFamily = "Nasa21",
+        TextColor = Color.FromArgb("#111827"), // Dark text
+        VerticalTextAlignment = TextAlignment.Center,
+        Margin = new Thickness(2, 4)
+    };
+
+    #endregion
 }

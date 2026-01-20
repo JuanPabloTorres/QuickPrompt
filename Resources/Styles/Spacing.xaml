@@ -62,9 +62,9 @@
     <Thickness x:Key="ThicknessVerticalLg">0,24,0,24</Thickness>
 
     <!--  Asymmetric (Common patterns)  -->
-    <Thickness x:Key="ThicknessPageMargin">16,20,16,16</Thickness>  
+    <Thickness x:Key="ThicknessPageMargin">16,20,16,16</Thickness>
     <!--  Mobile: Left, Top (extra), Right, Bottom  -->
-    <Thickness x:Key="ThicknessPageMarginLarge">24,32,24,24</Thickness>  
+    <Thickness x:Key="ThicknessPageMarginLarge">24,32,24,24</Thickness>
     <!--  Desktop  -->
 
     <!--  Card Padding  -->
@@ -95,24 +95,24 @@
     -->
 
     <!--  Card Spacing  -->
-    <x:Double x:Key="CardGap">16</x:Double>  
+    <x:Double x:Key="CardGap">16</x:Double>
     <!--  Gap between cards in grid/list  -->
     <x:Double x:Key="CardGapSmall">8</x:Double>
 
     <!--  List Item Spacing  -->
     <x:Double x:Key="ListItemPadding">12</x:Double>
-    <x:Double x:Key="ListItemGap">8</x:Double>  
+    <x:Double x:Key="ListItemGap">8</x:Double>
     <!--  Vertical gap between items  -->
 
     <!--  Section Spacing  -->
-    <x:Double x:Key="SectionGap">32</x:Double>  
+    <x:Double x:Key="SectionGap">32</x:Double>
     <!--  Space between major sections  -->
     <x:Double x:Key="SectionGapLarge">48</x:Double>
 
     <!--  Form Spacing  -->
-    <x:Double x:Key="FormFieldGap">16</x:Double>  
+    <x:Double x:Key="FormFieldGap">16</x:Double>
     <!--  Vertical gap between form fields  -->
-    <x:Double x:Key="FormSectionGap">32</x:Double>  
+    <x:Double x:Key="FormSectionGap">32</x:Double>
     <!--  Gap between form sections  -->
 
 </ResourceDictionary>

@@ -7,7 +7,7 @@ namespace QuickPrompt.Presentation.Converters
     /// </summary>
     public class IntToBoolConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is int intValue)
             {
@@ -16,9 +16,9 @@ namespace QuickPrompt.Presentation.Converters
             return false;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("IntToBoolConverter does not support two-way binding.");
         }
     }
 
@@ -27,7 +27,7 @@ namespace QuickPrompt.Presentation.Converters
     /// </summary>
     public class IntToInverseBoolConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is int intValue)
             {
@@ -36,9 +36,9 @@ namespace QuickPrompt.Presentation.Converters
             return true;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("IntToInverseBoolConverter does not support two-way binding.");
         }
     }
 }

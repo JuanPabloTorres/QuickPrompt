@@ -27,7 +27,7 @@
 
         <Label
             Grid.Column="1"
-            FontFamily="Designer"
+            FontFamily="{Binding TitleFontFamily, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"
             FontSize="18"
             HorizontalOptions="Start"
             Text="{Binding Title, Source={RelativeSource AncestorType={x:Type local:TitleHeader}}}"

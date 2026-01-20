@@ -1,7 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<ResourceDictionary
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <!--  Estilo para el Entry dentro del Border  -->
     <Style x:Key="InputEntryStyle" TargetType="Entry">
@@ -18,7 +16,7 @@
     <!--  Estilo para el Entry dentro del Border  -->
     <Style x:Key="InputPickerStyle" TargetType="Picker">
         <Setter Property="FontSize" Value="16" />
-        <Setter Property="FontFamily" Value="Roboto" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="FontAttributes" Value="None" />
         <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
@@ -35,16 +33,16 @@
 
     <!--  En tu ResourceDictionary (App.xaml o donde definas estilos)  -->
     <Style x:Key="InputPickerStyle2" TargetType="Picker">
-        <!--  Tamaño y familia de fuente  -->
+        <!--  Tama�o y familia de fuente  -->
         <Setter Property="FontSize" Value="16" />
-        <Setter Property="FontFamily" Value="Roboto" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="FontAttributes" Value="None" />
 
         <!--  Fondo y color de texto  -->
         <Setter Property="BackgroundColor" Value="GhostWhite" />
         <Setter Property="TextColor" Value="{StaticResource AppBlack}" />
 
-        <!--  Alineación en el layout  -->
+        <!--  Alineaci�n en el layout  -->
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="VerticalOptions" Value="Center" />
 

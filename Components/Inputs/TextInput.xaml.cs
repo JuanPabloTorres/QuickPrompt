@@ -5,6 +5,7 @@ namespace QuickPrompt.Components.Inputs
     /// <summary>
     /// TextInput component for standard text entry with label, validation, and error states.
     /// Built with 100% Design System token compliance.
+    /// ? PHASE 4: Fixed NullReferenceException with safe color resource access
     /// </summary>
     public partial class TextInput : ContentView
     {
@@ -56,7 +57,7 @@ namespace QuickPrompt.Components.Inputs
                 nameof(BorderColor), 
                 typeof(Color), 
                 typeof(TextInput), 
-                Application.Current?.Resources["BorderLight"] as Color ?? Colors.Gray);
+                GetSafeColor("BorderLight", Color.FromRgb(229, 231, 235))); // ? Safe fallback
 
         public static readonly BindableProperty ClearCommandProperty =
             BindableProperty.Create(nameof(ClearCommand), typeof(ICommand), typeof(TextInput), null);
@@ -186,7 +187,8 @@ namespace QuickPrompt.Components.Inputs
         {
             if (!HasError)
             {
-                BorderColor = (Color)Application.Current.Resources["PrimaryBlue"];
+                // ? Safe color access with fallback
+                BorderColor = GetSafeColor("PrimaryBlue", Color.FromRgb(72, 101, 129));
             }
         }
 
@@ -194,7 +196,8 @@ namespace QuickPrompt.Components.Inputs
         {
             if (!HasError)
             {
-                BorderColor = (Color)Application.Current.Resources["BorderLight"];
+                // ? Safe color access with fallback
+                BorderColor = GetSafeColor("BorderLight", Color.FromRgb(229, 231, 235));
             }
         }
 
@@ -229,15 +232,51 @@ namespace QuickPrompt.Components.Inputs
         {
             if (HasError)
             {
-                BorderColor = (Color)Application.Current.Resources["Danger"];
+                // ? Safe color access with fallback
+                BorderColor = GetSafeColor("Danger", Color.FromRgb(239, 68, 68));
             }
             else if (InputEntry?.IsFocused == true)
             {
-                BorderColor = (Color)Application.Current.Resources["PrimaryBlue"];
+                // ? Safe color access with fallback
+                BorderColor = GetSafeColor("PrimaryBlue", Color.FromRgb(72, 101, 129));
             }
             else
             {
-                BorderColor = (Color)Application.Current.Resources["BorderLight"];
+                // ? Safe color access with fallback
+                BorderColor = GetSafeColor("BorderLight", Color.FromRgb(229, 231, 235));
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// ? PHASE 4: Safe color resource access with fallback
+        /// Prevents NullReferenceException when Application.Current is null
+        /// </summary>
+        private static Color GetSafeColor(string resourceKey, Color fallback)
+        {
+            try
+            {
+                // Check if Application.Current is available
+                if (Application.Current?.Resources == null)
+                {
+                    return fallback;
+                }
+
+                // Try to get the color from resources
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var resource) && resource is Color color)
+                {
+                    return color;
+                }
+
+                return fallback;
+            }
+            catch
+            {
+                // Return fallback if any exception occurs
+                return fallback;
             }
         }
 

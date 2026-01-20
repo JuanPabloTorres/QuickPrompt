@@ -236,6 +236,9 @@
     <MauiXaml Update="Resources\Styles\Typography.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
+    <MauiXaml Update="Resources\Styles\Typography_Updated.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
     <MauiXaml Update="Resources\Styles\VisualElementsStyles.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>

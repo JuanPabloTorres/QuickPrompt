@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Components.Buttons.SecondaryButton"
-             x:Name="Root">
+<ContentView
+    x:Class="QuickPrompt.Components.Buttons.SecondaryButton"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
 
-    <!-- 
+    <!--
     ==================================================================================
     SecondaryButton Component
     Version: 1.0.0
     Phase: 3.2 - Button System
     Design System: 100% Compliant
-    
+
     A secondary action button with outlined style using Design System tokens.
-    
+
     Usage:
         <buttons:SecondaryButton Text="Cancel" Command="{Binding CancelCommand}" />
-    
+
     Design Tokens Used:
         - Colors: PrimaryBlue, StateDisabledBackground, StateDisabledText
         - Typography: ButtonTextStyle
@@ -25,45 +26,49 @@
     ==================================================================================
     -->
 
-    <Border BackgroundColor="Transparent"
-            Padding="{StaticResource ThicknessMd}"
-            HeightRequest="{StaticResource ButtonHeightMedium}"
-            Opacity="{Binding Opacity, Source={x:Reference Root}}"
-            Stroke="{Binding BorderColor, Source={x:Reference Root}}"
-            StrokeThickness="2"
-            x:Name="ButtonBorder">
-        
+    <Border
+        x:Name="ButtonBorder"
+        Padding="{StaticResource ThicknessMd}"
+        BackgroundColor="Transparent"
+        HeightRequest="{StaticResource ButtonHeightMedium}"
+        Opacity="{Binding Opacity, Source={x:Reference Root}}"
+        Stroke="{Binding BorderColor, Source={x:Reference Root}}"
+        StrokeThickness="2">
+
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
         </Border.StrokeShape>
 
-        <!-- Tap Gesture with Animation -->
+        <!--  Tap Gesture with Animation  -->
         <Border.GestureRecognizers>
-            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
-                                  CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}"
-                                  Tapped="OnButtonTapped" />
+            <TapGestureRecognizer
+                Command="{Binding Command, Source={x:Reference Root}}"
+                CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}"
+                Tapped="OnButtonTapped" />
         </Border.GestureRecognizers>
 
-        <!-- Button Content: Icon + Text -->
+        <!--  Button Content: Icon + Text  -->
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource SpacingSm}">
-            
-            <!-- Optional Icon -->
-            <Image Grid.Column="0"
-                   Source="{Binding ImageSource, Source={x:Reference Root}}"
-                   WidthRequest="{StaticResource IconSizeSm}"
-                   HeightRequest="{StaticResource IconSizeSm}"
-                   Aspect="AspectFit"
-                   VerticalOptions="Center"
-                   IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
 
-            <!-- Button Text -->
-            <Label Grid.Column="1"
-                   Text="{Binding Text, Source={x:Reference Root}}"
-                   Style="{StaticResource ButtonTextStyle}"
-                   TextColor="{Binding TextColor, Source={x:Reference Root}}"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   HorizontalTextAlignment="Center" />
+            <!--  Optional Icon  -->
+            <Image
+                Grid.Column="0"
+                Aspect="AspectFit"
+                HeightRequest="{StaticResource IconSizeSm}"
+                IsVisible="{Binding ShowIcon, Source={x:Reference Root}}"
+                Source="{Binding ImageSource, Source={x:Reference Root}}"
+                VerticalOptions="Center"
+                WidthRequest="{StaticResource IconSizeSm}" />
+
+            <!--  Button Text  -->
+            <Label
+                Grid.Column="1"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                Style="{StaticResource ButtonTextStyle}"
+                Text="{Binding Text, Source={x:Reference Root}}"
+                TextColor="{Binding TextColor, Source={x:Reference Root}}"
+                VerticalOptions="Center" />
 
         </Grid>
     </Border>

@@ -10,6 +10,7 @@
     Version: 1.0.0
     Phase: 3.4 - Container Components
     Design System: 100% Compliant
+    ✅ FIX: Renamed properties to avoid ContentView base property conflicts
     
     A card container with shadow elevation.
     
@@ -26,12 +27,12 @@
     ==================================================================================
     -->
 
-    <Border BackgroundColor="{Binding BackgroundColor, Source={x:Reference Root}}"
+    <Border BackgroundColor="{Binding CardBackground, Source={x:Reference Root}}"
             StrokeThickness="0"
-            Padding="{Binding Padding, Source={x:Reference Root}}">
+            Padding="{Binding CardPadding, Source={x:Reference Root}}">
         
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="{Binding CornerRadius, Source={x:Reference Root}}" />
+            <RoundRectangle CornerRadius="{Binding CardCornerRadius, Source={x:Reference Root}}" />
         </Border.StrokeShape>
 
         <!-- Shadow Elevation -->

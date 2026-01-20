@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="QuickPrompt.Components.Buttons.PrimaryButton"
-             x:Name="Root">
+<ContentView
+    x:Class="QuickPrompt.Components.Buttons.PrimaryButton"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Root">
 
-    <!-- 
+    <!--
     ==================================================================================
     PrimaryButton Component
     Version: 1.0.0
     Phase: 3 - Component Library
     Design System: 100% Compliant
-    
+
     A primary call-to-action button using Design System tokens exclusively.
-    
+
     Usage:
         <buttons:PrimaryButton Text="Save" Command="{Binding SaveCommand}" />
-    
+
     Design Tokens Used:
         - Colors: PrimaryBlue, White, StateDisabledBackground, StateDisabledText
         - Typography: ButtonTextStyle
@@ -25,51 +26,55 @@
     ==================================================================================
     -->
 
-    <Border BackgroundColor="{Binding BackgroundColor, Source={x:Reference Root}}"
-            Padding="{StaticResource ThicknessMd}"
-            HeightRequest="{StaticResource ButtonHeightMedium}"
-            Opacity="{Binding Opacity, Source={x:Reference Root}}"
-            x:Name="ButtonBorder">
-        
+    <Border
+        x:Name="ButtonBorder"
+        Padding="20,12"
+        BackgroundColor="{Binding BackgroundColor, Source={x:Reference Root}}"
+        HeightRequest="{StaticResource ButtonHeightLarge}"
+        Opacity="{Binding Opacity, Source={x:Reference Root}}">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="{StaticResource RadiusMd}" />
         </Border.StrokeShape>
 
-        <!-- Shadow Effect -->
+        <!--  Shadow Effect  -->
         <Border.Shadow>
-            <Shadow Brush="{StaticResource AppBlack}"
-                    Opacity="0.15"
-                    Radius="8"
-                    Offset="0,2" />
+            <Shadow
+                Brush="{StaticResource AppBlack}"
+                Opacity="0.15"
+                Radius="8"
+                Offset="0,2" />
         </Border.Shadow>
 
-        <!-- Tap Gesture with Animation -->
+        <!--  Tap Gesture with Animation  -->
         <Border.GestureRecognizers>
-            <TapGestureRecognizer Command="{Binding Command, Source={x:Reference Root}}"
-                                  CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}"
-                                  Tapped="OnButtonTapped" />
+            <TapGestureRecognizer
+                Command="{Binding Command, Source={x:Reference Root}}"
+                CommandParameter="{Binding CommandParameter, Source={x:Reference Root}}"
+                Tapped="OnButtonTapped" />
         </Border.GestureRecognizers>
 
-        <!-- Button Content: Icon + Text -->
+        <!--  Button Content: Icon + Text  -->
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource SpacingSm}">
-            
-            <!-- Optional Icon -->
-            <Image Grid.Column="0"
-                   Source="{Binding ImageSource, Source={x:Reference Root}}"
-                   WidthRequest="{StaticResource IconSizeSm}"
-                   HeightRequest="{StaticResource IconSizeSm}"
-                   Aspect="AspectFit"
-                   VerticalOptions="Center"
-                   IsVisible="{Binding ShowIcon, Source={x:Reference Root}}" />
 
-            <!-- Button Text -->
-            <Label Grid.Column="1"
-                   Text="{Binding Text, Source={x:Reference Root}}"
-                   Style="{StaticResource ButtonTextStyle}"
-                   TextColor="{Binding TextColor, Source={x:Reference Root}}"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   HorizontalTextAlignment="Center" />
+            <!--  Optional Icon  -->
+            <Image
+                Grid.Column="0"
+                Aspect="AspectFit"
+                HeightRequest="{StaticResource IconSizeSm}"
+                IsVisible="{Binding ShowIcon, Source={x:Reference Root}}"
+                Source="{Binding ImageSource, Source={x:Reference Root}}"
+                VerticalOptions="Center"
+                WidthRequest="{StaticResource IconSizeSm}" />
+
+            <!--  Button Text  -->
+            <Label
+                Grid.Column="1"
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                Style="{StaticResource ButtonTextStyle}"
+                Text="{Binding Text, Source={x:Reference Root}}"
+                TextColor="{Binding TextColor, Source={x:Reference Root}}"
+                VerticalOptions="Center" />
 
         </Grid>
     </Border>

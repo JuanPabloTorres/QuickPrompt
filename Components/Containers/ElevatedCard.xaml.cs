@@ -3,52 +3,54 @@ namespace QuickPrompt.Components.Containers
     /// <summary>
     /// ElevatedCard component with shadow elevation.
     /// Built with 100% Design System token compliance.
+    /// ? PHASE 4: Safe resource access to prevent NullReferenceException
+    /// ? FIX: Renamed BackgroundColor to CardBackground to avoid property conflict
     /// </summary>
     public partial class ElevatedCard : ContentView
     {
         #region Bindable Properties
 
-        public static readonly BindableProperty BackgroundColorProperty =
+        public static readonly BindableProperty CardBackgroundProperty =
             BindableProperty.Create(
-                nameof(BackgroundColor),
+                nameof(CardBackground),
                 typeof(Color),
                 typeof(ElevatedCard),
-                Application.Current?.Resources["CardBackground"] as Color ?? Colors.White);
+                GetSafeColor("CardBackground", Colors.White));
 
-        public static readonly BindableProperty PaddingProperty =
+        public static readonly BindableProperty CardPaddingProperty =
             BindableProperty.Create(
-                nameof(Padding),
+                nameof(CardPadding),
                 typeof(Thickness),
                 typeof(ElevatedCard),
-                Application.Current?.Resources["ThicknessMd"] as Thickness? ?? new Thickness(16));
+                GetSafeThickness("ThicknessMd", new Thickness(16)));
 
-        public static readonly BindableProperty CornerRadiusProperty =
+        public static readonly BindableProperty CardCornerRadiusProperty =
             BindableProperty.Create(
-                nameof(CornerRadius),
+                nameof(CardCornerRadius),
                 typeof(double),
                 typeof(ElevatedCard),
-                (double)(Application.Current?.Resources["RadiusMd"] ?? 8.0));
+                GetSafeDouble("RadiusMd", 8.0));
 
         #endregion
 
         #region Properties
 
-        public new Color BackgroundColor
+        public Color CardBackground
         {
-            get => (Color)GetValue(BackgroundColorProperty);
-            set => SetValue(BackgroundColorProperty, value);
+            get => (Color)GetValue(CardBackgroundProperty);
+            set => SetValue(CardBackgroundProperty, value);
         }
 
-        public new Thickness Padding
+        public Thickness CardPadding
         {
-            get => (Thickness)GetValue(PaddingProperty);
-            set => SetValue(PaddingProperty, value);
+            get => (Thickness)GetValue(CardPaddingProperty);
+            set => SetValue(CardPaddingProperty, value);
         }
 
-        public double CornerRadius
+        public double CardCornerRadius
         {
-            get => (double)GetValue(CornerRadiusProperty);
-            set => SetValue(CornerRadiusProperty, value);
+            get => (double)GetValue(CardCornerRadiusProperty);
+            set => SetValue(CardCornerRadiusProperty, value);
         }
 
         #endregion
@@ -61,6 +63,78 @@ namespace QuickPrompt.Components.Containers
 
             SemanticProperties.SetDescription(this, "Elevated card container");
             AutomationId = "ElevatedCard";
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// ? PHASE 4: Safe color resource access with fallback
+        /// </summary>
+        private static Color GetSafeColor(string resourceKey, Color fallback)
+        {
+            try
+            {
+                if (Application.Current?.Resources == null)
+                    return fallback;
+
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var resource) && resource is Color color)
+                    return color;
+
+                return fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        /// <summary>
+        /// ? PHASE 4: Safe thickness resource access with fallback
+        /// </summary>
+        private static Thickness GetSafeThickness(string resourceKey, Thickness fallback)
+        {
+            try
+            {
+                if (Application.Current?.Resources == null)
+                    return fallback;
+
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var resource) && resource is Thickness thickness)
+                    return thickness;
+
+                return fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        /// <summary>
+        /// ? PHASE 4: Safe double resource access with fallback
+        /// </summary>
+        private static double GetSafeDouble(string resourceKey, double fallback)
+        {
+            try
+            {
+                if (Application.Current?.Resources == null)
+                    return fallback;
+
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var resource))
+                {
+                    if (resource is double d)
+                        return d;
+                    if (resource is int i)
+                        return i;
+                }
+
+                return fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
         }
 
         #endregion

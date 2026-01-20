@@ -3,23 +3,24 @@
     x:Class="QuickPrompt.Pages.QuickPromptPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
+    xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
+    xmlns:containers="clr-namespace:QuickPrompt.Components.Containers"
     xmlns:localcontrols="clr-namespace:QuickPrompt.Controls"
-    xmlns:view="clr-namespace:QuickPrompt.Views"
     xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:vm="clr-namespace:QuickPrompt.ViewModels"
-    BackgroundColor="WhiteSmoke"
+    AutomationProperties.HelpText="Browse and manage your saved prompts"
+    AutomationProperties.Name="Quick Prompt Page"
+    BackgroundColor="{StaticResource SurfaceBackground}"
     Shell.PresentationMode="Animated">
 
     <Shell.TitleView>
-        <Grid>
-            <Label
-                FontFamily="Designer"
-                Style="{StaticResource Heading3TextStyle}"
-                Text="Quick Prompt "
-                TextColor="{StaticResource PrimaryBlueDark}"
-                VerticalOptions="Center" />
-        </Grid>
+        <Label
+            FontAttributes="Bold"
+            FontFamily="Nasa21"
+            FontSize="18"
+            Text="Quick Prompt"
+            TextColor="{StaticResource PrimaryBlueDark}"
+            VerticalOptions="Center" />
     </Shell.TitleView>
 
     <!--  Barra de herramientas  -->
@@ -30,247 +31,340 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5d5;"
-                    Color="{StaticResource PrimaryYellow}" />
+                    Color="{StaticResource PrimaryBlueDark}" />
             </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Click to reload data
-            </ToolTipProperties.Text>
+            <ToolTipProperties.Text>Reload Prompts</ToolTipProperties.Text>
+            <AutomationProperties.Name>Reload</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Reload all prompts from database</AutomationProperties.HelpText>
         </ToolbarItem>
 
         <ToolbarItem Command="{Binding DeleteSelectedPromptsCommand}" IsEnabled="{Binding SelectedPromptsToDelete.Count, Converter={StaticResource SelectedPromptsVisibilityConverter}}">
-
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe92b;"
                     Color="{StaticResource PrimaryRed}" />
             </ToolbarItem.IconImageSource>
-            <ToolTipProperties.Text>
-                Delete Selected Prompts
-            </ToolTipProperties.Text>
+            <ToolTipProperties.Text>Delete Selected Prompts</ToolTipProperties.Text>
+            <AutomationProperties.Name>Delete Selected</AutomationProperties.Name>
+            <AutomationProperties.HelpText>Delete all selected prompts</AutomationProperties.HelpText>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
 
-    <ScrollView>
-        <Grid Padding="10" RowDefinitions="*,Auto,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*">
 
-            <!--  Overlay de carga  -->
-            <view:ReusableLoadingOverlay
-                x:Name="LoadingOverlay"
-                Grid.Row="0"
-                Grid.RowSpan="4"
-                IsVisible="{Binding IsLoading}"
-                Message="Loading..." />
+        <!--  Overlay de carga  -->
+        <views:ReusableLoadingOverlay
+            x:Name="LoadingOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            IsVisible="{Binding IsLoading}"
+            Message="Loading prompts..." />
 
-            <!--  Google AdMob  -->
-            <views:AdmobBannerView Grid.Row="1" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
+        <!--  Google AdMob Banner  -->
+        <views:AdmobBannerView Grid.Row="0" IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" />
 
-            <views:PromptFilterBar
-                Grid.Row="2"
-                Categories="{Binding Categories}"
-                SearchCommand="{Binding FilterPromptsCommand}"
-                SearchText="{Binding Search}"
-                SelectedCategory="{Binding SelectedCategory}"
-                SelectedFilter="{Binding SelectedDateFilter}" />
+        <!--  Filter Bar  -->
+        <views:PromptFilterBar
+            Grid.Row="1"
+            Margin="16,8"
+            Categories="{Binding Categories}"
+            SearchCommand="{Binding FilterPromptsCommand}"
+            SearchText="{Binding Search}"
+            SelectedCategory="{Binding SelectedCategory}"
+            SelectedFilter="{Binding SelectedDateFilter}" />
 
-            <!--  Lista de Prompts  -->
-            <CollectionView
-                Grid.Row="3"
-                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                ItemsSource="{Binding Prompts}"
-                SelectionMode="None">
+        <!--  Lista de Prompts  -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Padding="16,0,16,32" Spacing="16">
 
-                <CollectionView.EmptyView>
-                    <!--  🆕 Using EmptyStateView control for better UX  -->
-                    <localcontrols:EmptyStateView
-                        Title="No prompts found"
-                        ButtonText="Create First Prompt"
-                        Description="{Binding EmptyViewText}"
-                        Icon="{x:Static localcontrols:EmptyStates+Icons.Inbox}"
-                        ShowButton="True">
-                        <localcontrols:EmptyStateView.ButtonCommand>
-                            <Binding Path="NavigateToCreateCommand" />
-                        </localcontrols:EmptyStateView.ButtonCommand>
-                    </localcontrols:EmptyStateView>
-                </CollectionView.EmptyView>
+                <CollectionView
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    ItemsSource="{Binding Prompts}"
+                    SelectionMode="None">
 
-                <CollectionView.Header>
+                    <CollectionView.EmptyView>
+                        <localcontrols:EmptyStateView
+                            Title="No prompts found"
+                            ButtonText="Create First Prompt"
+                            Description="{Binding EmptyViewText}"
+                            Icon="{x:Static localcontrols:EmptyStates+Icons.Inbox}"
+                            ShowButton="True">
+                            <localcontrols:EmptyStateView.ButtonCommand>
+                                <Binding Path="NavigateToCreateCommand" />
+                            </localcontrols:EmptyStateView.ButtonCommand>
+                        </localcontrols:EmptyStateView>
+                    </CollectionView.EmptyView>
 
-                    <VerticalStackLayout
-                        Padding="10,5,10,5"
-                        Spacing="12"
-                        VerticalOptions="Center">
+                    <CollectionView.Header>
+                        <VerticalStackLayout Spacing="12">
 
-                        <!--  Encabezado con título e icono opcional  -->
-                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                            <Label
-                                Grid.Column="0"
-                                Style="{StaticResource TitleLabelStyle}"
-                                Text="🧠 My Prompts "
-                                VerticalOptions="Center" />
-
-                            <!--  Select All toggle  -->
-                            <HorizontalStackLayout
-                                Grid.Column="1"
-                                Padding="5,0"
-                                Spacing="6"
-                                VerticalOptions="Center">
-                                <Label
-                                    Style="{StaticResource SelectAllLabelStyle}"
-                                    Text="Select All"
-                                    VerticalOptions="Center" />
-                                <CheckBox
-                                    CheckedChanged="OnSelectAllCheckedChanged"
-                                    IsChecked="{Binding IsAllSelected, Mode=TwoWay}"
-                                    Color="{StaticResource PrimaryRed}" />
-                            </HorizontalStackLayout>
-                        </Grid>
-
-                        <!--  Línea divisoria  -->
-                        <BoxView Style="{StaticResource DividerLineStyle}" />
-                    </VerticalStackLayout>
-                </CollectionView.Header>
-
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Padding="12" Style="{StaticResource CardStyle}">
-                            <VerticalStackLayout Spacing="10">
-
-                                <!--  Prompt Title and Favorite Button  -->
-                                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                                    <Label
-                                        Grid.Column="0"
-                                        FontAttributes="Bold"
-                                        Style="{StaticResource Heading2TextStyle}"
-                                        Text="{Binding Prompt.Title}" />
-
-                                    <Button
-                                        Grid.Column="1"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=ToggleFavoriteCommand}"
-                                        CommandParameter="{Binding .}"
-                                        Style="{StaticResource FavoriteButtonStyle}">
-                                        <Button.ImageSource>
-                                            <FontImageSource
-                                                FontFamily="MaterialIconsOutlined-Regular"
-                                                Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
-                                                Color="{StaticResource White}" />
-                                        </Button.ImageSource>
-                                    </Button>
-                                </Grid>
-
-                                <!--  Categoría del Prompt  -->
+                            <!--  Header con Select All  -->
+                            <Grid ColumnDefinitions="*,Auto">
                                 <Label
                                     Grid.Column="0"
-                                    Grid.ColumnSpan="2"
-                                    Margin="0,2,0,0"
-                                    Padding="6,2"
-                                    BackgroundColor="{StaticResource PrimaryRed}"
-                                    FontAttributes="Bold"
-                                    Style="{StaticResource BodySmallTextStyle}"
-                                    HorizontalOptions="Start"
-                                    Text="{Binding Prompt.Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
-                                    TextColor="White"
+                                    Style="{StaticResource Heading2TextStyle}"
+                                    Text="My Prompts"
                                     VerticalOptions="Center" />
 
-                                <!--  Divider Line  -->
-                                <BoxView Style="{StaticResource DividerLineStyle}" />
-
-                                <!--  Prompt Description  -->
-                                <Label
-                                    Style="{StaticResource BodyLargeTextStyle}"
-                                    Text="{Binding Prompt.Description}" />
-
-                                <!--  Action Buttons & Selection  -->
-                                <HorizontalStackLayout HorizontalOptions="Start" Spacing="5">
-
-                                    <Button
-                                        Command="{Binding SelectPromptCommand}"
-                                        CommandParameter="{Binding Prompt}"
-                                        Style="{StaticResource PrimaryButtonStyle}"
-                                        ToolTipProperties.Text="Use">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe913;" />
-                                        </Button.ImageSource>
-                                    </Button>
-
-                                    <Button
-                                        Command="{Binding NavigateToEditPromptCommand}"
-                                        CommandParameter="{Binding Prompt}"
-                                        Style="{StaticResource WarningButtonStyle}"
-                                        ToolTipProperties.Text="Edit">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe3c9;" />
-                                        </Button.ImageSource>
-                                    </Button>
-
-                                    <Button
-                                        Command="{Binding ItemToDeleteCommand}"
-                                        Style="{StaticResource CriticalButtonStyle}"
-                                        ToolTipProperties.Text="Delete">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe92b;" />
-                                        </Button.ImageSource>
-                                    </Button>
-
-                                    <Button
-                                        Command="{Binding ExportPromptCommand}"
-                                        CommandParameter="{Binding Prompt}"
-                                        Style="{StaticResource DetailButtonStyle}"
-                                        ToolTipProperties.Text="Export">
-                                        <Button.ImageSource>
-                                            <FontImageSource FontFamily="MaterialIconsOutlined-Regular" Glyph="&#xe80d;" />
-                                        </Button.ImageSource>
-                                    </Button>
-
+                                <!--  Select All toggle  -->
+                                <HorizontalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="8"
+                                    VerticalOptions="Center">
+                                    <Label
+                                        Style="{StaticResource BodySmallTextStyle}"
+                                        Text="Select All"
+                                        VerticalOptions="Center" />
                                     <CheckBox
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                        Scale="1.3"
-                                        ToolTipProperties.Text="Select"
+                                        CheckedChanged="OnSelectAllCheckedChanged"
+                                        IsChecked="{Binding IsAllSelected, Mode=TwoWay}"
                                         VerticalOptions="Center"
                                         Color="{StaticResource PrimaryRed}" />
                                 </HorizontalStackLayout>
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
+                            </Grid>
 
-                <CollectionView.Footer>
-                    <VerticalStackLayout Padding="10" Spacing="8">
+                            <!--  Divider  -->
+                            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
 
-                        <!--  Línea divisoria  -->
-                        <BoxView Style="{StaticResource DividerLineStyle}" />
+                        </VerticalStackLayout>
+                    </CollectionView.Header>
 
-                        <!--  Conteo total  -->
-                        <Label
-                            HorizontalOptions="Center"
-                            Style="{StaticResource TotalCountLabelStyle}"
-                            Text="{Binding Prompts.Count, StringFormat='Total: {0} prompts '}" />
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <!--  Using StandardCard component  -->
+                            <Border
+                                Margin="0,0,0,12"
+                                Padding="16"
+                                BackgroundColor="{StaticResource CardBackground}"
+                                StrokeThickness="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
+                                <Border.Shadow>
+                                    <Shadow
+                                        Brush="{StaticResource AppBlack}"
+                                        Opacity="0.1"
+                                        Radius="8"
+                                        Offset="0,2" />
+                                </Border.Shadow>
 
-                        <!--  Botón cargar más  -->
-                        <Button
-                            Command="{Binding LoadMorePromptsCommand}"
-                            HorizontalOptions="Center"
-                            IsEnabled="{Binding IsMoreDataAvailable}"
-                            Style="{StaticResource YellowButtonStyle}"
-                            Text="Load More">
+                                <VerticalStackLayout Spacing="12">
 
-                            <Button.IsVisible>
-                                <MultiBinding Converter="{StaticResource IsButtonVisibleConverter}">
-                                    <Binding Path="IsLoading" />
-                                    <Binding Path="Prompts.Count" />
-                                </MultiBinding>
-                            </Button.IsVisible>
+                                    <!--  Header: Title + Favorite  -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label
+                                            Grid.Column="0"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="2"
+                                            Style="{StaticResource Heading3TextStyle}"
+                                            Text="{Binding Prompt.Title}"
+                                            VerticalOptions="Center" />
 
-                            <Button.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xead0;"
-                                    Color="{StaticResource AppBlack}" />
-                            </Button.ImageSource>
-                        </Button>
-                    </VerticalStackLayout>
-                </CollectionView.Footer>
-            </CollectionView>
-        </Grid>
-    </ScrollView>
+                                        <Button
+                                            Grid.Column="1"
+                                            Padding="0"
+                                            BackgroundColor="{StaticResource PrimaryYellow}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuickPromptViewModel}}, Path=ToggleFavoriteCommand}"
+                                            CommandParameter="{Binding .}"
+                                            CornerRadius="22"
+                                            HeightRequest="44"
+                                            VerticalOptions="Center"
+                                            WidthRequest="44">
+                                            <Button.ImageSource>
+                                                <FontImageSource
+                                                    FontFamily="MaterialIconsOutlined-Regular"
+                                                    Glyph="{Binding IsFavorite, Converter={StaticResource BooleanToStarIconConverter}}"
+                                                    Size="20"
+                                                    Color="{StaticResource White}" />
+                                            </Button.ImageSource>
+                                        </Button>
+                                    </Grid>
+
+                                    <!--  Category Badge  -->
+                                    <Border
+                                        Padding="10,4"
+                                        BackgroundColor="{StaticResource PrimaryRed}"
+                                        HorizontalOptions="Start"
+                                        StrokeThickness="0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+
+                                        <Label
+                                            FontAttributes="Bold"
+                                            Style="{StaticResource CaptionTextStyle}"
+                                            Text="{Binding Prompt.Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
+                                            TextColor="{StaticResource White}" />
+                                    </Border>
+
+                                    <!--  Description  -->
+                                    <Label
+                                        LineBreakMode="WordWrap"
+                                        MaxLines="3"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="{Binding Prompt.Description}"
+                                        TextColor="{StaticResource TextSecondary}" />
+
+                                    <!--  Divider  -->
+                                    <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+
+                                    <!--  Action Buttons Row  -->
+                                    <Grid ColumnDefinitions="*,*,*,*,Auto" ColumnSpacing="8">
+
+                                        <!--  Use Button  -->
+                                        <Button
+                                            Grid.Column="0"
+                                            Padding="0"
+                                            AutomationProperties.HelpText="Use this prompt to generate content"
+                                            AutomationProperties.Name="Use Prompt"
+                                            BackgroundColor="{StaticResource PrimaryBlueDark}"
+                                            Command="{Binding SelectPromptCommand}"
+                                            CommandParameter="{Binding Prompt}"
+                                            CornerRadius="8"
+                                            HeightRequest="44"
+                                            ToolTipProperties.Text="Use this prompt"
+                                            WidthRequest="44">
+                                            <Button.ImageSource>
+                                                <FontImageSource
+                                                    FontFamily="MaterialIconsOutlined-Regular"
+                                                    Glyph="&#xe913;"
+                                                    Size="20"
+                                                    Color="{StaticResource White}" />
+                                            </Button.ImageSource>
+                                        </Button>
+
+                                        <!--  Edit Button  -->
+                                        <Button
+                                            Grid.Column="1"
+                                            Padding="0"
+                                            AutomationProperties.HelpText="Edit this prompt"
+                                            AutomationProperties.Name="Edit Prompt"
+                                            BackgroundColor="{StaticResource PrimaryTeal}"
+                                            Command="{Binding NavigateToEditPromptCommand}"
+                                            CommandParameter="{Binding Prompt}"
+                                            CornerRadius="8"
+                                            HeightRequest="44"
+                                            ToolTipProperties.Text="Edit prompt"
+                                            WidthRequest="44">
+                                            <Button.ImageSource>
+                                                <FontImageSource
+                                                    FontFamily="MaterialIconsOutlined-Regular"
+                                                    Glyph="&#xe3c9;"
+                                                    Size="20"
+                                                    Color="{StaticResource White}" />
+                                            </Button.ImageSource>
+                                        </Button>
+
+                                        <!--  Delete Button  -->
+                                        <Button
+                                            Grid.Column="2"
+                                            Padding="0"
+                                            AutomationProperties.HelpText="Delete this prompt"
+                                            AutomationProperties.Name="Delete Prompt"
+                                            BackgroundColor="{StaticResource PrimaryRed}"
+                                            Command="{Binding ItemToDeleteCommand}"
+                                            CornerRadius="8"
+                                            HeightRequest="44"
+                                            ToolTipProperties.Text="Delete prompt"
+                                            WidthRequest="44">
+                                            <Button.ImageSource>
+                                                <FontImageSource
+                                                    FontFamily="MaterialIconsOutlined-Regular"
+                                                    Glyph="&#xe92b;"
+                                                    Size="20"
+                                                    Color="{StaticResource White}" />
+                                            </Button.ImageSource>
+                                        </Button>
+
+                                        <!--  Export Button  -->
+                                        <Button
+                                            Grid.Column="3"
+                                            Padding="0"
+                                            AutomationProperties.HelpText="Export this prompt to JSON"
+                                            AutomationProperties.Name="Export Prompt"
+                                            BackgroundColor="{StaticResource Info600}"
+                                            Command="{Binding ExportPromptCommand}"
+                                            CommandParameter="{Binding Prompt}"
+                                            CornerRadius="8"
+                                            HeightRequest="44"
+                                            ToolTipProperties.Text="Export prompt"
+                                            WidthRequest="44">
+                                            <Button.ImageSource>
+                                                <FontImageSource
+                                                    FontFamily="MaterialIconsOutlined-Regular"
+                                                    Glyph="&#xe80d;"
+                                                    Size="20"
+                                                    Color="{StaticResource White}" />
+                                            </Button.ImageSource>
+                                        </Button>
+
+                                        <!--  Selection CheckBox  -->
+                                        <CheckBox
+                                            Grid.Column="4"
+                                            AutomationProperties.HelpText="Select this prompt for deletion"
+                                            AutomationProperties.Name="Select Prompt"
+                                            HorizontalOptions="End"
+                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            ToolTipProperties.Text="Select for bulk actions"
+                                            VerticalOptions="Center"
+                                            Color="{StaticResource PrimaryRed}" />
+                                    </Grid>
+
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                    <CollectionView.Footer>
+                        <VerticalStackLayout Padding="0,16" Spacing="16">
+
+                            <!--  Divider  -->
+                            <BoxView BackgroundColor="{StaticResource BorderLight}" HeightRequest="1" />
+
+                            <!--  Total Count  -->
+                            <Label
+                                HorizontalOptions="Center"
+                                Style="{StaticResource BodySmallTextStyle}"
+                                Text="{Binding Prompts.Count, StringFormat='Total: {0} prompts'}"
+                                TextColor="{StaticResource TextSecondary}" />
+
+                            <!--  Load More Button  -->
+                            <Button
+                                Padding="32,0"
+                                BackgroundColor="{StaticResource PrimaryBlue}"
+                                Command="{Binding LoadMorePromptsCommand}"
+                                CornerRadius="12"
+                                FontFamily="Nasa21"
+                                FontSize="14"
+                                HeightRequest="44"
+                                HorizontalOptions="Center"
+                                IsEnabled="{Binding IsMoreDataAvailable}"
+                                Text="Load More"
+                                TextColor="White">
+
+                                <Button.IsVisible>
+                                    <MultiBinding Converter="{StaticResource IsButtonVisibleConverter}">
+                                        <Binding Path="IsLoading" />
+                                        <Binding Path="Prompts.Count" />
+                                    </MultiBinding>
+                                </Button.IsVisible>
+
+                                <Button.ImageSource>
+                                    <FontImageSource
+                                        FontFamily="MaterialIconsOutlined-Regular"
+                                        Glyph="&#xead0;"
+                                        Size="20"
+                                        Color="White" />
+                                </Button.ImageSource>
+                            </Button>
+
+                        </VerticalStackLayout>
+                    </CollectionView.Footer>
+                </CollectionView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
 </ContentPage>

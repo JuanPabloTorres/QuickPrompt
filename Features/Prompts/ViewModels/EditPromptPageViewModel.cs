@@ -278,15 +278,23 @@ public partial class EditPromptPageViewModel : BaseViewModel, IQueryAttributable
     [RelayCommand]
     private void SwitchToEditor()
     {
+        System.Diagnostics.Debug.WriteLine("[EditPromptPageViewModel.SwitchToEditor] Switching to text editor mode");
         IsVisualModeActive = false;
     }
 
     [RelayCommand]
     private void SwitchToChips()
     {
+        System.Diagnostics.Debug.WriteLine($"[EditPromptPageViewModel.SwitchToChips] Attempting to switch to visual mode. Template: {PromptTemplate?.Template?.Length ?? 0} chars");
+        
         if (!string.IsNullOrWhiteSpace(PromptTemplate?.Template))
         {
             IsVisualModeActive = true;
+            System.Diagnostics.Debug.WriteLine("[EditPromptPageViewModel.SwitchToChips] Visual mode activated");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine("[EditPromptPageViewModel.SwitchToChips] Cannot activate visual mode - Template is empty");
         }
     }
 }

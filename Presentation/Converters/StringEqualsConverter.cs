@@ -1,19 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.Converters
 {
+    /// <summary>
+    /// Converts string equality comparison to boolean.
+    /// Returns true if value equals parameter, false otherwise.
+    /// </summary>
     public class StringEqualsConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-            value?.ToString() == parameter?.ToString();
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            return value?.ToString() == parameter?.ToString();
+        }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            (bool)value ? parameter?.ToString() : Binding.DoNothing;
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            return (value is bool b && b) ? parameter?.ToString() : Binding.DoNothing;
+        }
     }
-
 }

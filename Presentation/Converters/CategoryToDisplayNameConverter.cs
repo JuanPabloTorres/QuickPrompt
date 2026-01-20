@@ -1,16 +1,15 @@
 ﻿using QuickPrompt.Models.Enums;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuickPrompt.Converters
 {
+    /// <summary>
+    /// Converts PromptCategory enum to user-friendly display name.
+    /// </summary>
     public class CategoryToDisplayNameConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             return value switch
             {
@@ -47,9 +46,9 @@ namespace QuickPrompt.Converters
             };
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            throw new NotImplementedException();
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException("CategoryToDisplayNameConverter does not support two-way binding.");
+        }
     }
-
-
 }

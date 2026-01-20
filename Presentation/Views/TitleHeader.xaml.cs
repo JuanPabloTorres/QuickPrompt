@@ -12,6 +12,9 @@ public partial class TitleHeader : ContentView
     public static readonly BindableProperty TitleProperty =
      BindableProperty.Create(nameof(Title), typeof(string), typeof(TitleHeader), default(string));
 
+    public static readonly BindableProperty TitleFontFamilyProperty =
+        BindableProperty.Create(nameof(TitleFontFamily), typeof(string), typeof(TitleHeader), "Nasa21");
+
     public static readonly BindableProperty GlyphProperty =
         BindableProperty.Create(nameof(Glyph), typeof(string), typeof(TitleHeader), "\ue5e0");
 
@@ -28,6 +31,12 @@ public partial class TitleHeader : ContentView
     {
         get => (string)GetValue(TitleProperty);
         set => SetValue(TitleProperty, value);
+    }
+
+    public string TitleFontFamily
+    {
+        get => (string)GetValue(TitleFontFamilyProperty);
+        set => SetValue(TitleFontFamilyProperty, value);
     }
 
     public string Glyph

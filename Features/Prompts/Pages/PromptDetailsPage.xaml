@@ -4,10 +4,10 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:models="clr-namespace:QuickPrompt.Models"
-    xmlns:view="clr-namespace:QuickPrompt.Views"
     xmlns:views="clr-namespace:QuickPrompt.Views"
+    xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
     x:Name="promptDetailsPage"
-    BackgroundColor="GhostWhite"
+    BackgroundColor="{StaticResource SurfaceBackground}"
     Shell.PresentationMode="Animated">
 
     <Shell.BackButtonBehavior>
@@ -26,35 +26,35 @@
         <ToolbarItem
             Command="{Binding SharePromptCommand}"
             IsEnabled="{Binding IsShareButtonVisible}"
-            Text="Compartir">
+            Text="Share">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe80d;"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{StaticResource PrimaryBlueDark}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
 
         <ToolbarItem
             Command="{Binding NavigateToEditPromptCommand}"
             CommandParameter="{Binding PromptID}"
-            Text="Editar">
+            Text="Edit">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe3c9;"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{StaticResource PrimaryBlueDark}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
 
-        <!--  Botón de Copiar  -->
-        <ToolbarItem Command="{Binding ClearTextCommand}" IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
+        <ToolbarItem 
+            Command="{Binding ClearTextCommand}" 
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}">
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe5c9;"
                     Color="{StaticResource PrimaryRed}" />
-                <!--  Color asociado al botón Copiar  -->
             </ToolbarItem.IconImageSource>
             <ToolTipProperties.Text>
                 Click to Clear Text
@@ -63,81 +63,135 @@
     </ContentPage.ToolbarItems>
 
     <ScrollView>
-
         <VerticalStackLayout
-            Padding="20"
-            Spacing="15"
-            VerticalOptions="Fill">
+            Padding="16,16,16,32"
+            Spacing="20">
 
-            <!--  Título Principal  -->
-            <Label
-                FontAttributes="Bold"
-                HorizontalOptions="Center"
-                Style="{StaticResource Heading1TextStyle}"
-                Text="{Binding PromptTitle}"
-                TextColor="{StaticResource PrimaryBlueDark}" />
+            <!--  Overlay de carga  -->
+            <views:ReusableLoadingOverlay
+                x:Name="LoadingOverlay"
+                IsVisible="{Binding IsLoading}"
+                Message="Loading..." />
 
-            <!--  Categoría del Prompt  -->
-            <Label
-                Margin="0,2,0,0"
-                Padding="6,2"
-                BackgroundColor="{StaticResource PrimaryRed}"
-                FontAttributes="Bold"
-                HorizontalOptions="Start"
-                Style="{StaticResource BodySmallTextStyle}"
-                Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
-                TextColor="White"
-                VerticalOptions="Center" />
+            <!--  Header Card  -->
+            <Border 
+                BackgroundColor="{StaticResource CardBackground}"
+                StrokeThickness="0"
+                Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                </Border.Shadow>
+                
+                <VerticalStackLayout Spacing="8">
+                    
+                    <!--  Título Principal  -->
+                    <Label
+                        Style="{StaticResource Heading1TextStyle}"
+                        Text="{Binding PromptTitle}"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        HorizontalTextAlignment="Center" />
 
-            <!--  Línea divisoria  -->
-            <BoxView Style="{StaticResource DividerLineStyle}" />
+                    <!--  Categoría Badge  -->
+                    <Border
+                        BackgroundColor="{StaticResource PrimaryYellow}"
+                        HorizontalOptions="Center"
+                        Padding="8,4"
+                        StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
+                        
+                        <Label
+                            FontAttributes="Bold"
+                            Style="{StaticResource CaptionTextStyle}"
+                            Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
+                            TextColor="{StaticResource White}" />
+                    </Border>
 
-            <!--  Descripción  -->
-            <Label
-                HorizontalOptions="Center"
-                Style="{StaticResource BodyLargeTextStyle}"
-                Text="{Binding Description}"
-                TextColor="{StaticResource PrimaryBlueLight}" />
+                    <!--  Descripción  -->
+                    <Label
+                        Style="{StaticResource BodyTextStyle}"
+                        Text="{Binding Description}"
+                        TextColor="{StaticResource TextSecondary}"
+                        HorizontalTextAlignment="Center"
+                        Margin="0,8,0,0" />
 
-            <!--  Prompt Principal  -->
-            <Border
-                Padding="12"
-                BackgroundColor="{StaticResource SurfaceCard}"
-                Stroke="{StaticResource BorderLight}"
-                StrokeShape="RoundRectangle 8"
-                StrokeThickness="1">
-
-                <Label
-                    Style="{StaticResource BodyLargeTextStyle}"
-                    Text="{Binding PromptText}"
-                    TextColor="{StaticResource PrimaryBlueLight}" />
+                </VerticalStackLayout>
             </Border>
 
-            <ScrollView>
-                <VerticalStackLayout>
+            <!--  Prompt Template Card  -->
+            <Border 
+                BackgroundColor="{StaticResource CardBackground}"
+                StrokeThickness="0"
+                Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                </Border.Shadow>
+                
+                <VerticalStackLayout Spacing="12">
+                    
                     <Label
-                        Margin="0,10,0,0"
-                        FontAttributes="Bold"
-                        Style="{StaticResource Heading2TextStyle}"
-                        Text="Complete the Variables:"
-                        TextColor="{StaticResource AppBlack}" />
+                        Style="{StaticResource Heading3TextStyle}"
+                        Text="📝 Prompt Template"
+                        TextColor="{StaticResource PrimaryBlueDark}" />
 
-                    <!--  Línea divisoria  -->
-                    <BoxView Style="{StaticResource DividerLineStyle}" />
+                    <Border
+                        BackgroundColor="{StaticResource Info50}"
+                        Stroke="{StaticResource Info200}"
+                        StrokeThickness="1"
+                        Padding="8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="4" />
+                        </Border.StrokeShape>
+
+                        <Label
+                            Style="{StaticResource BodyTextStyle}"
+                            Text="{Binding PromptText}"
+                            TextColor="{StaticResource Info700}" />
+                    </Border>
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Variables Card  -->
+            <Border 
+                BackgroundColor="{StaticResource CardBackground}"
+                StrokeThickness="0"
+                Padding="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                </Border.Shadow>
+                
+                <VerticalStackLayout Spacing="12">
+                    
+                    <Label
+                        Style="{StaticResource Heading3TextStyle}"
+                        Text="✏️ Complete the Variables"
+                        TextColor="{StaticResource PrimaryBlueDark}" />
 
                     <CollectionView
                         x:Name="VariablesCollection"
-                        Margin="0,5"
                         ItemsSource="{Binding Variables}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <VerticalStackLayout Padding="6" Spacing="6">
+                                <VerticalStackLayout 
+                                    Padding="4" 
+                                    Spacing="4">
 
                                     <Label
                                         FontAttributes="Bold"
-                                        Style="{StaticResource BodyLargeTextStyle}"
+                                        Style="{StaticResource BodySmallTextStyle}"
                                         Text="{Binding Name}"
-                                        TextColor="{StaticResource PrimaryBlueDark}" />
+                                        TextColor="{StaticResource TextPrimary}" />
 
                                     <Border Style="{StaticResource InputBorderStyle}">
                                         <Entry
@@ -146,7 +200,6 @@
                                             Style="{StaticResource VariableInputEntryStyle}"
                                             Text="{Binding Value}"
                                             Unfocused="OnEntryUnfocused">
-
                                             <Entry.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnEntryTapped" />
                                             </Entry.GestureRecognizers>
@@ -155,170 +208,187 @@
 
                                     <!--  Sugerencias desde caché  -->
                                     <CollectionView
-                                        Margin="0,4"
+                                        Margin="0,4,0,8"
                                         IsVisible="{Binding ShowSuggestions}"
                                         ItemsLayout="HorizontalList"
                                         ItemsSource="{Binding Suggestions}"
                                         SelectionMode="None">
-
                                         <CollectionView.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Style="{StaticResource SuggestionChipBorderStyle}">
+                                                <Border 
+                                                    Style="{StaticResource SuggestionChipBorderStyle}"
+                                                    Margin="4,0">
                                                     <Label
                                                         Style="{StaticResource SuggestionChipLabelStyle}"
                                                         Text="{Binding .}"
-                                                        TextColor="Gray">
+                                                        TextColor="{StaticResource TextSecondary}">
                                                         <Label.GestureRecognizers>
-                                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" CommandParameter="{Binding .}" />
+                                                            <TapGestureRecognizer 
+                                                                Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" 
+                                                                CommandParameter="{Binding .}" />
                                                         </Label.GestureRecognizers>
                                                     </Label>
                                                 </Border>
                                             </DataTemplate>
                                         </CollectionView.ItemTemplate>
                                     </CollectionView>
+
                                 </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                </VerticalStackLayout>
-            </ScrollView>
 
-            <!--  Botón Generar Prompt  -->
-            <Button
+                </VerticalStackLayout>
+            </Border>
+
+            <!--  Generate Button  -->
+            <buttons:PrimaryButton
                 Command="{Binding GeneratePromptCommand}"
-                Style="{StaticResource YellowButtonStyle}"
-                Text="Generate Prompt"
-                TextColor="White">
-                <Button.ImageSource>
+                Text="Generate Prompt">
+                <buttons:PrimaryButton.ImageSource>
                     <FontImageSource
                         FontFamily="MaterialIconsOutlined-Regular"
                         Glyph="&#xe26c;"
-                        Color="White" />
-                </Button.ImageSource>
-            </Button>
+                        Color="{StaticResource White}" />
+                </buttons:PrimaryButton.ImageSource>
+            </buttons:PrimaryButton>
 
-            <!--  Prompt Generado  -->
-            <Label
-                Margin="0,10"
-                FontAttributes="Italic"
-                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}"
-                LineBreakMode="WordWrap"
-                Style="{StaticResource BodyTextStyle}"
-                Text="{Binding FinalPrompt, StringFormat='Complete Prompt Generated: {0}'}"
-                TextColor="{StaticResource AppBlack}" />
+            <!--  Generated Prompt Result  -->
+            <Border
+                BackgroundColor="{StaticResource CardBackground}"
+                Stroke="{StaticResource BorderLight}"
+                StrokeThickness="1"
+                Padding="16"
+                IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                
+                <VerticalStackLayout Spacing="8">
+                    
+                    <Label
+                        Style="{StaticResource Heading3TextStyle}"
+                        Text="✨ Generated Prompt"
+                        TextColor="{StaticResource SuccessColor}" />
 
-            <!--  Línea divisoria  -->
-            <BoxView Style="{StaticResource DividerLineStyle}" />
+                    <Label
+                        Style="{StaticResource BodyTextStyle}"
+                        Text="{Binding FinalPrompt}"
+                        TextColor="{StaticResource TextPrimary}"
+                        LineBreakMode="WordWrap" />
 
-            <!--  Instrucciones finales  -->
-            <Label
-                Margin="0,10,0,5"
-                FontAttributes="Bold"
-                HorizontalOptions="Center"
-                IsVisible="{Binding ShowPromptActions}"
-                Style="{StaticResource Heading3TextStyle}"
-                Text="🤖 Select an AI Provider"
-                TextColor="{StaticResource PrimaryBlueDark}" />
+                </VerticalStackLayout>
+            </Border>
 
-            <!--  Botones AI en grid para mejor layout  -->
-            <Grid
-                Margin="0,5,0,20"
-                ColumnDefinitions="*,*"
-                ColumnSpacing="12"
-                IsVisible="{Binding ShowPromptActions}"
-                RowDefinitions="Auto,Auto"
-                RowSpacing="12">
+            <!--  AI Providers Card  -->
+            <Border
+                BackgroundColor="{StaticResource CardBackground}"
+                StrokeThickness="0"
+                Padding="16"
+                IsVisible="{Binding ShowPromptActions}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                </Border.Shadow>
+                
+                <VerticalStackLayout Spacing="12">
+                    
+                    <Label
+                        Style="{StaticResource Heading3TextStyle}"
+                        Text="🤖 Select an AI Provider"
+                        TextColor="{StaticResource PrimaryBlueDark}"
+                        HorizontalTextAlignment="Center" />
 
-                <!--  ChatGPT  -->
-                <Button
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="ChatGPT"
-                    TextColor="{StaticResource TextLight}">
-                    <Button.Command>
-                        <Binding Path="SendPromptToCommand" />
-                    </Button.Command>
-                    <Button.CommandParameter>
-                        <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
-                    </Button.CommandParameter>
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe0ca;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
+                    <!--  AI Buttons Grid  -->
+                    <Grid
+                        ColumnDefinitions="*,*"
+                        ColumnSpacing="8"
+                        RowDefinitions="Auto,Auto"
+                        RowSpacing="8">
 
-                <!--  Gemini  -->
-                <Button
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Gemini"
-                    TextColor="{StaticResource TextLight}">
-                    <Button.Command>
-                        <Binding Path="SendPromptToCommand" />
-                    </Button.Command>
-                    <Button.CommandParameter>
-                        <models:NavigationParams PageName="GeminiPage" ToolName="Gemini" />
-                    </Button.CommandParameter>
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe86c;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
+                        <!--  ChatGPT  -->
+                        <Button
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Style="{StaticResource AiButtonStyle}"
+                            Text="ChatGPT"
+                            TextColor="{StaticResource TextLight}"
+                            Command="{Binding SendPromptToCommand}">
+                            <Button.CommandParameter>
+                                <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
+                            </Button.CommandParameter>
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe0ca;"
+                                    Color="{StaticResource TextLight}" />
+                            </Button.ImageSource>
+                        </Button>
 
-                <!--  Grok  -->
-                <Button
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Grok"
-                    TextColor="{StaticResource TextLight}">
-                    <Button.Command>
-                        <Binding Path="SendPromptToCommand" />
-                    </Button.Command>
-                    <Button.CommandParameter>
-                        <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
-                    </Button.CommandParameter>
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xe887;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
+                        <!--  Gemini  -->
+                        <Button
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Style="{StaticResource AiButtonStyle}"
+                            Text="Gemini"
+                            TextColor="{StaticResource TextLight}"
+                            Command="{Binding SendPromptToCommand}">
+                            <Button.CommandParameter>
+                                <models:NavigationParams PageName="GeminiPage" ToolName="Gemini" />
+                            </Button.CommandParameter>
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe86c;"
+                                    Color="{StaticResource TextLight}" />
+                            </Button.ImageSource>
+                        </Button>
 
-                <!--  Copilot  -->
-                <Button
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Style="{StaticResource AiButtonStyle}"
-                    Text="Copilot"
-                    TextColor="{StaticResource TextLight}">
-                    <Button.Command>
-                        <Binding Path="SendPromptToCommand" />
-                    </Button.Command>
-                    <Button.CommandParameter>
-                        <models:NavigationParams PageName="CopilotChatPage" ToolName="Copilot" />
-                    </Button.CommandParameter>
-                    <Button.ImageSource>
-                        <FontImageSource
-                            FontFamily="MaterialIconsOutlined-Regular"
-                            Glyph="&#xf02b;"
-                            Color="{StaticResource TextLight}" />
-                    </Button.ImageSource>
-                </Button>
-            </Grid>
+                        <!--  Grok  -->
+                        <Button
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Style="{StaticResource AiButtonStyle}"
+                            Text="Grok"
+                            TextColor="{StaticResource TextLight}"
+                            Command="{Binding SendPromptToCommand}">
+                            <Button.CommandParameter>
+                                <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
+                            </Button.CommandParameter>
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xe887;"
+                                    Color="{StaticResource TextLight}" />
+                            </Button.ImageSource>
+                        </Button>
 
-            <!--  Overlay de carga  -->
-            <view:ReusableLoadingOverlay
-                x:Name="LoadingOverlay"
-                IsVisible="{Binding IsLoading}"
-                Message="Loading..." />
+                        <!--  Copilot  -->
+                        <Button
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Style="{StaticResource AiButtonStyle}"
+                            Text="Copilot"
+                            TextColor="{StaticResource TextLight}"
+                            Command="{Binding SendPromptToCommand}">
+                            <Button.CommandParameter>
+                                <models:NavigationParams PageName="CopilotChatPage" ToolName="Copilot" />
+                            </Button.CommandParameter>
+                            <Button.ImageSource>
+                                <FontImageSource
+                                    FontFamily="MaterialIconsOutlined-Regular"
+                                    Glyph="&#xf02b;"
+                                    Color="{StaticResource TextLight}" />
+                            </Button.ImageSource>
+                        </Button>
+
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Border>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

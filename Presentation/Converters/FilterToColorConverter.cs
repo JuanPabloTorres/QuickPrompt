@@ -1,26 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 
 namespace QuickPrompt.Converters
 {
+    /// <summary>
+    /// Converts filter comparison to color.
+    /// Returns PrimaryBlueDark if the current filter matches the button filter, Gray300 otherwise.
+    /// </summary>
     public class FilterToColorConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        // ✅ Use Design System tokens
+        private static Color ActiveColor => (Color)Application.Current!.Resources["PrimaryBlueDark"];
+        private static Color InactiveColor => (Color)Application.Current!.Resources["Gray300"];
+
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             var currentFilter = value?.ToString();
             var buttonFilter = parameter?.ToString();
 
-            // ✅ Use Design System tokens
-            var activeColor = (Color)Application.Current.Resources["PrimaryBlueDark"];
-            var inactiveColor = (Color)Application.Current.Resources["Gray300"];
-
-            return currentFilter == buttonFilter ? activeColor : inactiveColor;
+            return currentFilter == buttonFilter ? ActiveColor : InactiveColor;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException("FilterToColorConverter does not support two-way binding.");
+        }
     }
 }
