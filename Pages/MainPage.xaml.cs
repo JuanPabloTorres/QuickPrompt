@@ -130,38 +130,36 @@ public partial class MainPage : ContentPage
 
             _selectedText = selectedText;
             
-            // ✅ SIMPLIFIED: Just check if text contains < and >
+            // ✅ ULTRA SIMPLIFIED: Direct check
             var trimmed = selectedText.Trim();
-            bool looksLikeVariable = trimmed.StartsWith("<") && trimmed.EndsWith(">");
             
-            System.Diagnostics.Debug.WriteLine($"[Detection] Text: '{trimmed}', StartsWithLess: {trimmed.StartsWith("<")}, EndsWithGreater: {trimmed.EndsWith(">")}");
-            System.Diagnostics.Debug.WriteLine($"[Detection] Looks like variable: {looksLikeVariable}");
+            System.Diagnostics.Debug.WriteLine($"[Detection] Trimmed: '{trimmed}'");
+            System.Diagnostics.Debug.WriteLine($"[Detection] First char: '{(trimmed.Length > 0 ? trimmed[0] : ' ')}'");
+            System.Diagnostics.Debug.WriteLine($"[Detection] Last char: '{(trimmed.Length > 0 ? trimmed[trimmed.Length - 1] : ' ')}'");
             
-            if (looksLikeVariable)
+            bool startsWithBracket = trimmed.Length > 0 && trimmed[0] == '<';
+            bool endsWithBracket = trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '>';
+            bool isVariable = startsWithBracket && endsWithBracket && trimmed.Length > 2;
+            
+            System.Diagnostics.Debug.WriteLine($"[Detection] Starts: {startsWithBracket}, Ends: {endsWithBracket}, IsVariable: {isVariable}");
+            
+            if (isVariable)
             {
                 System.Diagnostics.Debug.WriteLine(">>> SHOWING RED BUTTON (Remove Variable) <<<");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = true;
             }
+            else if (selectionLen > 0)
+            {
+                System.Diagnostics.Debug.WriteLine(">>> SHOWING BLUE BUTTON (Make Variable) <<<");
+                FloatingVariableButton.IsVisible = true;
+                FloatingUndoVariableButton.IsVisible = false;
+            }
             else
             {
-                // For non-variables, check if it's valid text selection
-                bool isValidText = selectionLen > 0 && !trimmed.Contains("<") && !trimmed.Contains(">");
-
-                System.Diagnostics.Debug.WriteLine($"[Detection] Is valid text: {isValidText}");
-                
-                if (isValidText)
-                {
-                    System.Diagnostics.Debug.WriteLine(">>> SHOWING BLUE BUTTON (Make Variable) <<<");
-                    FloatingVariableButton.IsVisible = true;
-                    FloatingUndoVariableButton.IsVisible = false;
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine(">>> HIDING BOTH BUTTONS (Invalid) <<<");
-                    FloatingVariableButton.IsVisible = false;
-                    FloatingUndoVariableButton.IsVisible = false;
-                }
+                System.Diagnostics.Debug.WriteLine(">>> HIDING BOTH BUTTONS <<<");
+                FloatingVariableButton.IsVisible = false;
+                FloatingUndoVariableButton.IsVisible = false;
             }
         });
     }
