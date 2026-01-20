@@ -7,7 +7,7 @@
     xmlns:views="clr-namespace:QuickPrompt.Views"
     xmlns:buttons="clr-namespace:QuickPrompt.Components.Buttons"
     x:Name="promptDetailsPage"
-    BackgroundColor="{StaticResource SurfaceBackground}"
+    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
     Shell.PresentationMode="Animated">
 
     <Shell.BackButtonBehavior>
@@ -31,7 +31,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe80d;"
-                    Color="{StaticResource PrimaryBlueDark}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
 
@@ -43,7 +43,7 @@
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe3c9;"
-                    Color="{StaticResource PrimaryBlueDark}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}" />
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
 
@@ -73,110 +73,133 @@
                 IsVisible="{Binding IsLoading}"
                 Message="Loading..." />
 
-            <!--  Header Card  -->
+            <!--  ✅ Header Card - Dark Mode  -->
             <Border 
-                BackgroundColor="{StaticResource CardBackground}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                 StrokeThickness="0"
                 Padding="16">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
+                    <RoundRectangle CornerRadius="12" />
                 </Border.StrokeShape>
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                    <Shadow 
+                        Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                        Opacity="0.15" 
+                        Radius="12" 
+                        Offset="0,4" />
                 </Border.Shadow>
                 
-                <VerticalStackLayout Spacing="8">
+                <VerticalStackLayout Spacing="12">
                     
                     <!--  Título Principal  -->
                     <Label
-                        Style="{StaticResource Heading1TextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="24"
+                        FontAttributes="Bold"
                         Text="{Binding PromptTitle}"
-                        TextColor="{StaticResource PrimaryBlueDark}"
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}"
                         HorizontalTextAlignment="Center" />
 
                     <!--  Categoría Badge  -->
                     <Border
                         BackgroundColor="{StaticResource PrimaryYellow}"
                         HorizontalOptions="Center"
-                        Padding="8,4"
+                        Padding="10,6"
                         StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="16" />
                         </Border.StrokeShape>
                         
                         <Label
+                            FontFamily="Nasa21"
+                            FontSize="12"
                             FontAttributes="Bold"
-                            Style="{StaticResource CaptionTextStyle}"
                             Text="{Binding Category, Converter={StaticResource CategoryToDisplayNameConverter}}"
                             TextColor="{StaticResource White}" />
                     </Border>
 
                     <!--  Descripción  -->
                     <Label
-                        Style="{StaticResource BodyTextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="14"
                         Text="{Binding Description}"
-                        TextColor="{StaticResource TextSecondary}"
+                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                         HorizontalTextAlignment="Center"
-                        Margin="0,8,0,0" />
+                        Margin="0,8,0,0"
+                        LineBreakMode="WordWrap" />
 
                 </VerticalStackLayout>
             </Border>
 
-            <!--  Prompt Template Card  -->
+            <!--  ✅ Prompt Template Card - Dark Mode  -->
             <Border 
-                BackgroundColor="{StaticResource CardBackground}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                 StrokeThickness="0"
                 Padding="16">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
+                    <RoundRectangle CornerRadius="12" />
                 </Border.StrokeShape>
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                    <Shadow 
+                        Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                        Opacity="0.15" 
+                        Radius="12" 
+                        Offset="0,4" />
                 </Border.Shadow>
                 
                 <VerticalStackLayout Spacing="12">
                     
                     <Label
-                        Style="{StaticResource Heading3TextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="18"
+                        FontAttributes="Bold"
                         Text="📝 Prompt Template"
-                        TextColor="{StaticResource PrimaryBlueDark}" />
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}" />
 
                     <Border
-                        BackgroundColor="{StaticResource Info50}"
-                        Stroke="{StaticResource Info200}"
+                        BackgroundColor="{AppThemeBinding Light=#EFF6FF, Dark=#1E3A5F}"
+                        Stroke="{AppThemeBinding Light=#BFDBFE, Dark=#3B82F6}"
                         StrokeThickness="1"
-                        Padding="8">
+                        Padding="12">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="4" />
+                            <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
 
                         <Label
-                            Style="{StaticResource BodyTextStyle}"
+                            FontFamily="Nasa21"
+                            FontSize="14"
                             Text="{Binding PromptText}"
-                            TextColor="{StaticResource Info700}" />
+                            TextColor="{AppThemeBinding Light=#1D4ED8, Dark=#93C5FD}"
+                            LineBreakMode="WordWrap" />
                     </Border>
 
                 </VerticalStackLayout>
             </Border>
 
-            <!--  Variables Card  -->
+            <!--  ✅ Variables Card - Dark Mode  -->
             <Border 
-                BackgroundColor="{StaticResource CardBackground}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                 StrokeThickness="0"
                 Padding="16">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
+                    <RoundRectangle CornerRadius="12" />
                 </Border.StrokeShape>
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                    <Shadow 
+                        Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                        Opacity="0.15" 
+                        Radius="12" 
+                        Offset="0,4" />
                 </Border.Shadow>
                 
                 <VerticalStackLayout Spacing="12">
                     
                     <Label
-                        Style="{StaticResource Heading3TextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="18"
+                        FontAttributes="Bold"
                         Text="✏️ Complete the Variables"
-                        TextColor="{StaticResource PrimaryBlueDark}" />
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}" />
 
                     <CollectionView
                         x:Name="VariablesCollection"
@@ -185,21 +208,36 @@
                             <DataTemplate>
                                 <VerticalStackLayout 
                                     Padding="4" 
-                                    Spacing="4">
+                                    Spacing="6">
 
                                     <Label
+                                        FontFamily="Nasa21"
+                                        FontSize="14"
                                         FontAttributes="Bold"
-                                        Style="{StaticResource BodySmallTextStyle}"
                                         Text="{Binding Name}"
-                                        TextColor="{StaticResource TextPrimary}" />
+                                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
 
-                                    <Border Style="{StaticResource InputBorderStyle}">
+                                    <Border 
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceInputLight}, Dark={StaticResource SurfaceInputDark}}" 
+                                        Stroke="{AppThemeBinding Light={StaticResource BorderDefaultLight}, Dark={StaticResource BorderDefaultDark}}" 
+                                        StrokeThickness="1"
+                                        Padding="12,0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        
                                         <Entry
                                             Focused="OnEntryFocused"
                                             Placeholder="Enter value here..."
-                                            Style="{StaticResource VariableInputEntryStyle}"
+                                            FontFamily="Nasa21"
+                                            FontSize="15"
+                                            TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                            PlaceholderColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                                            BackgroundColor="Transparent"
                                             Text="{Binding Value}"
-                                            Unfocused="OnEntryUnfocused">
+                                            Unfocused="OnEntryUnfocused"
+                                            HeightRequest="46"
+                                            VerticalOptions="Center">
                                             <Entry.GestureRecognizers>
                                                 <TapGestureRecognizer Tapped="OnEntryTapped" />
                                             </Entry.GestureRecognizers>
@@ -216,12 +254,20 @@
                                         <CollectionView.ItemTemplate>
                                             <DataTemplate>
                                                 <Border 
-                                                    Style="{StaticResource SuggestionChipBorderStyle}"
+                                                    BackgroundColor="{AppThemeBinding Light=#F3F4F6, Dark=#374151}"
+                                                    Stroke="{AppThemeBinding Light=#D1D5DB, Dark=#4B5563}"
+                                                    StrokeThickness="1"
+                                                    Padding="10,6"
                                                     Margin="4,0">
+                                                    <Border.StrokeShape>
+                                                        <RoundRectangle CornerRadius="16" />
+                                                    </Border.StrokeShape>
+                                                    
                                                     <Label
-                                                        Style="{StaticResource SuggestionChipLabelStyle}"
+                                                        FontFamily="Nasa21"
+                                                        FontSize="12"
                                                         Text="{Binding .}"
-                                                        TextColor="{StaticResource TextSecondary}">
+                                                        TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}">
                                                         <Label.GestureRecognizers>
                                                             <TapGestureRecognizer 
                                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type models:VariableInput}}, Path=ApplySuggestionCommand}" 
@@ -241,7 +287,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!--  Generate Button  -->
+            <!--  ✅ Generate Button  -->
             <buttons:PrimaryButton
                 Command="{Binding GeneratePromptCommand}"
                 Text="Generate Prompt">
@@ -253,135 +299,140 @@
                 </buttons:PrimaryButton.ImageSource>
             </buttons:PrimaryButton>
 
-            <!--  Generated Prompt Result  -->
+            <!--  ✅ Generated Prompt Result - Dark Mode  -->
             <Border
-                BackgroundColor="{StaticResource CardBackground}"
-                Stroke="{StaticResource BorderLight}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
+                Stroke="{AppThemeBinding Light={StaticResource BorderLightLight}, Dark={StaticResource BorderLightDark}}"
                 StrokeThickness="1"
                 Padding="16"
                 IsVisible="{Binding FinalPrompt, Converter={StaticResource FinalPromptVisibilityConverter}}">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
+                    <RoundRectangle CornerRadius="12" />
                 </Border.StrokeShape>
                 
-                <VerticalStackLayout Spacing="8">
+                <VerticalStackLayout Spacing="10">
                     
                     <Label
-                        Style="{StaticResource Heading3TextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="18"
+                        FontAttributes="Bold"
                         Text="✨ Generated Prompt"
-                        TextColor="{StaticResource SuccessColor}" />
+                        TextColor="{StaticResource Success}" />
 
                     <Label
-                        Style="{StaticResource BodyTextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="14"
                         Text="{Binding FinalPrompt}"
-                        TextColor="{StaticResource TextPrimary}"
+                        TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
                         LineBreakMode="WordWrap" />
 
                 </VerticalStackLayout>
             </Border>
 
-            <!--  AI Providers Card  -->
+            <!--  ✅ AI Providers Card - Dark Mode  -->
             <Border
-                BackgroundColor="{StaticResource CardBackground}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceCardLight}, Dark={StaticResource SurfaceCardDark}}"
                 StrokeThickness="0"
                 Padding="16"
                 IsVisible="{Binding ShowPromptActions}">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
+                    <RoundRectangle CornerRadius="12" />
                 </Border.StrokeShape>
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource AppBlack}" Opacity="0.15" Radius="12" Offset="0,4" />
+                    <Shadow 
+                        Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}" 
+                        Opacity="0.15" 
+                        Radius="12" 
+                        Offset="0,4" />
                 </Border.Shadow>
                 
-                <VerticalStackLayout Spacing="12">
+                <VerticalStackLayout Spacing="16">
                     
                     <Label
-                        Style="{StaticResource Heading3TextStyle}"
+                        FontFamily="Nasa21"
+                        FontSize="18"
+                        FontAttributes="Bold"
                         Text="🤖 Select an AI Provider"
-                        TextColor="{StaticResource PrimaryBlueDark}"
+                        TextColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}"
                         HorizontalTextAlignment="Center" />
 
                     <!--  AI Buttons Grid  -->
                     <Grid
                         ColumnDefinitions="*,*"
-                        ColumnSpacing="8"
+                        ColumnSpacing="12"
                         RowDefinitions="Auto,Auto"
-                        RowSpacing="8">
+                        RowSpacing="12">
 
                         <!--  ChatGPT  -->
                         <Button
                             Grid.Row="0"
                             Grid.Column="0"
-                            Style="{StaticResource AiButtonStyle}"
+                            BackgroundColor="#10A37F"
+                            TextColor="White"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            FontAttributes="Bold"
                             Text="ChatGPT"
-                            TextColor="{StaticResource TextLight}"
+                            CornerRadius="8"
+                            HeightRequest="56"
                             Command="{Binding SendPromptToCommand}">
                             <Button.CommandParameter>
                                 <models:NavigationParams PageName="ChatGptPage" ToolName="ChatGPT" />
                             </Button.CommandParameter>
-                            <Button.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xe0ca;"
-                                    Color="{StaticResource TextLight}" />
-                            </Button.ImageSource>
                         </Button>
 
                         <!--  Gemini  -->
                         <Button
                             Grid.Row="0"
                             Grid.Column="1"
-                            Style="{StaticResource AiButtonStyle}"
+                            BackgroundColor="#8AB4F8"
+                            TextColor="White"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            FontAttributes="Bold"
                             Text="Gemini"
-                            TextColor="{StaticResource TextLight}"
+                            CornerRadius="8"
+                            HeightRequest="56"
                             Command="{Binding SendPromptToCommand}">
                             <Button.CommandParameter>
                                 <models:NavigationParams PageName="GeminiPage" ToolName="Gemini" />
                             </Button.CommandParameter>
-                            <Button.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xe86c;"
-                                    Color="{StaticResource TextLight}" />
-                            </Button.ImageSource>
                         </Button>
 
                         <!--  Grok  -->
                         <Button
                             Grid.Row="1"
                             Grid.Column="0"
-                            Style="{StaticResource AiButtonStyle}"
+                            BackgroundColor="#000000"
+                            TextColor="White"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            FontAttributes="Bold"
                             Text="Grok"
-                            TextColor="{StaticResource TextLight}"
+                            CornerRadius="8"
+                            HeightRequest="56"
                             Command="{Binding SendPromptToCommand}">
                             <Button.CommandParameter>
                                 <models:NavigationParams PageName="GrokPage" ToolName="Grok" />
                             </Button.CommandParameter>
-                            <Button.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xe887;"
-                                    Color="{StaticResource TextLight}" />
-                            </Button.ImageSource>
                         </Button>
 
                         <!--  Copilot  -->
                         <Button
                             Grid.Row="1"
                             Grid.Column="1"
-                            Style="{StaticResource AiButtonStyle}"
+                            BackgroundColor="#0078D4"
+                            TextColor="White"
+                            FontFamily="Nasa21"
+                            FontSize="14"
+                            FontAttributes="Bold"
                             Text="Copilot"
-                            TextColor="{StaticResource TextLight}"
+                            CornerRadius="8"
+                            HeightRequest="56"
                             Command="{Binding SendPromptToCommand}">
                             <Button.CommandParameter>
                                 <models:NavigationParams PageName="CopilotChatPage" ToolName="Copilot" />
                             </Button.CommandParameter>
-                            <Button.ImageSource>
-                                <FontImageSource
-                                    FontFamily="MaterialIconsOutlined-Regular"
-                                    Glyph="&#xf02b;"
-                                    Color="{StaticResource TextLight}" />
-                            </Button.ImageSource>
                         </Button>
 
                     </Grid>
