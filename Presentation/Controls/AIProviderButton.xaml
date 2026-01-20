@@ -14,10 +14,10 @@
             <RoundRectangle CornerRadius="8" />
         </Border.StrokeShape>
 
-        <!--  Shadow  -->
+        <!--  Shadow - Theme Aware  -->
         <Border.Shadow>
             <Shadow
-                Brush="{StaticResource AppBlack}"
+                Brush="{AppThemeBinding Light={StaticResource AppBlackLight}, Dark=#000000}"
                 Opacity="0.15"
                 Radius="8"
                 Offset="0,2" />
@@ -60,13 +60,15 @@
                 VerticalOptions="Center">
                 <Label
                     FontAttributes="Bold"
-                    Style="{StaticResource BodyLargeTextStyle}"
+                    FontFamily="Nasa21"
+                    FontSize="16"
                     Text="{Binding ProviderName, Source={x:Reference Root}}"
                     TextColor="White" />
                 <Label
                     IsVisible="{Binding ShowDescription, Source={x:Reference Root}}"
                     Opacity="0.9"
-                    Style="{StaticResource CaptionTextStyle}"
+                    FontFamily="Nasa21"
+                    FontSize="12"
                     Text="{Binding ProviderDescription, Source={x:Reference Root}}"
                     TextColor="White" />
             </VerticalStackLayout>
@@ -83,7 +85,8 @@
                 </Border.StrokeShape>
                 <Label
                     FontAttributes="Bold"
-                    Style="{StaticResource CaptionTextStyle}"
+                    FontFamily="Nasa21"
+                    FontSize="12"
                     Text="{Binding BadgeText, Source={x:Reference Root}}"
                     TextColor="White" />
             </Border>

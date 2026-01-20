@@ -9,12 +9,15 @@
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="Quick Prompt"
     Shell.NavBarHasShadow="True"
-    Shell.TabBarForegroundColor="{StaticResource PrimaryBlueDark}"
-    Shell.TabBarTitleColor="{StaticResource PrimaryBlueDark}"
-    Shell.TabBarUnselectedColor="{StaticResource PrimaryTeal}">
+    Shell.TabBarBackgroundColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}"
+    Shell.TabBarForegroundColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}"
+    Shell.TabBarTitleColor="{AppThemeBinding Light={StaticResource PrimaryBlueDark}, Dark={StaticResource PrimaryBlueLight}}"
+    Shell.TabBarUnselectedColor="{AppThemeBinding Light={StaticResource PrimaryTeal}, Dark={StaticResource Gray400}}">
 
     <Shell.Behaviors>
-        <toolkit:StatusBarBehavior StatusBarColor="{StaticResource AppBlack}" StatusBarStyle="LightContent" />
+        <toolkit:StatusBarBehavior 
+            StatusBarColor="{AppThemeBinding Light={StaticResource SurfaceBackgroundLight}, Dark={StaticResource SurfaceBackgroundDark}}" 
+            StatusBarStyle="{AppThemeBinding Light=DarkContent, Dark=LightContent}" />
     </Shell.Behaviors>
 
     <TabBar>
@@ -26,9 +29,9 @@
             <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xF06C;"
+                    Glyph="&#xe65e;"
                     Size="24"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueLight}, Dark={StaticResource PrimaryBlueDark}}" />
             </ShellContent.Icon>
         </ShellContent>
 
@@ -42,7 +45,7 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xea0b;"
                     Size="24"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueLight}, Dark={StaticResource PrimaryBlueDark}}" />
             </ShellContent.Icon>
         </ShellContent>
 
@@ -55,7 +58,7 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe145;"
                     Size="24"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueLight}, Dark={StaticResource PrimaryBlueDark}}" />
             </ShellContent.Icon>
         </ShellContent>
 
@@ -69,7 +72,7 @@
                     FontFamily="MaterialIconsOutlined-Regular"
                     Glyph="&#xe8b8;"
                     Size="24"
-                    Color="{StaticResource PrimaryBlueLight}" />
+                    Color="{AppThemeBinding Light={StaticResource PrimaryBlueLight}, Dark={StaticResource PrimaryBlueDark}}" />
             </ShellContent.Icon>
         </ShellContent>
     </TabBar>

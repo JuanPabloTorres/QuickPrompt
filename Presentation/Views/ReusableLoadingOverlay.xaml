@@ -7,12 +7,16 @@
     IsVisible="{Binding IsVisible, Source={x:Reference Root}}">
     <Border Style="{StaticResource loadingBorderStyle}">
 
-        <Grid BackgroundColor="LightGray" InputTransparent="False">
+        <Grid 
+            BackgroundColor="{AppThemeBinding Light=#80000000, Dark=#B0000000}" 
+            InputTransparent="False">
             <VerticalStackLayout
                 HorizontalOptions="Center"
                 Spacing="10"
                 VerticalOptions="Center">
-                <ActivityIndicator IsRunning="True" Style="{StaticResource LoadingIndicatorStyle}" />
+                <ActivityIndicator 
+                    IsRunning="True" 
+                    Style="{StaticResource LoadingIndicatorStyle}" />
                 <Label
                     x:Name="MessageLabel"
                     FontSize="14"
