@@ -105,6 +105,7 @@ public partial class MainPage : ContentPage
             
             if (editor == null || string.IsNullOrEmpty(editor.Text))
             {
+                System.Diagnostics.Debug.WriteLine("[CheckTextSelection] EARLY EXIT: Editor null or empty text");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = false;
                 _selectedText = string.Empty;
@@ -118,10 +119,15 @@ public partial class MainPage : ContentPage
             
             var selectedText = GetSelectedTextFromViewModel();
             
-            System.Diagnostics.Debug.WriteLine($"[Selection] Text: '{selectedText}' (len: {selectedText?.Length ?? 0})");
+            System.Diagnostics.Debug.WriteLine($"[Selection] Raw selectedText: '{selectedText}'");
+            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText is null: {selectedText == null}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText is empty: {selectedText == string.Empty}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] selectedText length: {selectedText?.Length ?? -1}");
+            System.Diagnostics.Debug.WriteLine($"[Selection] IsNullOrWhiteSpace: {string.IsNullOrWhiteSpace(selectedText)}");
             
             if (string.IsNullOrWhiteSpace(selectedText))
             {
+                System.Diagnostics.Debug.WriteLine("[CheckTextSelection] EARLY EXIT: selectedText is null or whitespace");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = false;
                 _selectedText = string.Empty;
@@ -130,12 +136,19 @@ public partial class MainPage : ContentPage
 
             _selectedText = selectedText;
             
+            System.Diagnostics.Debug.WriteLine($"[Detection] PASSED null check, continuing...");
+            
             // ✅ ULTRA SIMPLIFIED: Direct check
             var trimmed = selectedText.Trim();
             
             System.Diagnostics.Debug.WriteLine($"[Detection] Trimmed: '{trimmed}'");
-            System.Diagnostics.Debug.WriteLine($"[Detection] First char: '{(trimmed.Length > 0 ? trimmed[0] : ' ')}'");
-            System.Diagnostics.Debug.WriteLine($"[Detection] Last char: '{(trimmed.Length > 0 ? trimmed[trimmed.Length - 1] : ' ')}'");
+            System.Diagnostics.Debug.WriteLine($"[Detection] Trimmed Length: {trimmed.Length}");
+            
+            if (trimmed.Length > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Detection] First char: '{trimmed[0]}' (ASCII: {(int)trimmed[0]})");
+                System.Diagnostics.Debug.WriteLine($"[Detection] Last char: '{trimmed[trimmed.Length - 1]}' (ASCII: {(int)trimmed[trimmed.Length - 1]})");
+            }
             
             bool startsWithBracket = trimmed.Length > 0 && trimmed[0] == '<';
             bool endsWithBracket = trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '>';
@@ -146,8 +159,10 @@ public partial class MainPage : ContentPage
             if (isVariable)
             {
                 System.Diagnostics.Debug.WriteLine(">>> SHOWING RED BUTTON (Remove Variable) <<<");
+                System.Diagnostics.Debug.WriteLine($">>> Setting FloatingUndoVariableButton.IsVisible = true <<<");
                 FloatingVariableButton.IsVisible = false;
                 FloatingUndoVariableButton.IsVisible = true;
+                System.Diagnostics.Debug.WriteLine($">>> FloatingUndoVariableButton.IsVisible is now: {FloatingUndoVariableButton.IsVisible} <<<");
             }
             else if (selectionLen > 0)
             {
