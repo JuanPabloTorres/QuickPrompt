@@ -60,6 +60,7 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             FloatingVariableButton.IsVisible = false;
+            _selectedText = string.Empty;
         });
     }
 
@@ -144,10 +145,15 @@ public partial class MainPage : ContentPage
     private async void OnCreateVariableFromSelection(object sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(_selectedText))
+        {
+            FloatingVariableButton.IsVisible = false;
             return;
+        }
 
-        // Hide the button
-        FloatingVariableButton.IsVisible = false;
+        // Store selection info before dialog
+        var editor = PromptRawEditor;
+        int selectionStart = editor.CursorPosition;
+        int selectionLength = editor.SelectionLength;
 
         // Get variable name from user
         var variableName = await DisplayPromptAsync(
@@ -158,26 +164,41 @@ public partial class MainPage : ContentPage
             accept: "Create",
             cancel: "Cancel");
 
-        if (string.IsNullOrWhiteSpace(variableName))
-            return;
+        // ✅ IMPROVEMENT: Hide button regardless of user choice (Create or Cancel)
+        FloatingVariableButton.IsVisible = false;
 
-        // Clean variable name (remove spaces, special chars)
-        variableName = Regex.Replace(variableName, @"[^\w]", "_");
+        // ✅ IMPROVEMENT: If user cancelled, clear selection and return
+        if (string.IsNullOrWhiteSpace(variableName))
+        {
+            _selectedText = string.Empty;
+            editor.SelectionLength = 0; // Clear selection
+            return;
+        }
+
+        // ✅ IMPROVEMENT: Clean variable name (remove spaces, special chars)
+        variableName = Regex.Replace(variableName, @"[^\w]", "_").Trim('_');
+        
+        // ✅ IMPROVEMENT: Don't create if name is empty after cleaning
+        if (string.IsNullOrWhiteSpace(variableName))
+        {
+            _selectedText = string.Empty;
+            editor.SelectionLength = 0;
+            return;
+        }
 
         // Replace selected text with variable
-        var editor = PromptRawEditor;
-        int start = editor.CursorPosition;
-        int length = editor.SelectionLength;
-
-        if (start >= 0 && length > 0 && !string.IsNullOrEmpty(editor.Text) && start + length <= editor.Text.Length)
+        if (selectionStart >= 0 && selectionLength > 0 && 
+            !string.IsNullOrEmpty(editor.Text) && 
+            selectionStart + selectionLength <= editor.Text.Length)
         {
-            var newText = editor.Text.Remove(start, length)
-                                     .Insert(start, $"<{variableName}>");
+            var newText = editor.Text.Remove(selectionStart, selectionLength)
+                                     .Insert(selectionStart, $"<{variableName}>");
             
             _viewModel.PromptText = newText;
             
-            // Position cursor after the new variable
-            editor.CursorPosition = start + variableName.Length + 2;
+            // ✅ IMPROVEMENT: Position cursor after the new variable
+            await Task.Delay(50); // Small delay to ensure text is updated
+            editor.CursorPosition = selectionStart + variableName.Length + 2;
             editor.SelectionLength = 0;
         }
 
