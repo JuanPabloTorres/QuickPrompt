@@ -26,7 +26,7 @@
             <ShellContent.Icon>
                 <FontImageSource
                     FontFamily="MaterialIconsOutlined-Regular"
-                    Glyph="&#xe86c;"
+                    Glyph="&#xF06C;"
                     Size="24"
                     Color="{StaticResource PrimaryBlueLight}" />
             </ShellContent.Icon>

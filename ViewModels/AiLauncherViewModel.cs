@@ -7,12 +7,14 @@ using QuickPrompt.ApplicationLayer.FinalPrompts.UseCases;
 using QuickPrompt.Constants;
 using QuickPrompt.Models.Enums;
 using QuickPrompt.Services.ServiceInterfaces;
+using System.Collections.ObjectModel;
 
 namespace QuickPrompt.ViewModels
 {
     /// <summary>
     /// ViewModel for AI Engine Launcher page.
     /// Refactored to use Use Cases - Phase 1 (Complete).
+    /// ✅ UX IMPROVEMENTS: Added filter functionality for Recent Prompts.
     /// </summary>
     public partial class AiLauncherViewModel : BaseViewModel
     {
@@ -20,13 +22,27 @@ namespace QuickPrompt.ViewModels
         private readonly GetAllFinalPromptsUseCase _getAllFinalPromptsUseCase;
         private readonly DeleteFinalPromptUseCase _deleteFinalPromptUseCase;
         private readonly ClearAllFinalPromptsUseCase _clearAllFinalPromptsUseCase;
-        private readonly IFinalPromptRepository _finalPromptRepository; // Kept for specific queries
+        private readonly IFinalPromptRepository _finalPromptRepository;
         private readonly IDialogService _dialogService;
+
+        // ✅ UX IMPROVEMENTS: Store all prompts for filtering
+        private List<string> _allPrompts = new();
 
         // Properties
         [ObservableProperty] private string selectedPrompt = string.Empty;
         [ObservableProperty] public string selectedCategory = string.Empty;
         [ObservableProperty] private string selectedEngine = string.Empty;
+        
+        // ✅ UX IMPROVEMENTS: Filter properties
+        [ObservableProperty] private string selectedFilter = "All";
+
+        public ObservableCollection<string> FilterOptions { get; } = new()
+        {
+            "All",
+            "Last 5",
+            "Last 10",
+            "Last 20"
+        };
 
         // Constructor with dependency injection
         public AiLauncherViewModel(
@@ -63,22 +79,17 @@ namespace QuickPrompt.ViewModels
                 if (prompts is null || !prompts.Any())
                     return;
 
-                var newPrompts = prompts
+                var distinctPrompts = prompts
                     .DistinctBy(v => v.CompletedText)
                     .Select(s => s.CompletedText)
                     .OrderByDescending(p => p)
-                    .Take(10)
                     .ToList();
 
-                FinalPrompts.Clear();
+                // ✅ Store all prompts for filtering
+                _allPrompts = distinctPrompts;
 
-                if (newPrompts.Any())
-                {
-                    foreach (var prompt in newPrompts)
-                    {
-                        FinalPrompts.Add(prompt);
-                    }
-                }
+                // Apply current filter
+                ApplyFilter();
             }
             catch (Exception ex)
             {
@@ -87,6 +98,32 @@ namespace QuickPrompt.ViewModels
             finally
             {
                 IsLoading = false;
+            }
+        }
+
+        // ✅ UX IMPROVEMENTS: Handle filter changes
+        partial void OnSelectedFilterChanged(string value)
+        {
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            if (_allPrompts == null || !_allPrompts.Any())
+                return;
+
+            var filteredPrompts = SelectedFilter switch
+            {
+                "Last 5" => _allPrompts.Take(5).ToList(),
+                "Last 10" => _allPrompts.Take(10).ToList(),
+                "Last 20" => _allPrompts.Take(20).ToList(),
+                _ => _allPrompts.ToList() // "All"
+            };
+
+            FinalPrompts.Clear();
+            foreach (var prompt in filteredPrompts)
+            {
+                FinalPrompts.Add(prompt);
             }
         }
 
@@ -181,6 +218,7 @@ namespace QuickPrompt.ViewModels
                     return;
                 }
 
+                _allPrompts.Clear();
                 FinalPrompts.Clear();
                 SelectedPrompt = string.Empty;
                 SelectedCategory = string.Empty;
@@ -212,12 +250,8 @@ namespace QuickPrompt.ViewModels
                 {
                     var prompts = await _finalPromptRepository.GetFinalPromptsByCategoryAsync(parsedCategory);
 
-                    FinalPrompts.Clear();
-
-                    foreach (var prompt in prompts)
-                    {
-                        FinalPrompts.Add(prompt.CompletedText);
-                    }
+                    _allPrompts = prompts.Select(p => p.CompletedText).ToList();
+                    ApplyFilter();
                 }
             }
             catch (Exception ex)
@@ -250,6 +284,8 @@ namespace QuickPrompt.ViewModels
                         return;
                     }
 
+                    // ✅ Remove from both collections
+                    _allPrompts.Remove(promptText);
                     FinalPrompts.Remove(promptText);
 
                     var toast = Toast.Make("Prompt removed", ToastDuration.Short);
