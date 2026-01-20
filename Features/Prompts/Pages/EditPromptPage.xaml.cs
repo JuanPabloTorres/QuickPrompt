@@ -55,12 +55,15 @@ public partial class EditPromptPage : ContentPage
 
             if (string.IsNullOrWhiteSpace(template))
             {
+                // ✅ Use ThemeService for empty state text color
+                var emptyStateColor = _themeService.GetColor(Application.Current?.RequestedTheme == AppTheme.Dark ? "TextSecondaryDark" : "TextSecondaryLight");
+                
                 PromptChipContainer.Children.Add(new Label
                 {
                     Text = "📝 Write your prompt in Text mode first.\nUse <variable_name> syntax to create variables.",
                     FontSize = 13,
                     FontFamily = "Nasa21",
-                    TextColor = Color.FromArgb("#6B7280"),
+                    TextColor = emptyStateColor,
                     HorizontalTextAlignment = TextAlignment.Center,
                     LineBreakMode = LineBreakMode.WordWrap,
                     Margin = new Thickness(8)
@@ -99,21 +102,26 @@ public partial class EditPromptPage : ContentPage
 
     private Border CreateChip(PromptPart part, List<PromptPart> allParts)
     {
+        // ✅ Use ThemeService for dynamic chip colors
+        var chipTextColor = _themeService.GetColor("PrimaryBlueDark");
+        var chipBackgroundColor = _themeService.GetColor(Application.Current?.RequestedTheme == AppTheme.Dark ? "SurfaceElevatedDark" : "SurfaceElevatedLight");
+        var chipBorderColor = _themeService.GetColor("PrimaryBlueLight");
+
         var lbl = new Label
         {
             Text = part.Text,
             FontSize = 14,
             FontFamily = "Nasa21",
-            TextColor = Color.FromArgb("#1D4ED8"),
+            TextColor = chipTextColor,
             VerticalTextAlignment = TextAlignment.Center,
             FontAttributes = FontAttributes.Bold
         };
 
         var chip = new Border
         {
-            BackgroundColor = Color.FromArgb("#DBEAFE"),
+            BackgroundColor = chipBackgroundColor,
             StrokeShape = new RoundRectangle { CornerRadius = 16 },
-            Stroke = Color.FromArgb("#93C5FD"),
+            Stroke = chipBorderColor,
             StrokeThickness = 1,
             Padding = new Thickness(14, 8),
             Margin = new Thickness(4),
@@ -145,15 +153,21 @@ public partial class EditPromptPage : ContentPage
         return chip;
     }
 
-    private Label CreateTextSpan(string text) => new()
+    private Label CreateTextSpan(string text)
     {
-        Text = text,
-        FontSize = 14,
-        FontFamily = "Nasa21",
-        TextColor = Color.FromArgb("#111827"),
-        VerticalTextAlignment = TextAlignment.Center,
-        Margin = new Thickness(2, 4)
-    };
+        // ✅ Use ThemeService for dynamic text color
+        var textColor = _themeService.GetColor(Application.Current?.RequestedTheme == AppTheme.Dark ? "TextPrimaryDark" : "TextPrimaryLight");
+        
+        return new Label
+        {
+            Text = text,
+            FontSize = 14,
+            FontFamily = "Nasa21",
+            TextColor = textColor,
+            VerticalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(2, 4)
+        };
+    }
 
     #endregion
 }
