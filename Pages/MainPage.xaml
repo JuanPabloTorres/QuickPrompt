@@ -231,22 +231,6 @@
                     IsVisible="{Binding IsVisualModeActive}" />
             </VerticalStackLayout>
 
-            <!--  Variable Count  -->
-            <Border 
-                BackgroundColor="{AppThemeBinding Light=#F0FDF4, Dark=#14532D}"
-                Stroke="{AppThemeBinding Light=#BBF7D0, Dark=#22C55E}"
-                StrokeThickness="1" 
-                Padding="12"
-                IsVisible="{Binding VariableCount, Converter={StaticResource IntToBoolConverter}}">
-                <Border.StrokeShape><RoundRectangle CornerRadius="8" /></Border.StrokeShape>
-                <Label 
-                    Text="{Binding VariableCount, StringFormat='✅ {0} variable(s) detected'}"
-                    FontSize="13" 
-                    FontFamily="Nasa21" 
-                    TextColor="{AppThemeBinding Light=#15803D, Dark=#86EFAC}"
-                    HorizontalTextAlignment="Center" />
-            </Border>
-
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
