@@ -1,0 +1,17 @@
+# Instruction Profiles — GOAL 04
+
+**Ubicación actual GOAL05:** detalle de plantilla → Opciones avanzadas → instrucción guardada opcional. Gestionar instrucciones o Configuración → Configuración avanzada → Instrucciones guardadas abre el mismo gestor contextual. Sin perfil se compila normalmente; borrar el perfil invalida la composición viva y conserva snapshots históricos. [Regresión actual](evidence/goal05/accepted/goal05-optional-profile/profile.json). Los contratos/versiones descritos abajo permanecen.
+
+Un perfil de instrucción es un concepto separado de Template: nombre, texto hasta 8000 caracteres, categoría, favorito y versión. Se puede crear, editar, duplicar, eliminar, buscar, filtrar y asignar a grupos. Cada guardado conserva una InstructionVersion; una revisión desactualizada produce conflicto. No hay edición automática por IA de estos registros.
+
+En una plantilla el usuario selecciona **un perfil o ninguno**. La búsqueda del selector devuelve hasta 50 metadatos (ID/nombre/revisión), sin cargar los textos de todos los perfiles. Las variables pertenecen a la plantilla y se compilan determinísticamente; el texto del perfil no se reinterpreta como otra plantilla de variables. «Usar esta instrucción» selecciona explícitamente el perfil y vuelve a la biblioteca, sin ejecutar.
+
+Precedencia determinista: ajustes específicos del prompt > perfil seleccionado > instrucciones generales de Configuración. Un perfil no se elige por similitud o por el LLM. Ajustes generales/específicos tienen límite de 4000 caracteres cada uno. Se puede guardar una combinación nombrada de plantilla/perfil/ajustes; recuperar la combinación exige completar variables y generar de nuevo la vista previa. Una combinación referencia registros actuales, mientras que el historial compilado conserva la instantánea exacta utilizada.
+
+CompiledPrompt agrega Composition opcional con BaseText, General, Profile, Adjustments e identidad/revisión/nombre del perfil. Cambiar o borrar el perfil posteriormente no altera textos finales ni respuestas guardadas. Sin instrucciones ni ajustes, el texto compilado es exactamente el mismo que antes. La vista previa para copiar o para sitios externos contiene secciones explícitas y aclara que esa representación textual no constituye un mensaje de sistema privilegiado.
+
+Los cambios JSON son aditivos y el respaldo exportado es v2; el importador mantiene v1. Perfiles/versiones/combinaciones forman parte del snapshot transaccional; referencias huérfanas, versiones inconsistentes o una composición cuyo texto no coincide con la vista previa se rechazan antes de escribir. Eliminar un perfil elimina sus versiones activas y combinaciones referenciales, conserva el historial compilado y sus instantáneas.
+
+Las instrucciones de aplicación sobre herramientas/permisos siguen bajo control del código. La separación de roles de Ollama y su verificación E2E se documentan en LOCAL_AI_WORKFLOWS; una prueba de composición no demuestra por sí sola la ejecución del modelo.
+
+Si se proporciona un ID de perfil para compilar, su revisión es obligatoria; una revisión nula o antigua se rechaza. La vista previa indica nombre/revisión usados. El editor preserva el borrador al reseleccionar el mismo perfil y recrea controles al cambiar, capturando el ID de los eventos para rechazar callbacks obsoletos. [Identidad/drafts](evidence/goal04/verified/editors/input-state.json), [flujo completo](evidence/goal04/verified/organization-after-editor-fix/organization.json).

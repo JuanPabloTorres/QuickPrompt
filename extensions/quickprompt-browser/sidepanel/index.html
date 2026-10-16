@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QuickPrompt</title><link rel="stylesheet" href="panel.css"></head>
+<body><header><h1>QuickPrompt</h1><p>Tu biblioteca, mientras navegas.</p></header>
+<p class="hint">Conecta la pestaña local para consultar plantillas. El panel mantiene los datos solo en memoria. Cada copia registra un uso en QuickPrompt.</p>
+<div class="actions"><button id="connect">Conectar biblioteca local</button><button id="open">Abrir QuickPrompt</button><button id="disconnect" hidden>Desconectar</button></div>
+<p id="status" role="status" aria-live="polite">Sin conectar.</p>
+<section id="library" hidden aria-label="Biblioteca"><label for="search">Buscar plantillas</label><input id="search" maxlength="200" type="search"><label class="check"><input id="favorites" type="checkbox">Solo favoritos</label><button id="find">Buscar</button><div id="items"></div><div class="actions"><button id="previous">Anterior</button><span id="count"></span><button id="next">Siguiente</button></div></section>
+<section id="detail" hidden aria-labelledby="title"><button id="back">Volver a la biblioteca</button><h2 id="title"></h2><div id="variables"></div><div class="actions"><button id="copy" class="primary">Copiar prompt</button><button id="chatgpt">Copiar y abrir ChatGPT</button><button id="claude">Copiar y abrir Claude</button></div><details><summary>Vista previa</summary><pre id="preview"></pre></details></section>
+<script type="module" src="panel.js"></script></body></html>

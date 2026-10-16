@@ -1,0 +1,37 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:00.489
+Playwright abre una biblioteca de prueba, en un navegador separado.
+
+2
+00:00:00.489 --> 00:00:02.295
+Escribe la tarea que necesita encontrar.
+
+3
+00:00:02.295 --> 00:00:04.080
+Abre el prompt guardado.
+
+4
+00:00:04.080 --> 00:00:05.493
+Comprueba que llegó a la pantalla correcta.
+
+5
+00:00:05.493 --> 00:00:07.282
+Completa el tema de ejemplo.
+
+6
+00:00:07.282 --> 00:00:09.059
+Completa el nivel: principiante.
+
+7
+00:00:09.059 --> 00:00:10.862
+Pulsa Copiar prompt. No envía mensajes externos.
+
+8
+00:00:10.862 --> 00:00:12.271
+Comprueba la acción.
+
+9
+00:00:12.271 --> 00:00:16.227
+Guarda una captura y finaliza el recorrido.

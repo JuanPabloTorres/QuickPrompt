@@ -1,0 +1,53 @@
+@using QuickPrompt.Local
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+<div class="template-text-editor">
+<label for="template">@T("Texto de la plantilla", "Template text")</label>
+<textarea id="template" rows="7" value="@Model.Template" @oninput="Input" @onselect="SelectionChanged" maxlength="32000"></textarea>
+<div class="action-row editor-history" aria-label="@T("Historial del editor", "Editor history")">
+<button type="button" data-editor-undo disabled="@(!editor.CanUndo)" @onclick="Undo">@T("Deshacer", "Undo")</button>
+<button type="button" data-editor-redo disabled="@(!editor.CanRedo)" @onclick="Redo">@T("Rehacer", "Redo")</button>
+</div>
+@if(selection.End>selection.Start){
+<div class="selection-actions" aria-label="@T("Acciones de selección", "Selection actions")">
+<label for="variable-name">@T("Nombre de variable", "Variable name")</label><input id="variable-name" @bind="name" maxlength="80" />
+<div class="action-row">
+@if(variable){<button @onclick='()=>Edit("remove")'>@T("Deshacer variable", "Undo variable")</button><button @onclick='()=>Edit("rename")'>@T("Renombrar variable", "Rename variable")</button>}
+else{<button @onclick='()=>Edit("create")'>@T("Crear variable", "Create variable")</button>}
+</div></div>}
+@if(error!=""){<p class="field-error" role="alert">@error</p>}
+</div>
+@code {
+    [Parameter,EditorRequired] public Template Model {get;set;}=null!;
+    [Parameter] public string Language {get;set;}="es";
+    [Parameter] public EventCallback Changed {get;set;}
+    private Template? source;
+    private TemplateEditor editor=null!;
+    private EditorSelection selection=new(0,0,"");
+    private string name="",error="";
+    private bool variable;
+    private string T(string es,string en)=>Language=="es"?es:en;
+    protected override void OnParametersSet(){if(!ReferenceEquals(source,Model)){source=Model;editor=new(Model.Template,Model.Variables);selection=new(0,0,"");}}
+    private async Task Input(ChangeEventArgs e){editor.Input(e.Value?.ToString()??"",Model.Variables);Model.Template=editor.Text;error="";selection=new(0,0,Model.Template);await Changed.InvokeAsync();}
+    private async Task SelectionChanged()
+    {
+        selection=await JS.InvokeAsync<EditorSelection>("qp.editorSelection");error="";
+        try{var span=editor.SelectedVariable(selection.Start,selection.End);variable=span!=null;name=span?.Name??TemplateEditor.SuggestedName(selection.Text[selection.Start..selection.End]);}
+        catch(ValidationException){variable=false;name="variable";}
+    }
+    private async Task Edit(string action)
+    {
+        try{
+            var live=await JS.InvokeAsync<EditorSelection>("qp.editorSelection");
+            if(live.Text!=editor.Text)throw new ConflictException(T("El texto cambió. Selecciona de nuevo.","Text changed. Select again."));
+            editor.Input(live.Text,Model.Variables);
+            if(action=="create")editor.Create(selection.Start,selection.End,name);
+            else if(action=="remove")editor.Remove(selection.Start,selection.End);
+            else editor.Rename(selection.Start,selection.End,name);
+            await Apply();
+        }catch(Exception e) when(e is ValidationException or ConflictException){error=e.Message;}
+    }
+    private async Task Undo(){editor.Input(Model.Template,Model.Variables);editor.Undo();await Apply();}
+    private async Task Redo(){editor.Redo();await Apply();}
+    private async Task Apply(){Model.Template=editor.Text;Model.Variables=editor.Defaults;error="";selection=new(0,0,Model.Template);await Changed.InvokeAsync();await JS.InvokeVoidAsync("qp.editorFocus");}
+}

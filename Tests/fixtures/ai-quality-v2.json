@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "authorization": "New work prompts authored for the user's GOAL 02 on this repository; no private database or external content.",
+  "template": "Revisa <cambio> en QuickPrompt Web. No modifiques código. Devuelve exactamente tres riesgos en español. No incluyas dependencias nuevas.",
+  "context": "El cambio es el arranque sin demo y la persistencia SQLite. Solo se permite revisar y proponer pruebas, sin modificar código ni añadir dependencias.",
+  "intent": "Crea una plantilla reutilizable para revisar un cambio de QuickPrompt Web con variables para cambio y restricciones. Exige una revisión en español, tres riesgos y pruebas de regresión. No autorices modificar código.",
+  "instructionChecks": ["no modifi", "tres", "espa", "dependencias"],
+  "questions": [
+    { "id": "sqlite-storage", "prompt": "Explica cómo SQLite guarda una base de datos local. Incluye si el archivo es binario o texto plano. Responde en español, máximo 60 palabras.", "requiredAny": ["binario", "binaria"], "forbidden": ["almacena datos en archivos de texto", "guarda datos en texto plano"], "maxWords": 60, "source": "https://sqlite.org/fileformat.html" },
+    { "id": "blazor-execution", "prompt": "QuickPrompt usa Blazor InteractiveServer. ¿El código C# de sus componentes se ejecuta en el servidor .NET o en WebAssembly en el navegador? Responde en español, máximo 60 palabras.", "requiredAny": ["servidor"], "forbidden": ["se ejecuta en WebAssembly"], "maxWords": 60, "source": "https://learn.microsoft.com/en-us/aspnet/core/blazor/components/render-modes?view=aspnetcore-8.0" },
+    { "id": "sdk-evidence", "prompt": "La única evidencia ejecutada es dotnet --list-sdks con resultado 8.0.425; no se compiló con .NET 10. ¿Se puede declarar ya verificada la compatibilidad .NET 10? Responde en español, máximo 50 palabras.", "requiredAny": ["no"], "forbidden": ["compatibilidad está verificada"], "maxWords": 50, "source": "local: dotnet --list-sdks, GOAL 02" }
+  ],
+  "criteria": "Record JSON contract, deterministic instruction/factual proxies and manual semantic review separately. Any failed check stays failed. No threshold changes, automatic retries or LLM-as-judge. Percentiles descriptive only."
+}

@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-16",
+  "status": "SOURCE_CHECKS_PASSED",
+  "scope": "Local validation before integrating QuickPrompt Web and NOVA into main. No remote publication.",
+  "checks": [
+    { "name": "Blazor/domain tests", "passed": 150, "failed": 0, "note": "Executed with an isolated BaseOutputPath because the running Blazor process locks its normal DLL output." },
+    { "name": "NOVA backend tests", "passed": 46, "failed": 0 },
+    { "name": "React tests", "passed": 19, "failed": 0 },
+    { "name": "Playwright policy and timeout contracts", "passed": 3, "failed": 0 },
+    { "name": "Extension bridge contracts", "passed": 6, "failed": 0 },
+    { "name": "Compiled CSS reproducibility", "result": "PASS_CSS_REPRODUCIBLE" },
+    { "name": "Git whitespace check", "result": "PASS" }
+  ],
+  "browserValidationFromImplementationSession": [
+    { "test": "Tests/nova/local-commands.cjs", "result": "PASS", "checks": 7, "visibleEdge": true, "realLocalQwen": true, "isolatedSQLite": true },
+    { "test": "Tests/nova/preparation-modal.cjs", "result": "PASS", "viewportWidths": [1280, 390], "isolatedSQLite": true, "consoleErrors": 0 },
+    { "test": "Tests/nova/learning.cjs", "result": "PASS", "checks": 8, "decodedTutorials": 4, "isolatedSQLite": true },
+    { "test": "Tests/e2e/goal06-automation.cjs", "result": "PASS_GOAL06_AUTOMATION", "cases": ["failure", "cancellation", "recovery", "timeout"] }
+  ],
+  "repositoryHygiene": {
+    "localDatabasesAndCredentials": "Excluded from the current tracked tree; local files preserved.",
+    "generatedEvidenceBuildsAndDependencies": "Ignored; reproducible source tests and product tutorial assets retained.",
+    "historicalCredential": "A Firebase private-key file existed in prior commits. Removing it from the current tree does not remove it from history; review or rotate before any publication. History was not rewritten."
+  },
+  "limits": [
+    "Native Windows clipboard LF/CRLF conversion remains the documented limitation; this summary does not declare byte-exact native clipboard acceptance.",
+    "Legacy MAUI/mobile builds and authenticated external-provider automation are outside this local web validation."
+  ]
+}

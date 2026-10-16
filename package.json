@@ -1,0 +1,16 @@
+{
+  "name": "quickprompt-web-local-styles",
+  "private": true,
+  "version": "0.3.0",
+  "description": "Local-only CSS build tooling; never required by dotnet run.",
+  "scripts": {
+    "css:build": "tailwindcss -i src/QuickPrompt.Web/Styles/input.css -o src/QuickPrompt.Web/wwwroot/quickprompt.css --minify",
+    "css:watch": "tailwindcss -i src/QuickPrompt.Web/Styles/input.css -o src/QuickPrompt.Web/wwwroot/quickprompt.css --watch",
+    "css:check": "node tools/css-check.cjs",
+    "test:bridge": "node --test Tests/e2e/bridge-contracts.mjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.0",
+    "tailwindcss": "4.3.0"
+  }
+}

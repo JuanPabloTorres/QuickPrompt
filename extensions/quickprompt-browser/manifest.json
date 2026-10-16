@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "QuickPrompt Local Bridge",
+  "version": "1.1.0",
+  "description": "Transfer only a compiled prompt after an explicit QuickPrompt action. No conversation or response collection.",
+  "minimum_chrome_version": "120",
+  "permissions": ["scripting", "storage", "sidePanel"],
+  "side_panel": {"default_path":"sidepanel/index.html"},
+  "action": {"default_title":"QuickPrompt"},
+  "host_permissions": ["https://chatgpt.com/*", "https://claude.ai/*"],
+  "background": { "service_worker": "background/service-worker.js", "type": "module" },
+  "content_scripts": [{
+    "matches": ["http://127.0.0.1/*"],
+    "js": ["content/quickprompt-bridge.js"],
+    "run_at": "document_start",
+    "all_frames": false
+  }],
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'"}
+}

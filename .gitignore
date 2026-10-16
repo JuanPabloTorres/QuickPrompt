@@ -415,3 +415,28 @@ key.keystore
 !PROJECT_COMPLETION_SUMMARY.md
 !CRASH_FIXES_&_RESTRUCTURING.md
 !docs/*.md
+
+# Web local data never belongs in source control
+src/**/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db3
+.env.*
+!.env.example
+!.env.template
+.playwright/
+!src/QuickPrompt.Web/appsettings.template.json
+.playwright-mcp/
+
+# NOVA generated frontend and packaged local runtime
+apps/web/dist/
+backend/QuickPrompt.Api/wwwroot/
+.nova-build/
+
+# Reproducible local QA output; retain source tests and a portable validation summary.
+docs/evidence/*
+!docs/evidence/README.md
+!docs/evidence/validation-summary.json
+*.trx

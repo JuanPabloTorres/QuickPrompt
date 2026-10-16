@@ -1,0 +1,24 @@
+@layer theme, base, legacy, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "../wwwroot/app.css" layer(legacy);
+@import "../wwwroot/modern.css" layer(components);
+@import "../wwwroot/simplicity.css" layer(components);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "../Components/**/*.razor";
+@theme static {
+  --color-qp-blue: #23486a;
+  --color-qp-mid: #3b6790;
+  --color-qp-teal: #4c7b8b;
+  --color-qp-yellow: #efb036;
+  --font-sans: "OpenSans", "Segoe UI", sans-serif;
+  --radius-card: 1rem;
+}
+@layer components {
+  button { @apply inline-flex items-center justify-center gap-2 transition-shadow motion-reduce:transition-none; }
+  .workspace { @apply grid items-start; }
+  .action-row { @apply flex flex-wrap gap-2; }
+  .prompt-card { @apply rounded-card; }
+  .provider-row { @apply rounded-xl; }
+  .notice { @apply flex items-center gap-2; }
+  .comparison section { @apply min-w-0 rounded-xl; }
+}

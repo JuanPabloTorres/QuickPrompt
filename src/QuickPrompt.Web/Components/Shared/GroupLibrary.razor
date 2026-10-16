@@ -1,0 +1,30 @@
+@using QuickPrompt.Local
+@using QuickPrompt.Web.Infrastructure
+@inject LocalStore Store
+@inject IJSRuntime JS
+@{ var form = draft; }
+<div class="workspace organization-workspace">
+<section class="library" aria-label="@T("Tus grupos", "Your groups")"><p class="hint">@T("Un prompt puede estar en varios grupos. Las categorías se conservan.","A prompt can belong to several groups. Categories stay independent.")</p><button class="primary" @onclick="New">@T("Nuevo grupo", "New group")</button>
+@foreach(var item in groups){<article class="organization-card"><button class="card-open" @onclick="()=>Edit(item.Group)"><div class="detail-heading"><span class="group-mark group-color-@item.Group.Color"><AppIcon Name="@item.Group.Icon" /></span>@if(item.Group.IsPinned){<span>@T("Fijado", "Pinned")</span>}</div><h2>@item.Group.Name</h2><p>@item.Group.Description</p><small>@item.Templates @T("plantillas", "templates") · @item.Instructions @T("instrucciones", "instructions")</small></button></article>}
+@if(groups.Count==0){<p class="empty">@T("Crea tu primer grupo para organizar el trabajo sin duplicar prompts.","Create your first group to organize work without duplicating prompts.")</p>}
+</section>
+<section class="detail" @key="form.Id" aria-label="@T("Editor de grupo", "Group editor")"><h2>@(persisted?T("Editar grupo","Edit group"):T("Crear grupo","Create group"))</h2><Toast Message="@message" Error="error" />
+<label for="group-name">@T("Nombre del grupo", "Group name")</label><input id="group-name" @bind="form.Name" maxlength="80" />
+<details><summary>@T("Más opciones del grupo","More group options")</summary><label for="group-description">@T("Descripción del grupo", "Group description")</label><textarea id="group-description" @bind="form.Description" maxlength="500" rows="2"></textarea>
+<div class="filters"><div><label for="group-icon">@T("Icono", "Icon")</label><select id="group-icon" @bind="form.Icon">@foreach(var icon in PromptGroup.Icons){<option value="@icon">@IconLabel(icon)</option>}</select></div><div><label for="group-color">@T("Color", "Color")</label><select id="group-color" @bind="form.Color">@foreach(var color in PromptGroup.Colors){<option value="@color">@ColorLabel(color)</option>}</select></div></div>
+<label class="check"><input type="checkbox" @bind="form.IsPinned" />@T("Fijar grupo", "Pin group")</label><label for="group-order">@T("Orden (menor primero)","Order (lowest first)")</label><input id="group-order" type="number" min="0" max="10000" @bind="form.SortOrder" />
+</details><div class="action-row"><button class="primary" @onclick="()=>Save(form.Id)">@T("Guardar grupo", "Save group")</button>@if(persisted){<button class="danger-text" @onclick="()=>Delete(form.Id)">@T("Eliminar grupo", "Delete group")</button>}</div><p class="hint">@T("Eliminar un grupo conserva sus plantillas e instrucciones.", "Deleting a group keeps its templates and instructions.")</p></section>
+</div>
+@code {
+    [Parameter]public string Language{get;set;}="es";[Parameter]public EventCallback Changed{get;set;}
+    private List<GroupSummary> groups=[];private PromptGroup draft=new();private bool persisted,error;private string message="";private bool focus;
+    private string T(string es,string en)=>Language=="es"?es:en;
+    protected override void OnInitialized()=>groups=Store.Groups();
+    protected override async Task OnAfterRenderAsync(bool first){if(focus){focus=false;await JS.InvokeVoidAsync("qp.focus","#group-name");}}
+    private void New(){draft=new();persisted=false;message="";focus=true;}
+    private void Edit(PromptGroup value){if(persisted&&draft.Id==value.Id&&draft.Revision==value.Revision){focus=true;return;}draft=System.Text.Json.JsonSerializer.Deserialize<PromptGroup>(System.Text.Json.JsonSerializer.Serialize(value,LocalStore.Json),LocalStore.Json)!;persisted=true;message="";focus=true;}
+    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();Store.SaveGroup(draft);persisted=true;groups=Store.Groups();error=false;message=T("Grupo guardado.","Group saved.");await Changed.InvokeAsync();}catch(Exception e)when(e is ValidationException or ConflictException or Microsoft.Data.Sqlite.SqliteException){error=true;message=e is Microsoft.Data.Sqlite.SqliteException?T("No se pudo guardar el grupo.","Could not save group."):e.Message;}}
+    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar el grupo? Sus prompts e instrucciones se conservarán.","Delete group? Its prompts and instructions will be kept.")))return;if(draft.Id!=id)return;try{Store.DeleteGroup(id);New();groups=Store.Groups();message=T("Grupo eliminado; contenido conservado.","Group deleted; content kept.");error=false;await Changed.InvokeAsync();}catch(Microsoft.Data.Sqlite.SqliteException){error=true;message=T("No se pudo eliminar el grupo.","Could not delete group.");}}
+    private string IconLabel(string value)=>value switch{"library"=>T("Colección","Collection"),"braces"=>T("Código","Code"),"sparkles"=>T("Ideas","Ideas"),"star"=>T("Estrella","Star"),"archive"=>T("Archivo","Archive"),_=>T("Historial","History")};
+    private string ColorLabel(string value)=>value switch{"blue"=>T("Azul","Blue"),"teal"=>T("Teal","Teal"),"yellow"=>T("Amarillo","Yellow"),"purple"=>T("Violeta","Purple"),_=>T("Rojo","Red")};
+}

@@ -1,0 +1,1 @@
+{"mode":"qa","steps":[{"action":"navigate","url":"http://127.0.0.1:5188/"},{"action":"expectVisible","role":"heading","name":"Biblioteca"},{"action":"expectVisible","role":"button","name":"Nueva plantilla"},{"action":"screenshot"}]}
