@@ -3,7 +3,9 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using QuickPrompt.Nova.Application;
 using QuickPrompt.Web.Infrastructure;
+if (args.FirstOrDefault() == "--semantic") { await SemanticEvaluation.Run(args.Skip(1).ToArray()); return; }
 
+if (args.FirstOrDefault() == "--agentic") { await AgenticEvaluation.Run(args.Skip(1).ToArray()); return; }
 if (args.Length != 2) throw new ArgumentException("Pass a synthetic dataset path and report path.");
 var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true };
 var bytes = File.ReadAllBytes(args[0]); var dataset = JsonSerializer.Deserialize<Dataset>(bytes, json)!;

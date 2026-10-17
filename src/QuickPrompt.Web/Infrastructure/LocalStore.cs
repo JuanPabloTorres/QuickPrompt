@@ -189,7 +189,8 @@ public sealed partial class LocalStore
             var existing=Get<Template>(db,"template",tx);
             if (restore)
             {
-                using var clear=db.CreateCommand(); clear.Transaction=tx; clear.CommandText="DELETE FROM PromptGroups; DELETE FROM Documents"; clear.ExecuteNonQuery();
+                // Restoring library content never grants permission to replay an already-started agent effect.
+                using var clear=db.CreateCommand(); clear.Transaction=tx; clear.CommandText="DELETE FROM PromptGroups; DELETE FROM Documents WHERE Kind NOT IN ('nova-run-receipt','nova-live-receipt')"; clear.ExecuteNonQuery();
                 foreach (var p in archive.Templates) Put(db,tx,"template",p.Id.ToString(),p);
                 foreach (var v in archive.Versions) Put(db,tx,"version",v.Id.ToString(),v);
                 foreach (var h in archive.History) Put(db,tx,"compiled",h.Id.ToString(),h);

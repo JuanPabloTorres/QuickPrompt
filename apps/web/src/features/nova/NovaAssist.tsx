@@ -3,14 +3,16 @@ import { z } from 'zod';
 import { ArrowUpRight, Sparkles, Square, X } from 'lucide-react';
 import { ApiError, errorMessage, post, promptSchema, request, type Prompt } from '../../services/api';
 import type { NovaState } from './NovaCore';
+import { observeOperation } from '../../services/live';
 import { proposalSchema } from '../../services/commands';
+import { semanticSchema } from '../../services/semantic';
 
-const actionSchema = z.object({ contractVersion: z.literal(1), intent: z.enum(['SEARCH', 'OPEN', 'CREATE_DRAFT', 'IMPROVE_DRAFT', 'FILL_VARIABLES', 'COMPILE', 'RUN_LOCAL', 'SELECT_PROVIDER', 'HELP', 'UNKNOWN']), candidates: z.array(promptSchema).max(3), sourcePromptIds: z.array(z.string().uuid()), message: z.string(), requiresConfirmation: z.boolean(), validationStatus: z.literal('validated') });
+const actionSchema = z.object({ semantic: semanticSchema.nullable().optional(), contractVersion: z.literal(1), intent: z.enum(['SEARCH', 'OPEN', 'CREATE_DRAFT', 'IMPROVE_DRAFT', 'FILL_VARIABLES', 'COMPILE', 'RUN_LOCAL', 'SELECT_PROVIDER', 'HELP', 'UNKNOWN']), candidates: z.array(promptSchema).max(3), sourcePromptIds: z.array(z.string().uuid()), message: z.string(), requiresConfirmation: z.boolean(), validationStatus: z.literal('validated') });
 type Proposal = z.infer<typeof proposalSchema>;
-export function NovaAssist({ message, source, onOpen, onDraft, onValues, onStateChange }: {
+export function NovaAssist({ message, source, onOpen, onDraft, onValues, onStateChange, onLiveRun, sessionId }: {
   message: string; source?: Prompt; onOpen: (prompt: Prompt) => void;
   onDraft: (text: string, source?: Prompt) => void; onValues?: (values: Record<string, string>) => void;
-  onStateChange?: (state: NovaState) => void;
+  onStateChange?: (state: NovaState) => void; onLiveRun?: (id: string) => void; sessionId?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -24,11 +26,14 @@ export function NovaAssist({ message, source, onOpen, onDraft, onValues, onState
     controller.current?.abort(); const current = new AbortController(); controller.current = current;
     setBusy(true); setError(''); setAction(null); setProposal(null); setSuggested(null);
     onStateChange?.('thinking');
-    const input = { message, model, promptId: source?.id, revision: source?.revision };
+    const input = { message, model, promptId: source?.id, revision: source?.revision, sessionId };
     try {
-      if (kind === 'interpret') setAction(await request('/nova/interpret', actionSchema, post(input, current.signal)));
-      else if (kind === 'variables') setSuggested(await request('/nova/variables', z.record(z.string(), z.string()), post(input, current.signal)));
-      else setProposal(await request('/nova/propose', proposalSchema, post({ intent: kind, context: message, model, promptId: source?.id, revision: source?.revision }, current.signal)));
+      let observedId: string | undefined;
+      if (onLiveRun && sessionId) { const observed = await observeOperation(message || 'Mejora el prompt seleccionado.', sessionId, source, current.signal, model); observedId = observed.runId; onLiveRun(observedId); }
+      const observedPost = (body: unknown): RequestInit => ({ ...post(body, current.signal), headers: observedId ? { 'X-Nova-Live-Run': observedId } : undefined });
+      if (kind === 'interpret') setAction(await request('/nova/interpret', actionSchema, observedPost(input)));
+      else if (kind === 'variables') setSuggested(await request('/nova/variables', z.record(z.string(), z.string()), observedPost(input)));
+      else setProposal(await request('/nova/propose', proposalSchema, observedPost({ intent: kind, context: message, model, promptId: source?.id, revision: source?.revision })));
       if (!current.signal.aborted) onStateChange?.(kind === 'interpret' ? 'ready' : 'suggesting');
     } catch (error) { if (!current.signal.aborted) { setError(errorMessage(error)); onStateChange?.(error instanceof ApiError && error.status === 503 ? 'offline' : 'error'); } }
     finally { if (!current.signal.aborted) setBusy(false); }

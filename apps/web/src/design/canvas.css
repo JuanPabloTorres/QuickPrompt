@@ -1,4 +1,52 @@
 * { box-sizing: border-box; }
+.semantic-plan { margin-block: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; text-align: left; }
+.semantic-plan summary { min-height: 44px; padding-block: 10px; cursor: pointer; }
+.semantic-plan > * + * { margin-top: 12px; }
+.semantic-plan ol { display: grid; gap: 8px; padding-left: 24px; }
+.candidate-choice { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; text-align: left; }
+.nova-live { position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 12; max-width: calc(100vw - 32px); text-align: left; pointer-events: auto; }
+.nova-live-trigger { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; max-width: min(320px, calc(100vw - 32px)); border: 1px solid var(--accent); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); color: var(--foreground); text-align: left; }
+.nova-live-trigger > span { display: grid; gap: 1px; min-width: 0; }
+.nova-live-trigger strong { color: var(--accent); font-size: .75rem; letter-spacing: .08em; }
+.nova-live-trigger > span > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8125rem; }
+.nova-live-trigger > svg:first-child { color: var(--accent); }
+.nova-live-trigger > svg:last-child { margin-left: 8px; transition: transform .16s ease; }
+.nova-activity-expanded { transform: rotate(180deg); }
+.nova-live-popover { position: absolute; right: 0; bottom: calc(100% + 12px); width: min(370px, calc(100vw - 48px)); max-height: min(560px, calc(100dvh - 128px)); overflow-y: auto; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+.nova-live-popover > * + * { margin-top: 16px; }
+.nova-live-heading { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
+.nova-live-heading h2 { margin-top: 6px; font-size: 1rem; line-height: 1.4; }
+.nova-live-heading .eyebrow { font-size: .6875rem; }
+.nova-live-heading .icon-button { margin: -8px -8px 0 0; flex-shrink: 0; }
+.live-subject { color: var(--muted); font-size: .875rem; overflow-wrap: anywhere; }
+.live-speed { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; font-size: .8125rem; }
+.live-speed select { min-height: 44px; padding: 6px 10px; }
+.nova-working { animation: nova-working 1.2s linear infinite; }
+@keyframes nova-working { to { transform: rotate(360deg); } }
+.nova-outcome { max-width: 880px; margin: 16px auto; }
+.preparation-options { margin-top: 16px; color: var(--muted); font-size: .875rem; }
+.preparation-options > summary { min-height: 44px; display: list-item; align-content: center; width: fit-content; }
+.live-controls, .live-review-actions { display: flex; flex-wrap: wrap; gap: var(--control-gap); align-items: center; }
+.live-request { overflow-wrap: anywhere; max-height: 100px; overflow: auto; }
+.live-operation { color: var(--foreground); }
+.live-steps { display: grid; gap: 8px; padding-left: 22px; font-size: .875rem; }
+.live-steps span { color: var(--accent); }
+.live-details { border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: .875rem; }
+.live-details summary { min-height: 44px; padding: 8px 0; }
+.live-details ol { max-height: 300px; overflow: auto; padding-left: 24px; }
+.live-details li { padding: 10px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.live-details code { font-size: .8125rem; color: var(--foreground); }
+.live-response pre { max-height: 320px; overflow: auto; margin-bottom: 16px; }
+.execution-mode { display: flex; gap: 12px; align-items: center; justify-content: flex-start; margin-top: 16px; font-size: .875rem; }
+.library-search { max-width: 560px; margin: 12px 0 20px; color: var(--muted); }
+.library-search input { margin-top: 8px; }
+.editor-preparation { margin: 24px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.editor-preparation > * + * { margin-top: 16px; }
+.editor-preparation .variable-grid { margin-top: 24px; }
+.editor:has([data-testid="draft-prepared"]) #prompt-content, .variable-grid textarea:focus { border-color: var(--accent); }
+.live-followup { max-width: 880px; margin: 20px auto 32px; }
+.live-followup button { margin-top: 12px; }
+@media (max-width: 600px) { .nova-live { right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); } .nova-live-trigger { width: 52px; min-height: 52px; padding: 14px; justify-content: center; } .nova-live-trigger > span, .nova-live-trigger > svg:last-child { display: none; } .dialog-content:has(.nova-live) { padding-bottom: 88px; } .live-controls { width: 100%; } .live-controls button { flex: 1 1 auto; } .execution-mode { flex-wrap: wrap; } .live-review-actions button { width: 100%; } }
 html { scrollbar-gutter: stable; }
 body { margin: 0; min-width: 280px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 1.6; }
 button, input, textarea, select { font: inherit; }
@@ -154,7 +202,7 @@ summary { min-height: 44px; padding: 10px 0; font-size: .9375rem; color: var(--m
 .editor-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--control-gap); margin-top: 28px; }
 .notice { padding: 24px; border-radius: 12px; background: var(--surface); color: var(--muted); }
 .dialog-overlay { position: fixed; inset: 0; background: var(--scrim); pointer-events: auto; z-index: 10; }
-.dialog-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 540px; width: calc(100% - 32px); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 32px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); z-index: 11; }
+.dialog-content { position: fixed; inset: 20px 16px; margin: auto; height: fit-content; max-width: 540px; width: calc(100% - 32px); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 32px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); z-index: 11; }
 .dialog-content h2 { font-size: 1.375rem; padding-right: 44px; }
 .dialog-content p { margin: 16px 0; font-size: .9375rem; }
 .dialog-close { position: absolute; right: 12px; top: 12px; }
@@ -208,11 +256,34 @@ summary { min-height: 44px; padding: 10px 0; font-size: .9375rem; color: var(--m
 html[data-inactive="true"] .nova-core * { animation-play-state: paused; }
 /* Home retains a compact entry point; the prepared prompt lives in a dismissible dialog. */
 .preparation-canvas { width: min(100%, 760px); margin-inline: auto; text-align: left; }
+.nova-quick-actions { width: min(100%, 760px); margin: 24px auto 0; text-align: left; }
+.quick-actions-caption { color: var(--muted); font-size: .875rem; margin-bottom: 12px; }
+.quick-action-buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+.quick-action { min-height: 44px; padding: 11px 16px; font-size: .875rem; }
+.quick-more { margin-top: 8px; font-size: .875rem; }
+.quick-more summary { display: list-item; width: fit-content; min-height: 44px; padding-block: 12px; color: var(--muted); cursor: pointer; }
+.quick-more[open] .quick-action-buttons { margin-top: 8px; }
+.quick-action-form { text-align: left; margin-top: 20px; }
+.quick-action-form textarea { width: 100%; min-height: 84px; padding: 12px; border: 1px solid var(--input-line); border-radius: 10px; background: var(--surface); color: var(--foreground); font: inherit; resize: vertical; }
+.quick-action-form .muted { font-size: .875rem; overflow-wrap: anywhere; }
+.quick-prompt-choice > label { display: block; margin-bottom: 8px; }
+.quick-prompt-results { display: grid; gap: 12px; margin-top: 16px; max-height: 280px; overflow: auto; padding: 4px; }
+.quick-prompt-results button { width: 100%; }
+.quick-selected { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+.quick-selected > div { flex: 1; min-width: 160px; overflow-wrap: anywhere; }
+.quick-selected strong { display: block; margin-block: 6px; }
+.quick-values { border: 0; padding: 0; margin: 20px 0 0; min-width: 0; }
+.quick-values legend { font-weight: 600; }
+@media (max-width: 480px) {
+  .quick-action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quick-action { padding: 11px 12px; justify-content: flex-start; text-align: left; }
+  .quick-action svg { flex-shrink: 0; }
+}
 .nova-input textarea { min-width: 0; width: 100%; resize: vertical; min-height: 62px; max-height: 260px; border: 0; background: transparent; color: var(--foreground); padding: 12px 0; font: inherit; line-height: 1.5; outline-offset: 4px; }
 .nova-input textarea::placeholder { color: var(--muted); }
 .preparation-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; margin-top: 12px; font-size: .8rem; color: var(--muted); }
 .remember-draft { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
-.remember-draft input { width: 18px; height: 18px; accent-color: var(--accent); }
+.remember-draft input { width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
 .preparation-progress { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 10px 0; color: var(--accent); }
 .prepared-launcher { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 24px; }
 .prepared-launcher .muted { min-width: 0; overflow-wrap: anywhere; font-size: .875rem; }
@@ -229,6 +300,7 @@ html[data-inactive="true"] .nova-core * { animation-play-state: paused; }
 .prepared-result > .text-button { margin-top: 24px; }
 .prepared-field { display: grid; gap: 8px; margin-block: 16px; }
 .prepared-field label { margin: 0; font-weight: 500; }
+.prepared-missing > .secondary { margin: 0 12px 12px 0; }
 .prepared-adjust label { margin-bottom: 8px; font-weight: 500; }
 .prepared-adjust > button { margin-top: 16px; }
 .prepared-missing textarea, .prepared-adjust textarea { width: 100%; min-height: 84px; padding: 12px; border: 1px solid var(--input-line); border-radius: 10px; background: var(--surface); color: var(--foreground); font: inherit; resize: vertical; }
@@ -252,3 +324,10 @@ html[data-inactive="true"] .nova-core * { animation-play-state: paused; }
 .lesson-actions a { min-height: 44px; display: inline-flex; align-items: center; }
 .lesson video { width: 100%; aspect-ratio: 16 / 10; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .lesson > a { display: inline-flex; min-height: 44px; align-items: center; }
+.nova-agent-target { position: fixed; z-index: 1000; pointer-events: none; border: 2px solid var(--accent, #71cfc7); border-radius: 10px; box-shadow: 0 0 0 4px #71cfc720; transition: top .12s ease, left .12s ease; }
+.nova-live h2 { font-size: 1rem; }
+.nova-live .live-operation { font-size: .875rem; }
+.nova-live .live-details { font-size: .875rem; }
+.nova-agent-pointer { position: absolute; left: 8px; bottom: calc(100% + 6px); white-space: nowrap; color: var(--text, #dffaf6); background: var(--surface, #13252e); padding: 3px 8px; border-radius: 6px; font-size: 12px; }
+.nova-agent-click { box-shadow: 0 0 0 7px #71cfc740; }
+@media (prefers-reduced-motion: reduce) { .nova-agent-target, .nova-live-trigger > svg:last-child { transition: none; } .nova-working { animation: none; } }

@@ -1,0 +1,24 @@
+{
+  "version": "agentic-2-reference-v1",
+  "purpose": "Independent literal task checks derived from requests, frozen before holdout execution. These complement domain, identity, effect and outcome assertions; they are not an LLM judge.",
+  "fixtureTitles": { "arch": "Arquitectura", "summary": "Resumen", "letters": "Cartas profesionales", "duplicate": "Resumen duplicado" },
+  "templateConcepts": {
+    "adapt-1": ["API", "\\.NET"],
+    "adapt-2": ["React"],
+    "adapt-3": ["Python", "API"],
+    "adapt-4": ["Java"],
+    "adapt-5": ["m[oó]vil|mobile"],
+    "simple-1": ["API"],
+    "simple-2": ["SQLite"],
+    "simple-3": ["recurs"],
+    "simple-4": ["fotos[ií]ntesis|photosynthesis"],
+    "simple-5": ["transac"]
+  },
+  "families": {
+    "create": ["compar|contrast|evalu|elegir|choose", "empleo|oferta|laboral|job|offer"],
+    "known": "Compiled prompt must contain the exact literal text explicitly supplied after texto:",
+    "missing": "Must ask and retain unresolved texto; compiled text must be absent",
+    "ambiguity": "Must ask with at least two real candidates; never auto-select",
+    "duplicate": "Must ask with at least two real candidates; never collapse identity"
+  }
+}

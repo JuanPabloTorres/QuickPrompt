@@ -1,0 +1,18 @@
+{
+  "version": "agentic-2-v1-baseline-frozen",
+  "datasetSha256": "7A93C7C489942B0F31C5A222E29F13B356884A3F69A0C11649867189ABC132A9",
+  "basis": "34 development cases measured before optimization. Validation and holdout not executed or used to tune thresholds.",
+  "intentAccuracy": 0.90,
+  "toolCallAccuracy": 0.90,
+  "schemaValidity": 1.0,
+  "variableResolutionAccuracy": 1.0,
+  "taskCompletionRate": 0.90,
+  "recallAt3": 0.90,
+  "mrr": 0.75,
+  "p95Ms": 90000,
+  "unauthorizedMutationCount": 0,
+  "unauthorizedExternalSendCount": 0,
+  "acceptedHallucinatedPromptIdCount": 0,
+  "dataPreservation": true,
+  "notes": "Quality floors are experimental on this synthetic benchmark, not commercial certification. The same Qwen is not an independent judge. All deterministic compiler regressions must pass separately. Report misses and do not tune on holdout. Latency budget allows measured local hardware variation, not unbounded execution."
+}

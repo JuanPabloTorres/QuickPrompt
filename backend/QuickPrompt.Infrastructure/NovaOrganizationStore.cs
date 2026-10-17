@@ -34,7 +34,7 @@ public sealed partial class LocalStore
         lock (gate)
         {
             var operational = Read(db => { using var command = db.CreateCommand();
-                command.CommandText = "SELECT Kind,Id,Payload FROM Documents WHERE Kind IN ('nova-draft','nova-preparation','nova-prepared-save','nova-use') ORDER BY Kind,Id";
+                command.CommandText = "SELECT Kind,Id,Payload FROM Documents WHERE Kind IN ('nova-draft','nova-preparation','nova-prepared-save','nova-use','nova-run-receipt','nova-preferences','nova-live-receipt','nova-live') ORDER BY Kind,Id";
                 using var rows = command.ExecuteReader(); var text = new StringBuilder();
                 while (rows.Read()) text.Append(rows.GetString(0)).Append('\0').Append(rows.GetString(1)).Append('\0').Append(rows.GetString(2)).Append('\0');
                 return text.ToString(); });
@@ -58,6 +58,7 @@ public sealed partial class LocalStore
         if (!input.Confirmed) throw new ValidationException("Confirma el reemplazo de la biblioteca.");
         lock (gate)
         {
+            if (Read(db => Get<LiveRecord>(db, "nova-live").Any(run => !LiveRuns.Terminal(run.Status)))) throw new ConflictException("Termina o detén la ejecución visible antes de restaurar la biblioteca.");
             var json = input.Data.GetRawText(); PreviewImport(json, true);
             if (input.ExpectedSnapshot != NovaSnapshot()) throw new ConflictException("La biblioteca cambió desde la revisión. Revisa el respaldo de nuevo.");
             NovaBackup(); // Verified SQLite backup must succeed before any replacement.

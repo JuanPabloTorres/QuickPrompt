@@ -33,20 +33,40 @@ builder.Services.AddSingleton<ILocalLlmClient>(_ => new OllamaClient(new HttpCli
 builder.Services.AddSingleton<INovaInference>(sp => new NovaInference(sp.GetRequiredService<ILocalLlmClient>(),
     builder.Configuration["QuickPrompt:Ollama"] ?? "http://127.0.0.1:11434", TimeSpan.FromSeconds(aiTimeout)));
 builder.Services.AddSingleton<NovaAssistant>();
-var preparationOptions = new PreparationOptions(builder.Configuration.GetValue("QuickPrompt:Preparation:MaxSteps", 12),
-    builder.Configuration.GetValue("QuickPrompt:Preparation:StageTimeoutSeconds", 90), builder.Configuration.GetValue("QuickPrompt:Preparation:TotalTimeoutSeconds", 180));
-if (preparationOptions.MaxSteps is < 6 or > 16 || preparationOptions.StageTimeoutSeconds is < 5 or > 180 || preparationOptions.TotalTimeoutSeconds is < 10 or > 300)
+var preparationOptions = new PreparationOptions(builder.Configuration.GetValue("QuickPrompt:Preparation:MaxSteps", 5),
+    builder.Configuration.GetValue("QuickPrompt:Preparation:StageTimeoutSeconds", 90), builder.Configuration.GetValue("QuickPrompt:Preparation:TotalTimeoutSeconds", 180),
+    builder.Configuration.GetValue("QuickPrompt:Preparation:SemanticMaxSteps", 12));
+if (preparationOptions.MaxSteps is < 3 or > 10 || preparationOptions.SemanticMaxSteps is < 3 or > 16 || preparationOptions.StageTimeoutSeconds is < 5 or > 180 || preparationOptions.TotalTimeoutSeconds is < 10 or > 300)
     throw new InvalidOperationException("Invalid preparation budget.");
 builder.Services.AddSingleton(preparationOptions);
-builder.Services.AddSingleton<PreparationInference>(_ => new(builder.Configuration["QuickPrompt:Ollama"] ?? "http://127.0.0.1:11434"));
+builder.Services.AddSingleton<PreparationInference>(sp => new(builder.Configuration["QuickPrompt:Ollama"] ?? "http://127.0.0.1:11434", localEditor: sp.GetRequiredService<ILocalLlmClient>()));
 builder.Services.AddSingleton<IIntentInterpreter>(sp => sp.GetRequiredService<PreparationInference>());
+builder.Services.AddSingleton<ISemanticIntentInterpreter>(sp => sp.GetRequiredService<PreparationInference>());
+builder.Services.AddSingleton<ISemanticContentInterpreter>(sp => sp.GetRequiredService<PreparationInference>());
+builder.Services.AddSingleton<SemanticPlanning>();
 builder.Services.AddSingleton<IPromptGenerator>(sp => sp.GetRequiredService<PreparationInference>());
+builder.Services.AddSingleton<ICandidateSelector>(sp => sp.GetRequiredService<PreparationInference>());
 builder.Services.AddSingleton<IPromptRetriever, SqlitePromptRetriever>();
 builder.Services.AddSingleton<LocalCommands>();
 builder.Services.AddSingleton<IVariableResolver, GroundedVariableResolver>();
 builder.Services.AddSingleton<IPromptEvaluator, DeterministicPromptEvaluator>();
 builder.Services.AddSingleton<IPreparedDraftStore, PreparedDraftStore>();
+builder.Services.AddSingleton<IAgentRunStore, AgentRunStore>();
+builder.Services.AddSingleton<AgentSessions>();
+builder.Services.AddSingleton<ILocalPreparedExecutor, LocalPreparedExecutor>();
+builder.Services.AddSingleton<IPreparationReadTools, PreparationReadTools>();
+builder.Services.AddSingleton<PreparationDiagnostics>();
+builder.Services.AddSingleton<IPreparationPreferences, PreparationPreferenceStore>();
 builder.Services.AddSingleton<AgentOrchestrator>();
+builder.Services.AddSingleton<ILiveRunStore, LiveRunStore>();
+builder.Services.AddSingleton<LiveRuns>();
+builder.Services.AddSingleton<SameTabUiDispatcher>();
+builder.Services.AddSingleton<IUiDecisionModel>(sp => sp.GetRequiredService<PreparationInference>());
+builder.Services.AddSingleton<IVisibleBrowserFactory>(_ => new VisibleBrowserFactory(
+    Path.GetFullPath(builder.Configuration["QuickPrompt:Live:Worker"] ?? Path.Combine(Directory.GetCurrentDirectory(), ".playwright/browser-worker-build/worker.cjs")),
+    builder.Configuration["QuickPrompt:Live:Node"] ?? "node"));
+var visibleSteps = builder.Configuration.GetValue("QuickPrompt:Live:MaxSteps", 12);
+if (visibleSteps is < 3 or > 16) throw new InvalidOperationException("Visible UI budget must be between 3 and 16 decisions.");
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -70,13 +90,15 @@ app.Use(async (context, next) =>
     context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
     if (context.Request.Path.StartsWithSegments("/api")) context.Response.Headers.CacheControl = "no-store";
     try { await next(); }
-    catch (Exception error) when (!context.Response.HasStarted && error is ValidationException or ConflictException or MissingPromptException or BadHttpRequestException or JsonException or LlmUnavailableException)
+    catch (Exception error) when (!context.Response.HasStarted && error is ValidationException or ConflictException or MissingPromptException or BadHttpRequestException or JsonException or LlmUnavailableException or PreparationToolException)
     {
-        var status = error switch { ConflictException => 409, MissingPromptException => 404, LlmUnavailableException => 503, BadHttpRequestException bad => bad.StatusCode, _ => 400 };
+        var status = error switch { ConflictException => 409, MissingPromptException => 404, LlmUnavailableException => 503, PreparationToolException { Code: "MODEL_UNAVAILABLE" or "TIMEOUT" } => 503, BadHttpRequestException bad => bad.StatusCode, _ => 400 };
         await Results.Problem(statusCode: status, title: status == 409 ? "Conflicto de revisión" : "Solicitud no válida",
             detail: error is JsonException or BadHttpRequestException ? "Revisa el formato de la solicitud." : error.Message,
             extensions: new Dictionary<string, object?> { ["correlationId"] = context.TraceIdentifier }).ExecuteAsync(context);
     }
+    catch (OperationCanceledException) when (!context.Response.HasStarted && !context.RequestAborted.IsCancellationRequested)
+    { await Results.Problem(statusCode: 503, title: "Tiempo de espera agotado", detail: "El modelo no completó la operación dentro del límite. No se aplicaron cambios pendientes.").ExecuteAsync(context); }
     catch (Exception error) when (!context.Response.HasStarted && error is not OperationCanceledException)
     {
         app.Logger.LogError("Operation failed. Correlation {CorrelationId}, type {ErrorType}", context.TraceIdentifier, error.GetType().Name);
@@ -90,7 +112,12 @@ var api = app.MapGroup("/api/v1");
 api.MapGet("/openapi.json", () => Results.Stream(typeof(NovaEndpoints).Assembly.GetManifestResourceStream("nova-openapi.json")!, "application/json"));
 api.MapNova();
 api.MapPreparation();
-api.MapPost("/nova/command", (LocalCommandInput input, LocalCommands commands) => commands.Resolve(input));
+api.MapLive($"http://127.0.0.1:{port}", visibleSteps);
+api.MapPost("/nova/command", (LocalCommandInput input, LocalCommands commands, CancellationToken ct) => commands.Resolve(input, ct)).RequireRateLimiting("ai");
+api.MapPost("/nova/semantic/interpret", async (LocalCommandInput input, SemanticPlanning planning, CancellationToken ct) => {
+    if (string.IsNullOrWhiteSpace(input.Message) || input.Message.Length > 16000) throw new ValidationException("Solicitud semántica inválida.");
+    return (await planning.Interpret(input.Message, input.SessionId ?? Guid.NewGuid(), input.SourcePromptId, input.SourceRevision, "qwen3:8b", null, ct)).Interpretation;
+}).RequireRateLimiting("ai");
 api.MapGet("/providers", () => ProviderRegistry.Providers);
 api.MapPost("/transfers/prepare", (TransferInput input, PromptLibrary library) =>
 {

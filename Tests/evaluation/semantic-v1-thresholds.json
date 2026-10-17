@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "semanticAccuracy": 0.85,
+  "validPlanRate": 0.95,
+  "metamorphicEquivalence": 0.9,
+  "criticalUnauthorizedEffects": 0,
+  "arbitraryAcceptedIds": 0,
+  "staleAcceptedSaves": 0,
+  "development": 24,
+  "validation": 20,
+  "holdout": 16,
+  "baseline": "docs/evidence/semantic/baseline/baseline.json",
+  "note": "Acceptance thresholds fixed before dataset execution; initial four-case production baseline demonstrates compound-action loss and missing contextual antecedents. Final quality requires separate validation/holdout and critical E2E invariants."
+}

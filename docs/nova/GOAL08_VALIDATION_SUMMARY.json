@@ -1,0 +1,347 @@
+{
+  "date": "2026-10-16",
+  "status": "PASS_AGENTIC_VISIBLE",
+  "scope": "Local Windows/Edge and public synthetic QA; no installations, downloads, private library access, commits or publication.",
+  "model": "qwen3:8b",
+  "modelDetails": {
+    "parent_model": "",
+    "format": "gguf",
+    "family": "qwen3",
+    "families": [
+      "qwen3"
+    ],
+    "parameter_size": "8.2B",
+    "quantization_level": "Q4_K_M"
+  },
+  "browser": {
+    "channel": "msedge",
+    "version": "155.0.4283.45",
+    "headed": true,
+    "isolatedContext": true
+  },
+  "sourceTests": {
+    "backend": 126,
+    "legacy": 150,
+    "react": 27,
+    "workerContracts": 3,
+    "bridgeContracts": 6,
+    "total": 312,
+    "failed": 0,
+    "skipped": 0
+  },
+  "realBrowserChecks": {
+    "visible": 12,
+    "manual": 2,
+    "commands": 7,
+    "agentic2": 13,
+    "modal": 2,
+    "learning": 8,
+    "selectedSourceFill": 1
+  },
+  "controlledFaultChecks": {
+    "visible": 9,
+    "previous": 10
+  },
+  "firstDemonstration": {
+    "request": "NOVA, busca el prompt Escribir un correo profesional, ábrelo y prepara una versión más breve.",
+    "runId": "81f14bf9-4241-4cba-bb2e-e0078bfd1af5",
+    "tools": [
+      "ui_search_prompt",
+      "ui_open_prompt",
+      "ui_open_editor",
+      "ui_prepare_update",
+      "finish"
+    ],
+    "originalCharacters": 273,
+    "draftCharacters": 261,
+    "originalProhibitionPresent": true,
+    "explicitPreservationClausePresent": true,
+    "cancelPreservesSourceAndHistory": true,
+    "confirmedSaveRevision": 2,
+    "confirmedSaveVersions": 2
+  },
+  "publicDemo": {
+    "origin": "http://127.0.0.1:5228",
+    "runId": "179c6cea-d480-4631-8baa-299407470e15",
+    "libraryCount": 60,
+    "cancellationPreservesSource": true,
+    "sourceVersions": 1
+  },
+  "evaluation": {
+    "protocol": "agentic-2-acceptance-v1",
+    "datasetSha256": "F357E01692553BC3BD2197054DA5A85142BC40EF3613B9B7D45BDCA2C2386BBE",
+    "cases": 85,
+    "checks": 338,
+    "failedChecks": [],
+    "partitions": [
+      {
+        "split": "development",
+        "metrics": {
+          "intentAccuracy": 1,
+          "toolCallAccuracy": 1,
+          "schemaValidity": 1,
+          "taskCompletionRate": 1,
+          "recallAt3": 1,
+          "mrr": 0.9583333333333334,
+          "variableResolutionAccuracy": 1,
+          "unauthorizedMutationCount": 0,
+          "unauthorizedExternalSendCount": 0,
+          "acceptedHallucinatedPromptIdCount": 0,
+          "dataPreservation": true,
+          "p50Ms": 117,
+          "p95Ms": 28337,
+          "timePerTool": [
+            {
+              "tool": "search_prompts",
+              "count": 32,
+              "meanMs": 9.170312500000001,
+              "maxMs": 32.19
+            },
+            {
+              "tool": "compile_prompt",
+              "count": 30,
+              "meanMs": 0.5900000000000001,
+              "maxMs": 9.25
+            },
+            {
+              "tool": "validate_prompt",
+              "count": 30,
+              "meanMs": 0.033666666666666685,
+              "maxMs": 0.44
+            },
+            {
+              "tool": "propose_prompt_update",
+              "count": 2,
+              "meanMs": 4846.15,
+              "maxMs": 5142.14
+            },
+            {
+              "tool": "propose_new_prompt",
+              "count": 6,
+              "meanMs": 14499.011666666667,
+              "maxMs": 36787.21
+            },
+            {
+              "tool": "execute_local_llm",
+              "count": 2,
+              "meanMs": 22448.455,
+              "maxMs": 23837.11
+            }
+          ]
+        },
+        "resourceSamples": 212,
+        "sampledPeakOllamaRamBytes": 211427328,
+        "sampledPeakModelVramBytes": 5225374496,
+        "tokenUsage": {
+          "promptTokens": 18972,
+          "generatedTokens": 2543,
+          "measuredCalls": 30,
+          "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+        }
+      },
+      {
+        "split": "validation",
+        "metrics": {
+          "intentAccuracy": 1,
+          "toolCallAccuracy": 1,
+          "schemaValidity": 1,
+          "taskCompletionRate": 1,
+          "recallAt3": 1,
+          "mrr": 0.8611111111111112,
+          "variableResolutionAccuracy": 1,
+          "unauthorizedMutationCount": 0,
+          "unauthorizedExternalSendCount": 0,
+          "acceptedHallucinatedPromptIdCount": 0,
+          "dataPreservation": true,
+          "p50Ms": 76,
+          "p95Ms": 26651,
+          "timePerTool": [
+            {
+              "tool": "search_prompts",
+              "count": 32,
+              "meanMs": 81.995,
+              "maxMs": 2351.13
+            },
+            {
+              "tool": "compile_prompt",
+              "count": 30,
+              "meanMs": 0.40833333333333327,
+              "maxMs": 5.69
+            },
+            {
+              "tool": "validate_prompt",
+              "count": 30,
+              "meanMs": 0.017333333333333336,
+              "maxMs": 0.14
+            },
+            {
+              "tool": "propose_prompt_update",
+              "count": 2,
+              "meanMs": 4736.7,
+              "maxMs": 5575.3
+            },
+            {
+              "tool": "propose_new_prompt",
+              "count": 6,
+              "meanMs": 13764.493333333334,
+              "maxMs": 32912.51
+            },
+            {
+              "tool": "execute_local_llm",
+              "count": 2,
+              "meanMs": 25687.135000000002,
+              "maxMs": 26592.79
+            }
+          ]
+        },
+        "resourceSamples": 205,
+        "sampledPeakOllamaRamBytes": 325820416,
+        "sampledPeakModelVramBytes": 5225374496,
+        "tokenUsage": {
+          "promptTokens": 17386,
+          "generatedTokens": 2364,
+          "measuredCalls": 27,
+          "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+        }
+      },
+      {
+        "split": "holdout",
+        "metrics": {
+          "intentAccuracy": 1,
+          "toolCallAccuracy": 1,
+          "schemaValidity": 1,
+          "taskCompletionRate": 1,
+          "recallAt3": 1,
+          "mrr": 0.9166666666666666,
+          "variableResolutionAccuracy": 1,
+          "unauthorizedMutationCount": 0,
+          "unauthorizedExternalSendCount": 0,
+          "acceptedHallucinatedPromptIdCount": 0,
+          "dataPreservation": true,
+          "p50Ms": 2131,
+          "p95Ms": 25230,
+          "timePerTool": [
+            {
+              "tool": "search_prompts",
+              "count": 16,
+              "meanMs": 8.486874999999998,
+              "maxMs": 27.17
+            },
+            {
+              "tool": "compile_prompt",
+              "count": 15,
+              "meanMs": 0.7353333333333332,
+              "maxMs": 8.41
+            },
+            {
+              "tool": "validate_prompt",
+              "count": 15,
+              "meanMs": 0.03200000000000001,
+              "maxMs": 0.32
+            },
+            {
+              "tool": "propose_prompt_update",
+              "count": 1,
+              "meanMs": 4944.04,
+              "maxMs": 4944.04
+            },
+            {
+              "tool": "propose_new_prompt",
+              "count": 3,
+              "meanMs": 10314.890000000001,
+              "maxMs": 17141.02
+            },
+            {
+              "tool": "execute_local_llm",
+              "count": 1,
+              "meanMs": 25138.78,
+              "maxMs": 25138.78
+            }
+          ]
+        },
+        "resourceSamples": 98,
+        "sampledPeakOllamaRamBytes": 211701760,
+        "sampledPeakModelVramBytes": 5225374496,
+        "tokenUsage": {
+          "promptTokens": 11326,
+          "generatedTokens": 1067,
+          "measuredCalls": 18,
+          "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+        }
+      }
+    ],
+    "datasetVersion": "agentic-2-v2.1"
+  },
+  "parameters": {
+    "decision": {
+      "temperature": 0,
+      "num_ctx": 12288,
+      "num_predict": 1000
+    },
+    "sourceEditor": {
+      "temperature": 0.2,
+      "num_ctx": 8192,
+      "num_predict": 1800
+    },
+    "maxDecisions": 12,
+    "totalTimeoutSeconds": 480
+  },
+  "artifacts": {
+    "visible": "docs/evidence/goal08/real-1792180859289/acceptance.json",
+    "manual": "docs/evidence/goal08/real-1792177931032/acceptance.json",
+    "selectedSourceFill": "docs/evidence/goal08/real-1792180827982/acceptance.json",
+    "visibleFaults": "docs/evidence/goal08/faults-1792180494854/acceptance.json",
+    "previousFaults": "docs/evidence/agentic-2/faults-1792178649189/acceptance.json",
+    "commands": "docs/evidence/goal08/final-commands/acceptance.json",
+    "agentic2": "docs/evidence/agentic-2/2026-10-16T20-14-06-044Z/acceptance.json",
+    "modal": "docs/evidence/goal08/final-modal/acceptance.json",
+    "learning": "docs/evidence/goal08/final-learning/acceptance.json",
+    "publicDemo": "docs/evidence/goal08/public-library-demo/acceptance.json",
+    "evaluation": "docs/evidence/goal08/evaluation/acceptance-summary.json"
+  },
+  "sourceHashes": {
+    "backend/QuickPrompt.Application/AgentOrchestrator.cs": "a6d2e3fbcd628cf8c5418464d780ffb223a4a89d3978d48ef386cb33a1091a5f",
+    "backend/QuickPrompt.Application/AgentOrchestrator.Visible.cs": "ddf048816ac7006fc9ed3fe946e0b5f56c973613a93982ad87d4454687ed1ca8",
+    "backend/QuickPrompt.Application/LiveExecution.cs": "3cb190cf8f204301ec9ca7f9500a85501d767210922b59ce195c364301644422",
+    "backend/QuickPrompt.Application/UiToolCatalog.cs": "f1bab0f6fdb5d91f7bdce7b4c3b9cdee59b6aafbdf5a6a9f6dc3133f0d91edc0",
+    "backend/QuickPrompt.Infrastructure/PreparationInference.cs": "dd334b32743039abfa557b2c7a9b1a4a15e66524eae6b9bf46c2483f05ade4e2",
+    "backend/QuickPrompt.Infrastructure/VisibleBrowserWorker.cs": "93c5689b4c1735ba02538e60df2e745b2c035e88dc5ff0447b4f3a4dbe57e588",
+    "src/QuickPrompt.Web/Infrastructure/OllamaClient.cs": "b3b79ab94bf20ca4f7e78907a8ceef64d7317184441320a689089fc7fa9c9112",
+    "src/QuickPrompt.Domain/TemplateConstraints.cs": "529afe3872fa9612116aadaae20d973bf611b095214d7b0499a31546b83ca6ee",
+    "apps/web/src/app/App.tsx": "7babe18441c338417f26ac9324a17591801f1a14e4e1dbab15e19c63ca3a04b4",
+    "apps/web/src/features/nova/NovaLive.tsx": "389ee02798f021e6fb8fbbc7c6c473cff3e4dab05b9ce90be629afd7e98bacfe",
+    "automation/browser-worker/worker.cts": "8ce8866668085bc3aef7ec33c330f5a2188ccb5ad8f7b93e7945ba30db6e7a8a"
+  },
+  "finalRuntimeHashes": {
+    "QuickPrompt.Api.dll": "e5883918946b02ed4f1da4cce6f42f9a5c6b57b398a326b9c3d882d697ec518c",
+    "QuickPrompt.Application.dll": "437a19d5ff493a407b714c9d7008b16b537764f7130fe449f861b45e6a24aedd",
+    "QuickPrompt.Infrastructure.dll": "5ac2532a043950d5215d7cc2ee801bd778943e74146fd1cf9c1ea35e12d69a0c",
+    "QuickPrompt.Domain.dll": "a85403b97bcac2d9ac804e9301d9ddaa3c91b53fa6f1158e782d7533a51d9e30"
+  },
+  "visualReview": {
+    "desktop": true,
+    "mobile390": true,
+    "contrastChecks": 22,
+    "notes": "Read real worker and Live panel screenshots. Buttons separated; unchanged source and changed shorter body visible; source prohibition retained; terminal browser control hidden. Full A-J uses unchanged visible and shortening paths. The later rebuild fixes only direct-pipeline no-op revision and non-shortening guidance; a fresh public demo validates that runtime."
+  },
+  "preservedFailures": [
+    "docs/evidence/goal08/real-1792176609332",
+    "docs/evidence/goal08/real-1792177126303",
+    "docs/evidence/goal08/source-editor-diagnosis",
+    "docs/evidence/agentic-2/2026-10-16T19-13-18-229Z",
+    "docs/evidence/goal08/missing-context-diagnosis",
+    "docs/evidence/goal08/public-library-demo-initial",
+    "docs/evidence/goal08/preservation-clause-diagnosis",
+    "docs/evidence/goal08/real-1792179747435",
+    "docs/evidence/goal08/real-1792180102245",
+    "docs/evidence/goal08/real-1792180553392",
+    "docs/evidence/goal08/evaluation-initial-validation-reject"
+  ],
+  "limits": [
+    "Windows interactive Edge only; no Chrome/MAUI/service certification",
+    "No automatic external sending",
+    "One active run; bounded tools/time and one content revision",
+    "Conservative source prohibition matching is not universal semantic validation",
+    "Only synthetic/public diagnostic recordings; normal runtime records no content traces"
+  ]
+}

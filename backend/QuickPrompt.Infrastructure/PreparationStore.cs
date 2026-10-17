@@ -6,12 +6,21 @@ namespace QuickPrompt.Web.Infrastructure;
 
 public sealed class SqlitePromptRetriever(LocalStore store) : IPromptRetriever
 {
+    private static readonly string[][] RecallEquivalents = [
+        ["ARCHITECTURE", "ARQUITECTURA"], ["SUMMARY", "RESUMEN"], ["SUMMARIZE", "RESUMIR"], ["LETTER", "CARTA"],
+        ["LETTERS", "CARTAS"], ["INTERVIEW", "ENTREVISTA"], ["SECURITY", "SEGURIDAD"], ["DESIGN", "DISENO"],
+        ["BOUNDARIES", "LIMITES"], ["DEPENDENCIES", "DEPENDENCIAS"], ["TESTS", "PRUEBAS"], ["RESEARCH", "INVESTIGACION"] ];
     public RetrievalCandidate[] Retrieve(string query, Guid? sourceId)
+        => Retrieve(query, sourceId, null);
+    public RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter)
     {
         var found = new Dictionary<Guid, Template>();
-        void Add(CatalogQuery q) { foreach (var item in store.QueryTemplates(q).Items) found.TryAdd(item.Id, item); }
+        void Add(CatalogQuery q) { foreach (var item in store.QueryTemplates(q with { GroupId = filter?.GroupId, Category = filter?.CategoryId?.ToString() ?? "", Favorites = filter?.Favorites == true || q.Favorites }).Items) found.TryAdd(item.Id, item); }
         // Bounded OR recall across existing SQL title/body/category/group search. No vectors or new schema.
-        var terms = PromptSearch.Terms(query).Where(t => t.Length > 1).Take(6).ToArray();
+        var filler = new HashSet<string>("BUSCA ABRE MUESTRAME FIND OPEN PROMPT PLANTILLA INSTRUCCION MI MIS EL LA LOS LAS DE DEL Y PARA QUE TENGO GUARDADO QUIERO POR FAVOR".Split(' '));
+        var terms = System.Text.RegularExpressions.Regex.Matches(PromptSearch.Normalize(query), @"[\p{L}\p{N}+#.]+", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromMilliseconds(100))
+            .Select(m => m.Value).Where(t => t.Length > 1 && !filler.Contains(t)).Distinct().Take(6).ToArray();
+        terms = terms.Concat(RecallEquivalents.Where(group => group.Any(term => terms.Contains(term))).SelectMany(group => group)).Distinct().Take(12).ToArray();
         foreach (var term in terms) Add(new(Search: term, Size: 12));
         Add(new(Favorites: true, Size: 6)); Add(new(Size: 6, Sort: "recent", Recent: true));
         if (found.Count == 0) Add(new(Size: 6));
@@ -21,11 +30,15 @@ public sealed class SqlitePromptRetriever(LocalStore store) : IPromptRetriever
             if (!source.IsActive) throw new ValidationException("El origen está archivado.");
             found[id] = source;
         }
+        var groupNames = store.Groups().ToDictionary(g => g.Group.Id, g => g.Group.Name);
+        var duplicateIds = found.Values.GroupBy(t => PromptSearch.Normalize(t.Template.Replace("\r\n", "\n").Trim())).Where(g => g.Count() > 1).SelectMany(g => g.Select(t => t.Id)).ToHashSet();
         return found.Values.Select(t => {
             var title = PromptSearch.Normalize(t.Title); var body = PromptSearch.Normalize(t.Description + " " + t.Template);
-            var score = terms.Sum(term => title.Contains(term, StringComparison.Ordinal) ? 4 : body.Contains(term, StringComparison.Ordinal) ? 2 : 0)
+            var groups = PromptSearch.Normalize(string.Join(' ', store.GroupsFor("template", t.Id).Select(g => groupNames.GetValueOrDefault(g, ""))));
+            var score = terms.Sum(term => title.Contains(term, StringComparison.Ordinal) ? 4 : body.Contains(term, StringComparison.Ordinal) ? 2 : groups.Contains(term, StringComparison.Ordinal) ? 3 : 0)
                 + (t.IsFavorite ? .25 : 0) + (t.LastUsed.HasValue ? .1 : 0) + (t.Id == sourceId ? 100 : 0);
-            return new RetrievalCandidate(PromptLibrary.Document(t), score, t.Id == sourceId ? "Origen seleccionado explícitamente." : score >= 2 ? "Coincidencias literales; prioridad por título, favoritos y uso." : "Contexto reciente o de colección; requiere selección semántica.");
+            var reason = t.Id == sourceId ? "Origen seleccionado explícitamente." : score >= 2 ? "Coincidencias literales; prioridad por título, favoritos y uso." : "Contexto reciente o de colección; requiere selección semántica.";
+            return new RetrievalCandidate(PromptLibrary.Document(t), score, reason + (duplicateIds.Contains(t.Id) ? " Contenido duplicado en los candidatos; conserva la identidad de cada registro." : ""));
         }).OrderByDescending(c => c.Score).ThenBy(c => c.Prompt.Id).Take(6).ToArray();
     }
 }
@@ -52,7 +65,7 @@ public sealed class PreparedDraftStore(LocalStore store) : IPreparedDraftStore
     }
     public PreparedDraft[] Recent() => store.RecentPreparations();
     public void Forget(Guid id) { transient.TryRemove(id, out _); store.ForgetPreparation(id); }
-    public PromptDocument Save(Guid id) => store.FindPreparedSave(id) ?? store.SavePreparation(Get(id) ?? throw new ConflictException("El borrador ya no está disponible. Prepara uno nuevo o recupera uno conservado."));
+    public PromptDocument Save(Guid id, bool updateSource = false) => store.FindPreparedSave(id, updateSource) ?? store.SavePreparation(Get(id) ?? throw new ConflictException("El borrador ya no está disponible. Prepara uno nuevo o recupera uno conservado."), updateSource);
 }
 
 public sealed partial class LocalStore
@@ -69,19 +82,36 @@ public sealed partial class LocalStore
     });
     public void ForgetPreparation(Guid id) => Write((db, tx) => { using var command = db.CreateCommand(); command.Transaction = tx;
         command.CommandText = "DELETE FROM Documents WHERE Kind='nova-draft' AND Id=$id"; command.Parameters.AddWithValue("$id", id.ToString()); return command.ExecuteNonQuery(); });
-    public PromptDocument? FindPreparedSave(Guid id) => Read(db =>
+    public PromptDocument? FindPreparedSave(Guid id, bool updateSource = false) => Read(db =>
     {
         var receipt = GetOne<PreparedSaveReceipt>(db, "nova-prepared-save", id);
+        if (receipt is not null && receipt.UpdateSource != updateSource) throw new ConflictException("La confirmación corresponde a otra acción de guardado.");
         return receipt is null ? null : PromptLibrary.Document(GetOne<Template>(db, "template", receipt.PromptId)
             ?? throw new ConflictException("El prompt guardado se eliminó. No se recreará al reintentar."));
     });
-    public PromptDocument SavePreparation(PreparedDraft draft) => Write((db, tx) =>
+    public PromptDocument SavePreparation(PreparedDraft draft, bool updateSource = false) => Write((db, tx) =>
     {
         var receipt = GetOne<PreparedSaveReceipt>(db, "nova-prepared-save", draft.Id, tx);
-        if (receipt is not null) return PromptLibrary.Document(GetOne<Template>(db, "template", receipt.PromptId, tx)
-            ?? throw new ConflictException("El prompt guardado se eliminó. No se recreará al reintentar."));
+        if (receipt is not null)
+        {
+            if (receipt.UpdateSource != updateSource) throw new ConflictException("La confirmación corresponde a otra acción de guardado.");
+            return PromptLibrary.Document(GetOne<Template>(db, "template", receipt.PromptId, tx) ?? throw new ConflictException("El prompt guardado se eliminó. No se recreará al reintentar."));
+        }
         if (draft.State is not (PreparationState.READY or PreparationState.NEEDS_INFORMATION) || string.IsNullOrWhiteSpace(draft.TemplateText)) throw new ValidationException("No hay una plantilla válida para guardar.");
         Template? prompt = null;
+        if (draft.SourceId is { } sourceId)
+        {
+            var original = GetOne<Template>(db, "template", sourceId, tx) ?? throw new MissingPromptException();
+            if (original.Revision != draft.SourceRevision || !original.IsActive) throw new ConflictException("El origen cambió; prepara el prompt de nuevo.");
+            if (updateSource)
+            {
+                if (draft.Decision != PreparationDecision.ADAPT_EXISTING) throw new ValidationException("Solo una adaptación identificada puede guardarse como versión.");
+                original.Template = draft.TemplateText;
+                original.Variables = original.Variables.Where(v => TemplateCompiler.Names(original.Template).Contains(v.Key)).ToDictionary();
+                prompt = SaveInside(db, tx, original, "nova approved prepared version");
+            }
+        }
+        else if (updateSource) throw new ValidationException("No hay un original para guardar una versión.");
         if (draft.Decision == PreparationDecision.REUSE_EXISTING)
         {
             prompt = GetOne<Template>(db, "template", draft.SourceId!.Value, tx) ?? throw new MissingPromptException();
@@ -99,10 +129,10 @@ public sealed partial class LocalStore
             if (GetOne<Template>(db, "template", prompt.Id, tx) is not null) throw new ConflictException("Identificador ocupado.");
             SaveInside(db, tx, prompt, "nova prepared copy");
         }
-        Put(db, tx, "nova-prepared-save", draft.Id.ToString(), new PreparedSaveReceipt(prompt.Id));
+        Put(db, tx, "nova-prepared-save", draft.Id.ToString(), new PreparedSaveReceipt(prompt.Id, updateSource));
         return PromptLibrary.Document(prompt);
     });
     private static string NormalizePrepared(string text) => text.Replace("\r\n", "\n").Trim();
-    private sealed record PreparedSaveReceipt(Guid PromptId);
+    private sealed record PreparedSaveReceipt(Guid PromptId, bool UpdateSource = false);
     private sealed record PreparationReceipt(string Fingerprint);
 }

@@ -1,0 +1,269 @@
+{
+  "date": "2026-10-16",
+  "status": "PASS_LOCAL_EXPERIMENTAL",
+  "protocol": "agentic-2-acceptance-v1",
+  "datasetSha256": "F357E01692553BC3BD2197054DA5A85142BC40EF3613B9B7D45BDCA2C2386BBE",
+  "cases": 85,
+  "checks": 338,
+  "failedChecks": [],
+  "partitions": [
+    {
+      "split": "development",
+      "metrics": {
+        "intentAccuracy": 1,
+        "toolCallAccuracy": 1,
+        "schemaValidity": 1,
+        "taskCompletionRate": 1,
+        "recallAt3": 1,
+        "mrr": 0.9583333333333334,
+        "variableResolutionAccuracy": 1,
+        "unauthorizedMutationCount": 0,
+        "unauthorizedExternalSendCount": 0,
+        "acceptedHallucinatedPromptIdCount": 0,
+        "dataPreservation": true,
+        "p50Ms": 146,
+        "p95Ms": 26014,
+        "timePerTool": [
+          {
+            "tool": "search_prompts",
+            "count": 32,
+            "meanMs": 8.925937499999998,
+            "maxMs": 19.86
+          },
+          {
+            "tool": "compile_prompt",
+            "count": 30,
+            "meanMs": 0.39266666666666655,
+            "maxMs": 5.38
+          },
+          {
+            "tool": "validate_prompt",
+            "count": 30,
+            "meanMs": 0.017333333333333343,
+            "maxMs": 0.14
+          },
+          {
+            "tool": "propose_prompt_update",
+            "count": 2,
+            "meanMs": 2692.915,
+            "maxMs": 3149.57
+          },
+          {
+            "tool": "propose_new_prompt",
+            "count": 6,
+            "meanMs": 14659.27666666667,
+            "maxMs": 41539.54
+          },
+          {
+            "tool": "execute_local_llm",
+            "count": 2,
+            "meanMs": 20449.875,
+            "maxMs": 21077.39
+          }
+        ]
+      },
+      "retrievalComparison": {
+        "lexical": {
+          "count": 12,
+          "recallAt3": 1,
+          "mrr": 0.8333333333333334,
+          "meanMs": 11.280508333333332
+        },
+        "fts5": {
+          "count": 12,
+          "recallAt3": 1,
+          "mrr": 0.7777777777777778,
+          "meanMs": 0.1710333333333333
+        },
+        "limits": "Raw request comparison on small synthetic fixtures; FTS index creation/update cost excluded. Production workflow recall may additionally use a bounded Qwen query interpretation."
+      },
+      "resources": {
+        "sampledOllamaRamBytes": 297107456,
+        "sampledModelVramBytes": 5225374496
+      },
+      "tokenUsage": {
+        "promptTokens": 18956,
+        "generatedTokens": 2738,
+        "measuredCalls": 30,
+        "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+      }
+    },
+    {
+      "split": "validation",
+      "metrics": {
+        "intentAccuracy": 1,
+        "toolCallAccuracy": 1,
+        "schemaValidity": 1,
+        "taskCompletionRate": 1,
+        "recallAt3": 1,
+        "mrr": 0.9583333333333334,
+        "variableResolutionAccuracy": 1,
+        "unauthorizedMutationCount": 0,
+        "unauthorizedExternalSendCount": 0,
+        "acceptedHallucinatedPromptIdCount": 0,
+        "dataPreservation": true,
+        "p50Ms": 64,
+        "p95Ms": 27179,
+        "timePerTool": [
+          {
+            "tool": "search_prompts",
+            "count": 32,
+            "meanMs": 85.13656249999997,
+            "maxMs": 2439.42
+          },
+          {
+            "tool": "compile_prompt",
+            "count": 30,
+            "meanMs": 0.4253333333333333,
+            "maxMs": 7
+          },
+          {
+            "tool": "validate_prompt",
+            "count": 30,
+            "meanMs": 0.017333333333333336,
+            "maxMs": 0.14
+          },
+          {
+            "tool": "propose_prompt_update",
+            "count": 2,
+            "meanMs": 3275.765,
+            "maxMs": 4044.95
+          },
+          {
+            "tool": "propose_new_prompt",
+            "count": 6,
+            "meanMs": 15677.995,
+            "maxMs": 43206.39
+          },
+          {
+            "tool": "execute_local_llm",
+            "count": 2,
+            "meanMs": 24651.39,
+            "maxMs": 25251.02
+          }
+        ]
+      },
+      "retrievalComparison": {
+        "lexical": {
+          "count": 12,
+          "recallAt3": 1,
+          "mrr": 0.8194444444444443,
+          "meanMs": 12.447333333333333
+        },
+        "fts5": {
+          "count": 12,
+          "recallAt3": 0.5,
+          "mrr": 0.40277777777777773,
+          "meanMs": 0.14234166666666664
+        },
+        "limits": "Raw request comparison on small synthetic fixtures; FTS index creation/update cost excluded. Production workflow recall may additionally use a bounded Qwen query interpretation."
+      },
+      "resources": {
+        "sampledOllamaRamBytes": 198033408,
+        "sampledModelVramBytes": 5225374496
+      },
+      "tokenUsage": {
+        "promptTokens": 17380,
+        "generatedTokens": 2716,
+        "measuredCalls": 27,
+        "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+      }
+    },
+    {
+      "split": "holdout",
+      "metrics": {
+        "intentAccuracy": 1,
+        "toolCallAccuracy": 1,
+        "schemaValidity": 1,
+        "taskCompletionRate": 1,
+        "recallAt3": 1,
+        "mrr": 0.8333333333333334,
+        "variableResolutionAccuracy": 1,
+        "unauthorizedMutationCount": 0,
+        "unauthorizedExternalSendCount": 0,
+        "acceptedHallucinatedPromptIdCount": 0,
+        "dataPreservation": true,
+        "p50Ms": 2221,
+        "p95Ms": 22415,
+        "timePerTool": [
+          {
+            "tool": "search_prompts",
+            "count": 16,
+            "meanMs": 8.415,
+            "maxMs": 22.81
+          },
+          {
+            "tool": "compile_prompt",
+            "count": 15,
+            "meanMs": 0.5666666666666665,
+            "maxMs": 5.16
+          },
+          {
+            "tool": "validate_prompt",
+            "count": 15,
+            "meanMs": 0.02066666666666667,
+            "maxMs": 0.15
+          },
+          {
+            "tool": "propose_prompt_update",
+            "count": 1,
+            "meanMs": 3032.44,
+            "maxMs": 3032.44
+          },
+          {
+            "tool": "propose_new_prompt",
+            "count": 3,
+            "meanMs": 10794.536666666667,
+            "maxMs": 19725.79
+          },
+          {
+            "tool": "execute_local_llm",
+            "count": 1,
+            "meanMs": 22314.71,
+            "maxMs": 22314.71
+          }
+        ]
+      },
+      "retrievalComparison": {
+        "lexical": {
+          "count": 6,
+          "recallAt3": 1,
+          "mrr": 0.75,
+          "meanMs": 11.397483333333334
+        },
+        "fts5": {
+          "count": 6,
+          "recallAt3": 1,
+          "mrr": 0.8055555555555555,
+          "meanMs": 0.3285166666666667
+        },
+        "limits": "Raw request comparison on small synthetic fixtures; FTS index creation/update cost excluded. Production workflow recall may additionally use a bounded Qwen query interpretation."
+      },
+      "resources": {
+        "sampledOllamaRamBytes": 210223104,
+        "sampledModelVramBytes": 5225374496
+      },
+      "tokenUsage": {
+        "promptTokens": 11340,
+        "generatedTokens": 1195,
+        "measuredCalls": 18,
+        "limitation": "Intent and schema-generation calls only; the existing source-editor/execution interfaces do not expose token counts."
+      }
+    }
+  ],
+  "sourceTests": {
+    "backend": 87,
+    "legacy": 150,
+    "react": 22,
+    "workerContracts": 3,
+    "bridgeContracts": 6,
+    "total": 268
+  },
+  "originalV1": {
+    "status": "FAIL",
+    "evidence": "docs/evidence/agentic-2/verified-20261016/acceptance-summary.json",
+    "reason": "Preserved original protocol; permitted revision/fault sequence and elegir/elige evaluation defects corrected with a NEW holdout."
+  },
+  "evidenceRoot": "docs/evidence/agentic-2",
+  "limits": "Acceptance of this frozen synthetic benchmark only. Real-browser acceptance and deterministic compiler regressions are separate mandatory checks. No commercial or remote-provider submission certification."
+}

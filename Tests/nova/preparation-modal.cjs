@@ -3,13 +3,13 @@ const { spawn } = require('node:child_process');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/estju/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const { install } = require('../../scripts/Install-PracticalLibrary.cjs');
 const root = path.resolve(__dirname, '../..'), origin = 'http://127.0.0.1:5214';
-const temporary = path.join(root, '.playwright', 'modal-qa-' + Date.now()), evidence = path.join(root, 'docs/evidence/preparation-modal');
+const temporary = path.join(root, '.playwright', 'modal-qa-' + Date.now()), evidence = path.resolve(root, process.env.NOVA_EVIDENCE || 'docs/evidence/preparation-modal');
 fs.mkdirSync(temporary, { recursive: true }); fs.mkdirSync(evidence, { recursive: true });
 let server, browser, output = '';
 const checks = [], errors = [];
 async function focused(page, selector) { await page.waitForFunction(value => document.activeElement?.matches(value), selector, { timeout: 5000 }); }
 (async () => {
-  server = spawn('dotnet', [path.join(root, 'backend/QuickPrompt.Api/bin/Debug/net8.0/QuickPrompt.Api.dll'), '--QuickPrompt:Port=5214', `--QuickPrompt:DataPath=${path.join(temporary, 'library.sqlite')}`, `--QuickPrompt:WebRoot=${path.join(root, 'apps/web/dist')}`], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn('dotnet', [path.resolve(root, process.env.NOVA_TEST_BUILD || 'backend/QuickPrompt.Api/bin/Debug/net8.0/QuickPrompt.Api.dll'), '--QuickPrompt:Port=5214', `--QuickPrompt:DataPath=${path.join(temporary, 'library.sqlite')}`, `--QuickPrompt:WebRoot=${path.join(root, 'apps/web/dist')}`], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   server.stdout.on('data', chunk => { output += chunk; }); server.stderr.on('data', chunk => { output += chunk; });
   for (let index = 0; index < 150; index++) {
     if (server.exitCode !== null) throw Error('Owned QA server exited before readiness.');
@@ -29,7 +29,7 @@ async function focused(page, selector) { await page.waitForFunction(value => doc
     await page.goto(origin);
     const home = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?', exact: true });
     await home.fill('Encuentra el prompt Responder comentarios de clientes');
-    await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click();
+    if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA', { exact: true }).selectOption('LIVE'); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click();
     const result = page.getByRole('dialog', { name: 'Responder comentarios de clientes', exact: true });
     await result.waitFor({ timeout: 180000 }); await result.getByLabel('comentarios', { exact: true }).waitFor();
     console.log('OPEN modal', width);

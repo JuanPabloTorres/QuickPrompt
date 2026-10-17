@@ -22,7 +22,7 @@ public sealed class PreparationTests : IDisposable
         var result = await engine.Prepare(input, state => { states.Add(state); return Task.CompletedTask; }, (tool, _, _) => log.Add(tool), default);
         Assert.Equal(PreparationState.READY, result.State); Assert.Equal("Explica con claridad.", result.CompiledText); Assert.Empty(result.Variables);
         Assert.True(log.IndexOf("search_prompts") < log.IndexOf("generation")); Assert.Empty(store.Templates()); Assert.Empty(drafts.Recent());
-        Assert.Equal(new[] { PreparationState.RECEIVED, PreparationState.UNDERSTANDING, PreparationState.SEARCHING, PreparationState.SELECTING_OR_GENERATING, PreparationState.FILLING, PreparationState.VALIDATING, PreparationState.READY }, states);
+        Assert.Equal(new[] { PreparationState.RECEIVED, PreparationState.UNDERSTANDING, PreparationState.SEARCHING, PreparationState.SELECTING_OR_GENERATING, PreparationState.VALIDATING, PreparationState.FILLING, PreparationState.READY }, states);
         await engine.Prepare(input, _ => Task.CompletedTask, (_, _, _) => { }, default); Assert.Equal(1, inference.Generations);
         await Assert.ThrowsAsync<ConflictException>(() => engine.Prepare(input with { Message = "Otra cosa" }, _ => Task.CompletedTask, (_, _, _) => { }, default));
     }
@@ -47,6 +47,14 @@ public sealed class PreparationTests : IDisposable
         var source = new PromptLibrary(prompts, prompts).Create(new("Default", "Explica <tema>", Defaults: new() { ["tema"] = "SQLite" }));
         var values = new GroundedVariableResolver().Resolve(Input(), New(source.TemplateText), source);
         Assert.Equal("TEMPLATE_DEFAULT", Assert.Single(values).ValueSource); Assert.Empty(Evaluate(Input(), New()).Variables);
+    }
+    [Fact] public void CurrentLiteralInputsOverrideOldSessionValuesWhileExplicitCurrentUiValuesRemainAuthoritative()
+    {
+        var input = Input() with { Message = "tema: NUEVO", ContextValues = new() { ["tema"] = "ANTERIOR" }, AuthorizedPendingRequest = "tema: MAS_ANTIGUO" };
+        var resolver = new GroundedVariableResolver(); var proposal = New("Explica <tema>.");
+        Assert.Equal("NUEVO", Assert.Single(resolver.Resolve(input, proposal, null)).Value);
+        Assert.Equal("ACTUAL_UI", Assert.Single(resolver.Resolve(input with { Values = new() { ["tema"] = "ACTUAL_UI" } }, proposal, null)).Value);
+        Assert.Equal("ANTERIOR", Assert.Single(resolver.Resolve(input with { Message = "Usa los datos disponibles." }, proposal, null)).Value);
     }
     [Fact] public void LiteralLabeledSourceTextDoesNotDependOnModelExtraction()
     {
@@ -143,6 +151,21 @@ public sealed class PreparationTests : IDisposable
         Assert.Throws<ValidationException>(() => ContractSchema.Validate(System.Text.Json.JsonSerializer.SerializeToElement(other.ToString()), schema));
         Assert.Throws<ValidationException>(() => ContractSchema.Validate(System.Text.Json.JsonSerializer.SerializeToElement(Guid.NewGuid().ToString()), schema));
         ContractSchema.Validate(System.Text.Json.JsonSerializer.SerializeToElement((string?)null), PreparationInference.ProposalFor([], null).GetProperty("properties").GetProperty("sourceId"));
+    }
+    [Theory]
+    [InlineData("documento", true)]
+    [InlineData("aplicación React", true)]
+    [InlineData("資料", true)]
+    [InlineData("<documento>", false)]
+    [InlineData("documento>otro", false)]
+    [InlineData("", false)]
+    [InlineData("documento\notro", false)]
+    public void GeneratedInputMetadataRequiresBareNamesWithoutChangingTheDomainParser(string name, bool valid)
+    {
+        var item = PreparationInference.ProposalFor([], null).GetProperty("properties").GetProperty("requiredInputs").GetProperty("items");
+        var value = System.Text.Json.JsonSerializer.SerializeToElement(name);
+        if (valid) { ContractSchema.Validate(value, item); Assert.Equal(name, Assert.Single(TemplateCompiler.Names($"<{name}>"))); }
+        else Assert.Throws<ValidationException>(() => ContractSchema.Validate(value, item));
     }
     [Fact] public async Task TimeoutCancellationAndToolFailureNeverCreateAnIncompleteDraft()
     {

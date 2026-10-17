@@ -1,5 +1,7 @@
 # GOAL 07 — núcleo de preparación
 
+Documento de la entrega anterior. La evolución vigente de presupuestos, checkpoints y memoria está en [NOVA Agentic Engineering 2.0](AGENTIC_2_RUNTIME.md); las evidencias originales se conservan.
+
 La entrada natural de Discover ahora llama a `AgentOrchestrator`; una propuesta llega preparada a React con título automático, texto compilado o los campos que faltan. El editor manual y las APIs anteriores siguen disponibles para la biblioteca. Esta entrega corresponde al hito interno exigido antes de ampliar el worker o las conexiones externas.
 
 ## Auditoría inicial

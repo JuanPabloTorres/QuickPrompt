@@ -75,9 +75,9 @@ const report = () => fs.writeFileSync(path.join(evidence, 'acceptance.json'), JS
   page.on('pageerror', e => errors.push(e.message)); page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
   await page.addInitScript(() => { const write = navigator.clipboard.writeText.bind(navigator.clipboard); navigator.clipboard.writeText = text => { window.__goal07Copied = text; return write(text); }; });
   await page.goto(origin); const input = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?' });
-  await input.fill('Necesito un prompt para resumir documentos.'); await page.getByLabel('Conservar este borrador y sus valores en este equipo').check();
+  await input.fill('Necesito un prompt para resumir documentos.'); await page.getByLabel('Conservar borrador, valores y respuesta local en este equipo').check();
   const preparedRequest = page.waitForResponse(r => r.url().endsWith('/nova/prepare'));
-  await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click(); const preparedResponse = await preparedRequest; assert.equal(preparedResponse.status(), 200);
+  if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA', { exact: true }).selectOption('LIVE'); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click(); const preparedResponse = await preparedRequest; assert.equal(preparedResponse.status(), 200);
   // Chromium does not expose a consumed/cancelled fetch SSE body through Network.getResponseBody.
   // React must render the complete result; the opted draft is then read through its real API.
   await page.locator('.prepared-result').waitFor({ timeout: 180000 });

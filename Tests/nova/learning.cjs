@@ -3,12 +3,12 @@ const { spawn } = require('node:child_process');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/estju/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const { install } = require('../../scripts/Install-PracticalLibrary.cjs');
 const root = path.resolve(__dirname, '../..'), origin = 'http://127.0.0.1:5211';
-const directory = path.join(root, '.playwright', 'learning-qa-' + Date.now()), evidence = path.join(root, 'docs/evidence/learning');
+const directory = path.join(root, '.playwright', 'learning-qa-' + Date.now()), evidence = path.resolve(root, process.env.NOVA_EVIDENCE || 'docs/evidence/learning');
 fs.mkdirSync(directory, { recursive: true }); fs.mkdirSync(evidence, { recursive: true });
 let server, browser, output = ''; const checks = [], errors = [], videos = [], failedRequests = [];
 function pass(name) { checks.push({ name, status: 'PASS' }); console.log('PASS', name); }
 (async () => {
-  server = spawn('dotnet', [path.join(root, '.playwright/learning-build/Debug/net8.0/QuickPrompt.Api.dll'), '--QuickPrompt:Port=5211', `--QuickPrompt:DataPath=${path.join(directory, 'library.sqlite')}`, `--QuickPrompt:WebRoot=${path.join(root, 'apps/web/dist')}`], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn('dotnet', [path.resolve(root, process.env.NOVA_TEST_BUILD || '.playwright/learning-build/Debug/net8.0/QuickPrompt.Api.dll'), '--QuickPrompt:Port=5211', `--QuickPrompt:DataPath=${path.join(directory, 'library.sqlite')}`, `--QuickPrompt:WebRoot=${path.join(root, 'apps/web/dist')}`], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   server.stdout.on('data', chunk => { output += chunk; }); server.stderr.on('data', chunk => { output += chunk; });
   for (let index = 0; index < 150; index++) { if (server.exitCode !== null) throw Error(output); if (output.includes('Now listening on: ' + origin)) break; if (index === 149) throw Error('Owned QA server readiness failed'); await new Promise(resolve => setTimeout(resolve, 100)); }
   assert.equal((await install(origin)).added, 60); pass('60 curated prompts, additive import and durable idempotency');
@@ -17,8 +17,20 @@ function pass(name) { checks.push({ name, status: 'PASS' }); console.log('PASS',
   page.on('response', response => { if (response.status() >= 400) failedRequests.push({ url: response.url(), status: response.status() }); });
   await page.goto(origin); await page.getByLabel('Colección', { exact: true }).selectOption({ label: 'Correos y comunicación' });
   await page.getByRole('button', { name: 'Escribir un correo profesional', exact: true }).waitFor(); assert.equal(await page.locator('.prompt-item').count(), 3); pass('Actual category navigation displays useful tasks');
-  await page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?' }).fill('NO_EXISTE_NINGUN_PROMPT'); await page.getByRole('heading', { name: 'Aquí empieza una nueva idea.' }).waitFor();
-  await page.getByRole('button', { name: 'Borrar búsqueda' }).click(); await page.getByRole('button', { name: 'Escribir un correo profesional', exact: true }).waitFor(); pass('Clear search restores the selected collection without losing its filter');
+  const novaInput = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?', exact: true });
+  const librarySearch = page.getByRole('textbox', { name: 'Buscar en la biblioteca', exact: true });
+  await novaInput.fill('Prepara un correo cordial para un cliente.');
+  assert.equal(await librarySearch.inputValue(), ''); assert.equal(await page.locator('.prompt-item').count(), 3);
+  await librarySearch.fill('NO_EXISTE_NINGUN_PROMPT'); await page.getByRole('heading', { name: 'Aquí empieza una nueva idea.' }).waitFor();
+  assert.equal(await novaInput.inputValue(), 'Prepara un correo cordial para un cliente.');
+  await novaInput.fill('Quiero otra instrucción independiente.'); assert.equal(await librarySearch.inputValue(), 'NO_EXISTE_NINGUN_PROMPT');
+  await page.getByRole('button', { name: 'Borrar solicitud', exact: true }).click();
+  assert.equal(await novaInput.inputValue(), ''); assert.equal(await librarySearch.inputValue(), 'NO_EXISTE_NINGUN_PROMPT');
+  await novaInput.fill('Conserva esta petición mientras busco en mi biblioteca.');
+  await librarySearch.fill(''); await page.getByRole('button', { name: 'Escribir un correo profesional', exact: true }).waitFor();
+  assert.equal(await novaInput.inputValue(), 'Conserva esta petición mientras busco en mi biblioteca.');
+  assert.equal(await page.locator('.prompt-item').count(), 3);
+  pass('NOVA request and library search stay independent while typing, filtering and clearing either field');
   await page.getByRole('button', { name: 'Nuevo prompt', exact: true }).click(); await page.getByLabel('Título', { exact: true }).fill('Variable reversible');
   const content = page.getByLabel('Contenido', { exact: true }), text = 'Explica α, β y 李 con claridad.';
   await content.fill(text); const start = text.indexOf('α'), end = text.indexOf(' con');

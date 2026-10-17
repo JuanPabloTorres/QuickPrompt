@@ -15,7 +15,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
   return <Radix.Root open={open} onOpenChange={onOpenChange}>
     <Radix.Portal>
       {open && <div className="dialog-overlay" aria-hidden="true" />}
-      <Radix.Content className={className ? `dialog-content ${className}` : 'dialog-content'} onOpenAutoFocus={onOpenAutoFocus} onCloseAutoFocus={onCloseAutoFocus}>
+      <Radix.Content data-nova-activity-host="true" className={className ? `dialog-content ${className}` : 'dialog-content'} onOpenAutoFocus={onOpenAutoFocus} onCloseAutoFocus={onCloseAutoFocus}>
         <Radix.Title>{title}</Radix.Title>
         <Radix.Description className="muted">{description}</Radix.Description>
         {children}

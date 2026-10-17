@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "validatedAtUtc": "2026-10-17T14:49:39.218216+00:00",
+  "qaReport": "docs/evidence/quick-actions/1792248322671/report.json",
+  "qa": {
+    "headless": true,
+    "syntheticDataOnly": true,
+    "realQwen": true,
+    "onePage": true
+  },
+  "additionalPages": 0,
+  "hashes": {
+    "web/index.html": "27cff7a8b6bca1204d7fd1e37dab681539914ade153de2286068cc9a3e6c6370",
+    "web/assets/index-CswvzHs4.js": "c472598818ee7f59a5bea88a810f017f86c7bffc217b360384406d6c680512c5",
+    "web/assets/index-xZUJDDzV.css": "5b5cfd3374e761a1fbbd58feff8903c4112f195fe576420c571cfc3dc10cd7cf",
+    "api/QuickPrompt.Api.dll": "ecc0045d8cf9cbd3c1243aa00544310922771c5694016487c8893b7d67e921d5",
+    "api/QuickPrompt.Application.dll": "311621c3143df53e30ee7439c12535976d6dc82bfc4c7dd31dad0cbb0916102f",
+    "api/QuickPrompt.Infrastructure.dll": "7ac0c48836f1c459ac765d960c532811625ce04a815f8db8bbfc4fa0f1ba2816",
+    "api/QuickPrompt.Domain.dll": "6a30d8b80127af0e4db35cc99d887a3590291a9a7ddfaa104410d3d7916ef6bf"
+  },
+  "backend": {
+    "passed": 247,
+    "evidence": "backend/QuickPrompt.Tests/TestResults/quick-actions.trx"
+  },
+  "react": {
+    "passed": 52,
+    "command": "npm test --prefix apps/web",
+    "evidence": "Vitest output observed in this work session"
+  },
+  "build": {
+    "api": "PASS, 0 warnings",
+    "react": "PASS, existing Vite main chunk size warning retained"
+  },
+  "scenarios": [
+    {
+      "name": "cancel-preserves-independent-inputs",
+      "status": "PASS",
+      "runId": null
+    },
+    {
+      "name": "mobile-dark",
+      "status": "PASS",
+      "runId": null
+    },
+    {
+      "name": "mobile-light",
+      "status": "PASS",
+      "runId": null
+    },
+    {
+      "name": "delete-selection-review-confirm",
+      "status": "PASS",
+      "runId": null
+    },
+    {
+      "name": "real-update-review-no-save",
+      "status": "PASS",
+      "runId": "4cd4f5f8-47fa-4528-8fa2-9a10d4536c91"
+    },
+    {
+      "name": "real-create-draft-no-save",
+      "status": "PASS",
+      "runId": "4a2c1b17-6afa-4c28-a850-79ac5462dff6"
+    },
+    {
+      "name": "real-open-exact-selection",
+      "status": "PASS",
+      "runId": "fb678d33-cf11-4e63-8d83-88fa2fde74db"
+    },
+    {
+      "name": "real-fill-template-fields",
+      "status": "PASS",
+      "runId": "f5935b70-7169-4d5b-9869-217e62837681"
+    }
+  ],
+  "videos": [
+    "docs/evidence/quick-actions/1792248322671/video/page@dde843f930448a290b0959c2d9d7e462.webm"
+  ],
+  "scopeLimits": [
+    "Synthetic library, headless recorded browser, one original Page.",
+    "Creation/opening/filling/update use real Qwen. Provider and local-execution quick forms are covered by React tests; no external submission is performed here.",
+    "No new real-model language accuracy benchmark or universal success claim.",
+    "Earlier failed QA attempts remain failed; existing personal server on 5190 was not restarted."
+  ]
+}

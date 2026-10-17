@@ -22,8 +22,8 @@ it('one button wraps the selected text and restores the original through the ser
   fireEvent.click(screen.getByRole('button', { name: 'Crear / quitar variable' }));
   await waitFor(() => expect(content.value).toBe('Explica tema.')); expect(changes).toBe(2);
 });
-it('the guide distinguishes a prompt from a model response and offers four accessible video players', () => {
+it('the guide distinguishes a prompt from a model response and offers three functional video guides without QA instructions', () => {
   render(<LearningCenter onClose={vi.fn()} onImported={vi.fn()} />);
-  expect(screen.getByText('NOVA prepara el prompt.')).not.toBeNull(); expect(document.querySelectorAll('video[controls]')).toHaveLength(4);
-  expect(screen.getByRole('button', { name: 'Añadir biblioteca práctica' })).not.toBeNull(); expect(screen.getByRole('button', { name: 'Volver a mis prompts' })).not.toBeNull();
+  expect(screen.getByText('NOVA prepara el prompt.')).not.toBeNull(); expect(document.querySelectorAll('video[controls]')).toHaveLength(3);
+  expect(screen.queryByText(/Playwright/)).toBeNull(); expect(screen.getByRole('button', { name: 'Añadir biblioteca práctica' })).not.toBeNull(); expect(screen.getByRole('button', { name: 'Volver a mis prompts' })).not.toBeNull();
 });

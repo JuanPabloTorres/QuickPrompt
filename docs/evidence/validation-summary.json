@@ -3,19 +3,77 @@
   "status": "SOURCE_CHECKS_PASSED",
   "scope": "Local validation before integrating QuickPrompt Web and NOVA into main. No remote publication.",
   "checks": [
-    { "name": "Blazor/domain tests", "passed": 150, "failed": 0, "note": "Executed with an isolated BaseOutputPath because the running Blazor process locks its normal DLL output." },
-    { "name": "NOVA backend tests", "passed": 46, "failed": 0 },
-    { "name": "React tests", "passed": 19, "failed": 0 },
-    { "name": "Playwright policy and timeout contracts", "passed": 3, "failed": 0 },
-    { "name": "Extension bridge contracts", "passed": 6, "failed": 0 },
-    { "name": "Compiled CSS reproducibility", "result": "PASS_CSS_REPRODUCIBLE" },
-    { "name": "Git whitespace check", "result": "PASS" }
+    {
+      "name": "Blazor/domain tests",
+      "passed": 150,
+      "failed": 0,
+      "note": "Executed with an isolated BaseOutputPath because the running Blazor process locks its normal DLL output."
+    },
+    {
+      "name": "NOVA backend tests",
+      "passed": 46,
+      "failed": 0
+    },
+    {
+      "name": "React tests",
+      "passed": 19,
+      "failed": 0
+    },
+    {
+      "name": "Playwright policy and timeout contracts",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "name": "Extension bridge contracts",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "name": "Compiled CSS reproducibility",
+      "result": "PASS_CSS_REPRODUCIBLE"
+    },
+    {
+      "name": "Git whitespace check",
+      "result": "PASS"
+    }
   ],
   "browserValidationFromImplementationSession": [
-    { "test": "Tests/nova/local-commands.cjs", "result": "PASS", "checks": 7, "visibleEdge": true, "realLocalQwen": true, "isolatedSQLite": true },
-    { "test": "Tests/nova/preparation-modal.cjs", "result": "PASS", "viewportWidths": [1280, 390], "isolatedSQLite": true, "consoleErrors": 0 },
-    { "test": "Tests/nova/learning.cjs", "result": "PASS", "checks": 8, "decodedTutorials": 4, "isolatedSQLite": true },
-    { "test": "Tests/e2e/goal06-automation.cjs", "result": "PASS_GOAL06_AUTOMATION", "cases": ["failure", "cancellation", "recovery", "timeout"] }
+    {
+      "test": "Tests/nova/local-commands.cjs",
+      "result": "PASS",
+      "checks": 7,
+      "visibleEdge": true,
+      "realLocalQwen": true,
+      "isolatedSQLite": true
+    },
+    {
+      "test": "Tests/nova/preparation-modal.cjs",
+      "result": "PASS",
+      "viewportWidths": [
+        1280,
+        390
+      ],
+      "isolatedSQLite": true,
+      "consoleErrors": 0
+    },
+    {
+      "test": "Tests/nova/learning.cjs",
+      "result": "PASS",
+      "checks": 8,
+      "decodedTutorials": 4,
+      "isolatedSQLite": true
+    },
+    {
+      "test": "Tests/e2e/goal06-automation.cjs",
+      "result": "PASS_GOAL06_AUTOMATION",
+      "cases": [
+        "failure",
+        "cancellation",
+        "recovery",
+        "timeout"
+      ]
+    }
   ],
   "repositoryHygiene": {
     "localDatabasesAndCredentials": "Excluded from the current tracked tree; local files preserved.",
@@ -25,5 +83,54 @@
   "limits": [
     "Native Windows clipboard LF/CRLF conversion remains the documented limitation; this summary does not declare byte-exact native clipboard acceptance.",
     "Legacy MAUI/mobile builds and authenticated external-provider automation are outside this local web validation."
-  ]
+  ],
+  "novaAgenticEngineering2": {
+    "date": "2026-10-16",
+    "status": "PASS_LOCAL_EXPERIMENTAL",
+    "sourceTests": {
+      "backend": 87,
+      "legacy": 150,
+      "react": 22,
+      "workerContracts": 3,
+      "bridgeContracts": 6,
+      "total": 268
+    },
+    "evaluationCases": 85,
+    "evaluationChecks": 338,
+    "criticalUnauthorizedMutations": 0,
+    "criticalUnauthorizedExternalSends": 0,
+    "acceptedHallucinatedPromptIds": 0,
+    "details": "../nova/AGENTIC_2_ACCEPTANCE.md",
+    "portableMetrics": "../nova/AGENTIC_2_EVALUATION_SUMMARY.json"
+  },
+  "novaVisibleAgentExecution": {
+    "date": "2026-10-16",
+    "status": "PASS_AGENTIC_VISIBLE",
+    "sourceTests": {
+      "backend": 126,
+      "legacy": 150,
+      "react": 27,
+      "workerContracts": 3,
+      "bridgeContracts": 6,
+      "total": 312,
+      "failed": 0,
+      "skipped": 0
+    },
+    "realBrowserChecks": {
+      "visible": 12,
+      "manual": 2,
+      "commands": 7,
+      "agentic2": 13,
+      "modal": 2,
+      "learning": 8,
+      "selectedSourceFill": 1
+    },
+    "evaluationCases": 85,
+    "evaluationChecks": 338,
+    "criticalUnauthorizedMutations": 0,
+    "criticalUnauthorizedExternalSends": 0,
+    "acceptedHallucinatedPromptIds": 0,
+    "details": "../nova/GOAL08_ACCEPTANCE.md",
+    "portableMetrics": "../nova/GOAL08_VALIDATION_SUMMARY.json"
+  }
 }

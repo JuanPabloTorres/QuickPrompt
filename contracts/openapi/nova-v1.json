@@ -11,6 +11,1843 @@
     }
   ],
   "paths": {
+    "/api/v1/nova/live": {
+      "post": {
+        "summary": "Start one finite Qwen3 visual run in the original React document. SAME_TAB requires an ephemeral X-Nova-Surface capability (32-128 characters); BROWSER is disabled unless explicit QA configuration. Same RunId never replays effects.",
+        "operationId": "post_api_v1_nova_live",
+        "parameters": [
+          {
+            "name": "X-Nova-Surface",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            },
+            "description": "Ephemeral capability of the requesting document, kept only in memory. Never model input or persisted activity."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Start one finite Qwen3 visual run in the original React document. SAME_TAB requires an ephemeral X-Nova-Surface capability (32-128 characters); BROWSER is disabled unless explicit QA configuration. Same RunId never replays effects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveStart"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/actions": {
+      "get": {
+        "summary": "Owner-only heartbeat and pending action; hidden/disconnected documents pause. Never authorizes replay.",
+        "operationId": "get_api_v1_nova_live__id__actions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Nova-Surface",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            },
+            "description": "Ephemeral capability of the requesting document, kept only in memory. Never model input or persisted activity."
+          },
+          {
+            "name": "visible",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner-only heartbeat and pending action; hidden/disconnected documents pause. Never authorizes replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "run",
+                    "action"
+                  ],
+                  "properties": {
+                    "run": {
+                      "$ref": "#/components/schemas/LiveRecord"
+                    },
+                    "action": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/UiAction"
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/actions/receipt": {
+      "post": {
+        "summary": "Acknowledge exact ActionId/sequence with observed controls. Identical receipt retries are idempotent; wrong target, sequence, changed duplicate and late receipts are rejected.",
+        "operationId": "post_api_v1_nova_live__id__actions_receipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Nova-Surface",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            },
+            "description": "Ephemeral capability of the requesting document, kept only in memory. Never model input or persisted activity."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Acknowledge exact ActionId/sequence with observed controls. Identical receipt retries are idempotent; wrong target, sequence, changed duplicate and late receipts are rejected."
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UiActionReceipt"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/actions/progress": {
+      "post": {
+        "summary": "Report located DOM target or performed DOM interaction. Progress never substitutes for final verified receipt.",
+        "operationId": "post_api_v1_nova_live__id__actions_progress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Nova-Surface",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            },
+            "description": "Ephemeral capability of the requesting document, kept only in memory. Never model input or persisted activity."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Report located DOM target or performed DOM interaction. Progress never substitutes for final verified receipt."
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "actionId",
+                  "sequence",
+                  "executionStatus"
+                ],
+                "properties": {
+                  "actionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "sequence": {
+                    "type": "integer"
+                  },
+                  "executionStatus": {
+                    "type": "string",
+                    "enum": [
+                      "TARGET_LOCATED",
+                      "EXECUTED"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/observe": {
+      "post": {
+        "summary": "Create a metadata/event lifetime for an explicitly selected existing model operation; does not execute it",
+        "operationId": "post_api_v1_nova_live_observe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Create a metadata/event lifetime for an explicitly selected existing model operation; does not execute it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveStart"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}": {
+      "get": {
+        "summary": "Read persisted control metadata plus temporary authorized request, observation and proposal; content is not a general log",
+        "operationId": "get_api_v1_nova_live__id_",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read persisted control metadata plus temporary authorized request, observation and proposal; content is not a general log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/events": {
+      "get": {
+        "summary": "Ordered replayable execution events. Observer disconnect never starts or repeats tools.",
+        "operationId": "get_api_v1_nova_live__id__events",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered replayable execution events. Observer disconnect never starts or repeats tools.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "event: activity; id: RunId:Sequence; data: LiveEvent. Monotonic sequence, stable EventId. Only transport keep-alive comments are timer based."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/pause": {
+      "post": {
+        "summary": "Control the actual run at operation boundaries; resume validates the current source revision",
+        "operationId": "post_api_v1_nova_live__id__pause",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Control the actual run at operation boundaries; resume validates the current source revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/live/{id}/resume": {
+      "post": {
+        "summary": "Control the actual run at operation boundaries; resume validates the current source revision",
+        "operationId": "post_api_v1_nova_live__id__resume",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Control the actual run at operation boundaries; resume validates the current source revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/live/{id}/cancel": {
+      "post": {
+        "summary": "Control the actual run at operation boundaries; resume validates the current source revision",
+        "operationId": "post_api_v1_nova_live__id__cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Control the actual run at operation boundaries; resume validates the current source revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/live/{id}/approve": {
+      "post": {
+        "summary": "Single proposal/run/content/revision approval. Does not itself write the source; the supervised React save control consumes it.",
+        "operationId": "post_api_v1_nova_live__id__approve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Single proposal/run/content/revision approval. Does not itself write the source; the supervised React save control consumes it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "approvalId",
+                  "hash",
+                  "revision",
+                  "confirmed"
+                ],
+                "properties": {
+                  "approvalId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "hash": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "confirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/proposal": {
+      "post": {
+        "summary": "Review user edits to a pending proposal; invalidates the old approval hash and preserves source",
+        "operationId": "post_api_v1_nova_live__id__proposal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review user edits to a pending proposal; invalidates the old approval hash and preserves source",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptUpdateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/commit": {
+      "post": {
+        "summary": "Consume one current exact-content approval through the real editor control, with source revision guard",
+        "operationId": "post_api_v1_nova_live__id__commit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consume one current exact-content approval through the real editor control, with source revision guard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Prompt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptUpdateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/live/{id}/focus": {
+      "post": {
+        "summary": "Activate the owned visible browser while preserving its current operation",
+        "operationId": "post_api_v1_nova_live__id__focus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Activate the owned visible browser while preserving its current operation"
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/live/{id}/ui-observed": {
+      "post": {
+        "summary": "React acknowledges the rendered preparation result; server checks draft, source and exact text. Does not repeat domain operations.",
+        "operationId": "post_api_v1_nova_live__id__ui_observed",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "React acknowledges the rendered preparation result; server checks draft, source and exact text. Does not repeat domain operations."
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "preparedId",
+                  "sourceId",
+                  "sourceRevision",
+                  "renderedText"
+                ],
+                "properties": {
+                  "preparedId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "sourceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "sourceRevision": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "renderedText": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates/compile": {
+      "post": {
+        "summary": "Pure deterministic editor preview; no model, saved prompt or usage mutation",
+        "operationId": "post_api_v1_templates_compile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Pure deterministic editor preview; no model, saved prompt or usage mutation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "missingVariables"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "missingVariables": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "templateText",
+                  "values"
+                ],
+                "properties": {
+                  "templateText": {
+                    "type": "string",
+                    "maxLength": 32000
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/editor-drafts": {
+      "post": {
+        "summary": "Prepare an ephemeral editor snapshot and optional session context. Null source ID/revision represents a new unsaved artifact; never saves a source or grants approval.",
+        "operationId": "post_api_v1_nova_editor_drafts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Prepare an ephemeral editor snapshot and optional session context. Null source ID/revision represents a new unsaved artifact; never saves a source or grants approval.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "promptId",
+                  "revision",
+                  "title",
+                  "templateText",
+                  "values"
+                ],
+                "properties": {
+                  "promptId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 160
+                  },
+                  "templateText": {
+                    "type": "string",
+                    "maxLength": 32000
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Check isolated local database integrity",
@@ -2981,16 +4818,110 @@
     },
     "/api/v1/nova/command": {
       "post": {
-        "summary": "Resolve explicit local navigation and edit requests to real IDs; no mutation, inference or external browser action. Ambiguous matches require selection.",
+        "summary": "Compatibility projection of real Qwen semantic interpretation. No mutation; compound editing requests continue through preparation. Ambiguous matches require selection.",
         "operationId": "post_api_v1_nova_command",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Resolve explicit local navigation and edit requests to real IDs; no mutation, inference or external browser action. Ambiguous matches require selection.",
+            "description": "Compatibility projection of real Qwen semantic interpretation. No mutation; compound editing requests continue through preparation. Ambiguous matches require selection.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LocalCommand"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalCommandInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/semantic/interpret": {
+      "post": {
+        "summary": "Read-only Qwen interpretation using bounded session/UI context; validates typed goals and dependencies. Does not execute the resulting plan.",
+        "operationId": "post_api_v1_nova_semantic_interpret",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Read-only Qwen interpretation using bounded session/UI context; validates typed goals and dependencies. Does not execute the resulting plan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SemanticInterpretation"
                 }
               }
             }
@@ -3361,12 +5292,12 @@
     },
     "/api/v1/nova/prepare": {
       "post": {
-        "summary": "Finite retrieval-first preparation. Never saves a final prompt or executes. Optional draft persistence requires rememberDraft.",
+        "summary": "Finite retrieval-first preparation with LIVE events. Never saves a final prompt. Executes locally only on an explicit authorized request; optional draft persistence requires rememberDraft.",
         "operationId": "post_api_v1_nova_prepare",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Finite retrieval-first preparation. Never saves a final prompt or executes. Optional draft persistence requires rememberDraft.",
+            "description": "Finite retrieval-first preparation with LIVE events. Never saves a final prompt. Executes locally only on an explicit authorized request; optional draft persistence requires rememberDraft.",
             "content": {
               "text/event-stream": {
                 "schema": {
@@ -3832,7 +5763,7 @@
     },
     "/api/v1/nova/drafts/{id}/save": {
       "post": {
-        "summary": "Explicit idempotent final save; reuse or exact-content deduplication; adaptation creates a copy",
+        "summary": "Proposal-bound confirmation: save copy by default or approve a new source version with revision check; idempotent",
         "operationId": "post_api_v1_nova_drafts__id__save",
         "parameters": [
           {
@@ -3847,7 +5778,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Explicit idempotent final save; reuse or exact-content deduplication; adaptation creates a copy",
+            "description": "Proposal-bound confirmation: save copy by default or approve a new source version with revision check; idempotent",
             "content": {
               "application/json": {
                 "schema": {
@@ -3934,6 +5865,9 @@
                 "properties": {
                   "confirmed": {
                     "type": "boolean"
+                  },
+                  "updateSource": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -3942,9 +5876,924 @@
         }
       }
     },
+    "/api/v1/nova/runs/{id}": {
+      "get": {
+        "summary": "Local redacted execution checkpoint; no request, values or generated content",
+        "operationId": "get_api_v1_nova_runs__id_",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local redacted execution checkpoint; no request, values or generated content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "runId",
+                    "sessionId",
+                    "state",
+                    "plan",
+                    "retrievedPromptIds",
+                    "sourceRevisions",
+                    "tools",
+                    "stepBudget",
+                    "approval",
+                    "model",
+                    "contractVersion",
+                    "errorCode"
+                  ],
+                  "properties": {
+                    "runId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "retrievedPromptIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "sourceRevisions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer"
+                      }
+                    },
+                    "tools": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "tool",
+                          "outcome",
+                          "durationMs"
+                        ],
+                        "properties": {
+                          "tool": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          },
+                          "durationMs": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "stepBudget": {
+                      "type": "integer"
+                    },
+                    "approval": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "contractVersion": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete local checkpoint metadata; never authorizes replay of a draft",
+        "operationId": "delete_api_v1_nova_runs__id_",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Delete local checkpoint metadata; never authorizes replay of a draft"
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/sessions/{id}/context": {
+      "post": {
+        "summary": "Bind UI selection separately from conversational draft. Optional stale context is metadata only and cannot authorize effects.",
+        "operationId": "post_api_v1_nova_sessions__id__context",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Bind UI selection separately from conversational draft. Optional stale context is metadata only and cannot authorize effects."
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "promptId",
+                  "revision"
+                ],
+                "properties": {
+                  "promptId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "revision": {
+                    "type": "integer"
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "allowStaleContext": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/sessions/{id}/draft-context": {
+      "post": {
+        "summary": "Explicitly activate an actual recovered draft as temporary conversation context; never saves a prompt or grants approval.",
+        "operationId": "post_api_v1_nova_sessions__id__draft_context",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Explicitly activate an actual recovered draft as temporary conversation context; never saves a prompt or grants approval."
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "draftId"
+                ],
+                "properties": {
+                  "draftId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nova/sessions/{id}": {
+      "delete": {
+        "summary": "Forget temporary session context",
+        "operationId": "delete_api_v1_nova_sessions__id_",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Forget temporary session context"
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/nova/preferences": {
+      "get": {
+        "summary": "Review explicitly approved preparation preferences",
+        "operationId": "get_api_v1_nova_preferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Review explicitly approved preparation preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "language",
+                    "format",
+                    "providerId"
+                  ],
+                  "properties": {
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "es",
+                        "en"
+                      ],
+                      "nullable": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "JSON",
+                        "Markdown",
+                        "Tabla",
+                        "Texto"
+                      ],
+                      "nullable": true
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Confirm local preparation preferences; no conversation retention",
+        "operationId": "put_api_v1_nova_preferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Confirm local preparation preferences; no conversation retention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "language",
+                    "format",
+                    "providerId"
+                  ],
+                  "properties": {
+                    "language": {
+                      "type": "string",
+                      "enum": [
+                        "es",
+                        "en"
+                      ],
+                      "nullable": true
+                    },
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "JSON",
+                        "Markdown",
+                        "Tabla",
+                        "Texto"
+                      ],
+                      "nullable": true
+                    },
+                    "providerId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "preferences",
+                  "confirmed"
+                ],
+                "properties": {
+                  "preferences": {
+                    "type": "object",
+                    "required": [
+                      "language",
+                      "format",
+                      "providerId"
+                    ],
+                    "properties": {
+                      "language": {
+                        "type": "string",
+                        "enum": [
+                          "es",
+                          "en"
+                        ],
+                        "nullable": true
+                      },
+                      "format": {
+                        "type": "string",
+                        "enum": [
+                          "JSON",
+                          "Markdown",
+                          "Tabla",
+                          "Texto"
+                        ],
+                        "nullable": true
+                      },
+                      "providerId": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "confirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete explicit preparation preferences",
+        "operationId": "delete_api_v1_nova_preferences",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Delete explicit preparation preferences"
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ]
+      }
+    },
     "/api/v1/nova/drafts/{id}/execute": {
       "post": {
-        "summary": "Explicit local execution of the exact reviewed prepared snapshot; no final save",
+        "summary": "Explicit local execution of the exact reviewed prepared snapshot; operation receipt prevents replay; no final save",
         "operationId": "post_api_v1_nova_drafts__id__execute",
         "parameters": [
           {
@@ -3959,7 +6808,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Explicit local execution of the exact reviewed prepared snapshot; no final save",
+            "description": "Explicit local execution of the exact reviewed prepared snapshot; operation receipt prevents replay; no final save",
             "content": {
               "text/event-stream": {
                 "schema": {
@@ -4046,6 +6895,10 @@
                   "expectedText"
                 ],
                 "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "confirmed": {
                     "type": "boolean"
                   },
@@ -4658,6 +7511,11 @@
           "revision": {
             "type": "integer",
             "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         }
       },
@@ -4741,6 +7599,14 @@
           },
           "message": {
             "type": "string"
+          },
+          "semantic": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SemanticInterpretation"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -4816,6 +7682,14 @@
           },
           "message": {
             "type": "string"
+          },
+          "semantic": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SemanticInterpretation"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -4903,6 +7777,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "message": {
             "type": "string",
             "maxLength": 16000
@@ -4930,6 +7809,24 @@
             "type": "object",
             "additionalProperties": {
               "type": "string"
+            }
+          },
+          "filter": {
+            "type": "object",
+            "required": [],
+            "properties": {
+              "groupId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true
+              },
+              "categoryId": {
+                "type": "integer",
+                "nullable": true
+              },
+              "favorites": {
+                "type": "boolean"
+              }
             }
           }
         }
@@ -4966,7 +7863,12 @@
             "type": "string",
             "enum": [
               "READY",
-              "NEEDS_INFORMATION"
+              "NEEDS_INFORMATION",
+              "CANCELLED",
+              "USER_ACTION",
+              "COMPLETED",
+              "FAILED",
+              "BLOCKED"
             ]
           },
           "intent": {
@@ -5035,7 +7937,8 @@
                     "USER_INPUT",
                     "REQUEST_QUOTE",
                     "REQUEST_LABEL",
-                    "TEMPLATE_DEFAULT"
+                    "TEMPLATE_DEFAULT",
+                    "SESSION_CONTEXT"
                   ]
                 },
                 "validationStatus": {
@@ -5100,6 +8003,27 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "semantic": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SemanticInterpretation"
+              }
+            ],
+            "nullable": true
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "localResponse": {
+            "type": "string",
+            "nullable": true
+          },
+          "providerId": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -5121,6 +8045,852 @@
           },
           "correlationId": {
             "type": "string"
+          }
+        }
+      },
+      "SemanticInterpretation": {
+        "type": "object",
+        "required": [
+          "intentions",
+          "targetReference",
+          "targetDescription",
+          "resolvedTargetId",
+          "query",
+          "requestedTransformation",
+          "constraints",
+          "desiredOutcome",
+          "proposedSteps",
+          "missingInformation",
+          "requiresConfirmation",
+          "executionEvidence",
+          "providerId",
+          "explanation",
+          "validationNotes",
+          "deferredGoals",
+          "deferredOutcome",
+          "continuesPendingTask"
+        ],
+        "properties": {
+          "intentions": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "enum": [
+                "SEARCH_PROMPT",
+                "RESOLVE_PROMPT",
+                "OPEN_PROMPT",
+                "PROPOSE_ADAPTATION",
+                "CREATE_DRAFT",
+                "VALIDATE_DRAFT",
+                "FILL_VARIABLES",
+                "COMPILE_PROMPT",
+                "PREPARE_LOCAL_EXECUTION",
+                "EXECUTE_LOCAL",
+                "PREPARE_PROVIDER",
+                "COPY_PROMPT",
+                "EXPLAIN",
+                "ASK_CLARIFICATION",
+                "CANCEL",
+                "PAUSE",
+                "RESUME",
+                "REQUEST_SAVE_VERSION",
+                "REQUEST_SAVE_COPY"
+              ]
+            }
+          },
+          "targetReference": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "NAMED",
+              "SELECTED",
+              "PREVIOUS_RESULT",
+              "ACTIVE_DRAFT",
+              "CANDIDATE",
+              "OTHER_CANDIDATE"
+            ]
+          },
+          "targetDescription": {
+            "type": "string"
+          },
+          "resolvedTargetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "query": {
+            "type": "string"
+          },
+          "requestedTransformation": {
+            "type": "string"
+          },
+          "constraints": {
+            "type": "object",
+            "required": [
+              "forbiddenOperations",
+              "preserveOriginal",
+              "language",
+              "format",
+              "literalClauses",
+              "targetTerms",
+              "shortening",
+              "userProhibitions"
+            ],
+            "properties": {
+              "forbiddenOperations": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "SEARCH_PROMPT",
+                    "RESOLVE_PROMPT",
+                    "OPEN_PROMPT",
+                    "PROPOSE_ADAPTATION",
+                    "CREATE_DRAFT",
+                    "VALIDATE_DRAFT",
+                    "FILL_VARIABLES",
+                    "COMPILE_PROMPT",
+                    "PREPARE_LOCAL_EXECUTION",
+                    "EXECUTE_LOCAL",
+                    "PREPARE_PROVIDER",
+                    "COPY_PROMPT",
+                    "EXPLAIN",
+                    "ASK_CLARIFICATION",
+                    "CANCEL",
+                    "PAUSE",
+                    "RESUME",
+                    "REQUEST_SAVE_VERSION",
+                    "REQUEST_SAVE_COPY"
+                  ]
+                }
+              },
+              "preserveOriginal": {
+                "type": "boolean"
+              },
+              "language": {
+                "type": "string",
+                "nullable": true
+              },
+              "format": {
+                "type": "string",
+                "nullable": true
+              },
+              "literalClauses": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "targetTerms": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "shortening": {
+                "type": "boolean"
+              },
+              "userProhibitions": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "desiredOutcome": {
+            "type": "string",
+            "enum": [
+              "READ",
+              "DRAFT",
+              "NEW_DRAFT",
+              "READY_LOCAL",
+              "READY_PROVIDER",
+              "LOCAL_RESPONSE",
+              "ADVICE",
+              "CLARIFICATION",
+              "CANCELLED",
+              "PAUSED",
+              "RESUMED",
+              "REVIEW"
+            ]
+          },
+          "proposedSteps": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "operation",
+                "dependsOn"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "SEARCH_PROMPT",
+                    "RESOLVE_PROMPT",
+                    "OPEN_PROMPT",
+                    "PROPOSE_ADAPTATION",
+                    "CREATE_DRAFT",
+                    "VALIDATE_DRAFT",
+                    "FILL_VARIABLES",
+                    "COMPILE_PROMPT",
+                    "PREPARE_LOCAL_EXECUTION",
+                    "EXECUTE_LOCAL",
+                    "PREPARE_PROVIDER",
+                    "COPY_PROMPT",
+                    "EXPLAIN",
+                    "ASK_CLARIFICATION",
+                    "CANCEL",
+                    "PAUSE",
+                    "RESUME",
+                    "REQUEST_SAVE_VERSION",
+                    "REQUEST_SAVE_COPY"
+                  ]
+                },
+                "dependsOn": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "missingInformation": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requiresConfirmation": {
+            "type": "boolean"
+          },
+          "executionEvidence": {
+            "type": "string"
+          },
+          "providerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "validationNotes": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "deferredGoals": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "enum": [
+                "SEARCH_PROMPT",
+                "RESOLVE_PROMPT",
+                "OPEN_PROMPT",
+                "PROPOSE_ADAPTATION",
+                "CREATE_DRAFT",
+                "VALIDATE_DRAFT",
+                "FILL_VARIABLES",
+                "COMPILE_PROMPT",
+                "PREPARE_LOCAL_EXECUTION",
+                "EXECUTE_LOCAL",
+                "PREPARE_PROVIDER",
+                "COPY_PROMPT",
+                "EXPLAIN",
+                "ASK_CLARIFICATION",
+                "CANCEL",
+                "PAUSE",
+                "RESUME",
+                "REQUEST_SAVE_VERSION",
+                "REQUEST_SAVE_COPY"
+              ]
+            },
+            "nullable": true
+          },
+          "deferredOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "continuesPendingTask": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LiveStart": {
+        "type": "object",
+        "required": [
+          "runId",
+          "sessionId",
+          "message",
+          "mode"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 16000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "LIVE",
+              "SAME_TAB",
+              "BROWSER"
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "qwen3:8b",
+              "qwen2.5:7b-instruct"
+            ],
+            "default": "qwen3:8b"
+          }
+        }
+      },
+      "LiveRecord": {
+        "type": "object",
+        "required": [
+          "runId",
+          "sessionId",
+          "fingerprint",
+          "mode",
+          "status",
+          "sequence",
+          "updatedAt",
+          "targetId",
+          "revision",
+          "pauseRequested",
+          "browserOpen",
+          "errorCode",
+          "approval",
+          "effectCommitted",
+          "model",
+          "contractVersion"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "LIVE",
+              "SAME_TAB",
+              "BROWSER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "INTERPRETING",
+              "TOOL_PROPOSED",
+              "TOOL_APPROVED",
+              "TOOL_RUNNING",
+              "UI_UPDATED",
+              "VERIFYING",
+              "AWAITING_APPROVAL",
+              "PAUSED",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED",
+              "BLOCKED"
+            ]
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer",
+            "nullable": true
+          },
+          "pauseRequested": {
+            "type": "boolean"
+          },
+          "browserOpen": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "approval": {
+            "type": "string"
+          },
+          "effectCommitted": {
+            "type": "boolean"
+          },
+          "model": {
+            "type": "string"
+          },
+          "contractVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "LiveEvent": {
+        "type": "object",
+        "required": [
+          "runId",
+          "eventId",
+          "sequence",
+          "timestamp",
+          "stage",
+          "actor",
+          "toolName",
+          "targetId",
+          "status",
+          "durationMs",
+          "errorCode",
+          "safeDisplayMessage",
+          "actionId",
+          "actionSequence"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string",
+            "enum": [
+              "MODEL_SELECTED",
+              "RULE_SELECTED",
+              "USER_SELECTED",
+              "SYSTEM_VALIDATION"
+            ]
+          },
+          "toolName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "INTERPRETING",
+              "TOOL_PROPOSED",
+              "TOOL_APPROVED",
+              "TOOL_RUNNING",
+              "UI_UPDATED",
+              "VERIFYING",
+              "AWAITING_APPROVAL",
+              "PAUSED",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED",
+              "BLOCKED"
+            ]
+          },
+          "durationMs": {
+            "type": "number",
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "safeDisplayMessage": {
+            "type": "string"
+          },
+          "actionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "actionSequence": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "UiVisibleState": {
+        "type": "object",
+        "required": [
+          "mode",
+          "candidates",
+          "promptId",
+          "revision",
+          "title",
+          "templateText",
+          "values",
+          "variableNames",
+          "draftChanged",
+          "compiledReady",
+          "compiledText",
+          "response",
+          "responseComplete",
+          "providerOpen",
+          "providerId",
+          "error"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "discover",
+              "focus",
+              "create"
+            ]
+          },
+          "candidates": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "revision"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "promptId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "templateText": {
+            "type": "string",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "variableNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "draftChanged": {
+            "type": "boolean"
+          },
+          "compiledReady": {
+            "type": "boolean"
+          },
+          "compiledText": {
+            "type": "string",
+            "nullable": true
+          },
+          "response": {
+            "type": "string",
+            "nullable": true
+          },
+          "responseComplete": {
+            "type": "boolean"
+          },
+          "providerOpen": {
+            "type": "boolean"
+          },
+          "providerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "LiveProposal": {
+        "type": "object",
+        "required": [
+          "id",
+          "hash",
+          "promptId",
+          "revision",
+          "draft",
+          "originalText"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "promptId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer",
+            "nullable": true
+          },
+          "draft": {
+            "$ref": "#/components/schemas/PromptInput"
+          },
+          "originalText": {
+            "type": "string"
+          }
+        }
+      },
+      "LiveView": {
+        "type": "object",
+        "required": [
+          "run",
+          "request",
+          "question",
+          "observation",
+          "proposal",
+          "decisions"
+        ],
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/LiveRecord"
+          },
+          "request": {
+            "type": "string",
+            "nullable": true
+          },
+          "question": {
+            "type": "string",
+            "nullable": true
+          },
+          "observation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UiVisibleState"
+              }
+            ],
+            "nullable": true
+          },
+          "proposal": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LiveProposal"
+              }
+            ],
+            "nullable": true
+          },
+          "decisions": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "required": [
+                "toolName",
+                "arguments",
+                "selectionFormat"
+              ],
+              "properties": {
+                "toolName": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "object"
+                },
+                "selectionFormat": {
+                  "type": "string",
+                  "enum": [
+                    "tool_call",
+                    "json_schema_retry"
+                  ]
+                }
+              }
+            }
+          },
+          "semantic": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SemanticInterpretation"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "UiAction": {
+        "type": "object",
+        "required": [
+          "runId",
+          "actionId",
+          "sequence",
+          "tool",
+          "target",
+          "arguments",
+          "executionStatus",
+          "verificationStatus",
+          "timestamp"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "arguments": {
+            "type": "object"
+          },
+          "executionStatus": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UiActionReceipt": {
+        "type": "object",
+        "required": [
+          "actionId",
+          "sequence",
+          "executionStatus",
+          "verificationStatus",
+          "observation",
+          "errorCode"
+        ],
+        "properties": {
+          "actionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "integer"
+          },
+          "executionStatus": {
+            "type": "string",
+            "enum": [
+              "EXECUTED",
+              "INTERRUPTED"
+            ]
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNKNOWN"
+            ]
+          },
+          "observation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UiVisibleState"
+              }
+            ],
+            "nullable": true
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
           }
         }
       }

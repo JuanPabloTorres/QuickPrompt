@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import { ArrowLeft, Braces, Check } from 'lucide-react';
 import { errorMessage, inspectSchema, post, request, type PromptDraft } from '../../services/api';
 
-export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, error, editing }: {
+export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, error, editing, promptId, preparation }: {
   draft: PromptDraft; onChange: (draft: PromptDraft) => void; onSave: () => void; onBack: () => void;
   saving: boolean; error: string; editing: boolean;
+  promptId?: string | null; preparation?: ReactNode;
 }) {
   const [variables, setVariables] = useState<string[]>([]);
   const [parseError, setParseError] = useState('');
@@ -49,7 +50,7 @@ export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, er
     }, 250);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [draft.templateText]);
-  return <section className="editor focus-space" aria-labelledby="editor-heading">
+  return <section className="editor focus-space" aria-labelledby="editor-heading" data-testid="prompt-editor" data-prompt-id={promptId ?? ''} data-revision={draft.revision ?? 0}>
     <button className="text-button" onClick={onBack}><ArrowLeft size={17} aria-hidden="true" />Volver</button>
     <p className="eyebrow">{editing ? 'DALE UNA NUEVA VERSIÓN' : 'DE LA IDEA A LA INSTRUCCIÓN'}</p>
     <h1 id="editor-heading">{editing ? 'Afina tu prompt.' : 'Crea algo reutilizable.'}</h1>
@@ -64,8 +65,9 @@ export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, er
       <p id="variable-help" className="variable-hint"><Braces size={16} aria-hidden="true" />{variables.length ? `Variables detectadas: ${variables.join(', ')}` : 'También puedes crear prompts sin variables.'}</p>
       {parseError && <p className="error" role="status">{parseError}</p>}
       <details><summary>Descripción opcional</summary><label htmlFor="prompt-description">Descripción</label><textarea id="prompt-description" rows={2} maxLength={2000} value={draft.description} onChange={e => onChange({ ...draft, description: e.target.value })} /></details>
+      {preparation}
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="editor-actions"><button type="button" className="text-button" onClick={onBack}>Cancelar</button><button className="primary" disabled={saving || !!parseError || !draft.title.trim() || !draft.templateText.trim()}><Check size={18} aria-hidden="true" />{saving ? 'Guardando…' : editing ? 'Guardar versión' : 'Guardar prompt'}</button></div>
+      <div className="editor-actions"><button type="button" className="text-button" onClick={onBack}>Cancelar</button><button className="primary" data-nova-approval="true" disabled={saving || !!parseError || !draft.title.trim() || !draft.templateText.trim()}><Check size={18} aria-hidden="true" />{saving ? 'Guardando…' : editing ? 'Guardar versión' : 'Guardar prompt'}</button></div>
     </form>
   </section>;
 }

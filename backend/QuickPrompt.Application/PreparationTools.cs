@@ -4,16 +4,17 @@ using QuickPrompt.Local;
 
 namespace QuickPrompt.Nova.Application;
 
-public enum ToolPermission { Read, Prepare, RememberDraft, SavePrompt }
+public enum ToolPermission { Read, Prepare, RememberDraft, SavePrompt, LocalExecution }
 public record ToolContract(string Name, ToolPermission Permission, int TimeoutSeconds, JsonElement ArgumentsSchema, string ResultType);
 public sealed class PreparationToolException(string code, string tool, string message) : Exception(message)
 { public string Code { get; } = code; public string Tool { get; } = tool; }
 
 // A request owns one registry and budget. No ambient model access to write operations.
-public sealed class PreparationTools(int maxSteps, int timeoutSeconds, Action<string, string, double> observe)
+public sealed class PreparationTools(int maxSteps, int timeoutSeconds, Action<string, string, double> observe, Func<string, CancellationToken, Task>? before = null)
 {
     private readonly Dictionary<string, Entry> entries = new(StringComparer.Ordinal);
     private int steps;
+    public int Remaining => Math.Max(0, maxSteps - steps);
     private sealed record Entry(ToolContract Contract, Type ArgumentsType, Type ResultType, Func<object, CancellationToken, Task<object>> Handler);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
     public ToolContract[] Contracts => entries.Values.Select(e => e.Contract).ToArray();
@@ -25,8 +26,9 @@ public sealed class PreparationTools(int maxSteps, int timeoutSeconds, Action<st
         if (!entries.TryGetValue(name, out var entry) || entry.ArgumentsType != typeof(T) || entry.ResultType != typeof(R))
             throw new PreparationToolException("UNKNOWN_TOOL", name, "Herramienta o contrato no permitido.");
         if (entry.Contract.Permission != granted) throw new PreparationToolException("PERMISSION_DENIED", name, "Permiso no concedido.");
-        if (++steps > maxSteps) throw new PreparationToolException("STEP_LIMIT", name, "Se alcanzó el límite de pasos.");
         ContractSchema.Validate(JsonSerializer.SerializeToElement(args, Json), entry.Contract.ArgumentsSchema);
+        if (before is not null) await before(name, ct);
+        if (++steps > maxSteps) throw new PreparationToolException("STEP_LIMIT", name, "Se alcanzó el límite de pasos.");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct); timeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
         timeout.Token.ThrowIfCancellationRequested();
         var timer = System.Diagnostics.Stopwatch.StartNew();
@@ -60,7 +62,12 @@ public static class ContractSchema
             }
         }
         if (type == "string" && schema.TryGetProperty("maxLength", out var max) && value.GetString()!.Length > max.GetInt32()) throw new ValidationException("Argumento demasiado largo.");
-        if (schema.TryGetProperty("enum", out var allowed) && !allowed.EnumerateArray().Any(item => item.GetRawText() == value.GetRawText())) throw new ValidationException("Valor fuera del contrato.");
+        if (type == "string" && schema.TryGetProperty("pattern", out var pattern)
+            && !System.Text.RegularExpressions.Regex.IsMatch(value.GetString()!, pattern.GetString()!, System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)))
+            throw new ValidationException("El texto no respeta el formato del contrato.");
+        if (schema.TryGetProperty("enum", out var allowed) && !allowed.EnumerateArray().Any(item => value.ValueKind == JsonValueKind.String
+            ? item.ValueKind == JsonValueKind.String && item.GetString() == value.GetString()
+            : item.GetRawText() == value.GetRawText())) throw new ValidationException("Valor fuera del contrato.");
         if (type == "array")
         {
             if (schema.TryGetProperty("maxItems", out var maxItems) && value.GetArrayLength() > maxItems.GetInt32()) throw new ValidationException("Demasiados elementos.");

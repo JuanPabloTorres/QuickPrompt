@@ -1,0 +1,409 @@
+{
+  "status": "PASS",
+  "validatedAtUtc": "2026-10-17T15:52:31.946266+00:00",
+  "scope": "Same-window acceptance on one identical application build across three recorded headed QA sessions",
+  "singleCompleteRun": false,
+  "sessions": [
+    {
+      "report": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json",
+      "originalStatus": "FAIL",
+      "acceptedGroups": [
+        "A",
+        "B",
+        "C",
+        "C2",
+        "D",
+        "Q"
+      ],
+      "headed": true,
+      "oneOriginalPage": true
+    },
+    {
+      "report": "docs/evidence/same-window/acceptance-1792251545625/acceptance.json",
+      "originalStatus": "FAIL",
+      "acceptedGroups": [
+        "E",
+        "F",
+        "L",
+        "P"
+      ],
+      "headed": true,
+      "oneOriginalPage": true
+    },
+    {
+      "report": "docs/evidence/same-window/acceptance-1792251972141/acceptance.json",
+      "originalStatus": "PASS",
+      "acceptedGroups": [
+        "N",
+        "R",
+        "S"
+      ],
+      "headed": true,
+      "oneOriginalPage": true
+    }
+  ],
+  "model": {
+    "name": "qwen3:8b",
+    "model": "qwen3:8b",
+    "modified_at": "2026-10-13T18:39:47.66729-04:00",
+    "size": 5225388164,
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen3",
+      "families": [
+        "qwen3"
+      ],
+      "parameter_size": "8.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 40960,
+      "embedding_length": 4096,
+      "runner": "ggml"
+    },
+    "capabilities": [
+      "completion",
+      "tools",
+      "thinking"
+    ]
+  },
+  "qa": {
+    "qaSession": true,
+    "syntheticDataOnly": true,
+    "immutableApiAndReact": true,
+    "headed": true,
+    "oneOriginalPage": true,
+    "normalMode": "SAME_TAB",
+    "qaBrowserWorkerEnabled": false,
+    "windowScope": "QA Node/API process descendants only; unrelated user browsers excluded",
+    "hashes": {
+      "api/QuickPrompt.Api.dll": "3082657e2368c4e0f4a616db24c6ac3ae6533ff2436e6aba29e5436df760d31c",
+      "api/QuickPrompt.Application.dll": "88f0ac0985f9a42a497e38cd363149a941b07e23c1086b004c8f3b30647be2cd",
+      "api/QuickPrompt.Infrastructure.dll": "a355b89057558de28c4710565ec9d272e14dd929c071865cc52d72a3a2a94304",
+      "api/QuickPrompt.Domain.dll": "6a30d8b80127af0e4db35cc99d887a3590291a9a7ddfaa104410d3d7916ef6bf",
+      "web/index.html": "17c8c39a407d6a647354eb7fca77d5981dcd8840dde093c0d80d36e94a6dbc14",
+      "web/assets/index-uLCWk9j3.js": "1c59757be3a6ff2f7b767d23c577455fa807c347041f673c1803a9972f470fe8",
+      "web/assets/index-xZUJDDzV.css": "5b5cfd3374e761a1fbbd58feff8903c4112f195fe576420c571cfc3dc10cd7cf"
+    }
+  },
+  "sourceGitHead": "424414e34985c79517051b01d4237db57e66bf3b",
+  "workingTreeUncommitted": true,
+  "automatedChecks": {
+    "backend": {
+      "status": "PASS",
+      "passed": 254,
+      "total": 254,
+      "command": "dotnet test backend/QuickPrompt.Tests/QuickPrompt.Tests.csproj --no-restore -m:1 -nr:false -p:UseSharedCompilation=false -p:BaseOutputPath=C:/Projects/Repos/QuickPrompt-Web/.playwright/same-tab/tests/ -v quiet"
+    },
+    "domain": {
+      "status": "PASS",
+      "passed": 150,
+      "total": 150,
+      "command": ".\\scripts\\Test-SameWindow.ps1 (first run)"
+    },
+    "react": {
+      "status": "PASS",
+      "passed": 52,
+      "total": 52,
+      "command": "npm.cmd test --prefix apps/web"
+    },
+    "automationAndExtensionContracts": {
+      "status": "PASS",
+      "passed": 9,
+      "total": 9,
+      "command": "node --test Tests/e2e/bridge-contracts.mjs Tests/e2e/automation-contracts.cjs"
+    }
+  },
+  "qaReport": "docs/evidence/same-window/acceptance-1792251972141/combined-validation.json",
+  "build": {
+    "status": "PASS",
+    "apiWarnings": 0,
+    "webWarning": "Existing Vite main chunk exceeds 500 kB; threshold unchanged",
+    "localRuntime": [
+      {
+        "port": 5190,
+        "status": "ok",
+        "schemaVersion": 2,
+        "exactValidatedAssemblies": true
+      },
+      {
+        "port": 5192,
+        "status": "ok",
+        "schemaVersion": 2,
+        "exactValidatedAssemblies": true
+      }
+    ]
+  },
+  "scenarioGroups": [
+    {
+      "case": "A",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "B",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "C",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "C2",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "D",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "Q",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792250749178/acceptance.json"
+    },
+    {
+      "case": "E",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251545625/acceptance.json"
+    },
+    {
+      "case": "F",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251545625/acceptance.json"
+    },
+    {
+      "case": "L",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251545625/acceptance.json"
+    },
+    {
+      "case": "P",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251545625/acceptance.json"
+    },
+    {
+      "case": "N",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251972141/acceptance.json"
+    },
+    {
+      "case": "R",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251972141/acceptance.json"
+    },
+    {
+      "case": "S",
+      "status": "PASS",
+      "evidence": "docs/evidence/same-window/acceptance-1792251972141/acceptance.json"
+    }
+  ],
+  "semanticChecks": {
+    "corePassed": 4,
+    "workflowAndRestrictionsPassed": 9
+  },
+  "uiScenarios": [
+    {
+      "case": "A-first-acceptance",
+      "status": "PASS",
+      "runId": "9cc374e1-e6b9-4373-99a2-cf17f5afdc4f",
+      "observedStatus": "AWAITING_APPROVAL",
+      "savedStatus": "COMPLETED",
+      "observedInputEvents": 50,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792250749178",
+      "hadClarification": false
+    },
+    {
+      "case": "B-adapt-and-approve",
+      "status": "PASS",
+      "runId": "723e5761-68c4-49d1-8ca9-f4b586e6487f",
+      "observedStatus": "AWAITING_APPROVAL",
+      "savedStatus": "COMPLETED",
+      "observedInputEvents": 10,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792250749178",
+      "hadClarification": true
+    },
+    {
+      "case": "C-fill-variables",
+      "status": "PASS",
+      "runId": "7cd462e0-0c31-43b9-8b70-af3620cc1207",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 2,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792250749178",
+      "hadClarification": false
+    },
+    {
+      "case": "C2-fill-without-authoring",
+      "status": "PASS",
+      "runId": "30e7e196-b54c-4ba1-b414-4a8a46881f50",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 4,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792250749178",
+      "hadClarification": false
+    },
+    {
+      "case": "D-pause-resume-cancel",
+      "status": "PASS",
+      "runId": "6fb7d5e6-ba24-4f16-a2ad-e502fa42a43b",
+      "observedStatus": "CANCELLED",
+      "savedStatus": null,
+      "observedInputEvents": 13,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792250749178",
+      "hadClarification": false
+    },
+    {
+      "case": "E-paraphrase-0",
+      "status": "PASS",
+      "runId": "28717247-7cba-4b8f-ae43-fb298e0f624d",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 2,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251545625",
+      "hadClarification": false
+    },
+    {
+      "case": "E-paraphrase-1",
+      "status": "PASS",
+      "runId": "a160269e-a509-4d39-ab13-df06390c1baa",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 2,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251545625",
+      "hadClarification": false
+    },
+    {
+      "case": "F-manual-intervention",
+      "status": "PASS",
+      "runId": "fc50570f-dbc9-4734-9b78-038ad6d27625",
+      "observedStatus": "BLOCKED",
+      "savedStatus": null,
+      "observedInputEvents": 10,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251545625",
+      "hadClarification": false
+    },
+    {
+      "case": "P-prepare-claude-without-send",
+      "status": "PASS",
+      "runId": "b3eb92bc-acdd-4fa5-a0c3-8289217404d8",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 2,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251545625",
+      "hadClarification": false
+    },
+    {
+      "case": "L-real-local-execution",
+      "status": "PASS",
+      "runId": "5236ae7c-a668-4f0a-817a-1a79c1e8b18c",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 2,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251545625",
+      "hadClarification": false
+    },
+    {
+      "case": "R-rest-api-draft-not-saved",
+      "status": "PASS",
+      "runId": "22262e9e-7fdc-4bef-96b6-5ecffff1c597",
+      "observedStatus": "AWAITING_APPROVAL",
+      "savedStatus": null,
+      "observedInputEvents": 49,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251972141",
+      "hadClarification": false
+    },
+    {
+      "case": "S-save-restores-requested-provider",
+      "status": "PASS",
+      "runId": "bc01968c-1301-4f2e-b82d-9afe046aea0b",
+      "observedStatus": "COMPLETED",
+      "savedStatus": null,
+      "observedInputEvents": 19,
+      "additionalWindows": 0,
+      "additionalTabs": 0,
+      "additionalPages": 0,
+      "evidenceDirectory": "docs/evidence/same-window/acceptance-1792251972141",
+      "hadClarification": false
+    }
+  ],
+  "visibilityRecovery": {
+    "minimizeRequested": true,
+    "observedHidden": false,
+    "pauseEnforced": null,
+    "hiddenPauseCheck": "NOT_APPLICABLE_BROWSER_REMAINED_VISIBLE",
+    "restoredVisible": true,
+    "resumedThrough": null,
+    "proposalPreserved": true
+  },
+  "regression": {
+    "cause": "NO_CONTENT_REQUEST could carry nonempty authoring evidence and trigger a spurious clarification",
+    "fix": "Mutually exclusive content-goal schema branches with requestType before evidence",
+    "unitTransportCases": 2,
+    "realQwenRetest": "docs/evidence/same-window/acceptance-1792250623310/acceptance.json",
+    "originalFailedAttempt": "docs/evidence/same-window/acceptance-1792249882476/failures.json"
+  },
+  "screenshots": [
+    "docs/evidence/same-window/acceptance-1792250749178/A-creation-original-tab.png",
+    "docs/evidence/same-window/acceptance-1792250749178/A-mobile-floating.png",
+    "docs/evidence/same-window/acceptance-1792250749178/B-adapt-and-approve.png",
+    "docs/evidence/same-window/acceptance-1792250749178/C-fill-variables.png",
+    "docs/evidence/same-window/acceptance-1792250749178/C2-fill-without-authoring.png",
+    "docs/evidence/same-window/acceptance-1792250749178/D-pause-resume-cancel.png",
+    "docs/evidence/same-window/acceptance-1792251545625/E-paraphrase-0.png",
+    "docs/evidence/same-window/acceptance-1792251545625/E-paraphrase-1.png",
+    "docs/evidence/same-window/acceptance-1792251545625/F-manual-intervention.png",
+    "docs/evidence/same-window/acceptance-1792251545625/L-real-local-execution.png",
+    "docs/evidence/same-window/acceptance-1792251545625/P-prepare-claude-without-send.png",
+    "docs/evidence/same-window/acceptance-1792251972141/R-rest-api-draft-not-saved.png",
+    "docs/evidence/same-window/acceptance-1792251972141/S-save-restores-requested-provider.png"
+  ],
+  "videos": [
+    "docs/evidence/same-window/acceptance-1792250749178/video/page@881e4a7d6983d56a2bf8a8b298432572.webm",
+    "docs/evidence/same-window/acceptance-1792251545625/video/page@e8f19cc99d3e864388ff3a2a7c06778e.webm",
+    "docs/evidence/same-window/acceptance-1792251972141/video/page@b6eb18be80b317c2427f08966e64bc22.webm"
+  ],
+  "limits": [
+    "Results combine only explicitly passed groups with identical API and React hashes. The first session was cancelled during E after the QA window became hidden; its complete report remains FAIL and its E group is not accepted. The second failed at an unsupported QA assumption that minimization always hides the document; its R group is not accepted.",
+    "Each session uses one original headed Edge Page, synthetic data and real Qwen. No additional browser window/tab/root is created during an agent task.",
+    "QA restores only its own window and clicks Continue after an observed visibility pause without human intervention. R requires the pause only if the browser actually reports hidden; otherwise its hidden-pause subcheck is explicitly NOT_APPLICABLE. Restored visibility and unchanged proposal are always verified. The application visibility and manual-takeover safeguards remain active.",
+    "D observes stable text for 1200 ms after cancellation; F observes preserved human input for 1500 ms. These finite scenarios are not a universal language-accuracy or concurrency guarantee.",
+    "External provider preparation is checked without sending external messages. Agent cursor positions and DOM actions are checked; physical OS mouse movement is not claimed."
+  ]
+}

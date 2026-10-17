@@ -3,7 +3,8 @@ param(
     [string]$DataPath,
     [switch]$NoBuild,
     [switch]$NoBrowser,
-    [switch]$Background
+    [switch]$Background,
+    [switch]$QaBrowser
 )
 $ErrorActionPreference = 'Stop'
 $novaRoot = Split-Path -Parent $PSScriptRoot
@@ -13,8 +14,12 @@ if (-not $NoBuild) {
     if (-not (Test-Path -LiteralPath (Join-Path $novaWeb 'node_modules/react/package.json'))) {
         throw 'Faltan paquetes aprobados. Instala explícitamente con npm ci --ignore-scripts desde apps/web. Este script no instala software.'
     }
-    & npm run build --prefix $novaWeb
+    & npm.cmd run build --prefix $novaWeb
     if ($LASTEXITCODE -ne 0) { throw 'Falló el build React.' }
+    if ($QaBrowser) {
+        & node (Join-Path $novaWeb 'node_modules/typescript/bin/tsc') -p (Join-Path $novaRoot 'automation/browser-worker/tsconfig.json')
+        if ($LASTEXITCODE -ne 0) { throw 'Falló el build BrowserWorker. No se instalaron dependencias.' }
+    }
     & dotnet build (Join-Path $novaApi 'QuickPrompt.Api.csproj') --no-restore
     if ($LASTEXITCODE -ne 0) { throw 'Falló el build API. Si faltan assets, restaura explícitamente los paquetes .NET documentados.' }
 }
@@ -25,6 +30,7 @@ $novaLogs = Join-Path $novaRoot '.nova-build/logs'
 New-Item -ItemType Directory -Path $novaLogs -Force | Out-Null
 $novaStamp = [Guid]::NewGuid().ToString('N')
 $novaArguments = @(('"' + $novaDll + '"'), ('--QuickPrompt:Port=' + $Port), ('"--QuickPrompt:WebRoot=' + $novaDist + '"'))
+if ($QaBrowser) { $novaArguments += '--QuickPrompt:Live:AllowQaBrowser=true'; $novaArguments += '"--QuickPrompt:Live:Worker=' + (Join-Path $novaRoot '.playwright/browser-worker-build/worker.cjs') + '"' }
 if ($DataPath) { $novaArguments += '"--QuickPrompt:DataPath=' + [System.IO.Path]::GetFullPath($DataPath) + '"' }
 $novaServer = Start-Process -FilePath dotnet -ArgumentList $novaArguments -WorkingDirectory $novaApi -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $novaLogs "$novaStamp.out.log") -RedirectStandardError (Join-Path $novaLogs "$novaStamp.err.log")
 $novaDetached = $false

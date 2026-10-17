@@ -11,8 +11,20 @@ public enum PreparationIntent { FIND_PROMPT, CREATE_PROMPT, ADAPT_PROMPT, COMPLE
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PreparationDecision { REUSE_EXISTING, ADAPT_EXISTING, CREATE_NEW, ASK_CLARIFICATION }
 public record PrepareInput(Guid OperationId, string Message, string Model = "qwen3:8b", bool RememberDraft = false,
-    Guid? SourcePromptId = null, int? SourceRevision = null, Dictionary<string, string>? Values = null);
-public record Understanding(PreparationIntent Intent, string Query, string Clarification);
+    Guid? SourcePromptId = null, int? SourceRevision = null, Dictionary<string, string>? Values = null,
+    Guid? SessionId = null, RetrievalFilter? Filter = null)
+{
+    [JsonIgnore] public PreparationPreferences? ApprovedPreferences { get; init; }
+    [JsonIgnore] public SemanticInterpretation? Interpretation { get; init; }
+    [JsonIgnore] public string? ValidationFeedback { get; init; }
+    [JsonIgnore] public PreparedDraft? WorkingDraft { get; init; }
+    [JsonIgnore] public string? AuthorizedPendingRequest { get; init; }
+    [JsonIgnore] public Dictionary<string, string>? ContextValues { get; init; }
+    [JsonIgnore] public string TaskRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : System.Text.Json.JsonSerializer.Serialize(new {
+        authorizedEarlierUserRequest = AuthorizedPendingRequest, currentUserReply = Message }, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+}
+public record Understanding(PreparationIntent Intent, string Query, string Clarification, PreparationIntent[]? Operations = null);
+public record RetrievalFilter(Guid? GroupId = null, int? CategoryId = null, bool Favorites = false);
 public record RetrievalCandidate(PromptDocument Prompt, double Score, string Reason);
 public record GroundedValue(string Name, string Value, string Evidence);
 public record PromptProposal(PreparationDecision Decision, Guid? SourceId, string Title, string Description,
@@ -22,14 +34,23 @@ public record VariableValue(string Name, string Value, string ValueSource, strin
 public record PreparedDraft(Guid Id, PreparationState State, PreparationIntent Intent, PreparationDecision Decision,
     string Title, string Description, string TemplateText, string? CompiledText, VariableDefinition[] Variables,
     VariableValue[] Values, string[] MissingVariables, string Question, string Reason, RetrievalCandidate[] Candidates,
-    Guid? SourceId, int? SourceRevision, int CategoryId, bool Remembered, DateTime CreatedAt);
-public record SavePreparedInput(bool Confirmed);
+    Guid? SourceId, int? SourceRevision, int CategoryId, bool Remembered, DateTime CreatedAt,
+    Guid? SessionId = null, string? LocalResponse = null, string? ProviderId = null, SemanticInterpretation? Semantic = null);
+public record SavePreparedInput(bool Confirmed, bool UpdateSource = false);
 public record PreparationProgress(PreparationState State);
-public record PreparationOptions(int MaxSteps = 12, int StageTimeoutSeconds = 90, int TotalTimeoutSeconds = 180);
+public record PreparationOptions(int MaxSteps = 5, int StageTimeoutSeconds = 90, int TotalTimeoutSeconds = 180, int SemanticMaxSteps = 12);
 public interface IIntentInterpreter { Task<Understanding> Understand(string message, string model, CancellationToken ct); }
-public interface IPromptRetriever { RetrievalCandidate[] Retrieve(string query, Guid? sourceId); }
+public interface IPromptRetriever
+{
+    RetrievalCandidate[] Retrieve(string query, Guid? sourceId);
+    RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter) => Retrieve(query, sourceId);
+}
 public interface IPromptGenerator { Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct); }
+public record SemanticCandidateChoice(Guid[] PromptIds, string Reason);
+public interface ICandidateSelector { Task<SemanticCandidateChoice> Select(string message, RetrievalCandidate[] candidates, string model, CancellationToken ct); }
 public interface IVariableResolver { VariableValue[] Resolve(PrepareInput input, PromptProposal proposal, PromptDocument? source); }
+public record InputValueExtraction(GroundedValue[] Values, string Question);
+public interface IInputValueExtractor { Task<InputValueExtraction> ExtractInputs(PrepareInput input, string template, string[] names, CancellationToken ct); }
 public interface IPromptEvaluator { PreparedDraft Evaluate(PrepareInput input, Understanding understanding, PromptProposal proposal, RetrievalCandidate[] candidates, VariableValue[] values); }
 public interface IPreparedDraftStore
 {
@@ -38,12 +59,41 @@ public interface IPreparedDraftStore
     void Put(PreparedDraft draft, string fingerprint);
     PreparedDraft[] Recent();
     void Forget(Guid id);
-    PromptDocument Save(Guid id);
+    PromptDocument Save(Guid id, bool updateSource = false);
 }
 
 // Grounding is decided by code, never by a model's confidence score.
 public sealed class GroundedVariableResolver : IVariableResolver
 {
+    public static Dictionary<string, string> LiteralAssignments(string message, string[] names) => names.Distinct(StringComparer.OrdinalIgnoreCase)
+        .Select(name => new { Name = name, Value = LabeledValue(message, name, names) }).Where(value => value.Value is not null).ToDictionary(value => value.Name, value => value.Value!);
+    public static string[] AmbiguousLabels(string message, string[] names) => names.Where(name => LabelMatches(message, name).Count > 1).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    public static string DirectiveOutsideInputs(string message, string[] names)
+    {
+        var spans = names.Select(name => LabeledBinding(message, name, names)).Where(binding => binding is not null).Cast<LiteralBinding>().OrderBy(binding => binding.Start);
+        var result = new System.Text.StringBuilder(); var cursor = 0;
+        foreach (var span in spans) {
+            var end = span.Start + span.Value.Length; if (end <= cursor) continue;
+            if (span.Start > cursor) result.Append(message[cursor..span.Start]);
+            result.Append("[literal input data]"); cursor = end;
+        }
+        return result.Append(message[cursor..]).ToString();
+    }
+    // Content authorship must not treat a supplied field assignment (including its
+    // label or a synthetic replacement marker) as a reusable-instruction change.
+    public static string InstructionDirective(string message, string[] names)
+    {
+        var spans = names.Select(name => new { Labels = LabelMatches(message, name), Binding = LabeledBinding(message, name, names) })
+            .Where(item => item.Binding is not null && item.Labels.Count == 1)
+            .Select(item => new { Start = item.Labels[0].Index, End = item.Binding!.Start + item.Binding.Value.Length }).OrderBy(item => item.Start);
+        var result = new System.Text.StringBuilder(); var cursor = 0;
+        foreach (var span in spans) {
+            if (span.End <= cursor) continue;
+            if (span.Start > cursor) result.Append(message[cursor..span.Start]);
+            cursor = span.End;
+        }
+        return result.Append(message[cursor..]).ToString();
+    }
     public VariableValue[] Resolve(PrepareInput input, PromptProposal proposal, PromptDocument? source)
     {
         var names = TemplateCompiler.Names(proposal.TemplateText);
@@ -52,16 +102,25 @@ public sealed class GroundedVariableResolver : IVariableResolver
         {
             if (input.Values?.TryGetValue(name, out var explicitValue) == true && !string.IsNullOrWhiteSpace(explicitValue))
                 result.Add(new(name, explicitValue, "USER_INPUT", "VALIDATED"));
+            else if (LabelMatches(input.Message, name).Count > 1) continue;
             else if (proposal.Values.SingleOrDefault(v => v.Name == name) is { } suggestion && !string.IsNullOrWhiteSpace(suggestion.Value)
                 && !string.IsNullOrWhiteSpace(suggestion.Evidence) && input.Message.Contains(suggestion.Evidence, StringComparison.Ordinal)
                 && suggestion.Evidence.Contains(suggestion.Value, StringComparison.Ordinal))
                 result.Add(new(name, suggestion.Value, "REQUEST_QUOTE", "VALIDATED"));
             else if (ResolveLabel(input.Message, proposal.TemplateText, name, names) is { } labeled)
                 result.Add(new(name, labeled, "REQUEST_LABEL", "VALIDATED"));
+            else if (input.ContextValues?.TryGetValue(name, out var previousValue) == true && !string.IsNullOrWhiteSpace(previousValue))
+                result.Add(new(name, previousValue, "SESSION_CONTEXT", "VALIDATED"));
+            else if (input.AuthorizedPendingRequest is { } previousRequest && ResolveLabel(previousRequest, proposal.TemplateText, name, names) is { } previousLabel)
+                result.Add(new(name, previousLabel, "REQUEST_LABEL", "VALIDATED"));
+            else if (input.AuthorizedPendingRequest is { } original && proposal.Values.SingleOrDefault(v => v.Name == name) is { } priorSuggestion
+                && !string.IsNullOrWhiteSpace(priorSuggestion.Value) && !string.IsNullOrWhiteSpace(priorSuggestion.Evidence)
+                && original.Contains(priorSuggestion.Evidence, StringComparison.Ordinal) && priorSuggestion.Evidence.Contains(priorSuggestion.Value, StringComparison.Ordinal))
+                result.Add(new(name, priorSuggestion.Value, "REQUEST_QUOTE", "VALIDATED"));
             else if (source?.Defaults.TryGetValue(name, out var fallback) == true && !string.IsNullOrWhiteSpace(fallback))
                 result.Add(new(name, fallback, "TEMPLATE_DEFAULT", "VALIDATED"));
         }
-        return result.Where(value => value.ValueSource is "USER_INPUT" or "TEMPLATE_DEFAULT" || CompatibleExtractedValue(value, proposal.TemplateText)).ToArray();
+        return result.Where(value => value.ValueSource is "USER_INPUT" or "TEMPLATE_DEFAULT" or "SESSION_CONTEXT" || CompatibleExtractedValue(value, proposal.TemplateText)).ToArray();
     }
     private static bool CompatibleExtractedValue(VariableValue value, string template)
     {
@@ -87,19 +146,23 @@ public sealed class GroundedVariableResolver : IVariableResolver
         var candidates = labels.Select(label => LabeledValue(message, label, names.Concat(labels).Distinct().ToArray())).Where(value => value is not null).Distinct(StringComparer.Ordinal).ToArray();
         return candidates.Length == 1 ? candidates[0] : null;
     }
-    private static string? LabeledValue(string message, string name, string[] names)
+    private sealed record LiteralBinding(string Value, int Start);
+    private static string? LabeledValue(string message, string name, string[] names) => LabeledBinding(message, name, names)?.Value;
+    private static LiteralBinding? LabeledBinding(string message, string name, string[] names)
     {
         // Literal labeled inputs work even when Qwen omits its extraction. Ambiguous repeated labels are left unresolved.
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var matches = Regex.Matches(message, @"(?<![\p{L}\p{N}_])" + Regex.Escape(name) + @"[ \t]*:[ \t]?", options, TimeSpan.FromMilliseconds(100));
+        var matches = LabelMatches(message, name);
         if (matches.Count != 1) return null;
-        var tail = message[(matches[0].Index + matches[0].Length)..];
-        if (tail.StartsWith("\r\n", StringComparison.Ordinal)) tail = tail[2..];
-        else if (tail.StartsWith('\n')) tail = tail[1..];
+        var start = matches[0].Index + matches[0].Length; var tail = message[start..];
+        if (tail.StartsWith("\r\n", StringComparison.Ordinal)) { tail = tail[2..]; start += 2; }
+        else if (tail.StartsWith('\n')) { tail = tail[1..]; start++; }
         var next = Regex.Match(tail, @"(?:\r?\n|;|\s)+(?:" + string.Join("|", names.Select(Regex.Escape)) + @")\s*:", options, TimeSpan.FromMilliseconds(100));
         var value = next.Success ? tail[..next.Index] : tail;
-        return value.Length <= 8000 && !string.IsNullOrWhiteSpace(value) ? value : null;
+        return value.Length <= 8000 && !string.IsNullOrWhiteSpace(value) ? new(value, start) : null;
     }
+    private static MatchCollection LabelMatches(string message, string name) => Regex.Matches(message, @"(?<![\p{L}\p{N}_])" + Regex.Escape(name) + @"[ \t]*:[ \t]?",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 }
 
 public sealed class DeterministicPromptEvaluator : IPromptEvaluator

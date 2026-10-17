@@ -4,7 +4,8 @@ import type { Prompt } from '../../services/api';
 export function PromptStream({ items, open }: { items: Prompt[]; open: (prompt: Prompt) => void }) {
   return <ol className="prompt-stream" aria-label="Prompts guardados">
     {items.map((prompt, index) => <li key={prompt.id}>
-      <button className="prompt-item" aria-label={prompt.title} aria-describedby={`prompt-description-${prompt.id}`} onClick={() => open(prompt)}>
+      <button className="prompt-item" data-testid="library-prompt" data-prompt-id={prompt.id} data-revision={prompt.revision} aria-label={prompt.title} aria-describedby={`prompt-description-${prompt.id}`} onClick={() => open(prompt)}>
+        <span data-testid={`identity-${prompt.id}`} hidden />
         <span className="stream-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
         <span className="prompt-summary"><span className="prompt-title">{prompt.title}{prompt.isFavorite && <Star className="favorite-mark" size={15} aria-label="Favorito" />}</span>
           <span className="prompt-description" id={`prompt-description-${prompt.id}`}>{prompt.description || prompt.templateText}</span></span>

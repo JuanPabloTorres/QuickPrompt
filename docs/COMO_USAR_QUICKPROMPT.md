@@ -4,11 +4,11 @@ Un **prompt** es la instrucción que le das a una IA. QuickPrompt conserva esa i
 
 Abre **http://127.0.0.1:5190**. Si ya tenías la aplicación abierta, guarda lo que estés editando y recarga la página para ver los botones nuevos. Pulsa **Empieza aquí: guía y videos**, debajo del título principal. También puedes abrir la guía con **Ayuda**.
 
-Si aparece **ERR_CONNECTION_REFUSED**, el servidor local está detenido. Desde la terminal del proyecto ejecuta `.\scripts\Start-Nova.ps1 -NoBuild -Background`: abre NOVA y lo deja en segundo plano. Si lo inicias sin `-Background`, debes mantener abierta esa terminal.
+Si aparece **ERR_CONNECTION_REFUSED**, el servidor local está detenido. Desde la terminal del proyecto ejecuta `.\scripts\Start-Nova.ps1 -NoBrowser -Background` y recarga tu misma pestaña. Si ya se ejecuta una versión antigua, detén ese servidor antes de volver a iniciarlo. Si lo inicias sin `-Background`, debes mantener abierta la terminal.
 
 ## Tu primera tarea: escribir un correo
 
-1. Baja a **Tu biblioteca**. Si escribiste algo arriba y no aparece la lista, pulsa **Borrar búsqueda**.
+1. Baja a **Tu biblioteca**. Si la lista está filtrada, limpia **Buscar en la biblioteca**. La petición que escribes a NOVA es independiente de esta búsqueda.
 2. En **Colección**, elige **Correos y comunicación**.
 3. Abre **Escribir un correo profesional**.
 4. Completa: destinatario «equipo de soporte», objetivo «consultar el estado de mi pedido», contexto «pedido 123, se esperaba ayer y necesito una fecha estimada».
@@ -19,9 +19,23 @@ No necesitas crear una plantilla para usar la biblioteca. Hay **60 prompts en 20
 
 ## Pedirle una instrucción a NOVA
 
-En la entrada principal escribe, por ejemplo: «Necesito un prompt para resumir un documento». Pulsa la flecha. NOVA buscará una instrucción compatible o preparará una nueva con título automático. Si necesita un documento u otro dato, aparecerá su campo. **Guardar** añade la instrucción a tu biblioteca; **Usar en…** permite obtener una respuesta a esa instrucción.
+Puedes empezar con los **botones de acciones rápidas**, sin escribir la instrucción completa:
 
-El resultado se abre en una ventana. Puedes cerrarla con la X, **Cerrar resultado**, Escape o pulsando fuera. **Ver resultado de NOVA** la abre otra vez sin repetir la petición y conserva los campos que estabas completando durante esta sesión. Dentro de la ventana, la vista previa permanece visible. Cerrar la ventana no guarda el prompt en la biblioteca.
+- **Crear prompt**: describe qué necesitas; NOVA prepara el borrador.
+- **Actualizar prompt**: elige el prompt y cuenta qué quieres cambiar.
+- **Buscar y abrir**: busca y selecciona el prompt que quieres ver.
+- **Eliminar prompt**: elige el elemento y revisa su nombre en la confirmación. Solo **Eliminar definitivamente** lo borra; cancelar lo conserva.
+- **Más acciones**: completa las variables reales, prepara el prompt para una IA o solicita una ejecución local.
+
+También están disponibles al abrir un prompt; allí ya conocen el elemento seleccionado. Puedes pulsar **Elegir otro** para cambiarlo. Los accesos de NOVA trabajan en la misma pestaña, conservan la revisión antes de guardar y preguntan si falta información. Preparar un destino no envía nada; **Ejecutar ahora** sí solicita una respuesta del modelo local. El formulario de detalles se puede cancelar sin iniciar ninguna tarea. La eliminación usa la confirmación de biblioteca, sin intervención del modelo.
+
+En la entrada principal escribe, por ejemplo: «Necesito un prompt para resumir un documento». Pulsa la flecha. NOVA puede buscar, abrir, completar o preparar una instrucción nueva según lo que pidas. Verás los controles y la escritura en la misma pestaña. Si falta información, te preguntará.
+
+Durante una tarea aparece el botón **NOVA** en la esquina inferior derecha. Ábrelo para ver lo que está haciendo, ajustar la velocidad, pausar, continuar o detener. Cierra el panel con la X, Escape o pulsando fuera: el formulario sigue disponible. Cuando la tarea termina o la cancelas, el indicador desaparece. Una pausa o un borrador que espera revisión conserva los controles necesarios para continuar.
+
+El borrador no se guarda automáticamente. Revisa el contenido y pulsa **Guardar prompt**, **Guardar versión** o **Actividad de NOVA → Revisar y guardar versión**; confirma el texto que quieras conservar. **Usar en…** permite completar los datos y obtener una respuesta. Rechazar o detener no cambia el original guardado.
+
+Si prefieres ver solo el resultado final, despliega **Opciones de preparación** y elige **Solo mostrar el resultado**. En ese modo el resultado se abre en un diálogo que puedes cerrar y recuperar sin repetir la petición. La vista previa permanece visible.
 
 También puedes escribir acciones sobre tu biblioteca:
 
@@ -30,7 +44,7 @@ También puedes escribir acciones sobre tu biblioteca:
 - **«Actualiza el prompt “Escribir un correo profesional” para que use un tono más cercano»**: Qwen prepara el cambio y abre el editor del prompt original. Revisa y pulsa **Guardar versión** para aplicarlo.
 - **«Actualiza la biblioteca»** o **«Ve a favoritos»**: refresca la lista o cambia el filtro.
 
-Si hay varios prompts parecidos, NOVA muestra opciones. Si no sabe qué prompt o qué cambio necesitas, te lo pregunta. Navegar funciona sin modelo; preparar una nueva redacción requiere Qwen local. Estos comandos actúan dentro de QuickPrompt.
+Si hay varios prompts parecidos, NOVA muestra opciones. Si no sabe qué prompt o qué cambio necesitas, te lo pregunta. Los botones de biblioteca y copia funcionan sin IA. Las peticiones naturales a NOVA requieren el modelo local disponible. Estas peticiones actúan dentro de QuickPrompt.
 
 ## Crear y quitar una variable
 
@@ -44,27 +58,20 @@ Una variable es la parte del prompt que cambiarás cada vez. Por ejemplo: «Expl
 
 El texto original seleccionado se conserva para revertir la operación durante esa edición. En variables que ya venían guardadas, quitar la variable deja su nombre como texto. Los cambios solo se guardan cuando pulsas **Guardar prompt** o **Guardar versión**.
 
-## Cuatro videos cortos
+## Tres videos de uso
 
 Son grabaciones de la aplicación real, con datos de ejemplo y texto explicativo en español. No tienen narración de voz. Usa **Ampliar video** dentro de la guía para verlos cómodamente.
 
 | Video | Duración aproximada | Ver |
 |---|---:|---|
 | Usar la biblioteca y obtener una respuesta real de Qwen | 28 s | [Reproducir](http://127.0.0.1:5190/tutoriales/01-biblioteca.webm) |
-| Pedir a NOVA una instrucción y guardarla sin formulario | 30 s | [Reproducir](http://127.0.0.1:5190/tutoriales/02-nova.webm) |
+| Preparar una instrucción y guardarla | 30 s | [Reproducir](http://127.0.0.1:5190/tutoriales/02-nova.webm) |
 | Crear y quitar variables con un solo botón | 14 s | [Reproducir](http://127.0.0.1:5190/tutoriales/03-variables.webm) |
-| Ver el worker Playwright recorrer la aplicación | 16 s | [Reproducir](http://127.0.0.1:5190/tutoriales/04-playwright.webm) |
 
-El video 4 muestra el worker de pruebas real: abre su propio navegador, busca un prompt, rellena campos y copia. No es una conexión automática con ChatGPT ni un envío externo. Para repetirlo **en una ventana visible**, desde la terminal del proyecto ejecuta:
-
-```powershell
-.\scripts\Ver-Playwright.ps1
-```
-
-La demostración crea su propia biblioteca de prueba y cierra únicamente su navegador. No controla tu pestaña personal.
+El video de preparación muestra el flujo de **Solo mostrar el resultado**, que sigue disponible en las opciones. La preparación visible actual permite observar a NOVA escribiendo en el formulario y consultar su actividad desde el botón flotante.
 
 ## Volver a añadir o guardar la biblioteca
 
-Los 60 prompts se añadieron tanto a la biblioteca abierta como a la biblioteca habitual de inicio de NOVA. Se conservaron los prompts anteriores. En otra biblioteca puedes usar **Guía y videos → Añadir biblioteca práctica**. No reemplaza tus versiones: si detecta conflictos te pide revisarlos. [Descarga el archivo reutilizable](../apps/web/public/library/biblioteca-practica.es.json).
+Para añadir los 60 prompts a la biblioteca que estés usando, abre **Guía y videos → Añadir biblioteca práctica**. No reemplaza tus versiones: si detecta conflictos te pide revisarlos. [Descarga el archivo reutilizable](../apps/web/public/library/biblioteca-practica.es.json).
 
 Para conservar una copia de tus cambios personales, utiliza **Datos y respaldos → Exportar respaldo JSON**. Los videos y la biblioteca práctica se sirven desde tu equipo.
