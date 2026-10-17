@@ -22,16 +22,14 @@ function windowSnapshot(){
 function windows(){const snapshot=windowSnapshot();if(browserRootsBefore!==null)assert.equal(snapshot.roots,browserRootsBefore,'No additional browser process, including a hidden worker');return snapshot.windows;}
 let browserRootsBefore=null;
 
-// QA owns only this Page/window. Restore it rather than overriding document visibility
-// or disabling the application's pause boundary. CDP Browser window methods are used
+// QA owns only this Page/window. Restore it without overriding document visibility.
+// CDP Browser window methods are used
 // only for the test browser, never for personal windows or application data.
 async function qaWindowState(state){const session=await context.newCDPSession(page);try{const owner=await session.send('Browser.getWindowForTarget');if(state)await session.send('Browser.setWindowBounds',{windowId:owner.windowId,bounds:{windowState:state}});else if(owner.bounds.windowState==='minimized')await session.send('Browser.setWindowBounds',{windowId:owner.windowId,bounds:{windowState:'normal'}});}finally{await session.detach();}}
 async function focusQaPage(){if(!headlessQa)await qaWindowState();await page.bringToFront();await until(()=>page.evaluate(()=>document.visibilityState==='visible'),5000);}
 async function recoverHiddenQaPause(view){
- if(headlessQa||!view.run.pauseRequested||await page.evaluate(()=>document.visibilityState!=='hidden'))return false;
- assert.equal(await page.evaluate(()=>window.__controlTrace.length),0,'Never resume after human intervention');
- await focusQaPage();transportReport.push({at:Date.now(),type:'qa-visibility-recovery',runId:view.run.runId,method:'restore-owned-window-and-click-Continue'});
- await activityClick('Continuar');return true;
+ assert.equal(view.run.pauseRequested,false,'Only the explicit pause scenario may request a pause; QA must not recover one automatically');
+ return false;
 }
 async function start(message){
  await focusQaPage();
@@ -128,8 +126,13 @@ async function ready(allowClarification=false){return until(async()=>{const view
  });
  if(cases.includes('F')) await scenario('F',async()=>{
   await reset();const total=(await api('/prompts')).total;const input='Prepara una instrucción reutilizable para revisar requisitos funcionales de un software.';await start(input);console.log('START F',runId);
+  await page.locator('#discover-heading').click();await page.mouse.wheel(0,100);assert.equal((await api('/nova/live/'+runId)).run.pauseRequested,false);
   await until(async()=>{const v=await api('/nova/live/'+runId);if(await recoverHiddenQaPause(v))return false;if(['FAILED','BLOCKED'].includes(v.run.status))throw Error(JSON.stringify(v));return (await page.locator('#prompt-content').inputValue().catch(()=>'')).length>20;});
-  await page.getByLabel('Título',{exact:true}).fill('Mi título manual');const body=await page.getByLabel('Contenido',{exact:true}).inputValue();await wait(1500);assert.equal(await page.getByLabel('Título',{exact:true}).inputValue(),'Mi título manual');assert.equal(await page.getByLabel('Contenido',{exact:true}).inputValue(),body);const view=await api('/nova/live/'+runId);assert.ok(view.run.pauseRequested||view.run.status==='BLOCKED');assert.equal((await api('/prompts')).total,total);await evidence('F-manual-intervention',input,view,{body});
+  const title=page.getByLabel('Título',{exact:true});await title.click();await title.press('ArrowLeft');await title.press('ArrowRight');await page.mouse.wheel(0,250);
+  assert.equal((await api('/nova/live/'+runId)).run.pauseRequested,false);
+  let background=null;
+  if(!headlessQa){await qaWindowState('minimized');await wait(1800);background={visibility:await page.evaluate(()=>document.visibilityState),pauseRequested:(await api('/nova/live/'+runId)).run.pauseRequested};assert.equal(background.pauseRequested,false);await focusQaPage();}
+  const view=await ready();assert.equal(view.run.status,'AWAITING_APPROVAL');assert.equal(await title.inputValue(),view.proposal.draft.title);assert.equal(await page.getByLabel('Contenido',{exact:true}).inputValue(),view.proposal.draft.templateText);assert.equal(view.run.pauseRequested,false);assert.equal((await api('/prompts')).total,total);assert.equal(await page.evaluate(()=>window.__controlTrace.length),0);await evidence('F-touch-focus-scroll-background-continue',input,view,{background});
  });
  if(cases.includes('P')) await scenario('P',async()=>{
   await reset();await page.getByRole('button',{name:project.title,exact:true}).click();await page.getByTestId('prompt-focus').waitFor();const input='Abre el prompt Evaluar proyectos y prepáralo para Claude sin cambiar su texto ni enviarlo.\nproyecto: una aplicación React';await start(input);console.log('START P',runId);const view=await ready();assert.equal(view.run.status,'COMPLETED');assert.equal(await page.getByLabel('Destino externo',{exact:true}).inputValue(),'claude');assert.equal(view.observation.providerId,'claude');assert.deepEqual(await api('/prompts/'+project.id),project);await evidence('P-prepare-claude-without-send',input,view);
@@ -143,10 +146,9 @@ async function ready(allowClarification=false){return until(async()=>{const view
   if(!headlessQa){
    const proposal=view.proposal;await qaWindowState('minimized');await wait(500);
    const observedHidden=await page.evaluate(()=>document.visibilityState==='hidden');let resumed=false;
-   if(observedHidden){const paused=await until(async()=>{const current=await api('/nova/live/'+runId);return current.run.pauseRequested?current:null;},5000);assert.equal(await recoverHiddenQaPause(paused),true);resumed=true;}
-   else {await focusQaPage();const current=await api('/nova/live/'+runId);if(current.run.pauseRequested){assert.equal(await page.evaluate(()=>window.__controlTrace.length),0);await activityClick('Continuar');resumed=true;}}
+   assert.equal((await api('/nova/live/'+runId)).run.pauseRequested,false);await focusQaPage();
    view=await ready();assert.equal(view.run.status,'AWAITING_APPROVAL');assert.deepEqual(view.proposal,proposal);assert.equal(await page.getByLabel('Contenido',{exact:true}).inputValue(),proposal.draft.templateText);
-   visibilityRecovery={minimizeRequested:true,observedHidden,pauseEnforced:observedHidden?true:null,hiddenPauseCheck:observedHidden?'PASS':'NOT_APPLICABLE_BROWSER_REMAINED_VISIBLE',restoredVisible:await page.evaluate(()=>document.visibilityState==='visible'),resumedThrough:resumed?'Continuar':null,proposalPreserved:true};assert.equal(visibilityRecovery.restoredVisible,true);
+   visibilityRecovery={minimizeRequested:true,observedHidden,pauseRequested:false,restoredVisible:await page.evaluate(()=>document.visibilityState==='visible'),resumedThrough:resumed?'Continuar':null,proposalPreserved:true};assert.equal(visibilityRecovery.restoredVisible,true);
   }
   await evidence('R-rest-api-draft-not-saved',input,view,{visibilityRecovery});await activityClick('Cancelar modificación');assert.equal((await api('/prompts')).total,total);
  });

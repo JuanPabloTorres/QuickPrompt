@@ -51,13 +51,17 @@ export class AgentUiDriver {
   stop() { this.stopped = true; window.dispatchEvent(new Event('nova-abort-ui-operation')); this.target(null); }
   intervene() { this.intervention = true; this.stop(); }
   async boundary() {
-    while (this.paused || document.visibilityState === 'hidden') { this.check(); await delay(40); }
+    while (this.paused) { this.check(); await delay(40); }
     this.check();
   }
   private check() { if (this.stopped) throw new Error(this.intervention ? 'MANUAL_INTERVENTION' : 'UI_CANCELLED'); }
   async until<T>(read: () => T | null | false, timeout = 20000): Promise<T> {
-    const end = Date.now() + timeout;
-    while (Date.now() < end) { await this.boundary(); const value = read(); if (value) return value; await delay(40); }
+    let remaining = timeout;
+    while (remaining > 0) {
+      await this.boundary(); const started = Date.now();
+      const value = read(); if (value) return value;
+      await delay(40); remaining -= Date.now() - started;
+    }
     throw new Error('UI_TARGET_TIMEOUT');
   }
   async locate(read: () => HTMLElement | null, operation: CursorTarget['operation']) {

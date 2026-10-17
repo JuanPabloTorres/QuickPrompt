@@ -31,22 +31,16 @@ export function SameTabAgent({ runId, onActive, speed = 'normal', onNotice }: { 
     const driver = new AgentUiDriver(setTarget, async executionStatus => {
       if (currentAction) await request(`/nova/live/${runId}/actions/progress`, emptySchema, { ...post({ actionId: currentAction.actionId, sequence: currentAction.sequence, executionStatus }), headers });
     }); driverRef.current = driver; driver.speed = speedRef.current; setAgentDriver(driver);
-    let disposed = false, executing = false, lastSequence = 0, active = true, recoveryRequired = false, localPauseRequested = false;
+    let disposed = false, executing = false, lastSequence = 0, active = true, connectionLost = false, localPauseRequested = false;
     const receipts = new Map<string, Receipt>();
     setNotice(''); onActiveRef.current(true);
     const control = (event: Event) => {
       const action = (event as CustomEvent<string>).detail;
-      if (action === 'cancel') driver.stop(); else { localPauseRequested = action === 'pause'; driver.paused = localPauseRequested; if (action === 'resume') { recoveryRequired = false; if (!driver.intervention) setNotice(''); } }
+      if (action === 'cancel') driver.stop(); else { localPauseRequested = action === 'pause'; driver.paused = localPauseRequested || connectionLost; if (action === 'resume' && !driver.intervention) setNotice(''); }
     };
-    const intervention = (event: Event) => {
-      if (!active || !event.isTrusted || (event.target instanceof Element && event.target.closest('.nova-live, .same-tab-agent, .nova-approval-dialog, [data-nova-approval], [data-nova-command]' ))) return;
-      window.dispatchEvent(new CustomEvent('nova-human-intervention', { detail: { type: event.type, targetId: event.target instanceof Element ? event.target.id : '', tag: event.target instanceof Element ? event.target.tagName : '', isTrusted: event.isTrusted } }));
-      driver.intervene(); setNotice('Has tomado el control. Se conserva tu edición; detén esta ejecución y revisa el borrador antes de solicitar otro cambio.');
-      void request(`/nova/live/${runId}/pause`, liveRecordSchema, post({})).catch(() => {});
-    };
-    const visibility = () => { if (document.visibilityState === 'hidden') { localPauseRequested = true; driver.paused = true; setNotice('La pestaña está oculta. Al volver, revisa el borrador y pulsa Continuar.'); void request(`/nova/live/${runId}/pause`, liveRecordSchema, post({})).catch(() => {}); } };
+    // Focus, selection, scrolling and tab visibility are not requests to pause.
+    // Identity and actual value conflicts are still checked before writing.
     window.addEventListener('nova-ui-control', control);
-    document.addEventListener('beforeinput', intervention, true); document.addEventListener('pointerdown', intervention, true); document.addEventListener('keydown', intervention, true); document.addEventListener('visibilitychange', visibility);
     async function acknowledge(receipt: Receipt) { await request(`/nova/live/${runId}/actions/receipt`, emptySchema, { ...post(receipt), headers }); }
     async function execute(action: UiAction) {
       executing = true; currentAction = action;
@@ -67,16 +61,16 @@ export function SameTabAgent({ runId, onActive, speed = 'normal', onNotice }: { 
         try {
           const data = await request(`/nova/live/${runId}/actions?visible=${document.visibilityState !== 'hidden'}`, pollSchema, { headers, signal: lifecycle.signal });
           if (disposed) break;
-          driver.paused = localPauseRequested || recoveryRequired || data.run.pauseRequested;
-          if (recoveryRequired && !data.run.pauseRequested && !terminalLive(data.run.status)) { await request(`/nova/live/${runId}/pause`, liveRecordSchema, post({})); continue; }
+          if (connectionLost) { connectionLost = false; if (!driver.intervention) setNotice(''); }
+          driver.paused = localPauseRequested || data.run.pauseRequested;
           if (terminalLive(data.run.status)) { active = false; driver.stop(); releaseSurface(runId!); if (driverRef.current === driver) setAgentDriver(null); onActiveRef.current(false); break; }
           if (data.action && !driver.paused && !executing) void execute(data.action).catch(() => { driver.intervene(); setNotice('No se pudo confirmar el último paso. Detén NOVA y revisa el borrador.'); });
-        } catch { if (disposed) break; recoveryRequired = true; driver.paused = true; setNotice('Conexión interrumpida. La escritura está en pausa; usa Continuar cuando se recupere.'); }
+        } catch { if (disposed) break; connectionLost = true; driver.paused = true; setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
         await sleep(400);
       }
     }
     void poll();
-    return () => { disposed = true; active = false; lifecycle.abort(); driver.stop(); if (driverRef.current === driver) { driverRef.current = null; setAgentDriver(null); } onActiveRef.current(false); window.removeEventListener('nova-ui-control', control); document.removeEventListener('beforeinput', intervention, true); document.removeEventListener('pointerdown', intervention, true); document.removeEventListener('keydown', intervention, true); document.removeEventListener('visibilitychange', visibility); };
+    return () => { disposed = true; active = false; lifecycle.abort(); driver.stop(); if (driverRef.current === driver) { driverRef.current = null; setAgentDriver(null); } onActiveRef.current(false); window.removeEventListener('nova-ui-control', control); };
   }, [runId]);
   return <NovaAgentCursor target={target} />;
 }

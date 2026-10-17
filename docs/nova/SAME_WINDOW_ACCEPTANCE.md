@@ -1,5 +1,7 @@
 # NOVA — aceptación del control en la misma pestaña
 
+Actualización posterior: [continuidad, campos y decisiones útiles](AGENT_CONTROL_ACCEPTANCE.md). La política histórica de intervención automática descrita aquí fue sustituida por pausa explícita a petición del usuario; los resultados originales se conservan como evidencia de aquella versión.
+
 Estado: **PASS en los escenarios medidos**, validación completada el 17 de octubre de 2026. Se completaron los recorridos pendientes: creación, adaptación, cumplimentación, guardado con aprobación, cancelación e intervención manual.
 
 El resultado reúne **13 grupos**, con **12 recorridos de interfaz**, cuatro comprobaciones semánticas principales y nueve controles de restricciones/destinos. Se utilizaron Qwen real, SQLite sintético y Edge visible. Los resultados proceden de **tres sesiones grabadas con hashes idénticos de API y React**; no se presentan como una única pasada continua sin interrupciones.

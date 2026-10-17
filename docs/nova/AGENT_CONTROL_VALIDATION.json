@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "validatedAtUtc": "2026-10-17T21:58:49.843Z",
+  "baselineCommit": "74f0f40",
+  "automaticTests": {
+    "backend": 255,
+    "react": 55
+  },
+  "visibleQa": {
+    "headed": true,
+    "realModel": "qwen3:8b",
+    "syntheticDataOnly": true,
+    "singleCompleteRun": true,
+    "report": "docs/evidence/same-window/acceptance-1792273780681/acceptance.json",
+    "groups": [
+      {
+        "case": "A",
+        "status": "PASS"
+      },
+      {
+        "case": "B",
+        "status": "PASS"
+      },
+      {
+        "case": "C",
+        "status": "PASS"
+      },
+      {
+        "case": "D",
+        "status": "PASS"
+      },
+      {
+        "case": "F",
+        "status": "PASS"
+      },
+      {
+        "case": "P",
+        "status": "PASS"
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario": "A-first-acceptance",
+        "status": "PASS",
+        "observedRunStatus": "COMPLETED",
+        "modelDecisions": [
+          "ui_open_create_prompt",
+          "ui_prepare_creation",
+          "finish"
+        ],
+        "redundantReadDecisions": 0
+      },
+      {
+        "scenario": "B-adapt-and-approve",
+        "status": "PASS",
+        "observedRunStatus": "COMPLETED",
+        "modelDecisions": [
+          "ui_search_prompt",
+          "ui_open_prompt",
+          "ui_open_editor",
+          "ui_prepare_update",
+          "finish"
+        ],
+        "redundantReadDecisions": 0
+      },
+      {
+        "scenario": "C-fill-variables",
+        "status": "PASS",
+        "observedRunStatus": "COMPLETED",
+        "modelDecisions": [
+          "ui_search_prompt",
+          "ui_open_prompt",
+          "ui_fill_variable",
+          "finish"
+        ],
+        "redundantReadDecisions": 0
+      },
+      {
+        "scenario": "D-pause-resume-cancel",
+        "status": "PASS",
+        "observedRunStatus": "CANCELLED",
+        "modelDecisions": [
+          "ui_open_create_prompt",
+          "ui_prepare_creation"
+        ],
+        "redundantReadDecisions": 0
+      },
+      {
+        "scenario": "F-touch-focus-scroll-background-continue",
+        "status": "PASS",
+        "observedRunStatus": "AWAITING_APPROVAL",
+        "modelDecisions": [
+          "ui_open_create_prompt",
+          "ui_prepare_creation",
+          "finish"
+        ],
+        "redundantReadDecisions": 0
+      },
+      {
+        "scenario": "P-prepare-claude-without-send",
+        "status": "PASS",
+        "observedRunStatus": "COMPLETED",
+        "modelDecisions": [
+          "ui_fill_variable",
+          "ui_open_provider_picker",
+          "finish"
+        ],
+        "redundantReadDecisions": 0
+      }
+    ]
+  },
+  "hashes": {
+    "api/QuickPrompt.Api.dll": "a777c5cc10a5d53afb82d2b4298b5b45a0a45d6b801f2823e04f96f7a660b9db",
+    "api/QuickPrompt.Application.dll": "ade931f681b6ba42231d09e3c8e4c73a9df8d33f6e61d999dada8f497160addf",
+    "api/QuickPrompt.Infrastructure.dll": "2087b9b7a934566b956b4cc190a9f879a22cfb00d4d7de09467e73ee94712a1f",
+    "api/QuickPrompt.Domain.dll": "f3d1ba13c936512fd9dc211d70cce6bb4d750ec1d336bf279109dc28c07ada28",
+    "web/index.html": "eb1a2e05bb4f3c90e978d52d1687e0b1aff3ec2ffe443d1ac61ddcb233a21db4",
+    "web/assets/index-DtIFsI0N.js": "1560de548c1dc7ff15616d1f93ea0e3732df0d86bcf8be70f02618373acd952d",
+    "web/assets/index-xZUJDDzV.css": "5b5cfd3374e761a1fbbd58feff8903c4112f195fe576420c571cfc3dc10cd7cf"
+  },
+  "limits": [
+    "Minimizing Edge left document.visibilityState visible in this session; the hidden-document path is covered by React and dispatcher tests.",
+    "No universal latency percentage is claimed. Real model interpretation and generation still depend on the request and hardware."
+  ]
+}

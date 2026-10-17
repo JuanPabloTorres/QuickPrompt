@@ -19,7 +19,6 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
     {
         public readonly object Gate = new();
         public readonly string CapabilityHash = LiveRuns.Hash(capability);
-        public DateTime Seen = DateTime.UtcNow;
         public long Sequence;
         public UiActionEnvelope? Pending;
         public TaskCompletionSource<UiVisibleState>? Completion;
@@ -27,8 +26,6 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
         public string? LastReceiptHash;
     }
     private readonly ConcurrentDictionary<Guid, Surface> surfaces = new();
-    private readonly ConcurrentDictionary<Guid, Task> monitoring = new();
-    private readonly CancellationTokenSource stopping = new();
     public void Bind(Guid id, string capability)
     {
         if (capability.Length is < 32 or > 128) throw new ValidationException("Falta la identidad de la pestaña emisora.");
@@ -36,25 +33,12 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
         foreach (var old in surfaces.Where(item => LiveRuns.Terminal(live.Get(item.Key).Status)).ToArray()) surfaces.TryRemove(old.Key, out _);
         var surface = new Surface(capability);
         if (!surfaces.TryAdd(id, surface)) throw new ConflictException("La pestaña ya está vinculada.");
-        foreach (var finished in monitoring.Where(item => item.Value.IsCompleted).ToArray()) monitoring.TryRemove(finished.Key, out _);
-        monitoring[id] = Monitor(id);
     }
-    private async Task Monitor(Guid id)
+    public ValueTask DisposeAsync()
     {
-        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(live.Active(id).Cancellation.Token, stopping.Token);
-        var ct = lifetime.Token;
-        try {
-            while (surfaces.TryGetValue(id, out var surface) && !LiveRuns.Terminal(live.Get(id).Status)) {
-                await Task.Delay(1000, ct); ct.ThrowIfCancellationRequested();
-                lock (surface.Gate) if (DateTime.UtcNow - surface.Seen > TimeSpan.FromSeconds(15)) live.Pause(id, "La pestaña está oculta o perdió la conexión. Vuelve a ella y pulsa Continuar después de revisar el borrador.");
-            }
-        } catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
-    }
-    public async ValueTask DisposeAsync()
-    {
-        await stopping.CancelAsync();
-        await Task.WhenAll(monitoring.Values);
-        stopping.Dispose();
+        foreach (var surface in surfaces.Values) lock (surface.Gate) surface.Completion?.TrySetCanceled();
+        surfaces.Clear();
+        return ValueTask.CompletedTask;
     }
 
     private static void Authorize(Surface surface, string capability)
@@ -68,9 +52,9 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
         if (!surfaces.ContainsKey(id) && LiveRuns.Terminal(live.Get(id).Status)) return new(live.Get(id), null);
         var surface = Get(id, capability);
         lock (surface.Gate) {
-            surface.Seen = DateTime.UtcNow;
-            if (!visible && !LiveRuns.Terminal(live.Get(id).Status)) live.Pause(id, "La pestaña está oculta o perdió la conexión. Vuelve a ella y pulsa Continuar después de revisar el borrador.");
-            return new(live.Get(id), visible && !live.Get(id).PauseRequested && !LiveRuns.Terminal(live.Get(id).Status) ? surface.Pending : null);
+            // Visibility is telemetry, not authorization to pause. A missing poll
+            // naturally holds the same pending action; no unknown outcome is replayed.
+            return new(live.Get(id), !live.Get(id).PauseRequested && !LiveRuns.Terminal(live.Get(id).Status) ? surface.Pending : null);
         }
     }
     public void Acknowledge(Guid id, string capability, UiActionReceipt receipt)
@@ -149,7 +133,6 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
         try {
             while (!result.IsCompleted) {
                 await Task.WhenAny(result, Task.Delay(500, timeout.Token)); timeout.Token.ThrowIfCancellationRequested();
-                lock (surface.Gate) if (DateTime.UtcNow - surface.Seen > TimeSpan.FromSeconds(15)) live.Pause(id, "La pestaña está oculta o perdió la conexión. Vuelve a ella y pulsa Continuar después de revisar el borrador.");
             }
             var state = await result; await live.Boundary(id, timeout.Token); return state;
         } finally { lock (surface.Gate) { surface.Pending = null; surface.Completion = null; } }

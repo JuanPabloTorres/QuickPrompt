@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AgentUiDriver, type UiAction } from '../src/features/nova/AgentUiDriver';
 import { PreparationCanvas } from '../src/features/nova/PreparationCanvas';
@@ -27,6 +27,23 @@ it('pause stops chunks, resume continues and cancel prevents late writes', async
 it('manual intervention stops writes and arbitrary tool names are rejected', async () => {
   const { driver } = setup(); driver.intervene(); await expect(driver.write('prompt-title', 'Sobrescribir')).rejects.toThrow('MANUAL_INTERVENTION');
   const other = new AgentUiDriver(vi.fn()); await expect(other.execute({ tool: 'eval', arguments: {}, target: null } as UiAction)).rejects.toThrow('UNKNOWN_UI_TOOL');
+});
+it('preserves a real concurrent edit instead of overwriting it after removing incidental-input pauses', async () => {
+  const { changed, driver } = setup(); const task = driver.write('prompt-title', 'Contenido generado '.repeat(30));
+  await waitFor(() => expect(changed).toHaveBeenCalled());
+  fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Mi edición real' } });
+  await expect(task).rejects.toThrow('MANUAL_INTERVENTION');
+  expect(screen.getByLabelText('Título')).toHaveProperty('value', 'Mi edición real');
+});
+it('writes in a background document and excludes explicit pause time from control deadlines', async () => {
+  const { driver } = setup(); driver.speed = 'fast';
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  await driver.write('prompt-title', 'Un primer intento completo');
+  expect(screen.getByLabelText('Título')).toHaveProperty('value', 'Un primer intento completo');
+  driver.paused = true;
+  let ready = false; const pending = driver.until(() => ready && 'ready', 60);
+  await new Promise(resolve => setTimeout(resolve, 140)); ready = true; driver.paused = false;
+  await expect(pending).resolves.toBe('ready');
 });
 it('visual execution in this tab is the default with no parallel-browser option', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => Response.json([])));

@@ -4,7 +4,7 @@ import { SameTabAgent } from '../src/features/nova/SameTabAgent';
 import { applyAgentProposal } from '../src/features/nova/AgentUiDriver';
 import { startVisible, surfaceCapability } from '../src/services/live';
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const record = (id: string, status = 'CREATED') => ({ runId: id, sessionId: id, mode: 'SAME_TAB', status, sequence: 1, targetId: null, revision: null, pauseRequested: false, browserOpen: false, approval: 'NONE', effectCommitted: false, errorCode: null });
 
 it('binds an explicit source revision and exact form values to the run as well as session context', async () => {
@@ -51,4 +51,31 @@ it('discards an old in-flight poll after switching runs and releases the complet
   await waitFor(() => expect(active.mock.calls.at(-1)).toEqual([false]));
   expect(surfaceCapability(second.runId)).toBeUndefined();
   expect(await applyAgentProposal('Edición manual posterior.', new AbortController().signal)).toBe(false);
+});
+
+it('recovers a transient poll failure in a hidden tab without requiring Continue or replaying a write', async () => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
+  HTMLElement.prototype.scrollIntoView = vi.fn(); vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  let id = '';
+  const actionId = crypto.randomUUID(), calls: string[] = [];
+  let polls = 0, receipts = 0;
+  vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {
+    calls.push(path);
+    if (path === '/api/v1/nova/live') { id = JSON.parse(options!.body as string).runId; return Response.json(record(id)); }
+    if (path.endsWith('/actions/progress')) return new Response(null, { status: 204 });
+    if (path.endsWith('/actions/receipt')) { receipts++; return new Response(null, { status: 204 }); }
+    if (path.includes('/actions?')) {
+      if (++polls === 1) throw new TypeError('Synthetic temporary disconnection');
+      return Response.json({ run: record(id, receipts ? 'COMPLETED' : 'TOOL_RUNNING'), action: receipts ? null : { runId: id, actionId, sequence: 1, tool: 'ui_prepare_creation', target: null, arguments: { title: 'Primera petición', templateText: 'Una instrucción completa.' }, timestamp: new Date().toISOString(), executionStatus: 'DISPATCHED', verificationStatus: 'PENDING' } });
+    }
+    throw new Error('Unexpected endpoint ' + path);
+  }));
+  await startVisible('Crea una instrucción.', crypto.randomUUID());
+  const active = vi.fn();
+  render(<><section data-testid="prompt-editor" data-prompt-id=""><input id="prompt-title" defaultValue="" /><textarea id="prompt-content" defaultValue="" /><span data-testid="variables-inspected" /></section><SameTabAgent runId={id} speed="fast" onActive={active} /></>);
+  await waitFor(() => expect(active.mock.calls.at(-1)).toEqual([false]), { timeout: 3000 });
+  expect(document.getElementById('prompt-title')).toHaveProperty('value', 'Primera petición');
+  expect(document.getElementById('prompt-content')).toHaveProperty('value', 'Una instrucción completa.');
+  expect(receipts).toBe(1); expect(calls.some(path => path.endsWith('/pause') || path.endsWith('/resume'))).toBe(false);
 });

@@ -38,10 +38,12 @@ public sealed class SameTabUiTests : IAsyncLifetime
         Assert.Throws<ConflictException>(() => dispatcher.Acknowledge(id, capability, receipt with { VerificationStatus = "UNKNOWN" }));
         Assert.Null(dispatcher.Poll(id, capability, true).Action);
     }
-    [Fact] public async Task HiddenTabPausesAndVerifiedActionCannotAdvanceUntilExplicitResume()
+    [Fact] public async Task HiddenTabKeepsTheSameActionAndOnlyExplicitPauseRequiresResume()
     {
         await using var driver = dispatcher.Factory().Create(); var pending = driver.Start(id, "", false, CancellationToken.None);
         var action = dispatcher.Poll(id, capability, true).Action!;
+        Assert.Equal(action, dispatcher.Poll(id, capability, false).Action); Assert.False(live.Get(id).PauseRequested);
+        live.Pause(id);
         Assert.Null(dispatcher.Poll(id, capability, false).Action); Assert.True(live.Get(id).PauseRequested);
         dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", State));
         await Task.Delay(30); Assert.False(pending.IsCompleted); live.Resume(id);
@@ -62,6 +64,14 @@ public sealed class SameTabUiTests : IAsyncLifetime
         var pending = driver.Start(id, "", false, live.Active(id).Cancellation.Token); var action = dispatcher.Poll(id, capability, true).Action!;
         live.Cancel(id); await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.Throws<ConflictException>(() => dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", State)));
+    }
+    [Fact] public async Task ClosingDispatcherReleasesAnUnacknowledgedActionAndCanBeRepeated()
+    {
+        await using var driver = dispatcher.Factory().Create();
+        var pending = driver.Start(id, "", false, CancellationToken.None);
+        await dispatcher.DisposeAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+        await dispatcher.DisposeAsync();
     }
     [Fact] public async Task ProgressAndReceiptRequireTheCurrentActionAndVerifiedLogicalTarget()
     {
@@ -101,14 +111,15 @@ public sealed class SameTabUiTests : IAsyncLifetime
         var saved = live.Commit(id, proposal.Draft); Assert.Equal(1, saved.Revision); Assert.Equal(generated.TemplateText, saved.TemplateText); Assert.Equal(JsonSerializer.Serialize(saved), JsonSerializer.Serialize(library.Get(saved.Id)));
         Assert.Throws<ConflictException>(() => live.Commit(id, proposal.Draft)); Assert.Equal(saved.Id, live.Get(id).TargetId);
     }
-    [Fact] public async Task HeartbeatLossPausesEvenWhenNoUiActionIsCurrentlyDispatched()
+    [Fact] public async Task PollingGapDoesNotCreateAPauseOrReplaceAPendingAction()
     {
-        var deadline = DateTime.UtcNow.AddSeconds(24);
-        while (!live.Get(id).PauseRequested && DateTime.UtcNow < deadline) await Task.Delay(100);
-        Assert.True(live.Get(id).PauseRequested); var sequence = live.Get(id).Sequence;
-        dispatcher.Poll(id, capability, true); Assert.True(live.Get(id).PauseRequested);
-        live.Pause(id); Assert.Equal(sequence, live.Get(id).Sequence);
-        live.Resume(id); Assert.False(live.Get(id).PauseRequested);
+        await using var driver = dispatcher.Factory().Create(); var pending = driver.Start(id, "", false, CancellationToken.None);
+        var first = dispatcher.Poll(id, capability, true).Action!;
+        await Task.Delay(TimeSpan.FromSeconds(16));
+        Assert.False(live.Get(id).PauseRequested);
+        Assert.Equal(first, dispatcher.Poll(id, capability, false).Action);
+        dispatcher.Acknowledge(id, capability, new(first.ActionId, first.Sequence, "EXECUTED", "VERIFIED", State));
+        Assert.Equal(State, await pending.WaitAsync(TimeSpan.FromSeconds(2)));
     }
     [Fact] public void UnsavedDraftVariableToolsUseNullIdentityAndStillRequireARealFieldAndLiteralAuthority()
     {

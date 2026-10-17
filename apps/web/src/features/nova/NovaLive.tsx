@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown, LoaderCircle, Pause, Play, Square, X } from 'lucide-react';
 import { Dialog } from '../../components/ui/Dialog';
 import { errorMessage, post, request } from '../../services/api';
-import { liveEventSchema, liveRecordSchema, liveViewSchema, terminalLive, type LiveEvent, type LiveView } from '../../services/live';
+import { liveEventSchema, liveRecordSchema, liveViewSchema, surfaceCapability, terminalLive, type LiveEvent, type LiveView } from '../../services/live';
 
 const operationLabels: Record<string, string> = {
   start: 'Preparando tu espacio de trabajo', ui_navigate_library: 'Abriendo tu biblioteca',
@@ -107,7 +107,7 @@ export function NovaLive({ runId, worker, onCommit, onReview, speed = 'normal', 
         {view.question && <p className="notice">{view.question}</p>}
         {run.mode === 'SAME_TAB' && onSpeedChange && <label className="live-speed">Velocidad de preparación<select aria-label="Velocidad de NOVA" value={speed} onChange={event => onSpeedChange(event.target.value as 'normal' | 'fast')}><option value="normal">Visible</option><option value="fast">Rápida</option></select></label>}
         <div className="live-controls">
-          {(run.mode !== 'SAME_TAB' || worker) && <button className="secondary" disabled={busy} onClick={() => void control(paused ? 'resume' : 'pause')}>{paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}{paused ? 'Continuar' : 'Pausar'}</button>}
+          {(run.mode !== 'SAME_TAB' || worker || surfaceCapability(runId)) && <button className="secondary" disabled={busy} onClick={() => void control(paused ? 'resume' : 'pause')}>{paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}{paused ? 'Continuar' : 'Pausar'}</button>}
           <button className="secondary" disabled={busy} onClick={() => void control('cancel')}><Square size={16} aria-hidden="true" />Detener NOVA</button>
         </div>
         {view.proposal && <div className="live-review-actions"><button className="primary" disabled={busy || paused || run.approval !== 'PENDING'} onClick={() => { setExpanded(false); setReview(true); }}>Revisar y guardar versión</button><button className="text-button" disabled={busy} onClick={() => void control('cancel')}>Cancelar modificación</button></div>}

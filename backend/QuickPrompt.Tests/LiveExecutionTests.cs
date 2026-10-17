@@ -262,9 +262,11 @@ public sealed class LiveExecutionTests : IDisposable
         public Task<UiDecision> Decide(UiDecisionContext context, CancellationToken ct)
         {
             Calls++;
+            Assert.DoesNotContain(context.Tools, tool => tool.Name is "ui_read_visible_state" or "ui_verify_prompt_state");
             Assert.DoesNotContain(context.Tools, tool => tool.Name == "ui_open_provider_picker");
             if (Calls == 1) return Task.FromResult(new UiDecision("ui_execute_local", JsonSerializer.SerializeToElement(new { promptId = id })));
             Assert.DoesNotContain(context.Tools, tool => tool.Name == "ask_clarification");
+            Assert.DoesNotContain(context.Tools, tool => tool.Name is "ui_read_visible_state" or "ui_verify_prompt_state" or "ui_show_compiled_prompt");
             Assert.Contains(context.Tools, tool => tool.Name == "finish");
             return Task.FromResult(new UiDecision("finish", JsonSerializer.SerializeToElement(new { })));
         }

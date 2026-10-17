@@ -128,6 +128,10 @@ public sealed partial class AgentOrchestrator
                 var providerPending = !state.ProviderOpen || input.Mode == "SAME_TAB" && semantic.Has(SemanticOperation.PREPARE_PROVIDER)
                     && semantic.ProviderId is { } wantedProvider && wantedProvider != "ollama" && state.ProviderId != wantedProvider;
                 var available = allowedTools
+                    // Every iteration just read the live controls, and every effect is
+                    // independently verified below. Asking the model to request those
+                    // same observations again adds inference without new evidence.
+                    .Where(tool => tool.Name is not ("ui_read_visible_state" or "ui_verify_prompt_state"))
                     .Where(tool => SemanticPlanValidator.ToolAllowed(semantic, tool.Name))
                     .Where(tool => (tool.Name != "ui_fill_variable" || grounded.Any(value => state.Values.GetValueOrDefault(value.Key) != value.Value))
                         && (!(tool.Name is "ui_execute_local" or "ui_open_provider_picker" or "ui_show_compiled_prompt") || grounded.All(value => state.Values.GetValueOrDefault(value.Key) == value.Value))
@@ -140,7 +144,7 @@ public sealed partial class AgentOrchestrator
                 // Once the observed postconditions permit completion, optional questions and
                 // repeated preparation cannot extend the task or reopen an already ready picker.
                 var completionReady = !ambiguous && available.Any(tool => tool.Name == "finish");
-                if (completionReady) available = available.Where(tool => tool.Name != "ask_clarification").ToArray();
+                if (completionReady) available = available.Where(tool => tool.Name is not ("ask_clarification" or "ui_read_visible_state" or "ui_verify_prompt_state" or "ui_show_compiled_prompt")).ToArray();
                 live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, "Consultando Qwen para elegir la siguiente acción a partir del estado observado.", "Model");
                 var timer = Stopwatch.StartNew(); UiDecision decision;
                 using (var stage = CancellationTokenSource.CreateLinkedTokenSource(ct)) { stage.CancelAfter(TimeSpan.FromSeconds(options.StageTimeoutSeconds)); decision = await model.Decide(new(input.TaskRequest, state, executed.ToArray(), available, input.SourceId, ambiguous ? "Several compatible candidates: ask a concrete clarification; do not choose arbitrarily." : priorLoaded && updateAllowed && !executed.Contains("ui_prepare_update") ? "The previous authorized draft is loaded, but the NEW requested content change has not been applied. Prepare that change with ui_prepare_update before finishing." : state.DraftChanged && executed.Contains("ui_prepare_update") && !localAllowed ? "The requested draft change is observed. Empty placeholders do not block review: finish or request human review without filling them." : null, grounded, lastResult, input.SourceId is { } source ? library.Get(source).Title : null, ModelRetry, localAllowed, updateAllowed, RecordRejectedArguments, semantic), stage.Token); }
