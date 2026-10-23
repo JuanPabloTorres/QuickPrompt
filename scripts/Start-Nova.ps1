@@ -7,12 +7,21 @@ param(
     [switch]$QaBrowser,
     [ValidateSet('adaptive-core','native')][string]$AgentRuntime = 'adaptive-core',
     [string]$CorePython,
-    [string]$CoreSdkRoot
+    [string]$CoreSdkRoot,
+    [string]$ApiDllPath,
+    [string]$WebRootPath,
+    [string]$CoreWorkerPath,
+    [string]$OllamaEndpoint = 'http://127.0.0.1:11434',
+    [switch]$Production,
+    [switch]$ReuseExisting
 )
 $ErrorActionPreference = 'Stop'
 $novaRoot = Split-Path -Parent $PSScriptRoot
 $novaWeb = Join-Path $novaRoot 'apps/web'
 $novaApi = Join-Path $novaRoot 'backend/QuickPrompt.Api'
+$novaDll = if ($ApiDllPath) { [IO.Path]::GetFullPath($ApiDllPath) } else { Join-Path $novaApi 'bin/Debug/net8.0/QuickPrompt.Api.dll' }
+$novaDist = if ($WebRootPath) { [IO.Path]::GetFullPath($WebRootPath) } else { Join-Path $novaWeb 'dist' }
+if (($ApiDllPath -or $WebRootPath -or $CoreWorkerPath) -and -not $NoBuild) { throw 'Las rutas de una entrega existente requieren -NoBuild. Compila antes y selecciona la entrega explícita.' }
 if ($AgentRuntime -eq 'adaptive-core') {
     if (-not $CorePython) {
         $CorePython = @((Join-Path $novaRoot '.venv/Scripts/python.exe'),
@@ -20,10 +29,31 @@ if ($AgentRuntime -eq 'adaptive-core') {
             Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
     }
     if (-not $CoreSdkRoot) { $CoreSdkRoot = Join-Path (Split-Path $novaRoot -Parent) 'Adaptive-AI-Core' }
-    $novaCoreWorker = Join-Path $novaRoot 'agents/nova-core/nova_worker.py'
+    $novaCoreWorker = if ($CoreWorkerPath) { [IO.Path]::GetFullPath($CoreWorkerPath) } else { Join-Path $novaRoot 'agents/nova-core/nova_worker.py' }
     if (-not $CorePython) { throw 'Configura -CorePython con un intérprete existente. No se instala software ni se cambia de agente automáticamente.' }
     foreach ($novaCoreFile in @($CorePython, $novaCoreWorker, (Join-Path $CoreSdkRoot 'adaptive_core/runtime.py'))) {
         if (-not (Test-Path -LiteralPath $novaCoreFile -PathType Leaf)) { throw "Falta la dependencia Core: $novaCoreFile. Configura -CorePython/-CoreSdkRoot; no hay fallback automático." }
+    }
+}
+if ($ReuseExisting) {
+    if (-not $DataPath) { throw 'Para reutilizar una instancia, indica -DataPath explícitamente.' }
+    $novaListeners = @(Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue)
+    if ($novaListeners.Count) {
+        $novaOwners = @($novaListeners.OwningProcess | Select-Object -Unique)
+        if ($novaOwners.Count -ne 1) { throw 'El puerto tiene propietarios distintos. No se sustituyó ninguna instancia.' }
+        $novaProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $($novaOwners[0])"
+        $novaCommand = ([string]$novaProcess.CommandLine).Replace('\', '/').ToLowerInvariant()
+        $novaExpected = @($novaDll, "--QuickPrompt:Port=$Port", "--QuickPrompt:WebRoot=$novaDist")
+        if ($DataPath) { $novaExpected += '--QuickPrompt:DataPath=' + [IO.Path]::GetFullPath($DataPath) }
+        foreach ($novaToken in $novaExpected) {
+            $novaPattern = '(?:^|["\s])' + [regex]::Escape($novaToken.Replace('\', '/').ToLowerInvariant()) + '(?=["\s]|$)'
+            if ($novaCommand -notmatch $novaPattern) { throw 'El puerto está ocupado por otra configuración. No se abrió ni sustituyó esa instancia.' }
+        }
+        $novaHealth = Invoke-RestMethod "http://127.0.0.1:$Port/health" -TimeoutSec 3
+        if ($novaHealth.status -ne 'ok') { throw 'La instancia existe pero su salud no está confirmada. No se arrancó otra.' }
+        Write-Host "QuickPrompt NOVA: http://127.0.0.1:$Port. Instancia existente; PID $($novaOwners[0])."
+        if (-not $NoBrowser) { Start-Process "http://127.0.0.1:$Port" }
+        return
     }
 }
 if (-not $NoBuild) {
@@ -40,14 +70,14 @@ if (-not $NoBuild) {
     & dotnet build (Join-Path $novaApi 'QuickPrompt.Api.csproj') --no-restore --no-incremental
     if ($LASTEXITCODE -ne 0) { throw 'Falló el build API. Si faltan assets, restaura explícitamente los paquetes .NET documentados.' }
 }
-$novaDll = Join-Path $novaApi 'bin/Debug/net8.0/QuickPrompt.Api.dll'
-$novaDist = Join-Path $novaWeb 'dist'
 if (-not (Test-Path -LiteralPath $novaDll) -or -not (Test-Path -LiteralPath (Join-Path $novaDist 'index.html'))) { throw 'Falta la compilación de NOVA.' }
 $novaLogs = Join-Path $novaRoot '.nova-build/logs'
 New-Item -ItemType Directory -Path $novaLogs -Force | Out-Null
 $novaStamp = [Guid]::NewGuid().ToString('N')
 $novaArguments = @(('"' + $novaDll + '"'), ('--QuickPrompt:Port=' + $Port), ('"--QuickPrompt:WebRoot=' + $novaDist + '"'))
 $novaArguments += '--QuickPrompt:Agent:Runtime=' + $AgentRuntime
+if ($Production) { $novaArguments += '--environment=Production' }
+$novaArguments += '"--QuickPrompt:Ollama=' + $OllamaEndpoint + '"'
 if ($AgentRuntime -eq 'adaptive-core') {
     $novaArguments += '"--QuickPrompt:AdaptiveCore:Python=' + [IO.Path]::GetFullPath($CorePython) + '"'
     $novaArguments += '"--QuickPrompt:AdaptiveCore:SdkRoot=' + [IO.Path]::GetFullPath($CoreSdkRoot) + '"'

@@ -8,6 +8,25 @@ import { startVisible, surfaceCapability } from '../src/services/live';
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const record = (id: string, status = 'CREATED') => ({ runId: id, sessionId: id, mode: 'SAME_TAB', status, sequence: 1, targetId: null, revision: null, pauseRequested: false, browserOpen: false, approval: 'NONE', effectCommitted: false, errorCode: null });
 
+it('releases local command ownership on Stop and ignores a late authenticated action', async () => {
+  let id = ''; let resolvePoll: (response: Response) => void = () => {};
+  vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {
+    if (path === '/api/v1/nova/live') { id = JSON.parse(options!.body as string).runId; return Response.json(record(id)); }
+    if (path.includes('/actions?')) return new Promise<Response>(resolve => { resolvePoll = resolve; });
+    throw Error('Late action must never execute or acknowledge: ' + path);
+  }));
+  await startVisible('Prueba de cancelación', crypto.randomUUID());
+  const active = vi.fn();
+  render(<><section data-testid="prompt-editor"><input id="prompt-title" defaultValue="Original" /><textarea id="prompt-content" defaultValue="Original." /></section><SameTabAgent runId={id} onActive={active} /></>);
+  await waitFor(() => expect(active).toHaveBeenLastCalledWith(true));
+  act(() => window.dispatchEvent(new CustomEvent('nova-ui-control', { detail: 'cancel' })));
+  expect(active).toHaveBeenLastCalledWith(false);
+  expect(surfaceCapability(id)).toBeUndefined();
+  await act(async () => resolvePoll(Response.json({ run: record(id, 'TOOL_RUNNING'), action: { runId: id, actionId: crypto.randomUUID(), sequence: 1, tool: 'ui_prepare_creation', target: null, arguments: { title: 'No escribir', templateText: 'No escribir.' }, timestamp: new Date().toISOString(), executionStatus: 'DISPATCHED', verificationStatus: 'PENDING' } })));
+  expect(document.getElementById('prompt-title')).toHaveProperty('value', 'Original');
+  expect(active).toHaveBeenLastCalledWith(false);
+});
+
 it('binds an explicit source revision and exact form values to the run as well as session context', async () => {
   const calls: { path: string; body: Record<string, unknown> }[] = [];
   vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {

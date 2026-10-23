@@ -33,7 +33,7 @@ export function readUiState(): UiState {
     deletionRevision: shown(deletion) ? Number(deletion.dataset.deleteRevision) : null,
     deletionRunId: shown(deletion) ? deletion.dataset.deleteRunId || null : null,
     deletionConfirmationReady: shown(deletion) && deletion.dataset.deleteReady === 'true',
-    providerOpen: shown(test('prepared-provider-dialog')), providerId: agentUiSurface.providerSelect()?.value ?? null, error: Array.from(document.querySelectorAll('[role="alert"]')).some(shown) ? 'REACT_REPORTED_ERROR' : null,
+    providerOpen: shown(test('prepared-provider-dialog')), providerId: agentUiSurface.providerSelect()?.value ?? null, error: Array.from(document.querySelectorAll('[role="alert"]:not([data-nova-approval-alert="true"])')).some(shown) ? 'REACT_REPORTED_ERROR' : null,
   };
 }
 

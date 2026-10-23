@@ -60,7 +60,10 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
     setNotice(''); onActiveRef.current(true);
     const control = (event: Event) => {
       const action = (event as CustomEvent<string>).detail;
-      if (action === 'cancel') driver.stop(); else { localPauseRequested = action === 'pause'; driver.paused = localPauseRequested || connectionLost; if (action === 'resume' && !driver.intervention) setNotice(''); }
+      if (action === 'cancel') {
+        active = false; driver.stop(); lifecycle.abort(); progressRequest?.abort();
+        releaseSurface(runId); releaseProposal(); onActiveRef.current(false);
+      } else { localPauseRequested = action === 'pause'; driver.paused = localPauseRequested || connectionLost; if (action === 'resume' && !driver.intervention) setNotice(''); }
       wake();
     };
     // Focus, selection, scrolling and tab visibility are not requests to pause.
@@ -97,12 +100,12 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
       while (!disposed && active) {
         try {
           const data = await live.poll(runId!, capability!, document.visibilityState !== 'hidden', lifecycle.signal);
-          if (disposed) break;
+          if (disposed || !active) break;
           if (connectionLost) { connectionLost = false; if (!driver.intervention) setNotice(''); }
           driver.paused = localPauseRequested || data.run.pauseRequested;
           if (terminalLive(data.run.status)) { active = false; driver.stop(); releaseSurface(runId!); releaseProposal(); onActiveRef.current(false); break; }
           if (data.action && !driver.paused && !executing) void execute(data.action).catch(() => { driver.intervene(); setNotice('No se pudo confirmar el último paso. Detén NOVA y revisa el borrador.'); });
-        } catch { if (disposed) break; connectionLost = true; driver.paused = true; setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
+        } catch { if (disposed || !active) break; connectionLost = true; driver.paused = true; setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
         await waitForState();
       }
     }

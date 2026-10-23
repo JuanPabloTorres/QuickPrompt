@@ -32,6 +32,80 @@ al enviar formulario:
 
 ## Capas de UI
 
+`features/nova/NovaWelcome` muestra un recorrido previsto en reposo y el mapa
+real de `AgentRuntimePanel` durante la ejecución. Sustituye el retrato grande;
+el mapa queda compacto y sticky mientras el agente enfoca el editor.
+`NovaLive` conserva la única lectura/SSE del runtime y publica su snapshot
+por identidad de ejecución; el mapa no crea otro polling ni interpreta texto.
+`AgentDock` conserva apertura, foco, contexto y estado visual del runtime.
+Su launcher muestra sólo el icono; mientras `SameTabAgent` posee la pestaña,
+se suspende todo el dock. `NovaLive` oculta también su trigger y parada flotantes;
+el mapa conserva una entrada explícita a la actividad. El portal no usa un dock
+suspendido como host, pero conserva el comportamiento previo al cerrar su panel.
+`design/agent-presence.css` compone mapa, dock y degradado azul de control,
+sin modificar el arte oficial.
+
+`components/WorkspaceSidebar` y `WorkspaceFooter` son presentación del shell.
+Reciben callbacks existentes de navegación/configuración y no poseen E/S,
+persistencia o reglas de prompts. La barra permanece lateral, compacta a iconos
+en pantallas pequeñas. `design/workspace-shell.css` define su composición;
+`tokens.css` conserva la paleta solicitada y sus alias semánticos compartidos.
+
+`features/prompts/LibraryToolbar` reúne búsqueda, filtros, colecciones y selector
+de vista como presentación controlada. `App` conserva consulta, paginación,
+preferencias y navegación; el componente no duplica servicios ni estado.
+`design/library.css` comparte jerarquía de tarjetas, filas y editor. Los nombres
+accesibles y marcadores del driver se conservan al cambiar la composición.
+
+En reposo, `NovaWelcome` distingue explícitamente el recorrido previsto de los
+hechos del runtime. La entrada principal abre las acciones existentes; no elige
+una intención ni simula etapas. En móvil, el sidebar conserva el logo oficial
+y las acciones por icono mantienen nombre accesible y foco visible. La tipografía
+usa fuentes locales, sin nuevas dependencias ni solicitudes externas.
+
+### Control exclusivo de comandos
+
+`SameTabAgent` informa la posesión real del driver. `AgentControl` reserva los
+eventos humanos de ratón, teclado, escritura y pegado mientras exista esa
+posesión, incluyendo pausa/desconexión. No marca el workspace como `inert`
+ni deshabilita sus destinos: las acciones programáticas del driver deben seguir
+funcionando. El degradado azul tiene extremos oscuros y se disuelve hacia el
+centro; no tiene línea de borde, no captura punteros y no simula actividad.
+
+Se permiten las superficies de control del agente, el mapa de lectura y las
+aprobaciones existentes. El borrado requiere además coincidencia del runId;
+estos marcadores no conceden autorización al dominio. Tab conserva acceso a
+Detener y a las decisiones dentro del diálogo activo. `useAgentOverlayHost`
+mantiene el control de parada dentro de su focus scope accesible.
+
+Al esperar aprobación, `AgentControl` muestra una alerta con «Revisar y aprobar»
+y «No aprobar». La primera delega en el propietario existente de revisión de
+`NovaLive`: actualiza la propuesta y abre el diálogo antes de la confirmación.
+La segunda cancela mediante el propietario existente; no llama a approve/commit.
+Las revisiones de borrado se enfocan sólo al coincidir el runId. La alerta
+informativa lleva un marcador propio: `readUiState` la distingue de errores
+reales, que siguen interrumpiendo al driver. Ningún marcador concede permiso.
+
+```text
+al adquirir el driver: reservar comandos humanos y mostrar borde/mapa
+al recibir runtime: comprobar runId/secuencia y mostrar hechos públicos
+al recibir un comando humano: permitir sólo control/lectura/aprobación vinculada
+al recibir una acción programática: conservar validaciones y recibos del driver
+al detener: parar driver, liberar capability y descartar polls tardíos
+           solicitar cancelación mediante NovaLive, sin esperar para liberar la UI
+al observar fin: devolver comandos y retirar borde; conservar el resultado real
+```
+
+El guard es arbitraje de interacción, no seguridad ni prueba de éxito del modelo.
+No se simulan etapas al perder la conexión. El snapshot antiguo no puede cancelar
+una ejecución nueva. No hay cambios de API, almacenamiento o proveedor.
+
+Comprobaciones: pruebas de política/diálogo, cancelación con poll tardío,
+identidad de snapshot y runtime desconectado; navegador con Qwen3 real en una
+biblioteca aislada, escritura humana bloqueada, escritura del driver preservada,
+detención y aprobación humana. Consultar la evidencia de la consulta para los
+resultados y límites concretos.
+
 | Capa | Contiene | No contiene |
 | --- | --- | --- |
 | `components/ui` | Diálogo accesible, marca, iconos y feedback | Casos de uso, API o reglas de prompts |

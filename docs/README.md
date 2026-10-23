@@ -7,6 +7,7 @@ La versión de referencia es NOVA 1.0.0, aceptada por el usuario para el flujo p
 | Necesidad | Documento propietario |
 | --- | --- |
 | Arrancar la aplicación | [README raíz](../README.md) y [configuración de Core](../agents/nova-core/README.md) |
+| Abrir desde el escritorio | [Acceso directo, icono y perfil de arranque](development/DESKTOP.md) |
 | Usar biblioteca, variables y NOVA | [Guía de uso](COMO_USAR_QUICKPROMPT.md) |
 | Responsabilidades y dependencias | [Arquitectura](ARCHITECTURE.md) |
 | Crear formularios y componentes | [UI modular](development/UI_COMPONENTS.md) |

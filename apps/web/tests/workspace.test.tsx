@@ -37,6 +37,25 @@ function setup(openAgent = true) {
   if (openAgent) fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
   return calls;
 }
+it('opens the existing action workbench from the welcome without starting a task', async () => {
+  const calls = setup(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Trabajar con NOVA' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Crear prompt' })));
+  expect(screen.getAllByRole('region', { name: 'Panel de NOVA' })).toHaveLength(1);
+  expect(calls.filter(call => call.method !== 'GET')).toEqual([]);
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel de NOVA' }));
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
+});
+it('provides sidebar navigation and a footer without a conventional header', async () => {
+  setup(false);
+  const sidebar = screen.getByRole('complementary', { name: 'Barra lateral de QuickPrompt' });
+  expect(within(sidebar).getByRole('navigation', { name: 'Navegación principal' })).toBeTruthy();
+  expect(screen.queryByRole('banner')).toBeNull();
+  expect(screen.getByRole('contentinfo').textContent).toContain('Datos en tu equipo');
+  expect(screen.getByRole('button', { name: 'Abrir asistente NOVA' }).textContent).toBe('');
+  fireEvent.click(within(sidebar).getByRole('button', { name: 'Crear un prompt' }));
+  expect(await screen.findByTestId('prompt-editor')).toBeTruthy();
+});
 it('opens one action workbench, restores keyboard focus and never sends unclassified text', async () => {
   const calls = setup(false);
   const launcher = screen.getByRole('button', { name: 'Abrir asistente NOVA' });

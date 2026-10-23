@@ -1,5 +1,6 @@
 import { useApplicationServices } from '../components/ServiceContext';
-import { AppBrand } from '../components/ui/AppBrand';
+import { WorkspaceSidebar } from '../components/WorkspaceSidebar';
+import { WorkspaceFooter } from '../components/WorkspaceFooter';
 import { EmptyState, ErrorState, PromptSkeleton } from '../components/ui/Feedback';
 import { canvasMotion, stillCanvasMotion } from '../design/motion';
 import { AppIcon } from '../components/ui/Icon';
@@ -7,26 +8,29 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { lazy, Suspense } from 'react';
 import { AnimatePresence, domAnimation, LazyMotion, m, MotionConfig } from 'motion/react';
 import { useMotionPreference } from '../hooks/useMotionPreference';
-import { ChevronLeft, ChevronRight, Archive, CircleHelp, Clock3, FolderPlus, LayoutGrid, Library, List, Moon, Plus, Settings, Star, Sun } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Dialog } from '../components/ui/Dialog';
 import { InlinePromptEditor } from '../features/prompts/InlinePromptEditor';
 import { PromptFocus } from '../features/prompts/PromptFocus';
 import { PromptStream } from '../features/prompts/PromptStream';
+import { LibraryToolbar } from '../features/prompts/LibraryToolbar';
 import { usePromptDeletion } from '../features/prompts/usePromptDeletion';
 import { createEditorDraftSession } from '../features/prompts/EditorDraftSession';
 import { createEditorContextPreparer } from '../features/prompts/EditorContextPreparation';
 import { useLibrary, type Filter } from '../hooks/useLibrary';
 import { SameTabAgent } from '../features/nova/SameTabAgent';
-import { NovaLive } from '../features/nova/NovaLive';
+import { NovaLive, type NovaRuntimeSnapshot } from '../features/nova/NovaLive';
+import { AgentControl } from '../features/nova/AgentControl';
 import { QuickActions } from '../features/nova/QuickActions';
 import { AgentDock } from '../features/nova/AgentDock';
+import { NovaWelcome } from '../features/nova/NovaWelcome';
 import { AgentUiProvider } from '../features/nova/AgentUiContext';
 import { InterfaceSettings } from '../features/settings/InterfaceSettings';
 import { useInterfacePreferences } from '../hooks/useInterfacePreferences';
 import { EditorPreparation } from '../features/prompts/EditorPreparation';
 import { type PromptAction } from '../services/library';
 import { type PreparedDraft } from '../services/preparation';
-import { type LiveView, type LiveCommand } from '../services/live';
+import { terminalLive, type LiveView, type LiveCommand } from '../services/live';
 
 import { errorMessage, type Group, type Prompt, type PromptDraft } from '../services/api';
 
@@ -55,6 +59,9 @@ function ApplicationView() {
   useEffect(() => { if (liveRunId) try { sessionStorage.setItem('nova-live-run', liveRunId); } catch { /* Only a run ID is retained; no request or values. */ } }, [liveRunId]);
   useEffect(() => { const uncertain = (event: Event) => { const id = (event as CustomEvent<string>).detail; if (/^[0-9a-f-]{36}$/i.test(id)) setLiveRunId(id); }; window.addEventListener('nova-uncertain-start', uncertain); return () => window.removeEventListener('nova-uncertain-start', uncertain); }, []);
   const [sameTabActive, setSameTabActive] = useState(false);
+  const [runtimeSnapshot, setRuntimeSnapshot] = useState<NovaRuntimeSnapshot | null>(null);
+  const runtime = runtimeSnapshot?.view.run.runId === liveRunId ? runtimeSnapshot : null;
+  const controlling = sameTabActive || !!workerRunId && !!runtime && !terminalLive(runtime.view.run.status);
   const [approvedRunId, setApprovedRunId] = useState<string | null>(null);
   const [preferences, setPreferences] = useInterfacePreferences();
   const reducedMotion = useMotionPreference(preferences.decorativeMotion);
@@ -242,24 +249,21 @@ function ApplicationView() {
   const activePrompt = mode === 'focus' || mode === 'create' && editingId ? selected : null;
   return <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'}><LazyMotion features={domAnimation}><div className="app-shell">
     <a className="skip-link" href="#main">Ir al contenido</a>
-    <header className="app-header"><AppBrand onClick={() => mode === 'create' ? setDiscardOpen(true) : discover()} />
-      <div className="header-actions"><span className="local-indicator"><i />Local y privado</span><button className="icon-button" disabled={!!executionRunId} onClick={() => setHistoryOpen(true)} aria-label="Historial de resultados" title="Historial de resultados"><AppIcon glyph={Clock3} size={20} aria-hidden="true" /></button><button className="icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activar tema claro' : 'Activar tema oscuro'}>{theme === 'dark' ? <AppIcon glyph={Sun} size={20} aria-hidden="true"  /> : <AppIcon glyph={Moon} size={20} aria-hidden="true"  />}</button><button className="icon-button" onClick={() => setDataOpen(true)} aria-label="Configuración" title="Configuración"><AppIcon glyph={Settings} size={20} aria-hidden="true"  /></button><button className="icon-button" onClick={() => setHelpOpen(true)} aria-label="Ayuda"><AppIcon glyph={CircleHelp} size={20} aria-hidden="true"  /></button></div>
-    </header>
+    <WorkspaceSidebar mode={mode} theme={theme} busy={!!executionRunId} onHome={() => mode === 'create' ? setDiscardOpen(true) : discover()} onCreate={create} onHistory={() => setHistoryOpen(true)} onTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} onSettings={() => setDataOpen(true)} onHelp={() => setHelpOpen(true)} />
     <div className={`toast-region${mode === 'focus' || providerOpen || dataOpen || groupsOpen ? ' sr-only' : ''}`} role="status" aria-live="polite" aria-atomic="true">{toast && <div className="toast">{toast}</div>}</div>
     <main id="main" tabIndex={-1}>
       <SameTabAgent runId={workerRunId ? null : liveRunId} onActive={setSameTabActive} speed={agentSpeed} onNotice={setAgentNotice} />
-      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }} />
-      {!workerRunId && <AgentDock hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} sourceValues={activePrompt ? valuesByPrompt[activePrompt.id] : undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
+      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} centralControl={controlling} onRuntimeChange={setRuntimeSnapshot} runtimeInWorkspace onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }} />
+      <AgentControl runId={controlling ? liveRunId : null} runtime={runtime} />
+      {(mode === 'discover' || controlling) && <NovaWelcome runtime={runtime} home={mode === 'discover'} controlling={controlling} controlLost={!!runtime && runtime.view.run.mode === 'SAME_TAB' && !terminalLive(runtime.view.run.status) && !visibleSession.surfaceCapability(runtime.view.run.runId)} onOpen={() => window.dispatchEvent(new Event('nova-open-assistant'))} onHelp={() => setHelpOpen(true)} />}
+      {!workerRunId && <AgentDock suspended={controlling} hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} sourceValues={activePrompt ? valuesByPrompt[activePrompt.id] : undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
         <p className="search-hint" data-testid="nova-action-workbench">Elige la acción; NOVA te ayuda con el contenido, los datos y la búsqueda.</p>
       </AgentDock>}
       <AnimatePresence mode="wait" initial={false}><m.div key={mode} variants={reducedMotion ? stillCanvasMotion : canvasMotion} initial="hidden" animate="visible" exit="exit">
         {mode === 'discover' && <>
-          <section className="discovery" aria-labelledby="discover-heading"><h1 id="discover-heading">Tus ideas.<br /><span>Listas para actuar.</span></h1><p className="hero-description">Elige un prompt, completa tus datos y úsalo con tu IA.<br />O cuéntale a NOVA qué instrucción necesitas.</p><button className="text-button learning-entry" onClick={() => setHelpOpen(true)}><AppIcon glyph={CircleHelp} size={20} aria-hidden="true"  />Empieza aquí: guía y videos</button>
-
-          </section>
           <section data-nova-surface="library" className="library-section" aria-labelledby="library-heading" aria-busy={library.loading}>
-            <div className="section-heading"><h2 id="library-heading"><AppIcon glyph={Library} size={20} aria-hidden="true"  />Tu biblioteca <span className="count">{library.total}</span></h2><div className="library-view-tools"><div className="view-switch" role="group" aria-label="Vista de la biblioteca"><button type="button" className="icon-button" aria-label="Ver tarjetas" title="Ver tarjetas" aria-pressed={preferences.view === 'cards'} onClick={() => setPreferences(value => ({ ...value, view: 'cards' }))}><AppIcon glyph={LayoutGrid} size={20} aria-hidden="true"  /></button><button type="button" className="icon-button" aria-label="Ver filas" title="Ver filas" aria-pressed={preferences.view === 'rows'} onClick={() => setPreferences(value => ({ ...value, view: 'rows' }))}><AppIcon glyph={List} size={20} aria-hidden="true"  /></button></div><button data-nova-control="prompt.new" className="secondary" onClick={create}><AppIcon glyph={Plus} size={20} aria-hidden="true"  />Nuevo prompt</button></div></div>
-            <label className="library-search">Buscar en la biblioteca<input id="library-search" value={search} maxLength={200} onChange={event => { setSearch(event.target.value); setPage(0); }} /></label>{!library.loading && <span data-testid="library-ready" className="sr-only">Biblioteca actualizada</span>}<div className="library-filters"><div className="filter-tabs" role="group" aria-label="Filtrar biblioteca">{([['all', 'Todos', Library], ['favorites', 'Favoritos', Star], ['recent', 'Recientes', Clock3], ['archived', 'Archivo', Archive]] as const).map(([value, label, Icon]) => <button key={value} aria-pressed={filter === value} onClick={() => { setFilter(value); setPage(0); }}><AppIcon glyph={Icon} size={16} aria-hidden="true"  />{label}</button>)}</div><div className="collection-filter"><label className="group-filter"><span className="sr-only">Colección</span><select aria-label="Colección" value={groupId} onChange={e => { setGroupId(e.target.value); setPage(0); }}><option value="">Todas las colecciones</option>{groups.map(({ group }) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label><button className="icon-button" aria-label="Gestionar colecciones" onClick={() => setGroupsOpen(true)}><AppIcon glyph={FolderPlus} size={20} aria-hidden="true"  /></button></div></div>
+            <LibraryToolbar total={library.total} search={search} filter={filter} groupId={groupId} groups={groups} view={preferences.view} onSearch={value => { setSearch(value); setPage(0); }} onFilter={value => { setFilter(value); setPage(0); }} onGroup={value => { setGroupId(value); setPage(0); }} onView={view => setPreferences(value => ({ ...value, view }))} onCreate={create} onGroups={() => setGroupsOpen(true)} />
+            {!library.loading && <span data-testid="library-ready" className="sr-only">Biblioteca actualizada</span>}
             {library.error ? <ErrorState title="No pudimos abrir la biblioteca." message={library.error}><button className="secondary" onClick={() => setVersion(v => v + 1)}>Reintentar</button></ErrorState> : library.loading ? <div className="loading-state"><p role="status">Buscando tus prompts…</p>{showSkeleton && <PromptSkeleton />}</div> : library.items.length ? <PromptStream items={library.items} open={open} view={preferences.view} busy={saving || !!executionRunId} onFavorite={prompt => { void libraryAction(prompt, 'favorite'); }} onEdit={prompt => { void editFromLibrary(prompt); }} onDuplicate={prompt => { void libraryAction(prompt, 'duplicate'); }} onDelete={prompt => { void quickRemove(prompt).catch(error => setError(errorMessage(error))); }} /> : <EmptyState title={search ? 'Aquí empieza una nueva idea.' : filter === 'all' && !groupId ? 'Tu primera instrucción te espera.' : 'Todavía no hay prompts aquí.'}><p className="muted">{search ? 'No hay coincidencias en tu biblioteca. Prueba otras palabras o crea un prompt.' : 'Guarda una instrucción y reutilízala cuando la necesites.'}</p><button className="secondary" onClick={create}><AppIcon glyph={Plus} size={20} aria-hidden="true"  />Crear prompt</button></EmptyState>}
             {library.total > 12 && <nav className="pagination" aria-label="Páginas"><button className="icon-button" disabled={page === 0 || library.loading} onClick={() => setPage(p => p - 1)} aria-label="Página anterior"><AppIcon glyph={ChevronLeft} size={20} aria-hidden="true"  /></button><span>Página {page + 1} de {Math.ceil(library.total / 12)}</span><button className="icon-button" disabled={(page + 1) * 12 >= library.total || library.loading} onClick={() => setPage(p => p + 1)} aria-label="Página siguiente"><AppIcon glyph={ChevronRight} size={20} aria-hidden="true"  /></button></nav>}
           </section>
@@ -270,7 +274,7 @@ function ApplicationView() {
       {error && mode !== 'create' && <p className="error global-error" role="alert">{error}</p>}
       {editorUse && <Suspense fallback={<p role="status">Preparando destinos…</p>}><PreparedUse draft={editorUse} onClose={() => setEditorUse(null)} /></Suspense>}
     </main>
-    <footer className="app-footer"><span>Un espacio para pensar mejor.</span><span>HECHO PARA REUTILIZAR</span></footer>
+    <WorkspaceFooter onHelp={() => setHelpOpen(true)} />
     {providerOpen && selected && <Suspense fallback={<p className="loading-state" role="status">Preparando destinos…</p>}><ProviderPicker prompt={selected} values={valuesByPrompt[selected.id] ?? noValues} onClose={() => setProviderOpen(false)} notify={setToast} onUsed={() => setVersion(v => v + 1)} /></Suspense>}
     {groupsOpen && <Suspense fallback={null}><GroupSelector prompt={mode === 'focus' ? selected ?? undefined : undefined} onClose={() => setGroupsOpen(false)} onUpdated={() => { setVersion(v => v + 1); setGroupId(''); }} /></Suspense>}
     {versionsOpen && mode === 'focus' && selected && <Suspense fallback={<p role="status">Abriendo versiones…</p>}><PromptVersions key={selected.id} prompt={selected} onClose={() => setVersionsOpen(false)} onCurrentChanged={prompt => { setSelected(current => current?.id === prompt.id ? prompt : current); setVersion(value => value + 1); }} onRestored={prompt => { setSelected(current => current?.id === prompt.id ? prompt : current); setVersion(value => value + 1); setVersionsOpen(false); setToast('Versión restaurada. El historial anterior se conserva.'); }} /></Suspense>}

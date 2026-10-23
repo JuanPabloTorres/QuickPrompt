@@ -2,18 +2,22 @@
 
 :root {
   color-scheme: dark;
-  --background: #0c1524;
-  --surface: #162639;
-  --surface-raised: #203348;
-  --surface-hover: #263d52;
-  --foreground: #ecf8f7;
-  --muted: #a9beca;
+  --background: #06141B;
+  --surface: #11212D;
+  --surface-active: #253745;
+  --border: #4A5C6A;
+  --text-secondary: #9BA8AB;
+  --text-primary: #CCD0CF;
+  --surface-raised: var(--surface-active);
+  --surface-hover: var(--surface-active);
+  --foreground: var(--text-primary);
+  --muted: var(--text-secondary);
   --accent: #5de2d6;
   --accent-hover: #85eadd;
   --accent-foreground: #0c2527;
   --intelligence: #aeaaff;
   --secondary-accent: #b7edba;
-  --line: #304559;
+  --line: var(--border);
   --input-line: #7893a8;
   --border-active: var(--accent);
   --focus-ring: var(--accent);
@@ -32,6 +36,7 @@
   --error-soft: color-mix(in srgb, var(--error) var(--state-tint), var(--surface));
   --selection: color-mix(in srgb, var(--accent) 25%, var(--surface));
   --font-body: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-code: "Cascadia Code", Consolas, monospace;
   --text-hero: clamp(1.75rem, 2.7vw, 2.5rem);
   --text-page: clamp(1.75rem, 3vw, 2.75rem);
@@ -56,6 +61,10 @@
   color-scheme: light;
   --background: #f6f8f7;
   --surface: #ffffff;
+  --surface-active: #edf1f5;
+  --border: #d6dfe4;
+  --text-primary: #151f2b;
+  --text-secondary: #58717b;
   --surface-raised: #edf1f5;
   --surface-hover: #edf1f5;
   --foreground: #151f2b;

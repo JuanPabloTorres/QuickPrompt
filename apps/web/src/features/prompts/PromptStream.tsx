@@ -12,7 +12,7 @@ export function PromptStream({ items, open, view = 'rows', onFavorite, onEdit, o
         <span data-testid={`identity-${prompt.id}`} hidden />
         <span className="prompt-file-icon"><AppIcon glyph={FileText} size={20} aria-hidden="true"  /></span>
         <span className="prompt-summary"><span className="prompt-title">{prompt.title}{prompt.isFavorite && <AppIcon glyph={Star} className="favorite-mark" size={16} label="Favorito"  />}</span>
-          <span className="prompt-description" id={`prompt-description-${prompt.id}`}>{prompt.description || prompt.templateText}</span><span className="prompt-meta"><span><AppIcon glyph={Braces} size={16} aria-hidden="true"  />{prompt.variableNames.length ? `${prompt.variableNames.length} variables` : 'Sin variables'}</span><span>v{prompt.revision}</span></span></span>
+          <span className="prompt-description" id={`prompt-description-${prompt.id}`}>{prompt.description || prompt.templateText}</span><span className="prompt-meta"><span><AppIcon glyph={Braces} size={16} aria-hidden="true"  />{prompt.variableNames.length ? `${prompt.variableNames.length} variables` : 'Sin variables'}</span><span className="prompt-version">v{prompt.revision}</span></span></span>
         <AppIcon glyph={ArrowUpRight} className="stream-arrow" size={20} aria-hidden="true"  />
       </button>
       <div className="prompt-entry-actions" aria-label={`Acciones de ${prompt.title}`}>

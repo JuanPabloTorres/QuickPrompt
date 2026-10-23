@@ -16,11 +16,13 @@ Desde la raíz, con las dependencias existentes:
 
 Abre la URL indicada por el script, normalmente `http://127.0.0.1:5190`. `-Port` y `-DataPath` permiten una instancia explícita. La base privada y los perfiles del navegador no pertenecen al repositorio. La biblioteca manual funciona sin inferencia; las operaciones IA requieren su proveedor configurado y fallan de forma explícita si falta.
 
+Para abrir una entrega con doble clic, instalar el [acceso de escritorio con icono](docs/development/DESKTOP.md). Reutiliza una instancia compatible o inicia la entrega configurada, conservando su biblioteca.
+
 ## Usar
 
 1. Elige un prompt o crea uno con título y contenido. Los campos se escriben como `<nombre>`.
 2. Completa los valores y revisa la vista previa antes de copiar o ejecutar.
-3. En NOVA elige Crear, Actualizar, Buscar por significado u otra acción disponible.
+3. Abre «Trabajar con NOVA» en la portada o el acceso persistente del agente y elige Crear, Actualizar, Buscar por significado u otra acción disponible.
 4. Revisa el cambio antes de guardar una copia, una versión o eliminar.
 
 [Guía de uso](docs/COMO_USAR_QUICKPROMPT.md) · [Documentación vigente](docs/README.md) · [Desarrollo y pruebas](docs/development/DEVELOPMENT.md).

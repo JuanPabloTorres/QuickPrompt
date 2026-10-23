@@ -7,6 +7,7 @@ import { NovaLogo } from '../../design/NovaLogo';
 import { Check, ChevronDown, CircleAlert, Pause, Play, Square, X } from 'lucide-react';
 import { ActivityLog } from './ActivityLog';
 import { AgentRuntimePanel } from './AgentRuntimePanel';
+import { useAgentOverlayHost } from './useAgentOverlayHost';
 import '../../design/runtime.css';
 import { getActivity, operationLabels, stageLabels, subscribeActivity } from './activity';
 import { Dialog } from '../../components/ui/Dialog';
@@ -15,26 +16,15 @@ import { liveEventSchema, terminalLive, type LiveEvent, type LiveView, type Live
 
 const noActivitySubscription = () => () => {};
 
-// Keep activity inside an open dialog's accessible focus scope, anchored to the viewport.
-function useActivityHost() {
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    const update = () => setHost(previous => {
-      const dialogs = document.querySelectorAll<HTMLElement>('[data-nova-activity-host]');
-      const next = dialogs.item(dialogs.length - 1) ?? document.querySelector<HTMLElement>('[data-nova-dock-live-host]') ?? document.body;
-      return previous === next ? previous : next;
-    });
-    update();
-    const observer = new MutationObserver(update); observer.observe(document.body, { childList: true });
-    return () => observer.disconnect();
-  }, []);
-  return host;
-}
+export type NovaRuntimeSnapshot = { view: LiveView; disconnected: boolean; stop: () => Promise<void>; review?: () => Promise<void>; busy?: boolean };
 
-export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSource, onApprovalChange, notice = '' }: {
+export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSource, onApprovalChange, onRuntimeChange, runtimeInWorkspace = false, centralControl = false, notice = '' }: {
   runId: string | null; worker: boolean; onReview: (view: LiveView) => void;
   onPrepareReview?: () => Promise<void>; onChooseSource?: (source: { id: string; revision: number; title: string }) => Promise<void>;
   onApprovalChange?: (approvedRunId: string | null) => void;
+  onRuntimeChange?: (snapshot: NovaRuntimeSnapshot | null) => void;
+  runtimeInWorkspace?: boolean;
+  centralControl?: boolean;
   notice?: string;
 }) {
   const { live, visibleSession } = useApplicationServices();
@@ -47,7 +37,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
     onApprovalChange?.(worker && view?.run.runId === runId && view.run.approval === 'APPROVED' && !terminalLive(view.run.status) ? runId : null);
   }, [runId, worker, view?.run.approval, view?.run.status, onApprovalChange]);
   const [assistantVisible, setAssistantVisible] = useState(false);
-  const host = useActivityHost(), panelId = useId();
+  const host = useAgentOverlayHost(true), panelId = useId();
   const detailsVisible = expanded && (!host?.hasAttribute('data-nova-dock-live-host') || assistantVisible);
   useEffect(() => {
     const visibility = (event: Event) => {
@@ -161,6 +151,33 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
     try { const controlled = await live.control(controlledId, action); if (currentRun.current !== controlledId) return; if (action === 'resume' && !controlled.pauseRequested && !terminalLive(controlled.status)) window.dispatchEvent(new CustomEvent('nova-ui-control', { detail: 'resume' })); const next = await live.get(controlledId); if (currentRun.current === controlledId && next.run.runId === controlledId) setView(previous => previous?.run.runId === controlledId && previous.run.sequence > next.run.sequence ? previous : next); }
     catch (error) { if (currentRun.current === controlledId) setError(errorMessage(error)); } finally { if (currentRun.current === controlledId) setBusy(false); }
   }
+  const controlRef = useRef(control); controlRef.current = control;
+  async function openApprovalReview() {
+    if (busy || !runId) return;
+    const reviewedId = runId; setBusy(true); setError('');
+    try {
+      await onPrepareReview?.();
+      const next = await live.get(reviewedId);
+      if (currentRun.current !== reviewedId) return;
+      setView(next); setExpanded(false); setReview(true);
+    } catch (error) { if (currentRun.current === reviewedId) setError(errorMessage(error)); }
+    finally { if (currentRun.current === reviewedId) setBusy(false); }
+  }
+  const reviewRef = useRef(openApprovalReview); reviewRef.current = openApprovalReview;
+  useEffect(() => {
+    const stop = (event: Event) => { if (runId && (event as CustomEvent<string>).detail === runId) void controlRef.current('cancel'); };
+    window.addEventListener('nova-stop-request', stop);
+    return () => window.removeEventListener('nova-stop-request', stop);
+  }, [runId]);
+  useEffect(() => {
+    if (!runId || view?.run.runId !== runId) { onRuntimeChange?.(null); return; }
+    const publishedId = runId;
+    onRuntimeChange?.({ view, disconnected: !!connection, busy, review: view.proposal && view.run.status === 'AWAITING_APPROVAL' ? async () => {
+      if (currentRun.current === publishedId) await reviewRef.current();
+    } : undefined, stop: async () => {
+      if (currentRun.current === publishedId) await controlRef.current('cancel');
+    } });
+  }, [runId, view, connection, busy, onRuntimeChange]);
   async function approve() {
     if (!runId || !view?.proposal) return; const approvedId = runId; setBusy(true); setError('');
     try { const p = view.proposal; await live.approve(approvedId, { approvalId: p.id, hash: p.hash, revision: p.revision, confirmed: true }); if (currentRun.current !== approvedId) return; setReview(false); const next = await live.get(approvedId); if (currentRun.current === approvedId && next.run.runId === approvedId) setView(previous => previous?.run.runId === approvedId && previous.run.sequence > next.run.sequence ? previous : next); }
@@ -175,17 +192,6 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   const awaitingReview = run.status === 'AWAITING_APPROVAL';
   const savingCopy = view.proposal?.promptId == null;
   const paused = run.pauseRequested || run.status === 'PAUSED';
-  const openApprovalReview = async () => {
-    if (busy || !runId) return;
-    const reviewedId = runId; setBusy(true); setError('');
-    try {
-      // Every review entry uses the editor's current draft, never an older proposal.
-      await onPrepareReview?.();
-      const next = await live.get(reviewedId);
-      if (currentRun.current !== reviewedId) return;
-      setView(next); setExpanded(false); setReview(true);
-    } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
-  };
   const reviewAction = active && view.proposal && <button type="button" className="primary" disabled={busy || paused || run.approval !== 'PENDING'} onClick={openApprovalReview}>{savingCopy ? 'Revisar y guardar copia' : 'Revisar y guardar versión'}</button>;
   const operation = recent?.toolName ? operationLabels[recent.toolName] : undefined;
   const outcomes: Record<string, string> = { COMPLETED: 'Tarea completada y comprobada', CANCELLED: 'Ejecución detenida', FAILED: 'No se pudo completar', BLOCKED: 'Necesito tu atención' };
@@ -209,7 +215,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   return <>
     {startToast}
     {providerFailure}
-    {renderHost && createPortal(<aside className="nova-live" ref={floating} data-testid="nova-live" data-run-id={runId} data-status={run.status} data-approval={run.approval} data-worker={worker} onKeyDown={event => {
+    {renderHost && createPortal(<aside className="nova-live" data-nova-user-control="true" ref={floating} data-testid="nova-live" data-run-id={runId} data-status={run.status} data-approval={run.approval} data-worker={worker} onKeyDown={event => {
       if (event.key === 'Escape' && expanded) { event.preventDefault(); event.stopPropagation(); closeActivity(); }
     }}>
       {detailsVisible && <section className="nova-live-popover" id={panelId} aria-labelledby="nova-live-heading">
@@ -218,18 +224,18 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
         {active && (notice || connection) && <p className="notice">{notice || connection}</p>}
         {view.question && <p className="notice">{view.question}</p>}
         {run.status === 'BLOCKED' && onChooseSource && !!view.sourceChoices?.length && <div role="group" aria-label="Elige un prompt para abrir"><p>Elige el prompt que quieres abrir. No se modificará ni ejecutará.</p>{view.sourceChoices.map(source => <button key={source.id} className="secondary candidate-choice" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { await onChooseSource(source); } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); } }}>{source.title}</button>)}</div>}
-        <AgentRuntimePanel view={view} status={status} disconnected={!!connection} controls={runtimeControls} />
+        {runtimeInWorkspace ? runtimeControls : <AgentRuntimePanel view={view} status={status} disconnected={!!connection} controls={runtimeControls} />}
         <ActivityLog view={view} events={events} actions={actions} />
 
         {run.mode === 'BROWSER' && view.observation?.promptId && <button className="text-button" onClick={() => onReview(view)}>Ver el resultado</button>}
         {error && <p className="error" role="alert">No se pudo completar esa acción. Revisa el borrador y vuelve a intentarlo.</p>}
       </section>}
-      <button ref={trigger} type="button" className="nova-live-trigger" aria-label={active ? 'Actividad de NOVA' : 'Última actividad de NOVA'} aria-expanded={detailsVisible} aria-controls={detailsVisible ? panelId : undefined} onClick={() => { if (!assistantVisible && host?.hasAttribute('data-nova-dock-live-host')) window.dispatchEvent(new CustomEvent('nova-open-assistant', { detail: { focus: false } })); setExpanded(!detailsVisible); }}>
+      {!centralControl && <button ref={trigger} type="button" className="nova-live-trigger" aria-label={active ? 'Actividad de NOVA' : 'Última actividad de NOVA'} aria-expanded={detailsVisible} aria-controls={detailsVisible ? panelId : undefined} onClick={() => { if (!assistantVisible && host?.hasAttribute('data-nova-dock-live-host')) window.dispatchEvent(new CustomEvent('nova-open-assistant', { detail: { focus: false } })); setExpanded(!detailsVisible); }}>
         {!active ? (run.status === 'COMPLETED' ? <AppIcon glyph={Check} size={20} aria-hidden="true"  /> : run.status === 'CANCELLED' ? <AppIcon glyph={Square} size={20} aria-hidden="true"  /> : <AppIcon glyph={CircleAlert} size={20} aria-hidden="true"  />) : paused ? <AppIcon glyph={Pause} size={20} aria-hidden="true"  /> : awaitingReview ? <AppIcon glyph={Check} size={20} aria-hidden="true"  /> : <NovaLogo state={visual} />}
         <span><strong>NOVA</strong><span>{status}</span></span><AppIcon glyph={ChevronDown} size={16} className={expanded ? 'nova-activity-expanded' : ''} aria-hidden="true"  />
-      </button>
+      </button>}
       <span className="sr-only" role="status" aria-atomic="true">NOVA: {status}</span>
-      {active && !detailsVisible && <div className="nova-runtime-quick">{awaitingReview && reviewAction}<button type="button" className="secondary" disabled={busy} onClick={() => void control('cancel')}><AppIcon glyph={Square} size={16} aria-hidden="true" />Detener NOVA</button></div>}
+      {active && !detailsVisible && !centralControl && <div className="nova-runtime-quick">{awaitingReview && reviewAction}<button type="button" className="secondary" disabled={busy} onClick={() => void control('cancel')}><AppIcon glyph={Square} size={16} aria-hidden="true" />Detener NOVA</button></div>}
     </aside>, renderHost)}
     <Dialog className="nova-approval-dialog" open={review && !!view.proposal} onOpenChange={setReview} title={savingCopy ? 'Guardar copia separada' : 'Confirmar nueva versión'} description={savingCopy ? 'Se creará un prompt separado. El original conservará su contenido y versión.' : 'Se guardará una nueva versión del mismo prompt. Se conservarán las versiones anteriores.'}>
       {view.proposal && <div data-nova-approval="true"><p><strong>{view.proposal.draft.title}</strong>{view.proposal.revision ? ` · versión ${view.proposal.revision}` : ''}</p>{view.proposal.originalText && <details><summary>Ver original</summary><pre>{view.proposal.originalText}</pre></details>}<h3>Propuesta que vas a guardar</h3><pre className="prepared-text">{view.proposal.draft.templateText}</pre><div className="dialog-actions"><button className="primary" disabled={busy || paused || run.approval !== 'PENDING'} onClick={() => void approve()}>{savingCopy ? 'Confirmar guardado de esta copia' : 'Confirmar guardado de esta versión'}</button><button className="secondary" disabled={busy} onClick={() => setReview(false)}>Seguir revisando</button><button className="text-button" disabled={busy} onClick={() => { setReview(false); void control('cancel'); }}>Rechazar propuesta</button></div></div>}

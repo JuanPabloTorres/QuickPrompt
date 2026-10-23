@@ -6,17 +6,20 @@ import { NovaLogo, type NovaVisualState } from '../../design/NovaLogo';
 import { canvasMotion, panelMotion, stillCanvasMotion, stillPanelMotion } from '../../design/motion';
 import { liveLabels, terminalLive } from '../../services/live';
 
-export function AgentDock({ children, actions, context, hasActivity = false }: { children: ReactNode; actions: ReactNode; context: string; hasActivity?: boolean }) {
+export function AgentDock({ children, actions, context, hasActivity = false, suspended = false }: { children: ReactNode; actions: ReactNode; context: string; hasActivity?: boolean; suspended?: boolean }) {
   const reduced = useReducedMotionConfig();
   const [expanded, setExpanded] = useState(false);
   const [status, setStatus] = useState('');
   const [visual, setVisual] = useState<NovaVisualState>('idle');
   const root = useRef<HTMLElement>(null);
+  const suspendedRef = useRef(suspended); suspendedRef.current = suspended;
+  useEffect(() => { if (suspended) { focusRequested.current = false; setExpanded(false); } }, [suspended]);
   const trigger = useRef<HTMLButtonElement>(null), focusRequested = useRef(false), open = useRef(expanded);
   open.current = expanded;
   const panelId = useId(), statusId = useId();
   useEffect(() => {
     const reveal = (event: Event) => {
+      if (suspendedRef.current) return;
       const focus = (event as CustomEvent<{ focus?: boolean }>).detail?.focus !== false;
       if (open.current && focus) (root.current?.querySelector<HTMLTextAreaElement>('.nova-input textarea') ?? root.current?.querySelector<HTMLButtonElement>('.quick-action'))?.focus();
       else { focusRequested.current = focus; setExpanded(true); }
@@ -71,7 +74,7 @@ export function AgentDock({ children, actions, context, hasActivity = false }: {
     const observer = new ResizeObserver(resize); observer.observe(node); resize();
     return () => { observer.disconnect(); if (previous) style.setProperty('--nova-dock-height', previous); else style.removeProperty('--nova-dock-height'); };
   }, []);
-  return <m.aside ref={root} className="nova-dock" data-testid="nova-dock" data-expanded={expanded} data-nova-command="true" aria-label="Asistente NOVA" variants={reduced ? stillCanvasMotion : canvasMotion} initial="hidden" animate="visible" onKeyDown={event => {
+  return <m.aside hidden={suspended} ref={root} className="nova-dock" data-testid="nova-dock" data-expanded={expanded} data-nova-command="true" aria-label="Asistente NOVA" variants={reduced ? stillCanvasMotion : canvasMotion} initial="hidden" animate="visible" onKeyDown={event => {
     if (event.key !== 'Escape' || event.defaultPrevented || !expanded) return;
     if ((event.target as HTMLElement).closest('[role="dialog"]') || root.current?.querySelector('.quick-more-trigger[aria-expanded="true"]')) return;
     if (root.current?.querySelector('.nova-live-trigger[aria-expanded="true"]')) {
