@@ -2,13 +2,14 @@ import { downloadPreparedText } from '../../services/textExport';
 import { useApplicationServices } from '../../components/ServiceContext';
 import { AppIcon } from '../../components/ui/Icon';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, Archive, Copy, Folder, History, Pencil, Share2, Star, Trash2, Undo2 } from 'lucide-react';
+import { Braces, Check, Copy, FileText } from 'lucide-react';
 import { errorMessage, type Prompt } from '../../services/api';
 import { type PromptAction } from '../../services/library';
 import { useBoundOperation } from '../../services/useBoundOperation';
 import { ClipboardReceipt } from '../../components/ClipboardReceipt';
 import { TemplateCopyPreview } from './TemplateCopyPreview';
 import { PromptVariableFields } from './PromptVariableFields';
+import { PromptDetailHeader } from './PromptDetailHeader';
 
 export function PromptFocus({ prompt, values, onValues, onBack, onEdit, onAction, onDelete, onUsed, notify, onUse, assistance, onGroups, onVersions, onShare, feedback }: {
   prompt: Prompt; values: Record<string, string>; onValues: (values: Record<string, string>) => void;
@@ -69,30 +70,20 @@ export function PromptFocus({ prompt, values, onValues, onBack, onEdit, onAction
     } finally { operation.finish(controller); }
   }
   return <section className="focus-space" aria-labelledby="focus-heading" data-testid="prompt-focus" data-prompt-id={prompt.id} data-revision={prompt.revision} data-template-text={prompt.templateText}>
-    <div className="focus-top"><button className="text-button" onClick={onBack}><AppIcon glyph={ArrowLeft} size={20} aria-hidden="true"  />Biblioteca</button><span className="eyebrow">VERSIÓN {prompt.revision.toString().padStart(2, '0')}</span></div>
-    <p className="eyebrow">{prompt.isArchived ? 'EN EL ARCHIVO' : 'UN PROMPT, INFINITAS POSIBILIDADES'}</p>
-    <h1 id="focus-heading" data-testid="focus-title" ref={titleRef} tabIndex={-1}>{prompt.title}</h1>
-    {prompt.description && <p className="focus-description muted">{prompt.description}</p>}
-    <div className="context-actions">
-      <button className="text-button" onClick={() => onAction('favorite')} aria-pressed={prompt.isFavorite}><AppIcon glyph={Star} size={20} aria-hidden="true"  />{prompt.isFavorite ? 'Favorito' : 'Favorito'}</button>
-      <button data-nova-control="prompt.edit" className="text-button" onClick={onEdit}><AppIcon glyph={Pencil} size={20} aria-hidden="true"  />Editar</button>
-      {onGroups && <button className="text-button" onClick={onGroups}><AppIcon glyph={Folder} size={20} aria-hidden="true"  />Colecciones</button>}
-      {onVersions && <button className="text-button" onClick={onVersions}><AppIcon glyph={History} size={20} aria-hidden="true" />Versiones</button>}
-      {onShare && <button className="text-button" onClick={onShare}><AppIcon glyph={Share2} size={20} aria-hidden="true" />Compartir plantilla</button>}
-      <button className="text-button" onClick={() => onAction('duplicate')}><AppIcon glyph={Copy} size={20} aria-hidden="true"  />Duplicar</button>
-      <button className="text-button" onClick={() => onAction(prompt.isArchived ? 'restore' : 'archive')}>{prompt.isArchived ? <AppIcon glyph={Undo2} size={20} aria-hidden="true"  /> : <AppIcon glyph={Archive} size={20} aria-hidden="true"  />}{prompt.isArchived ? 'Recuperar' : 'Archivar'}</button>
-      <button className="icon-button danger" onClick={onDelete} aria-label="Eliminar prompt"><AppIcon glyph={Trash2} size={20} aria-hidden="true"  /></button>
-    </div>
+    <PromptDetailHeader prompt={prompt} titleRef={titleRef} onBack={onBack} onEdit={onEdit} onAction={onAction} onDelete={onDelete} onGroups={onGroups} onVersions={onVersions} onShare={onShare} />
     {!prompt.isArchived && assistance}
-    {prompt.isArchived ? <p className="notice">Recupera este prompt para volver a utilizarlo.</p> : <>
-      {prompt.variableNames.length > 0 && <div className="variable-composer"><div className="section-heading"><h2>Dale tu contexto</h2><span className="muted">{prompt.variableNames.length} variables</span></div>
+    {prompt.isArchived ? <p className="notice detail-archived"><AppIcon glyph={FileText} size={20} />Recupera este prompt para volver a utilizarlo.</p> : <div className="detail-workspace">
+      <div className="detail-context-column"><section className="variable-composer detail-context" aria-labelledby="context-heading"><div className="detail-section-heading"><span className="detail-step" aria-hidden="true">01</span><div><p className="eyebrow">PERSONALIZA ESTE USO</p><h2 id="context-heading">{prompt.variableNames.length ? 'Dale tu contexto' : 'Todo listo para empezar'}</h2></div><AppIcon glyph={Braces} size={20} /></div>
+        <p className="detail-section-description">{prompt.variableNames.length ? 'Completa los datos de esta ocasión. La instrucción guardada conserva sus marcadores.' : 'Esta instrucción no necesita variables. Puedes copiarla o elegir dónde utilizarla.'}</p>
         <div className="variable-grid"><PromptVariableFields names={prompt.variableNames} values={values} defaults={prompt.defaults} idPrefix="variable" workspace placeholder={name => `Completa ${name}`} onValueChange={(name, value) => onValues({ ...values, [name]: value })} /></div>
-      </div>}
-      <section className="prompt-preview" aria-labelledby="preview-heading"><h2 id="preview-heading">{prompt.variableNames.length ? 'Vista previa del resultado' : 'Tu instrucción'}</h2><pre data-testid="compiled-preview">{preview || prompt.templateText}</pre>{preview && <span data-testid="compile-ready" className="sr-only">Listo para utilizar</span>}{preview && <button type="button" className="text-button" disabled={busy} title="UTF-8 sin BOM, saltos de línea LF" onClick={() => { try { downloadPreparedText(preview); } catch (error) { setError(errorMessage(error)); } }}>Descargar texto (.txt)</button>}</section>
+      </section>
+      </div>
+      <div className="detail-output-column"><section className="prompt-preview detail-output" aria-labelledby="preview-heading"><div className="detail-section-heading"><span className="detail-step" aria-hidden="true">02</span><div><p className="eyebrow">REVISA Y UTILIZA</p><h2 id="preview-heading">{prompt.variableNames.length ? 'Vista previa del resultado' : 'Tu instrucción'}</h2></div></div><div className="detail-preview-status" data-ready={!!preview}>{preview ? <><AppIcon glyph={Check} size={16} />{prompt.variableNames.length ? 'Texto preparado con tus datos' : 'Texto preparado para usar'}</> : hasPending ? 'Completa el contexto para preparar el texto' : 'Preparando vista previa…'}</div><pre data-testid="compiled-preview">{preview || prompt.templateText}</pre>{preview && <span data-testid="compile-ready" className="sr-only">Listo para utilizar</span>}{preview && <button type="button" className="text-button detail-download" disabled={busy} title="UTF-8 sin BOM, saltos de línea LF" onClick={() => { try { downloadPreparedText(preview); } catch (error) { setError(errorMessage(error)); } }}>Descargar texto (.txt)</button>}
       {error && <p role="alert" className="error">{error}</p>}
       <TemplateCopyPreview text={prompt.templateText} disabled={busy} onCopy={() => void copy('TEMPLATE')} />
       <ClipboardReceipt receipt={copied?.snapshot === snapshot && copied.text === (copied.copyContent === 'TEMPLATE' ? prompt.templateText : preview) ? { operationId: copied.operationId, promptId: prompt.id, revision: prompt.revision, text: copied.text, copyContent: copied.copyContent } : null} />
       <div className="action-dock"><span className="muted">{hasPending ? 'Completa las variables para copiar el texto rellenado. La plantilla conserva sus marcadores.' : 'Tu instrucción. Tu siguiente paso.'}</span><div className="dock-buttons">{onUse && <button data-nova-control="prompt.use" className="secondary" onClick={onUse} disabled={busy || hasPending}>Usar en…</button>}<button data-nova-control="prompt.copy" className="primary" onClick={() => void copy()} disabled={busy || hasPending}><AppIcon glyph={Copy} size={20} aria-hidden="true"  />{busy ? 'Preparando…' : 'Copiar prompt'}</button></div>{feedback && <p className="dock-feedback">{feedback}</p>}</div>
-    </>}
+      </section></div>
+    </div>}
   </section>;
 }

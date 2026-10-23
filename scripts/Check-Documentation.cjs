@@ -5,7 +5,7 @@ const currentDocuments = [
   'docs/ARCHITECTURE.md', 'docs/COMO_USAR_QUICKPROMPT.md', 'docs/nova/README.md',
   'docs/development/DEVELOPMENT.md', 'docs/development/UI_COMPONENTS.md',
   'docs/archive/README.md', 'docs/releases/NOVA_1.0.0.md', 'docs/releases/NOVA_1.0.0_R1.md',
-  '.agents/skills/universal-modular-architecture/SKILL.md',
+  '.agents/skills/universal-modular-architecture/SKILL.md', 'docs/releases/NOVA_1.0.0_R2.md',
 ];
 
 function checkDocuments(root, documents = currentDocuments) {

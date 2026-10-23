@@ -50,9 +50,9 @@
 .nova-control-banner span { font-size: .75rem; color: var(--muted); }
 .nova-control-banner button { min-height: 44px; white-space: nowrap; border-color: #3695ff; }
 body:has(.nova-control-banner) .app-shell { padding-top: 88px; }
-.nova-dock { width: 60px; height: 60px; }
+.nova-dock { width: 64px; height: 64px; }
 .nova-dock[hidden] { display: none !important; }
-.nova-dock-orb { display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border-radius: 50%; border-color: color-mix(in srgb, var(--intelligence) 55%, var(--line)); }
+.nova-dock-orb { display: grid; place-items: center; width: 64px; height: 64px; padding: 0; border-radius: 50%; border: 2px solid var(--accent); background: var(--surface-active); box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow); }
 .nova-dock-orb .nova-logo { width: 32px; height: 32px; }
 .nova-dock-orb[data-working="true"] { border-color: var(--intelligence); }
 @media (max-width: 700px) {

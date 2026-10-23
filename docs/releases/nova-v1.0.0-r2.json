@@ -1,0 +1,172 @@
+{
+  "schema": "quickprompt-nova-release/1",
+  "version": "1.0.0",
+  "tag": "nova-v1.0.0-r2",
+  "releaseDate": "2026-10-23",
+  "timezone": "America/La_Paz",
+  "status": "CLOSED_UI_REVISION_WITH_KNOWN_AI_FINDINGS",
+  "previousTag": "nova-v1.0.0-r1",
+  "baseCommit": "38ac7f7b05c36a4932ce2617a18778cdcc03e3ad",
+  "scope": [
+    "prompt detail presentation",
+    "NOVA icon bubble visibility",
+    "result history presentation and existing controls"
+  ],
+  "humanAcceptance": {
+    "requirement": "REL-09",
+    "status": "PRIOR_ACCEPTANCE_UNCHANGED",
+    "source": "docs/releases/NOVA_1.0.0_R1.md",
+    "newHumanTestClaimed": false
+  },
+  "checks": {
+    "frontend": {
+      "passed": 277,
+      "failed": 0,
+      "files": 41,
+      "historyTests": 9,
+      "execution": "RERUN_FOR_R2"
+    },
+    "webBuild": {
+      "status": "PASS",
+      "execution": "RERUN_FOR_R2",
+      "knownWarning": "main chunk exceeds 500 kB"
+    },
+    "moduleBoundaries": {
+      "status": "PASS",
+      "checks": 36,
+      "scope": "STATIC_ONLY"
+    },
+    "documentation": {
+      "status": "PASS_AFTER_MANIFEST_CREATION",
+      "documents": 14,
+      "checkerTestsPassed": 3
+    },
+    "browserThisClosure": {
+      "status": "PASS",
+      "checks": [
+        "visible version 1.0.0",
+        "empty history modal loaded",
+        "NOVA bubble present"
+      ]
+    },
+    "browserPreviousImplementationTurns": {
+      "status": "PASS_WITH_SCOPED_SYNTHETIC_DATA",
+      "checks": [
+        "detail with/without variables and manual/agent copy",
+        "bubble in library/detail/editor and mobile",
+        "history selection and paging",
+        "literal instruction/response clipboard",
+        "download actions",
+        "deletion review/cancel and focus restoration",
+        "keyboard",
+        "390px and 320px no horizontal overflow",
+        "light/dark themes"
+      ],
+      "newInferenceClaimed": false,
+      "irreversibleBrowserDeletionPerformed": false
+    },
+    "backend": {
+      "sourceChangesSinceR1": 0,
+      "testsThisClosure": "NOT_RERUN",
+      "priorAuditPassed": 1163,
+      "priorAudit": "docs/nova/AUDITORIA_AGENTE_UI_20261023.md"
+    }
+  },
+  "knownFindings": [
+    {
+      "id": "A01",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "summary": "Complete AI response lost a known fact; no semantic-fidelity certification"
+    },
+    {
+      "id": "A02",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "summary": "Driver waits for success on provider error until stop or timeout"
+    }
+  ],
+  "findingsReport": "docs/nova/AUDITORIA_AGENTE_UI_20261023.md",
+  "sourceIdentity": {
+    "algorithm": "GIT_BLOB_ID_WITH_REPOSITORY_FILTERS",
+    "files": {
+      "apps/web/src/design/agent-presence.css": "f5061478e2395a1ca1c36d6d6854d3553d8b5803",
+      "apps/web/src/design/canvas.css": "27003e5ffbc1d1fa214dbea85bcb2919afcbce2e",
+      "apps/web/src/design/history.css": "47a9df06e1f11c94a6c6ad7099738eebb1e24718",
+      "apps/web/src/design/prompt-detail.css": "79d186b2f24940592a33510a03a732f21369ba8b",
+      "apps/web/src/features/prompts/CompilationHistory.tsx": "7f2123693c9911f451f78e1743b1b8ffde00f424",
+      "apps/web/src/features/prompts/HistoryResult.tsx": "dbc0319d1d207ac64b0aa15dafc137dc33a141df",
+      "apps/web/src/features/prompts/PromptDetailHeader.tsx": "a5d737f92dcb811d8ec0d40a12f23278918ba5bb",
+      "apps/web/src/features/prompts/PromptFocus.tsx": "de9b01dc3addef401e2ced0d1e07a7437207b8c5",
+      "apps/web/src/main.tsx": "34da2fc3b0b8db6d71a6cedfcefff688e38cfccc",
+      "apps/web/tests/compilation-history.test.tsx": "828505396c4185a662577876093efd01940273d7",
+      "apps/web/tests/live.test.tsx": "e96607cee1d2db43d9abeffcab52db2b8301c48a",
+      "docs/development/UI_COMPONENTS.md": "ffde364259f4ecdb53d8028e814d5cf83260f2bf",
+      "scripts/Check-Documentation.cjs": "178292c3eafc6429bb9310f1c9728e749d5fe339"
+    }
+  },
+  "runtimeIdentity": {
+    "frontendArtifactsSha256": {
+      "assets/CompilationHistory-BHvE_e8g.css": "6fa2daad4068a71dc8db6d53234e996bf38d068db69e4618f0e91eafd07621a0",
+      "assets/CompilationHistory-Bm8QQ6pW.js": "1c3ab5d008572e8edf9bcc9c85eb50b9f02a8ed95015d109b0c1812dc0196405",
+      "assets/GroupSelector-CIOIMcg-.js": "0069afa1e34b51032d129dbef88aa4c4d88589103629d80df1707f9e19b63aea",
+      "assets/index-D878YPxc.js": "8e5d01d6f31ddb99fc2ff07739ebc8d9897ef7e100d21d85d8650d9c0ed1c000",
+      "assets/index-JS0jxtkX.css": "d690755510e68b3679c3dd2519b683e0d64530e34eacfb495c5fe723f8eae814",
+      "assets/LearningCenter-rUY1s3Xw.js": "fb83e9a1c8db4e609cc932f5827e85c43b1a11a473ded70fa1c0ba74c14c5a85",
+      "assets/LibraryTools-BDWjge9b.js": "0d4f16187b3f80e829c0a16b4ed0445e7b7a7a694e8057f45b22fe29cafb91b6",
+      "assets/localStream-l7Pv6b1I.js": "6ca6071b7c7a5ff0b3a970028afee7b51cfd8b11b37c59f086f191da772dbcca",
+      "assets/PreparedUse-DFGblWSm.js": "b6da0a3916f4b154e62bee26c5e0ad3393db35dabb03d9de59bba36453e5a9be",
+      "assets/PromptVersions-dPgpr7b4.js": "ba0ef4436a8a7d5e41af1282d9477ea66728e9c47dc42d5e7435bb02ca13dc46",
+      "assets/ProviderPicker-mSc6n_sX.js": "06eac231aa3c54267852476d823b2e671e662a43416ce18b1243d2c1694871a9",
+      "assets/SharePrompt-CfGosFqb.js": "2ea8d8bd7644e7f0372230c409697629eb9d9198623b9e59efb0d6fdf6251ce6",
+      "branding/quickprompt.ico": "2cfff88aa6497526530908cee0f833a36d23b3212aea12b66a980bf3a8c8b205",
+      "branding/quickprompt_official.png": "6c173f78c9be2d515b39b4ea3b1aff4cfe0ab973b607e4930442864d1891f17c",
+      "favicon.svg": "b84aa0256b786010bf812dbe28b24f8cd8afaa09abe3f5b39c39783c898bbe83",
+      "index.html": "75ffe0c1e1e6e40c771130cee3708d40286ffbd5e6801db1d2cefa946901caea",
+      "library/biblioteca-practica.es.json": "501ca9b27e6ed2b7bcd6473c1fd5cfebe4c11b83797347dadc8d754dc9c93f1c",
+      "tutoriales/01-biblioteca.png": "ea10c8757e3e56735e5b7c1fe701852ce241a1bf420bd38ca24d4780eff3fd2b",
+      "tutoriales/01-biblioteca.vtt": "d6950f50ae51453bccefcc8791f98fb499083c5059e1e0204d995347f49e44b0",
+      "tutoriales/01-biblioteca.webm": "dc9cfe619cfb0fef371a3ed05cb60dab617b1a77a77f1d57284064b84dd3bef1",
+      "tutoriales/02-nova.png": "ec74c87068e712777a6ea29923fa60376716f4fa310334b67c5310b0407d8d6f",
+      "tutoriales/02-nova.vtt": "27b9dfb6e6366e23c240efd4d870a4fc0de66d24afbbda5bd478a73ce17507c4",
+      "tutoriales/02-nova.webm": "910ee59f7f0dc7fd176eeccf9d5897e3adbdf7bc8057a04ca021ffa275009121",
+      "tutoriales/03-variables.png": "eccf840071a6f766780f5efd963d607fc651eac3bff023def44574efd94387e1",
+      "tutoriales/03-variables.vtt": "787a1a432dfdd0538182e692bb2f4bc292a8c5a011c3bb1fb119c391f8344920",
+      "tutoriales/03-variables.webm": "090b045438f64d9fb22c2c83bd38ff3bc75f9b8a44e57c737da5665fbe35828a",
+      "tutoriales/04-playwright.png": "5218da72941a6c5ff619e1559508cb114f859c067e62a1cdd3edf9472e2cfa2f",
+      "tutoriales/04-playwright.vtt": "753a3616ad1735939aa9079195f6bada8dd587bd0c4bf70b31e4ac55e11739df",
+      "tutoriales/04-playwright.webm": "0967163ad9e6c7dc623f6403f65e06885bca566369fd296017a9e78f09d856ed"
+    },
+    "frontendDeployedFilesMatched": 29,
+    "apiStatus": "FROZEN_R1_BINARY_NOT_REBUILT",
+    "apiFilesSha256": {
+      "api/QuickPrompt.Api.dll": "8dd307bc295ae70e8b7567780570e9752ccfcb8450f2042f67059bcae75477da",
+      "api/QuickPrompt.Application.dll": "88cd1ec6f4db7d93aaeab9afecc0ab35e49e661171fa4fa87ddeaa1c9975ca6d",
+      "api/QuickPrompt.Infrastructure.dll": "4c31dce24515ed879738358ec318c0e3bd2d131d4e153913ccf4341322d595ab",
+      "api/QuickPrompt.Domain.dll": "aeaa273fe173a27bcfcb3b379b798f89ecdaaef89691fc71d0f67ea97013572c"
+    },
+    "localHealthStatus": 200
+  },
+  "localEvidenceSha256": {
+    ".playwright/release-ui-r2-20261023/frontend-tests.log": "5f2c3a25ec8706d6694636958bc3041938f3ce92adf1d6794c3486e1211b68b4",
+    ".playwright/release-ui-r2-20261023/web-build.log": "aa9490f1d780a76776cd01e7b265a51a228f64aa2d449deec2dd8a05ce13b692",
+    ".playwright/release-ui-r2-20261023/module-boundaries.json": "7058469f371633190f33edf13050ee5d249862fdc479b5abdf83a749bee92a53",
+    ".playwright/history-polish-20261023/evidence.md": "134c60aaa85d45d7ec3b3fe9916331472320b3500d940fcce79a7e67c702d3f5",
+    ".playwright/history-polish-20261023/desktop.png": "4a55b45b0a7fda1d7367be6f5632462a6d0a389a62e231ee334c63935ef03931",
+    ".playwright/history-polish-20261023/mobile.png": "36d63391082922d6715128f9bcdac380900c0293da48fdbf187df4328e7ed73f",
+    ".playwright/history-polish-20261023/light.png": "023aa3bd24ef16b4ad7faa43a660661528f9b5fcba85295ae7db84d1a01c99ff",
+    ".playwright/history-polish-20261023/response.png": "0d87f41c42f4fdeb7ff6dc5d40f5ceb9d1937bc2a09dd831bf2632287e1a1f6d",
+    ".playwright/nova-bubble-20261023/result.json": "a96ea39387a337f0bea672d0120da555e1410443f502096e36eb641d1af2f304"
+  },
+  "evidenceRetention": "Local ignored files; hashes retained here, files not included in Git",
+  "rollback": {
+    "lastHistoryIndexBackup": ".nova-build/ui-history-polish-20261023/index-before-history.html",
+    "completeUiSourceTag": "nova-v1.0.0-r1",
+    "dataMigrationRequired": false
+  },
+  "publication": {
+    "mode": "LOCAL_COMMIT_AND_ANNOTATED_TAG",
+    "pushRequestedThisTurn": false,
+    "remotePublicationClaimed": false
+  }
+}

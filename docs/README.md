@@ -13,7 +13,8 @@ La versión de referencia es NOVA 1.0.0, aceptada por el usuario para el flujo p
 | Crear formularios y componentes | [UI modular](development/UI_COMPONENTS.md) |
 | Ejecutar checks y mantener documentación | [Desarrollo](development/DEVELOPMENT.md) |
 | Instrucciones de agentes | [AGENTS raíz](../AGENTS.md) y [reglas web](../apps/web/AGENTS.md) |
-| Aceptación de la versión inicial y correcciones | [Cierre r1](releases/NOVA_1.0.0_R1.md) y [manifiesto](releases/nova-v1.0.0-r1.json); [acta inicial](releases/NOVA_1.0.0.md) |
+| Revisión actual de interfaz | [Cierre r2 y límites](releases/NOVA_1.0.0_R2.md) y [manifiesto](releases/nova-v1.0.0-r2.json) |
+| Aceptación de la versión inicial y correcciones | [Cierre r1](releases/NOVA_1.0.0_R1.md) y [manifiesto r1](releases/nova-v1.0.0-r1.json); [acta inicial](releases/NOVA_1.0.0.md) |
 | Auditoría del agente tras el rediseño | [Resultados, arquitectura y dos hallazgos pendientes](nova/AUDITORIA_AGENTE_UI_20261023.md) |
 | Conservar resultados de ejecución | [Política de evidencia](evidence/README.md) |
 

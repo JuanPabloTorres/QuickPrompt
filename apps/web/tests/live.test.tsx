@@ -17,6 +17,21 @@ class Events extends EventTarget {
 }
 function view(status = 'CREATED', sequence = 0) { return { run: { runId: id, sessionId: id, mode: 'BROWSER', status, sequence, targetId: null, revision: null, pauseRequested: status === 'PAUSED', browserOpen: true, approval: 'NONE', effectCommitted: false, errorCode: null }, request: 'Abre el prompt de ejemplo.', question: null, observation: null, proposal: null }; }
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); Events.items = []; });
+it('restores the icon bubble after agent control ends without reopening the suspended panel', async () => {
+  const ui = (suspended: boolean) => <LazyMotion features={domAnimation}><AgentDock suspended={suspended} context="Biblioteca" actions={<button className="quick-action">Elegir acción</button>}>{null}</AgentDock></LazyMotion>;
+  const mounted = render(ui(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
+  expect(screen.getByRole('button', { name: 'Elegir acción' })).toBeTruthy();
+  mounted.rerender(ui(true));
+  await waitFor(() => expect(screen.getByTestId('nova-dock').hidden).toBe(true));
+  expect(screen.queryByRole('button', { name: 'Abrir asistente NOVA' })).toBeNull();
+  act(() => window.dispatchEvent(new Event('nova-open-assistant')));
+  mounted.rerender(ui(false));
+  const bubble = screen.getByRole('button', { name: 'Abrir asistente NOVA' });
+  expect(bubble.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(bubble);
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Elegir acción' })));
+});
 function setup() {
   let current = view(); const calls: string[] = [];
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async (path: string) => {

@@ -57,6 +57,17 @@ preferencias y navegación; el componente no duplica servicios ni estado.
 `design/library.css` comparte jerarquía de tarjetas, filas y editor. Los nombres
 accesibles y marcadores del driver se conservan al cambiar la composición.
 
+`features/prompts/PromptDetailHeader` presenta identidad, revisión, fecha y
+acciones de gestión mediante callbacks. No posee consultas, persistencia ni
+permisos. `PromptFocus` conserva compilación cancelable, valores, navegación y
+recibos de copia; `PromptVariableFields` sigue siendo el único renderizador de
+campos. `design/prompt-detail.css` compone contexto y texto preparado en dos
+columnas, con una columna en pantallas compactas. La vista previa expresa texto
+compilado, no una respuesta generada ni una validación semántica del modelo.
+El acceso a NOVA permanece en la burbuja fija inferior derecha, sin otra tarjeta
+de entrada dentro del detalle. IDs, etiquetas, controles opt-in y marcadores de
+compilación/portapapeles siguen siendo contratos del driver.
+
 En reposo, `NovaWelcome` distingue explícitamente el recorrido previsto de los
 hechos del runtime. La entrada principal abre las acciones existentes; no elige
 una intención ni simula etapas. En móvil, el sidebar conserva el logo oficial
@@ -115,6 +126,22 @@ resultados y límites concretos.
 | `app/App.tsx` | Composición, navegación y estado de la pantalla | Copias de algoritmos que ya poseen otras capacidades |
 
 `Dialog`, `TemplateCopyPreview`, `ClipboardReceipt`, `useBoundOperation`, `useEditorHistory`, `usePromptDeletion`, `ApplicationServices` y los clientes de servicios ya son propietarios reutilizables. Consultarlos antes de añadir otro wrapper o hook.
+
+### Historial de resultados
+
+`CompilationHistory` conserva el ciclo de carga, cancelación, paginación y borrado
+con el snapshot revisado. La selección es local a la página y se descarta al
+cambiarla; durante la carga no quedan destinos de copia de la página anterior.
+`HistoryResult` presenta un único registro original y compone `SavedText` para
+instrucción y respuestas: texto literal sin HTML, copia sin registrar otro uso y
+descarga UTF-8 con nombres distintos. No genera respuestas ni modifica el prompt.
+
+`design/history.css` pertenece a esta capacidad y se carga con su diálogo. En
+escritorio separa la lista del panel de lectura; en móvil apila ambos y mantiene
+el cierre y la paginación fuera del área desplazable. Sus capas 70/71 sitúan el
+scrim y el diálogo por encima de la barra lateral (40), sin cambiar otros modales.
+La revisión de borrado recibe foco y al cancelarla lo devuelve a su botón. El
+borrado sigue requiriendo consentimiento explícito y validación del servidor.
 
 ## Análisis observado
 

@@ -1,6 +1,6 @@
 # QuickPrompt NOVA
 
-**Versión inicial 1.0.0 aceptada por el usuario.** Cierre con correcciones: `nova-v1.0.0-r1`. [Acta y límites](docs/releases/NOVA_1.0.0_R1.md). Se conserva el tag inicial `nova-v1.0.0`.
+**Versión inicial 1.0.0 aceptada por el usuario.** Revisión de interfaz cerrada: `nova-v1.0.0-r2`. [Acta y límites de r2](docs/releases/NOVA_1.0.0_R2.md). Se conservan los tags inicial y r1, junto con su [aceptación previa](docs/releases/NOVA_1.0.0_R1.md).
 
 QuickPrompt guarda y organiza prompts, completa variables y permite copiarlos o usarlos con IA local. En NOVA eliges la acción; la IA ayuda con la búsqueda por significado y el contenido. Guardar, eliminar y trasladar texto a otro servicio conservan sus revisiones y confirmaciones.
 
