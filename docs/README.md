@@ -14,6 +14,7 @@ La versión de referencia es NOVA 1.0.0, aceptada por el usuario para el flujo p
 | Ejecutar checks y mantener documentación | [Desarrollo](development/DEVELOPMENT.md) |
 | Instrucciones de agentes | [AGENTS raíz](../AGENTS.md) y [reglas web](../apps/web/AGENTS.md) |
 | Aceptación de la versión inicial y correcciones | [Cierre r1](releases/NOVA_1.0.0_R1.md) y [manifiesto](releases/nova-v1.0.0-r1.json); [acta inicial](releases/NOVA_1.0.0.md) |
+| Auditoría del agente tras el rediseño | [Resultados, arquitectura y dos hallazgos pendientes](nova/AUDITORIA_AGENTE_UI_20261023.md) |
 | Conservar resultados de ejecución | [Política de evidencia](evidence/README.md) |
 
 Cada capacidad tiene una guía vigente. Los informes fechados conservan qué ocurrió, con qué candidato y sus límites; no sustituyen el contrato actual ni conceden permisos.
