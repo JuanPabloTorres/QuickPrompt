@@ -107,7 +107,7 @@ it('selects the requested provider through the controlled select and closes it f
   expect(prepared.providerId).toBe('claude'); expect(change).toHaveBeenCalledWith('claude'); expect(open).not.toHaveBeenCalled();
   expect((await driver.execute(action('prepare_review'))).providerOpen).toBe(false);
 });
-it.each([false, true])('opens collapsed activity before applying an approved version or copy through its real control (copy=%s)', async copy => {
+it.each([false, true])('applies through the stable editor even while activity visibility changes (copy=%s)', async copy => {
   vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   const applied = vi.fn(), id = crypto.randomUUID(), sourceId = crypto.randomUUID(), runId = crypto.randomUUID();
@@ -115,9 +115,9 @@ it.each([false, true])('opens collapsed activity before applying an approved ver
     const [expanded, setExpanded] = useState(false), [saved, setSaved] = useState(false);
     useEffect(() => { const open = () => setExpanded(true); window.addEventListener('nova-open-activity', open); return () => window.removeEventListener('nova-open-activity', open); }, []);
     return <>{saved ? <section data-testid="prompt-focus" data-prompt-id={id} data-revision="1" data-template-text="Contenido aprobado."><h1 data-testid="focus-title">Aprobado</h1><span data-testid="compile-ready" /></section>
-      : <section data-testid="prompt-editor" data-prompt-id={copy ? sourceId : ''} data-revision={copy ? 7 : undefined}><input id="prompt-title" value="Aprobado" readOnly /><textarea id="prompt-content" value="Contenido aprobado." readOnly /><span data-testid="variables-inspected" /><span data-testid="compile-ready" /></section>}
+      : <section data-testid="prompt-editor" data-prompt-id={copy ? sourceId : ''} data-revision={copy ? 7 : undefined}><input id="prompt-title" value="Aprobado" readOnly /><textarea id="prompt-content" value="Contenido aprobado." readOnly /><span data-testid="variables-inspected" /><span data-testid="compile-ready" /><button data-nova-control="approval.apply" data-nova-run-id={runId} onClick={() => { applied(); setSaved(true); }}>Aplicar versión aprobada</button></section>}
       <button aria-label="Actividad de NOVA" aria-expanded={expanded} onClick={() => setExpanded(previous => !previous)}>NOVA</button>
-      {expanded && <aside data-testid="nova-live" data-run-id={runId}><button data-nova-control="approval.apply" onClick={() => { applied(); setSaved(true); }}>Aplicar versión aprobada</button></aside>}
+      {expanded && <aside data-testid="nova-live" data-run-id={runId}>Actividad sin autoridad de escritura</aside>}
     </>;
   }
   render(<ApprovedEditor />);
@@ -125,7 +125,7 @@ it.each([false, true])('opens collapsed activity before applying an approved ver
   // the actual next click target before it decides to uncover that old field.
   screen.getByDisplayValue('Contenido aprobado.').focus();
   const progress = vi.fn(async (phase: string) => {
-    if (phase === 'TARGET_LOCATED') expect(document.activeElement?.textContent).toBe('Aplicar versión aprobada');
+    if (phase === 'TARGET_LOCATED') { expect(document.activeElement?.textContent).toBe('Aplicar versión aprobada'); fireEvent.click(screen.getByRole('button', { name: 'Actividad de NOVA' })); }
   });
   const driver = new AgentUiDriver(vi.fn(), progress); driver.speed = 'fast';
   const state = await driver.execute({ runId, tool: 'commit_approved', arguments: copy ? { expectedRevision: 1 } : {}, target: null } as UiAction);
@@ -136,8 +136,7 @@ it('reports an approved-write rejection immediately instead of waiting for a sav
   HTMLElement.prototype.scrollIntoView = vi.fn();
   function RejectedEditor() {
     const [error, setError] = useState(false);
-    return <><section data-testid="prompt-editor"><input id="prompt-title" value="Aprobado" readOnly /><textarea id="prompt-content" value="Contenido aprobado." readOnly /></section>
-      <aside data-testid="nova-live" data-run-id="rejected-run"><button data-nova-control="approval.apply" onClick={() => setError(true)}>Aplicar versión aprobada</button></aside>{error && <p role="alert">La propuesta ya no admite este contenido.</p>}</>;
+    return <><section data-testid="prompt-editor"><input id="prompt-title" value="Aprobado" readOnly /><textarea id="prompt-content" value="Contenido aprobado." readOnly /><button data-nova-control="approval.apply" data-nova-run-id="rejected-run" onClick={() => setError(true)}>Aplicar versión aprobada</button></section>{error && <p role="alert">La propuesta ya no admite este contenido.</p>}</>;
   }
   render(<RejectedEditor />); const driver = new AgentUiDriver(vi.fn()); driver.speed = 'fast';
   await expect(driver.execute({ runId: 'rejected-run', tool: 'commit_approved', arguments: {}, target: null } as UiAction)).rejects.toThrow('UI_REPORTED_ERROR');

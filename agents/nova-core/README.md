@@ -1,6 +1,7 @@
 # QuickPrompt ↔ Adaptive Core
 
-La ruta agéntica de producción usa exclusivamente Adaptive Core. El motor nativo
+Las capacidades de IA de producción usan Adaptive Core. La elección de la acción
+es explícita y pertenece a QuickPrompt; Core no decide sus permisos. El motor nativo
 anterior y su transporte/cache viven en `backend/QuickPrompt.Evaluation/Compatibility/NativeAgent`;
 no se registran ni se empaquetan en la API. `Runtime=native` se rechaza explícitamente.
 
@@ -8,15 +9,17 @@ no se registran ni se empaquetan en la API. `Runtime=native` se rechaza explíci
 
 | Propietario | Responsabilidad |
 | --- | --- |
-| Adaptive-AI-Core / Python | Agente Pydantic AI, proveedor Ollama, validación JSON Schema, reparación estructural acotada, presupuestos y uso real. |
+| Adaptive-AI-Core / Python | Inferencia genérica con Pydantic AI, proveedor Ollama, validación JSON Schema, reparación estructural acotada, presupuestos y uso real. |
 | QuickPrompt / .NET | Catálogo y esquemas de negocio, petición y contexto autorizado, referencias/revisiones, permisos y aprobaciones, coordinación del caso de uso, ejecución y comprobación de efectos. |
 | React / navegador | Controles y observaciones reales; el servidor verifica sus recibos. |
 
 `nova_worker.py` es únicamente un lanzador de `adaptive_core.host`: no conoce
 prompts, fuentes, variables, SQL ni operaciones de QuickPrompt. El puente lector
 alternativo `bridge.py`/`run.py` fue retirado. El esquema y binding de encargos
-pertenecen a `QuickPromptCoreContract.cs`; la compilación sigue con los invariantes
-del dominio. El puerto de contenido manual es `PromptContentInterpreter`, sin
+pertenecen a `LiveCommand`, `UserActionRequest` y `TaskIntentContract`; el contrato
+experimental `QuickPromptCoreContract.cs` fue retirado. Sin elección,
+`ActionChoiceInterpreter` solicita elegir sin llamar al modelo ni recuperar datos.
+La compilación conserva los invariantes del dominio. El puerto de contenido es `PromptContentInterpreter`, sin
 planificación, identidad ni ejecución.
 
 ## Instalar el runtime Python
@@ -53,7 +56,8 @@ Blazor también inyecta Core en sus operaciones IA.
 
 Un objeto JSON UTF-8 por stdin y una respuesta por stdout; stderr no es el protocolo.
 Campos de solicitud: version, requestId, model, mode (text/structured/tools),
-messages, outputSchema y limits. Los esquemas contienen solo las capacidades
+messages, outputSchema y limits; `decoding` opcional selecciona `native` o `prompted`
+sin retirar la validación del esquema ni ampliar límites. Los esquemas contienen solo las capacidades
 ofrecidas. Los límites admiten 1–2 solicitudes, timeout 1–180 s, contexto y salida
 acotados; temperatura y muestreo explícitos. Se prohíben referencias de esquema
 externas y endpoints no loopback en este adaptador local.

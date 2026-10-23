@@ -4,6 +4,15 @@ description: Design, implement, refactor, and audit software as cohesive, compos
 ---
 # Universal Modular Architecture
 
+## QuickPrompt context
+
+For this repository, first use the [current owner map](../../../docs/ARCHITECTURE.md)
+and [UI/form contracts](../../../docs/development/UI_COMPONENTS.md) when relevant.
+Use [development checks](../../../docs/development/DEVELOPMENT.md) and scoped AGENTS
+rules. Historical incident reports do not define the active action-selection flow.
+Keep generic architecture guidance here; maintain QuickPrompt-specific contracts in
+their owning project documents instead of copying them into each page or skill.
+
 ## Mission
 Build systems from cohesive capabilities that can be composed, extended and, when explicitly supported, exchanged without breaking consumers. Treat this skill as an engineering decision process, not a mandate to create interfaces, microservices or plugins everywhere. Prefer the simplest architecture that preserves the required change boundaries.
 

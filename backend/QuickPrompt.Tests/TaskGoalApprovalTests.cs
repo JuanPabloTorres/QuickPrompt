@@ -32,6 +32,26 @@ public sealed class TaskGoalApprovalTests : IDisposable
         var task = Start(null); Assert.Throws<ValidationException>(() => live.ProposeSave(task.Id, task.State));
         Assert.Equal(JsonSerializer.Serialize(source), JsonSerializer.Serialize(library.Get(source.Id))); Assert.Null(live.View(task.Id).Proposal);
     }
+    [Fact] public void EditedBodyRequiresItsExactConfirmedApprovalWithoutPretendingItWasModelAssessed() {
+        var task = Start(SemanticOperation.REQUEST_SAVE_VERSION);
+        live.Active(task.Id).Observation = task.State;
+        live.ProposeSave(task.Id, task.State); var old = live.View(task.Id).Proposal!;
+        var edited = old.Draft with { TemplateText = "Resume los hallazgos. No inventes datos." };
+        live.RefreshProposal(task.Id, edited); var current = live.View(task.Id).Proposal!;
+        var goal = live.Active(task.Id).Semantic!.Goal!;
+        Assert.False(goal.HasHumanContentApproval(edited.TemplateText));
+        Assert.Throws<ValidationException>(() => live.Approve(task.Id, new(old.Id, old.Hash, old.Revision, true)));
+        Assert.False(goal.HasHumanContentApproval(edited.TemplateText));
+        live.Approve(task.Id, new(current.Id, current.Hash, current.Revision, true));
+        Assert.True(goal.HasHumanContentApproval(edited.TemplateText));
+        Assert.False(goal.HasContentAssessment(edited.TemplateText));
+        Assert.False(goal.HasHumanContentApproval(task.State.TemplateText!));
+        Assert.False(goal.HasHumanContentApproval(edited.TemplateText + " Otro texto."));
+        var saved = live.Commit(task.Id, edited);
+        var state = task.State with { Mode = "focus", Revision = saved.Revision, TemplateText = saved.TemplateText };
+        var completion = GoalCompletionValidator.Validate(goal, live.Active(task.Id).Semantic!, state, source, saved, ["ui_prepare_update"], new Dictionary<string,string>(), true, true, includePersistence:true);
+        Assert.DoesNotContain("CONTENT_VALID", completion.Missing);
+    }
     [Theory] [InlineData(false)] [InlineData(true)] public void ExplicitCopyReviewCreatesANewIdentityAfterApprovalAndProtectsTheSource(bool withGoal) {
         var task = Start(SemanticOperation.REQUEST_SAVE_COPY, withGoal); live.ProposeSave(task.Id, task.State); var proposal = live.View(task.Id).Proposal!;
         Assert.Null(proposal.PromptId); Assert.Null(proposal.Revision); Assert.Equal(0, proposal.Draft.Revision);

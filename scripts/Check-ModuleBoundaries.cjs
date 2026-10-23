@@ -205,10 +205,9 @@ check('Input scope is independently composed and its old partial implementation 
     if (/interpreter is (?:not )?IInputScopeInterpreter/.test(read(file))) errors.push('Scope consumer still requires the semantic interpreter to publish it: ' + file);
   if (fs.existsSync(path.join(root, 'backend/QuickPrompt.Infrastructure/InputScopeInference.cs')))
     errors.push('Old scope partial remains after migration.');
-  const semantic = read('backend/QuickPrompt.Infrastructure/AdaptiveCoreInterpreter.cs');
-  if (!semantic.includes('context.CurrentSubject()')
-      || !semantic.includes('context.CurrentInputNames()'))
-    errors.push('Shared context projection has a second semantic owner.');
+  const choice = read('backend/QuickPrompt.Application/ActionChoiceInterpreter.cs');
+  if (/\bIAgentModelTransport\b|\bIPromptRetriever\b|\bLocalStore\b/.test(choice))
+    errors.push('Explicit action boundary acquired inference, retrieval or persistence.');
 });
 check('Draft fidelity review has one independent owner and shared stage packet encoding', () => {
   const reviewer = read('backend/QuickPrompt.Infrastructure/DraftFidelityReviewer.cs');
@@ -242,11 +241,13 @@ check('Draft generation has an independent factory and one implementation behind
   if (/GenerateCore\(|EditTemplate\(|BindAuthoringReferences\(/.test(compatibility))
     errors.push('Generation algorithm is duplicated in the compatibility owner.');
 });
-check('Production uses only Core workflow interpretation and an independent content owner', () => {
+check('Production preserves explicit user choice and an independent content owner', () => {
   const composition = read('backend/QuickPrompt.Api/ApplicationModules.cs');
   for (const port of ['IIntentInterpreter', 'ISemanticIntentInterpreter'])
-    if (!composition.includes('AddSingleton<' + port + '>(sp => sp.GetRequiredService<AdaptiveCoreInterpreter>())'))
-      errors.push('Workflow port does not use Core: ' + port);
+    if (!composition.includes('AddSingleton<' + port + '>(sp => sp.GetRequiredService<ActionChoiceInterpreter>())'))
+      errors.push('Workflow port does not preserve explicit choice: ' + port);
+  if (/GetRequiredService<AdaptiveCoreInterpreter>|AddSingleton<AdaptiveCoreInterpreter>/.test(composition))
+    errors.push('Retired free decoder is registered in production.');
   if (!composition.includes('AddSingleton<ISemanticContentInterpreter, PromptContentInterpreter>()'))
     errors.push('Content interpretation lacks its domain owner.');
   if (/AddSingleton<(?:SemanticIntentInterpreter|OllamaAgentModelTransport|ISourceReferenceResolver|ISemanticClauseReviewer|IGroundedSourceSelector)>/.test(composition))
@@ -432,6 +433,28 @@ check('Prepared draft completion and saving use segregated application capabilit
   const composition = read('backend/QuickPrompt.Api/ApplicationModules.cs');
   for (const name of ['Completion', 'Saving'])
     if (!composition.includes('AddSingleton<IPreparedDraft' + name + ', PreparedDraft' + name + '>()')) errors.push('Missing lifecycle factory: ' + name);
+});
+check('Prompt value fields have one feature owner and three composed consumers', () => {
+  const owner = 'apps/web/src/features/prompts/PromptVariableFields.tsx';
+  for (const file of files('apps/web/src', ['.tsx'])) {
+    const source = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    function visit(node) {
+      if (ts.isJsxAttribute(node) && node.name.getText(source) === 'data-testid' && file !== owner) {
+        function marker(child) {
+          if (ts.isStringLiteral(child) && child.text === 'variable-field') errors.push('Workspace field markup duplicated outside its owner: ' + file);
+          ts.forEachChild(child, marker);
+        }
+        marker(node);
+      }
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+  }
+  for (const file of ['features/prompts/PromptFocus.tsx', 'features/prompts/EditorPreparation.tsx', 'features/nova/QuickActions.tsx']) {
+    const source = read('apps/web/src/' + file);
+    if (!source.includes('import { PromptVariableFields }') || !source.includes('<PromptVariableFields '))
+      errors.push('Prompt value consumer bypasses its shared field owner: ' + file);
+  }
 });
 const report = { status: errors.length ? 'FAIL' : 'PASS', scope: 'STATIC_ARCHITECTURE_NOT_RUNTIME_OR_AGENT_RELIABILITY', checks, projects: Object.fromEntries(graph), errors };
 if (process.argv[2]) {

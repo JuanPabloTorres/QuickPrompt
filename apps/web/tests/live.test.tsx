@@ -26,9 +26,37 @@ function setup() {
     if (path.endsWith('/cancel')) { current = view('CANCELLED', 3); return Response.json(current.run); }
     return Response.json(current);
   }));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />); return calls;
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />); return calls;
 }
 async function openActivity() { fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' })); }
+it('publishes run-bound approval independently of activity visibility for the editor owner', async () => {
+  const current = { ...view('TOOL_RUNNING'), run: { ...view('TOOL_RUNNING').run, mode: 'SAME_TAB', approval: 'APPROVED' } };
+  vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(current)));
+  const changed = vi.fn();
+  render(<NovaLive runId={id} worker onApprovalChange={changed} onReview={vi.fn()} />);
+  await waitFor(() => expect(changed).toHaveBeenLastCalledWith(id));
+  act(() => { window.dispatchEvent(new Event('nova-close-activity')); window.dispatchEvent(new CustomEvent('nova-assistant-visibility', { detail: false })); });
+  expect(changed).toHaveBeenLastCalledWith(id);
+  expect(screen.queryByRole('button', { name: 'Aplicar versión aprobada' })).toBeNull();
+});
+it('refreshes the editor proposal before reviewing from the NOVA button', async () => {
+  const original = { id, hash: 'old', promptId: null, revision: null, draft: { title: 'Viejo', templateText: 'Viejo.', description: '', categoryId: 0 }, originalText: '' };
+  let proposal = original;
+  vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...view('AWAITING_APPROVAL'), run: { ...view('AWAITING_APPROVAL').run, approval: 'PENDING' }, proposal })));
+  const synchronize = vi.fn(async () => { proposal = { ...original, hash: 'edited', draft: { ...original.draft, title: 'Corregido', templateText: 'Contenido editado.' } }; });
+  render(<NovaLive runId={id} worker onPrepareReview={synchronize} onReview={vi.fn()} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Revisar y guardar copia' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Guardar copia separada' });
+  expect(synchronize).toHaveBeenCalledOnce(); expect(within(dialog).getByText('Contenido editado.')).toBeTruthy(); expect(within(dialog).queryByText('Viejo.')).toBeNull();
+});
+it('offers identity-bound choices for a blocked search without executing a candidate automatically', async () => {
+  const choose = vi.fn(async () => {}), candidate = { id, revision: 4, title: 'Revisar código' };
+  vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...view('BLOCKED'), question: '¿Cuál quieres usar?', sourceChoices: [candidate] })));
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} onChooseSource={choose} />);
+  await act(async () => { await Promise.resolve(); window.dispatchEvent(new Event('nova-open-activity')); });
+  expect(choose).not.toHaveBeenCalled(); fireEvent.click(await screen.findByRole('button', { name: candidate.title }));
+  await waitFor(() => expect(choose).toHaveBeenCalledWith(candidate));
+});
 it.each([true, false])('describes the actual persistence effect before approving (copy=%s)', async savingCopy => {
   const approval = { id, hash: 'reviewed-content-hash', promptId: savingCopy ? null : id, revision: savingCopy ? null : 1,
     draft: { title: 'Propuesta', templateText: 'Explica <tema> con claridad.', description: '', categoryId: 0 }, originalText: source.templateText };
@@ -39,7 +67,7 @@ it.each([true, false])('describes the actual persistence effect before approving
     if (path.endsWith('/approve')) { approved.push(JSON.parse(options!.body as string)); return Response.json(current.run); }
     return Response.json(current);
   }));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   const review = await screen.findByRole('button', { name: savingCopy ? 'Revisar y guardar copia' : 'Revisar y guardar versión' });
   expect(screen.getByRole('button', { name: 'Actividad de NOVA' }).getAttribute('aria-expanded')).toBe('false');
   fireEvent.click(review);
@@ -51,7 +79,7 @@ it.each([true, false])('describes the actual persistence effect before approving
 });
 it('announces only a confirmed agent start in a corner toast for five seconds without stealing focus', async () => {
   vi.stubGlobal('fetch', vi.fn(async (_path: string, options: RequestInit) => Response.json({ ...view().run, runId: JSON.parse(options.body as string).runId, mode: 'SAME_TAB' })));
-  render(<><input aria-label="Mi petición" /><NovaLive runId={null} worker={false} onCommit={async () => {}} onReview={vi.fn()} /></>);
+  render(<><input aria-label="Mi petición" /><NovaLive runId={null} worker={false} onReview={vi.fn()} /></>);
   const field = screen.getByLabelText('Mi petición'); field.focus();
   expect(screen.queryByTestId('nova-start-toast')).toBeNull();
   vi.useFakeTimers();
@@ -65,7 +93,7 @@ it('announces only a confirmed agent start in a corner toast for five seconds wi
 it('keeps a terminal question in recoverable history instead of leaving it over the workspace', async () => {
   const question = '¿Qué prompt quieres actualizar?';
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...view('BLOCKED'), question })));
-  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} notice="Aviso operativo anterior" onCommit={async () => {}} onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={null}>{null}</AgentDock></LazyMotion>);
+  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} notice="Aviso operativo anterior" onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={null}>{null}</AgentDock></LazyMotion>);
   await waitFor(() => expect(Events.items.length).toBeGreaterThan(0));
   expect(screen.queryByText(question)).toBeNull(); expect(screen.queryByText('Aviso operativo anterior')).toBeNull();
   expect(document.querySelector('.nova-outcome')).toBeNull(); expect(screen.queryByTestId('nova-start-toast')).toBeNull();
@@ -102,7 +130,7 @@ it('uncovers a field that was already focused before a non-focusing panel reveal
 it('removes the working toast as soon as a fast task has finished', async () => {
   let current = view();
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(current)));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   await waitFor(() => expect(Events.items.length).toBeGreaterThan(0));
   act(() => window.dispatchEvent(new Event('nova-agent-started')));
   expect(screen.getByTestId('nova-start-toast')).toBeTruthy();
@@ -130,13 +158,13 @@ it('does not release the local pause until the backend accepts resume', async ()
   const current = view('PAUSED', 1); let accept: ((response: Response) => void) | undefined;
   const controls: string[] = []; const listener = (event: Event) => controls.push((event as CustomEvent<string>).detail); window.addEventListener('nova-ui-control', listener);
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async (path: string) => path.endsWith('/resume') ? new Promise<Response>(resolve => { accept = resolve; }) : Response.json(current)));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />); await openActivity();
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />); await openActivity();
   fireEvent.click(screen.getByRole('button', { name: 'Continuar' })); await waitFor(() => expect(accept).toBeDefined()); expect(controls).not.toContain('resume');
   accept!(Response.json(view('INTERPRETING', 2).run)); await waitFor(() => expect(controls).toContain('resume')); window.removeEventListener('nova-ui-control', listener);
 });
 it('offers stop instead of resume when a reloaded same-tab document lost ownership', async () => {
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...view('PAUSED', 1), run: { ...view('PAUSED', 1).run, mode: 'SAME_TAB' } })));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />); await openActivity();
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />); await openActivity();
   expect(screen.queryByRole('button', { name: 'Continuar' })).toBeNull(); expect(screen.getByRole('button', { name: 'Detener NOVA' })).toBeTruthy();
 });
 it('deduplicates replayed events and reconnects a gap from the last confirmed sequence', async () => {
@@ -151,7 +179,7 @@ it('coalesces an event burst into one in-flight snapshot without losing the term
   let resolve: ((response: Response) => void) | undefined;
   vi.stubGlobal('EventSource', Events);
   const fetcher = vi.fn(() => new Promise<Response>(complete => { resolve = complete; })); vi.stubGlobal('fetch', fetcher);
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   act(() => { for (let sequence = 1; sequence <= 100; sequence++) Events.items[0].send(sequence); });
   await new Promise(complete => setTimeout(complete, 180)); expect(fetcher).toHaveBeenCalledOnce();
   await act(async () => resolve!(Response.json({ ...view('COMPLETED', 100), run: { ...view('COMPLETED', 100).run, browserOpen: false } })));
@@ -164,9 +192,9 @@ it('a disconnected activity observer never starts another run or invents complet
 });
 it('stays absent without a task or after a completed task', async () => {
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(view('COMPLETED', 1))));
-  const mounted = render(<NovaLive runId={null} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  const mounted = render(<NovaLive runId={null} worker={false} onReview={vi.fn()} />);
   expect(screen.queryByRole('button', { name: 'Actividad de NOVA' })).toBeNull();
-  mounted.rerender(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  mounted.rerender(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   await waitFor(() => expect(fetch).toHaveBeenCalled()); expect(screen.queryByTestId('nova-live')).toBeNull();
 });
 it('identifies generation and input extraction instead of using the same interpretation label throughout', async () => {
@@ -178,7 +206,7 @@ it('identifies generation and input extraction instead of using the same interpr
 });
 it('opens completed history explicitly without restarting or exposing obsolete execution controls', async () => {
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(view('COMPLETED', 1))));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   await waitFor(() => expect(fetch).toHaveBeenCalled());
   act(() => { window.dispatchEvent(new Event('nova-open-activity')); });
   expect(await screen.findByRole('heading', { name: 'Tarea completada y comprobada' })).toBeTruthy();
@@ -188,7 +216,7 @@ it('opens completed history explicitly without restarting or exposing obsolete e
 });
 it('keeps activity stable on pointerdown inside the assistant and hides its details when the launcher closes', async () => {
   vi.stubGlobal('EventSource', Events); const fetcher = vi.fn(async () => Response.json(view())); vi.stubGlobal('fetch', fetcher);
-  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={<button>Crear</button>}><div className="nova-input"><textarea aria-label="Mi petición" /></div></AgentDock></LazyMotion>);
+  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={<button>Crear</button>}><div className="nova-input"><textarea aria-label="Mi petición" /></div></AgentDock></LazyMotion>);
   fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' })); await openActivity();
   fireEvent.keyDown(screen.getByRole('button', { name: 'Ver última actividad de NOVA' }), { key: 'Escape' });
   expect(screen.queryByRole('button', { name: 'Pausar' })).toBeNull();
@@ -207,7 +235,7 @@ it('keeps activity stable on pointerdown inside the assistant and hides its deta
 it.each(['COMPLETED', 'FAILED', 'BLOCKED', 'CANCELLED'])('reopens task choices without covering them with %s history and preserves explicit history access', async status => {
   vi.stubGlobal('EventSource', Events);
   const fetcher = vi.fn(async () => Response.json(view(status, 1))); vi.stubGlobal('fetch', fetcher);
-  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={<button>Crear otra tarea</button>}>{null}</AgentDock></LazyMotion>);
+  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onReview={vi.fn()} /><AgentDock context="Biblioteca" hasActivity actions={<button>Crear otra tarea</button>}>{null}</AgentDock></LazyMotion>);
   await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
   fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
   fireEvent.click(screen.getByRole('button', { name: 'Ver última actividad de NOVA' }));

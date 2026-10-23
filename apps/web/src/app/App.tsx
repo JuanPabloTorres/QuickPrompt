@@ -55,6 +55,7 @@ function ApplicationView() {
   useEffect(() => { if (liveRunId) try { sessionStorage.setItem('nova-live-run', liveRunId); } catch { /* Only a run ID is retained; no request or values. */ } }, [liveRunId]);
   useEffect(() => { const uncertain = (event: Event) => { const id = (event as CustomEvent<string>).detail; if (/^[0-9a-f-]{36}$/i.test(id)) setLiveRunId(id); }; window.addEventListener('nova-uncertain-start', uncertain); return () => window.removeEventListener('nova-uncertain-start', uncertain); }, []);
   const [sameTabActive, setSameTabActive] = useState(false);
+  const [approvedRunId, setApprovedRunId] = useState<string | null>(null);
   const [preferences, setPreferences] = useInterfacePreferences();
   const reducedMotion = useMotionPreference(preferences.decorativeMotion);
   const agentSpeed = preferences.agentSpeed;
@@ -125,7 +126,8 @@ function ApplicationView() {
   function changeDraft(next: PromptDraft) { editorDrafts.remember(editingId, next); setDraft(next); }
   function edit() { if (!selected) return; setEditingId(selected.id); setDraft(editorDrafts.read(selected) ?? { title: selected.title, templateText: selected.templateText, description: selected.description, categoryId: selected.categoryId, revision: selected.revision }); setMode('create'); setError(''); }
   async function save() {
-    if (executionRunId) { try { await live.propose(executionRunId, draft); window.dispatchEvent(new Event('nova-review-approval')); } catch (error) { setError(errorMessage(error)); } return; }
+    if (executionRunId && approvedRunId === executionRunId) { try { await commitLive(); } catch (error) { setError(errorMessage(error)); } return; }
+    if (executionRunId) { try { await prepareLiveReview(); window.dispatchEvent(new Event('nova-review-approval')); } catch (error) { setError(errorMessage(error)); } return; }
     if (saving) return;
     setSaving(true); setError('');
     try {
@@ -183,7 +185,7 @@ function ApplicationView() {
       const fresh = source ? await prompts.get(source.id) : undefined;
       if (fresh?.revision !== source?.revision) throw new Error('El prompt cambió. Elígelo de nuevo antes de continuar.');
       if (fresh?.isArchived) throw new Error('Restaura este prompt desde el archivo antes de utilizarlo con NOVA.');
-      const supplied = fresh ? Object.fromEntries(Object.entries({ ...valuesByPrompt[fresh.id], ...values }).filter(([name]) => fresh.variableNames.includes(name))) : undefined;
+      const supplied = fresh ? Object.fromEntries(Object.entries(values ?? {}).filter(([name]) => fresh.variableNames.includes(name))) : undefined;
       const run = await startVisible(message, sessionId.current, fresh, supplied, { bindSource: true, command });
       setLiveRunId(run.runId);
     } finally { quickLaunching.current = false; }
@@ -221,6 +223,15 @@ function ApplicationView() {
     const prompt = await live.commit(executionRunId, { ...draft, revision: current.proposal.revision ?? 0 });
     editorDrafts.forget(editingId); if (!editingId) setValuesByPrompt(previous => ({ ...previous, [prompt.id]: newDraftValues })); setSelected(prompt); setEditingId(null); setDraft({ ...blank }); setMode('focus'); setVersion(v => v + 1);
   }
+  async function prepareLiveReview() {
+    if (!executionRunId || mode !== 'create') throw new Error('Abre el borrador actual antes de revisarlo.');
+    await live.propose(executionRunId, draft);
+  }
+  async function chooseSearchSource(source: { id: string; revision: number; title: string }) {
+    const fresh = await prompts.get(source.id);
+    if (fresh.revision !== source.revision || fresh.isArchived) throw new Error('El candidato cambió. Repite la búsqueda antes de abrirlo.');
+    await quickRequest(`Abre el prompt elegido: ${fresh.title}.`, fresh, {}, { operation: 'OPEN_PROMPT', content: '' });
+  }
   async function reviewLive(view: LiveView) {
     const observed = view.observation; if (!observed?.promptId) return;
     try { const source = await prompts.get(observed.promptId); setSelected(source); setValuesByPrompt(previous => ({ ...previous, [source.id]: observed.values }));
@@ -237,8 +248,8 @@ function ApplicationView() {
     <div className={`toast-region${mode === 'focus' || providerOpen || dataOpen || groupsOpen ? ' sr-only' : ''}`} role="status" aria-live="polite" aria-atomic="true">{toast && <div className="toast">{toast}</div>}</div>
     <main id="main" tabIndex={-1}>
       <SameTabAgent runId={workerRunId ? null : liveRunId} onActive={setSameTabActive} speed={agentSpeed} onNotice={setAgentNotice} />
-      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} onCommit={commitLive} onReview={view => { void reviewLive(view); }} />
-      {!workerRunId && <AgentDock hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
+      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }} />
+      {!workerRunId && <AgentDock hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} sourceValues={activePrompt ? valuesByPrompt[activePrompt.id] : undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
         <p className="search-hint" data-testid="nova-action-workbench">Elige la acción; NOVA te ayuda con el contenido, los datos y la búsqueda.</p>
       </AgentDock>}
       <AnimatePresence mode="wait" initial={false}><m.div key={mode} variants={reducedMotion ? stillCanvasMotion : canvasMotion} initial="hidden" animate="visible" exit="exit">
@@ -254,7 +265,7 @@ function ApplicationView() {
           </section>
         </>}
         {mode === 'focus' && selected && <PromptFocus key={selected.id} prompt={selected} values={valuesByPrompt[selected.id] ?? noValues} onValues={values => setValuesByPrompt(previous => ({ ...previous, [selected.id]: values }))} onBack={discover} onEdit={edit} onAction={action} onDelete={() => { void quickRemove(selected).catch(error => setError(errorMessage(error))); }} onGroups={() => setGroupsOpen(true)} onVersions={() => setVersionsOpen(true)} onShare={() => setShareOpen(true)} onUsed={() => setVersion(v => v + 1)} notify={setToast} feedback={toast} onUse={() => executionRunId ? void useWorkingDraft() : setProviderOpen(true)} />}
-        {mode === 'create' && <InlinePromptEditor sourceDefaults={editingId === selected?.id ? selected.defaults : undefined} metadataLocked={!!executionRunId} promptId={editingId} preparation={<EditorPreparation onObserve={async (message, source, signal) => { if (executionRunId) return executionRunId; const observed = await observeOperation(message, sessionId.current, source, signal); setLiveRunId(observed.runId); return observed.runId; }} source={editingId ? selected : null} draft={draft} onChange={changeDraft} values={editingId && selected ? valuesByPrompt[selected.id] ?? noValues : newDraftValues} onValues={values => { if (editingId && selected) setValuesByPrompt(previous => ({ ...previous, [selected.id]: values })); else setNewDraftValues(values); }} onUse={() => void useWorkingDraft()} />} draft={draft} onChange={changeDraft} onSave={save} onBack={back} saving={saving} error={error} editing={!!editingId} />}
+        {mode === 'create' && <InlinePromptEditor approvedRunId={executionRunId === approvedRunId ? approvedRunId : null} sourceDefaults={editingId === selected?.id ? selected.defaults : undefined} metadataLocked={!!executionRunId} promptId={editingId} preparation={<EditorPreparation onObserve={async (message, source, signal) => { if (executionRunId) return executionRunId; const observed = await observeOperation(message, sessionId.current, source, signal); setLiveRunId(observed.runId); return observed.runId; }} source={editingId ? selected : null} draft={draft} onChange={changeDraft} values={editingId && selected ? valuesByPrompt[selected.id] ?? noValues : newDraftValues} onValues={values => { if (editingId && selected) setValuesByPrompt(previous => ({ ...previous, [selected.id]: values })); else setNewDraftValues(values); }} onUse={() => void useWorkingDraft()} />} draft={draft} onChange={changeDraft} onSave={save} onBack={back} saving={saving} error={error} editing={!!editingId} />}
       </m.div></AnimatePresence>
       {error && mode !== 'create' && <p className="error global-error" role="alert">{error}</p>}
       {editorUse && <Suspense fallback={<p role="status">Preparando destinos…</p>}><PreparedUse draft={editorUse} onClose={() => setEditorUse(null)} /></Suspense>}

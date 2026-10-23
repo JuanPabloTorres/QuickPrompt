@@ -60,7 +60,7 @@ it.each(['fill', 'create'])('publishes %s fields only after the accepted real-dr
   await startVisible('Completa tema.', run.sessionId).then(started => { task.runId = started.runId; });
   function Focus() { const [value, setValue] = useState(''); return <section data-testid="prompt-focus" data-template-text="Explica <tema>."><h1 data-testid="focus-title">Ejemplo</h1><textarea aria-label="tema" data-testid="variable-field" data-variable-name="tema" value={value} onChange={event => { changed(); setValue(event.target.value); }} /><span data-testid="compile-ready" /><p data-testid="compiled-preview">Explica {value}.</p></section>; }
   function Editor() { const [title, setTitle] = useState(''), [body, setBody] = useState(''); return <section data-testid="prompt-editor"><input id="prompt-title" aria-label="Título" value={title} onChange={event => { changed(); setTitle(event.target.value); }} /><textarea id="prompt-content" aria-label="Contenido" value={body} onChange={event => { changed(); setBody(event.target.value); }} /><span data-testid="variables-inspected" /><span data-testid="compile-ready" /></section>; }
-  render(<>{kind === 'create' ? <Editor /> : <Focus />}<SameTabAgent runId={task.runId} speed="fast" onActive={vi.fn()} /><NovaLive runId={task.runId} worker={false} onReview={vi.fn()} onCommit={async () => {}} /></>);
+  render(<>{kind === 'create' ? <Editor /> : <Focus />}<SameTabAgent runId={task.runId} speed="fast" onActive={vi.fn()} /><NovaLive runId={task.runId} worker={false} onReview={vi.fn()} /></>);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' }));
   await waitFor(() => expect(accept).toBeDefined(), { timeout: 4000 });
   if (kind === 'create') {

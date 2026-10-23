@@ -8,6 +8,7 @@ import { type PromptAction } from '../../services/library';
 import { useBoundOperation } from '../../services/useBoundOperation';
 import { ClipboardReceipt } from '../../components/ClipboardReceipt';
 import { TemplateCopyPreview } from './TemplateCopyPreview';
+import { PromptVariableFields } from './PromptVariableFields';
 
 export function PromptFocus({ prompt, values, onValues, onBack, onEdit, onAction, onDelete, onUsed, notify, onUse, assistance, onGroups, onVersions, onShare, feedback }: {
   prompt: Prompt; values: Record<string, string>; onValues: (values: Record<string, string>) => void;
@@ -85,7 +86,7 @@ export function PromptFocus({ prompt, values, onValues, onBack, onEdit, onAction
     {!prompt.isArchived && assistance}
     {prompt.isArchived ? <p className="notice">Recupera este prompt para volver a utilizarlo.</p> : <>
       {prompt.variableNames.length > 0 && <div className="variable-composer"><div className="section-heading"><h2>Dale tu contexto</h2><span className="muted">{prompt.variableNames.length} variables</span></div>
-        <div className="variable-grid">{prompt.variableNames.map((name, index) => <div key={name}><label htmlFor={`variable-${index}`}>{name}</label><textarea id={`variable-${index}`} data-testid="variable-field" data-variable-name={name} rows={2} value={values[name] ?? prompt.defaults[name] ?? ''} onChange={e => onValues({ ...values, [name]: e.target.value })} placeholder={`Completa ${name}`} /></div>)}</div>
+        <div className="variable-grid"><PromptVariableFields names={prompt.variableNames} values={values} defaults={prompt.defaults} idPrefix="variable" workspace placeholder={name => `Completa ${name}`} onValueChange={(name, value) => onValues({ ...values, [name]: value })} /></div>
       </div>}
       <section className="prompt-preview" aria-labelledby="preview-heading"><h2 id="preview-heading">{prompt.variableNames.length ? 'Vista previa del resultado' : 'Tu instrucción'}</h2><pre data-testid="compiled-preview">{preview || prompt.templateText}</pre>{preview && <span data-testid="compile-ready" className="sr-only">Listo para utilizar</span>}{preview && <button type="button" className="text-button" disabled={busy} title="UTF-8 sin BOM, saltos de línea LF" onClick={() => { try { downloadPreparedText(preview); } catch (error) { setError(errorMessage(error)); } }}>Descargar texto (.txt)</button>}</section>
       {error && <p role="alert" className="error">{error}</p>}

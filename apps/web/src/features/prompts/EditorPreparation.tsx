@@ -10,6 +10,7 @@ import { ClipboardReceipt } from '../../components/ClipboardReceipt';
 import { useBoundOperation } from '../../services/useBoundOperation';
 import { downloadPreparedText } from '../../services/textExport';
 import { TemplateCopyPreview } from './TemplateCopyPreview';
+import { PromptVariableFields } from './PromptVariableFields';
 
 export function EditorPreparation({ source, draft, onChange, values, onValues, onUse, onObserve }: { source: Prompt | null; draft: PromptDraft; onChange: (draft: PromptDraft) => void; values: Record<string, string>; onValues: (values: Record<string, string>) => void; onUse: () => void; onObserve?: (message: string, source: Prompt, signal: AbortSignal) => Promise<string> }) {
   const { templates, preparation } = useApplicationServices();
@@ -65,7 +66,7 @@ export function EditorPreparation({ source, draft, onChange, values, onValues, o
     {currentPreparation && <span data-testid="variables-inspected" className="sr-only">Variables comprobadas</span>}
     {source && <><label htmlFor="editor-change">Cambio que necesitas</label><textarea id="editor-change" rows={2} value={instruction} maxLength={4000} disabled={busy} onChange={event => setInstruction(event.target.value)} /><div className="dialog-actions"><button type="button" data-nova-control="editor.prepare" className="secondary" disabled={busy || !instruction.trim()} onClick={() => void prepare()}>{busy ? 'Consultando Qwen…' : 'Preparar cambio en el editor'}</button>{busy && <button type="button" className="secondary" onClick={() => { controller.current?.abort(); setBusy(false); }}>Detener cambio</button>}</div></>}
     {source && draft.templateText !== source.templateText && <p className="notice" data-testid="draft-prepared">Borrador modificado · original sin guardar</p>}
-    {names.length > 0 && <div className="variable-grid">{names.map((name, index) => <div key={name}><label htmlFor={`editor-variable-${index}`}>{name}</label><textarea id={`editor-variable-${index}`} data-testid="variable-field" data-variable-name={name} rows={2} maxLength={8000} value={values[name] ?? defaults?.[name] ?? ''} onChange={event => onValues({ ...values, [name]: event.target.value })} /></div>)}</div>}
+    {names.length > 0 && <div className="variable-grid"><PromptVariableFields names={names} values={values} defaults={defaults} idPrefix="editor-variable" workspace maxLength={8000} onValueChange={(name, value) => onValues({ ...values, [name]: value })} /></div>}
     <section className="prompt-preview" aria-label="Vista previa del borrador"><h2>Vista previa del resultado</h2><pre data-testid="compiled-preview">{currentPreparation ? compiled ?? draft.templateText : draft.templateText}</pre>{currentPreparation && compiled !== null && <span data-testid="compile-ready" className="muted">Listo para utilizar</span>}</section>
     <button type="button" className="text-button" disabled={busy || copyOperation.busy || !currentPreparation || compiled === null} title="UTF-8 sin BOM, saltos de línea LF" onClick={() => { try { if (currentPreparation && compiled !== null) downloadPreparedText(compiled); } catch (error) { setError(errorMessage(error)); } }}>Descargar texto (.txt)</button>
     <TemplateCopyPreview text={draft.templateText} disabled={busy || copyOperation.busy} onCopy={() => void copy('TEMPLATE')} />

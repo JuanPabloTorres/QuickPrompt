@@ -85,7 +85,7 @@ it('revalidates a variable binding after progress before emitting input', async 
 it('binds approval controls to the current run even if another activity panel is visible', async () => {
   const own = vi.fn(), foreign = vi.fn();
   render(<><aside data-testid="nova-live" data-run-id="other"><button data-nova-control="approval.apply" onClick={foreign}>Aplicar</button></aside>
-    <aside data-testid="nova-live" data-run-id="current"><button data-nova-control="approval.apply" onClick={own}>Apply approved draft</button></aside></>);
+    <section data-testid="prompt-editor"><button data-nova-control="approval.apply" data-nova-run-id="current" onClick={own}>Apply approved draft</button></section></>);
   const driver = new AgentUiDriver(vi.fn()); driver.speed = 'fast'; await driver.click('approval.apply', 'current');
   expect(own).toHaveBeenCalledOnce(); expect(foreign).not.toHaveBeenCalled(); expect(agentUiSurface.control('approval.apply', 'missing')).toBeNull();
 });

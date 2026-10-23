@@ -19,4 +19,4 @@ npm run build --prefix apps/web
 node --test Tests/e2e/automation-contracts.cjs
 ```
 
-Los recorridos de NOVA requieren compilar la API con la salida documentada en cada test. [Comandos locales y Playwright visible](../NOVA_LOCAL_COMMANDS.md), [modal de resultado](../NOVA_RESULT_MODAL.md), [biblioteca y videos](../LEARNING_ACCEPTANCE.md).
+Los recorridos de NOVA requieren compilar la API con la salida documentada en cada test. [Comandos locales y Playwright visible](../archive/NOVA_LOCAL_COMMANDS.md), [modal de resultado](../archive/NOVA_RESULT_MODAL.md), [biblioteca y videos](../LEARNING_ACCEPTANCE.md).

@@ -9418,6 +9418,20 @@
             "type": "string",
             "nullable": true
           },
+          "sourceChoices": {
+            "type": "array",
+            "maxItems": 6,
+            "description": "Read-only candidates offered for explicit selection after an ambiguous search. Selection does not authorize writes or execution.",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "revision"],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "revision": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
           "observation": {
             "allOf": [
               {

@@ -50,12 +50,17 @@ public record LiveCommand(SemanticOperation Operation, string Content = "", stri
             SemanticOperation.PREPARE_PROVIDER => SemanticOutcome.READY_PROVIDER,
             _ => SemanticOutcome.READ
         };
+        // The typed command owns the action. Its textual receipt must stay outside
+        // field data and quoted source names, rather than cite the whole envelope.
+        var directiveEvidence = SemanticPlanValidator.DirectiveFragments(
+            GroundedVariableResolver.InstructionDirective(message, source?.InputNames ?? []))
+            .FirstOrDefault(fragment => !string.IsNullOrWhiteSpace(fragment))?.Trim() ?? "";
         var meaning = new SemanticMeaning(roots, searches ? TargetReference.NAMED : creates ? TargetReference.NONE : TargetReference.SELECTED,
             searches ? Content : source?.Title ?? "", source?.Id, searches ? Content : source?.Title ?? "", Content,
             new(denied, !changes, null, null, [], [], false), outcome, [], creates || changes,
-            operation == SemanticOperation.EXECUTE_LOCAL ? message : "", operation is SemanticOperation.EXECUTE_LOCAL or SemanticOperation.PREPARE_LOCAL_EXECUTION ? "ollama" : ProviderId, "Acción elegida explícitamente en la interfaz.") {
+            operation == SemanticOperation.EXECUTE_LOCAL ? directiveEvidence : "", operation is SemanticOperation.EXECUTE_LOCAL or SemanticOperation.PREPARE_LOCAL_EXECUTION ? "ollama" : ProviderId, "Acción elegida explícitamente en la interfaz.") {
                 CopyContent = CopyContent,
-                ClipboardEvidence = roots.Contains(SemanticOperation.COPY_TO_CLIPBOARD) ? SemanticPlanValidator.DirectiveFragments(GroundedVariableResolver.InstructionDirective(message, source?.InputNames ?? [])).FirstOrDefault(fragment => !string.IsNullOrWhiteSpace(fragment))?.Trim() : null
+                ClipboardEvidence = roots.Contains(SemanticOperation.COPY_TO_CLIPBOARD) ? directiveEvidence : null
             };
         var request = UserActionRequest.FromOperations(message, roots);
         var intent = TaskIntentContract.Accept(request, meaning, true);

@@ -13,6 +13,19 @@ function setup(prompt?: Prompt, onRequest = vi.fn<(message: string, source?: Pro
 }
 function choose(label: string) { fireEvent.click(screen.getByRole('button', { name: label })); return screen.getByRole('dialog', { name: label }); }
 function more() { fireEvent.click(screen.getByText('Más acciones')); }
+it('shows actual workspace data and blocks a cleared required field instead of using a hidden fallback', async () => {
+  const request = vi.fn<(message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>>(async () => {});
+  render(<QuickActions source={source} sourceValues={{ proyecto: 'Proyecto visible', tono: 'Claro' }} onRequest={request} onRemove={async () => {}} />);
+  more(); choose('Ejecutar con IA local');
+  expect((screen.getByLabelText('proyecto') as HTMLTextAreaElement).value).toBe('Proyecto visible');
+  fireEvent.change(screen.getByLabelText('proyecto'), { target: { value: '' } });
+  expect(screen.getByRole('button', { name: 'Ejecutar ahora' })).toHaveProperty('disabled', true);
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('proyecto'), { target: { value: 'Proyecto nuevo' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Ejecutar ahora' }));
+  await waitFor(() => expect(request).toHaveBeenCalledOnce());
+  expect(request.mock.calls[0][2]).toEqual({ proyecto: 'Proyecto nuevo', tono: 'Claro' });
+});
 
 it('searches by meaning with the original description and no incidental open prompt or case values', async () => {
   const { onRequest } = setup(source);
@@ -31,6 +44,7 @@ it.each(['TEMPLATE', 'RENDERED'] as const)('declares adaptation plus %s copy pre
   fireEvent.change(screen.getByLabelText('¿Qué quieres adaptar?'), { target: { value: 'Centrar la instrucción en decisiones.' } });
   fireEvent.click(screen.getByRole('radio', { name: copyContent === 'TEMPLATE' ? 'Plantilla con marcadores' : 'Texto rellenado' }));
   expect(screen.queryByLabelText('proyecto') !== null).toBe(copyContent === 'RENDERED');
+  if (copyContent === 'RENDERED') for (const name of source.variableNames) fireEvent.change(screen.getByLabelText(name), { target: { value: 'Dato visible' } });
   fireEvent.click(screen.getByRole('button', { name: 'Adaptar y preparar' }));
   await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
   expect(onRequest.mock.calls[0][3]).toEqual({ operation: 'PROPOSE_ADAPTATION', content: 'Centrar la instrucción en decisiones.',
@@ -125,10 +139,13 @@ it('loads actual registered destinations and separates preparation from explicit
   await screen.findByRole('option', { name: 'Destino disponible' });
   expect((screen.getByRole('button', { name: 'Preparar con NOVA' }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.change(screen.getByLabelText('¿En qué IA quieres usarlo?'), { target: { value: 'custom' } });
+  for (const name of source.variableNames) fireEvent.change(screen.getByLabelText(name), { target: { value: 'Dato visible' } });
   fireEvent.click(screen.getByRole('button', { name: 'Preparar con NOVA' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(onRequest.mock.calls[0][0]).toContain('para Destino disponible, sin ejecutar ni enviar.');
-  choose('Ejecutar con IA local'); fireEvent.click(screen.getByRole('button', { name: 'Ejecutar ahora' }));
+  choose('Ejecutar con IA local');
+  for (const name of source.variableNames) fireEvent.change(screen.getByLabelText(name), { target: { value: 'Dato visible' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Ejecutar ahora' }));
   await waitFor(() => expect(onRequest).toHaveBeenCalledTimes(2));
   expect(onRequest.mock.calls[1][0]).toContain('Ejecuta ahora');
   expect(onRequest.mock.calls[1][3]).toEqual({ operation: 'EXECUTE_LOCAL', content: '', providerId: 'ollama' });

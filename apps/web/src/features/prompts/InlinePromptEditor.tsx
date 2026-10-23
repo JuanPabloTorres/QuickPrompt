@@ -9,11 +9,12 @@ import { CategorySelector } from './CategorySelector';
 import { useBoundOperation } from '../../services/useBoundOperation';
 import { useEditorHistory } from './useEditorHistory';
 
-export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, error, editing, promptId, preparation, sourceDefaults, metadataLocked = false }: {
+export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, error, editing, promptId, preparation, sourceDefaults, metadataLocked = false, approvedRunId }: {
   draft: PromptDraft; onChange: (draft: PromptDraft) => void; onSave: () => void; onBack: () => void;
   saving: boolean; error: string; editing: boolean;
   promptId?: string | null; preparation?: ReactNode;
   sourceDefaults?: Record<string, string>; metadataLocked?: boolean;
+  approvedRunId?: string | null;
 }) {
   const { templates } = useApplicationServices();
   const [variables, setVariables] = useState<string[]>([]);
@@ -145,7 +146,7 @@ export function InlinePromptEditor({ draft, onChange, onSave, onBack, saving, er
       <details><summary>Categoría y descripción opcionales</summary><CategorySelector value={draft.categoryId} disabled={saving} onChange={categoryId => history.commit({ ...draft, categoryId })} /><label htmlFor="prompt-description">Descripción</label><textarea id="prompt-description" rows={2} maxLength={2000} value={draft.description} onChange={e => history.commit({ ...draft, description: e.target.value })} /></details>
       {preparation}
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="editor-actions"><button type="button" className="text-button" onClick={onBack}>Cancelar</button><button className="primary" data-nova-approval="true" disabled={saving || !!parseError || !draft.title.trim() || !draft.templateText.trim()}><SaveIndicator busy={saving}>{saving ? 'Guardando…' : editing ? 'Guardar versión' : 'Guardar prompt'}</SaveIndicator></button></div>
+      <div className="editor-actions"><button type="button" className="text-button" onClick={onBack}>Cancelar</button><button className="primary" data-nova-approval="true" data-nova-control={approvedRunId ? 'approval.apply' : undefined} data-nova-run-id={approvedRunId ?? undefined} disabled={saving || !!parseError || !draft.title.trim() || !draft.templateText.trim()}><SaveIndicator busy={saving}>{saving ? 'Guardando…' : approvedRunId ? 'Aplicar versión aprobada' : editing ? 'Guardar versión' : 'Guardar prompt'}</SaveIndicator></button></div>
     </form>
   </section>;
 }

@@ -29,6 +29,9 @@ public sealed partial class AgentOrchestrator
             var resolution = await planning.Interpret(input.Message, input.SessionId, input.SourceId, input.SourceRevision, input.Model, null, ct, input.Command);
             resolution = await planning.Resolve(resolution, input.Message, input.SessionId, input.Model, null, ct);
             semantic = resolution.Interpretation; control.Semantic = semantic;
+            if (input.Command?.Operation == SemanticOperation.SEARCH_PROMPT)
+                control.SourceChoices = resolution.Candidates.Where(candidate => !candidate.Prompt.IsArchived).Take(6)
+                    .Select(candidate => new UiPrompt(candidate.Prompt.Id, candidate.Prompt.Title, candidate.Prompt.Revision)).ToArray();
             var copyTool = semantic.RequiresTemplatePreview ? "ui_copy_template" : "ui_copy_compiled_prompt";
             if (semantic.RequiresTemplatePreview) live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.USER_SELECTED,
                 "Elegiste preparar la plantilla reutilizable con sus marcadores.", "CopyRepresentation");

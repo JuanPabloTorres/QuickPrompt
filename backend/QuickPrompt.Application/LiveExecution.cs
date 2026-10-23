@@ -31,7 +31,10 @@ public record LiveApproval(Guid Id, string Hash, Guid? PromptId, int? Revision, 
 }
 public record LiveApprovalInput(Guid ApprovalId, string Hash, int? Revision, bool Confirmed);
 public record LiveDeletion(Guid Id, string Hash, Guid PromptId, int Revision, string Title);
-public record LiveView(LiveRecord Run, string? Request, string? Question, UiVisibleState? Observation, LiveApproval? Proposal, UiDecision[] Decisions, SemanticInterpretation? Semantic = null, LiveDeletion? Deletion = null, LiveRuntime? Runtime = null);
+public record LiveView(LiveRecord Run, string? Request, string? Question, UiVisibleState? Observation, LiveApproval? Proposal, UiDecision[] Decisions, SemanticInterpretation? Semantic = null, LiveDeletion? Deletion = null, LiveRuntime? Runtime = null)
+{
+    public UiPrompt[] SourceChoices { get; init; } = [];
+}
 public interface ILiveRunStore
 {
     bool TryCreate(LiveRecord record);
@@ -91,6 +94,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         public LiveDeletion? Deletion;
         public long? DeletionDeadlineTick;
         public string? Question;
+        public UiPrompt[] SourceChoices = [];
         public List<UiDecision> Decisions = [];
         public string[] RuntimeTools = [];
         public IVisibleBrowser? Browser;
@@ -139,7 +143,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         if (Terminal(record.Status) && control.Touched < DateTime.UtcNow.AddHours(-2)) { controls.TryRemove(id, out _); return new(record, null, null, null, null, [], Runtime: RuntimeView(record, null)); }
         lock (control.Gate) {
             record = Get(id);
-            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control));
+            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control)) { SourceChoices = control.SourceChoices };
         }
     }
     public LiveEvent Emit(Guid id, LiveStatus status, LiveActor actor, string message, string stage = "Execution", string? tool = null,
@@ -268,6 +272,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             if (run.Status != LiveStatus.AWAITING_APPROVAL || run.PauseRequested || control.ApprovalConsumed || run.Approval != "PENDING") throw new ConflictException("La propuesta no está disponible para aprobación.");
             if (proposal.PromptId is { } existing && library.Get(existing).Revision != proposal.Revision) throw new ConflictException("El prompt cambió; revisa la nueva versión.");
             if (proposal.SourceBasis is { } basis && library.Get(basis.Id).Revision != basis.Revision) throw new ConflictException("El origen cambió; revisa la copia antes de aprobar.");
+            control.Semantic?.Goal?.RecordHumanContentApproval(proposal.Draft.TemplateText);
             Emit(id, LiveStatus.TOOL_APPROVED, LiveActor.USER_SELECTED, "Nueva versión aprobada para esta propuesta y revisión.", "Approval", target: proposal.PromptId, update: r => r with { Approval = "APPROVED" });
             control.ApprovalDecision.TrySetResult(true);
         }

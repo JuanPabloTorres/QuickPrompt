@@ -1,3 +1,5 @@
+> HISTÓRICO: este documento describe un perfil retirado. Para el producto actual, consultar [documentación vigente](../README.md).
+
 # Abrir y actualizar prompts desde inicio
 
 La entrada de NOVA ahora resuelve acciones sobre elementos reales de la biblioteca:
@@ -24,10 +26,10 @@ El worker admite `locatorTimeoutMs` o `--locator-timeout=90000`, siempre limitad
 
 - Backend: **46 pruebas aprobadas**, con navegación por títulos reales, acentos, variantes de peticiones, títulos que contienen «para», ambigüedad, actualización sin mutaciones y archivo.
 - Frontend: **19 pruebas aprobadas**, incluidos despacho y cancelación sin generar otro prompt.
-- Worker: **3 pruebas de contratos** y [regresión de fallo, cancelación, recuperación y timeout](evidence/local-commands/runner-regression/automation.json).
-- [Edge visible y Qwen real](evidence/local-commands/acceptance.json): siete comprobaciones, navegación con el worker cerrado, aclaración, propuesta sin guardar, actualización del mismo ID con dos versiones, cancelación de una segunda propuesta, elemento inexistente y móvil.
-- [Worker y grabación](evidence/local-commands/worker/result.json): navegación real desde una petición natural; `recorrido.webm` y capturas en ese directorio.
-- [Instancia activa](evidence/local-commands/active-service.json): API actualizada, misma biblioteca antes/después y sin recargar la pestaña del usuario.
+- Worker: **3 pruebas de contratos** y [regresión de fallo, cancelación, recuperación y timeout](../evidence/local-commands/runner-regression/automation.json).
+- [Edge visible y Qwen real](../evidence/local-commands/acceptance.json): siete comprobaciones, navegación con el worker cerrado, aclaración, propuesta sin guardar, actualización del mismo ID con dos versiones, cancelación de una segunda propuesta, elemento inexistente y móvil.
+- [Worker y grabación](../evidence/local-commands/worker/result.json): navegación real desde una petición natural; `recorrido.webm` y capturas en ese directorio.
+- [Instancia activa](../evidence/local-commands/active-service.json): API actualizada, misma biblioteca antes/después y sin recargar la pestaña del usuario.
 
 Los recorridos usan SQLite y perfiles de navegador propios, con datos ficticios. No se instalaron dependencias ni modelos. No se alteraron políticas de proveedores externos ni la CSP.
 

@@ -254,6 +254,10 @@ export function createAgentUiCommands(host: AgentUiCommandHost): AgentUiCommandR
                 }
                 if (session.providerId) {
                     const select = await host.locate(() => host.surface.providerSelect(), 'target') as HTMLSelectElement;
+                    await host.until(() => {
+                        if (select.dataset.providerState === 'error') throw new Error('PROVIDER_UNAVAILABLE');
+                        return select.dataset.providerState !== 'loading';
+                    });
                     if (!Array.from(select.options).some(option => option.value === session.providerId))
                         throw new Error('PROVIDER_UNAVAILABLE');
                     await host.boundary();
@@ -281,10 +285,7 @@ export function createAgentUiCommands(host: AgentUiCommandHost): AgentUiCommandR
                     await host.click('dialog.close');
                     await host.until(() => !shown(host.marker('prepared-provider-dialog')));
                 }
-                // Both nested panels may be transitioning after the approval dialog closes.
-                // Request the open state idempotently rather than toggling a stale aria state.
-                window.dispatchEvent(new CustomEvent('nova-open-assistant', { detail: { focus: false } }));
-                window.dispatchEvent(new Event('nova-open-activity'));
+                // Persistence belongs to the stable editor, never a moving activity portal.
                 await host.until(() => host.surface.control('approval.apply', action.runId));
                 await host.click('approval.apply', action.runId);
                 const expectedRevision = typeof args.expectedRevision === 'number' ? args.expectedRevision : (before.revision ?? 0) + 1;

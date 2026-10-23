@@ -86,3 +86,26 @@ it('default command factories isolate their per-driver execution permission', as
   await executeOne.execute(action('ui_execute_local'), state); expect(click).toHaveBeenCalledWith('provider.execute');
   await expect(executeTwo.execute(action('ui_execute_local'), state)).rejects.toThrow('LOCAL_EXECUTION_NOT_ALLOWED'); expect(click).toHaveBeenCalledOnce(); complete.remove();
 });
+
+it('waits for the provider catalog before checking an empty select and rejects a loaded missing provider', async () => {
+  const select = document.createElement('select'); select.dataset.providerState = 'loading'; document.body.appendChild(select);
+  const click = vi.fn(async () => {});
+  const host: AgentUiCommandHost = {
+    readState: () => ({} as UiState), marker: () => select, input: () => null,
+    surface: { prompt: () => null, providerSelect: () => select, control: () => null },
+    boundary: async () => {}, until: async read => { for (let i = 0; i < 100; i++) { const value = read(); if (value) return value; await new Promise(resolve => setTimeout(resolve, 1)); } throw new Error('TEST_TIMEOUT'); },
+    locate: async () => select, click, write: vi.fn(async () => {}), settled: async () => ({} as UiState), fillVariable: vi.fn(async () => {}),
+  };
+  const commands = createAgentUiCommands(host), start = commands.find('start')!, open = commands.find('ui_open_provider_picker')!;
+  if (start.kind !== 'settled' || open.kind !== 'settled') throw new Error('Unexpected fixture command kind');
+  const state = { compiledReady: true, providerOpen: true } as UiState;
+  await start.execute(action('start', { providerId: 'ollama' }), state);
+  let finished = false;
+  const pending = open.execute(action('ui_open_provider_picker'), state).then(() => { finished = true; });
+  await new Promise(resolve => setTimeout(resolve, 5)); expect(finished).toBe(false);
+  select.add(new Option('Ollama local', 'ollama')); select.dataset.providerState = 'ready';
+  await pending; expect(select.value).toBe('ollama'); expect(click).not.toHaveBeenCalled();
+  select.replaceChildren();
+  await expect(open.execute(action('ui_open_provider_picker'), state)).rejects.toThrow('PROVIDER_UNAVAILABLE');
+  select.remove();
+});

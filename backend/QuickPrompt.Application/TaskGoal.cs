@@ -41,6 +41,10 @@ public record TaskGoal(Guid GoalId,
     public bool AllowsPlan(SemanticInterpretation plan) => CopyContent == plan.CopyContent && (IntentContract?.Allows(plan) ?? Scope.Allows(plan.Intentions));
     private readonly object assessmentLock=new();
     private readonly Queue<string> assessedBodies=new();
+    private string? humanApprovedBody;
+    // Separate provenance: this is a confirmed proposal, not a model assessment.
+    internal void RecordHumanContentApproval(string body) { lock (assessmentLock) humanApprovedBody = AssessmentHash(body); }
+    public bool HasHumanContentApproval(string body) { lock (assessmentLock) return humanApprovedBody == AssessmentHash(body); }
     // An assessment cannot grant effects or declare completion. The exact body is
     // bound to this process-owned goal; native structure/receipts remain independent.
     private string AssessmentHash(string body)=>LiveRuns.Hash(new {GoalId,UserRequest,TargetReferences,WorkingTarget,Constraints,AuthoringDecision,Clauses,body});
@@ -206,7 +210,7 @@ public static class GoalCompletionValidator
                     && (!goal.Constraints.Shortening || state.TemplateText.Length < (goal.WorkingTarget?.CharacterCount ?? original?.TemplateText.Length)),
                 CompletionCondition.NEW_DRAFT_VISIBLE => (state.Mode == "create" && state.PromptId is null && state.DraftChanged || effectCommitted && state.PromptId is not null) && state.Title is { Length: > 0 }
                     && state.TemplateText is { Length: > 0 } && executed.Contains("ui_prepare_creation"),
-                CompletionCondition.CONTENT_VALID => contentValid && state.TemplateText is { } assessed && goal.HasContentAssessment(assessed),
+                CompletionCondition.CONTENT_VALID => contentValid && state.TemplateText is { } assessed && (goal.HasContentAssessment(assessed) || goal.HasHumanContentApproval(assessed)),
                 CompletionCondition.TEMPLATE_VISIBLE => state.TemplateText is { Length: > 0 } && state.TemplatePreviewText == state.TemplateText && executed.Contains("ui_show_template"),
                 CompletionCondition.CLIPBOARD_WRITTEN => executed.Contains(plan.RequiresTemplatePreview ? "ui_copy_template" : "ui_copy_compiled_prompt") && (ClipboardMatches(state, plan.CopyContent)
                     // A verified save changes visible identity/revision. The prior copied

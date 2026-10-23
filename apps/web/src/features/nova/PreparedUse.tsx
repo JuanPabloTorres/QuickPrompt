@@ -13,12 +13,13 @@ export function PreparedUse({ draft, onClose, onCloseAutoFocus }: { draft: Prepa
   const { surfaceCapability } = visibleSession;
   const [busy, setBusy] = useState(false); const [response, setResponse] = useState(''); const [complete, setComplete] = useState(false); const [error, setError] = useState(''); const [feedback, setFeedback] = useState('');
   const [destinations, setDestinations] = useState<ProviderCapability[]>([]);
+  const [providerState, setProviderState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [providerId, setProviderId] = useState(draft.providerId ?? 'chatgpt');
   const selected = destinations.find(item => item.providerId === providerId && item.modesSupported.includes('COPY_AND_OPEN') && item.destinationUrl && !['UNAVAILABLE', 'OFFLINE'].includes(item.availabilityStatus));
   useEffect(() => {
     const current = new AbortController();
-    providerClient.list(current.signal).then(items => { if (!current.signal.aborted) setDestinations(items); })
-      .catch(error => { if (!current.signal.aborted) setError(errorMessage(error)); });
+    providerClient.list(current.signal).then(items => { if (!current.signal.aborted) { setDestinations(items); setProviderState('ready'); } })
+      .catch(error => { if (!current.signal.aborted) { setProviderState('error'); setError(errorMessage(error)); } });
     return () => current.abort();
   }, []);
   const controller = useRef<AbortController | null>(null);
@@ -57,7 +58,7 @@ export function PreparedUse({ draft, onClose, onCloseAutoFocus }: { draft: Prepa
   return <Dialog open onOpenChange={open => { if (!open) { if (busy) cancelExecution(); onClose(); } }} onCloseAutoFocus={onCloseAutoFocus} title="Usa tu prompt preparado" description="Revisa el texto antes de ejecutar en tu equipo o copiar y abrir el destino elegido. Tú decides cuándo pegar y enviar.">
     <div data-testid="prepared-provider-dialog"><pre className="prepared-text">{draft.compiledText}</pre></div>
     <button type="button" className="text-button" disabled={busy || !draft.compiledText} title="UTF-8 sin BOM, saltos de línea LF" onClick={() => { try { downloadPreparedText(draft.compiledText!); } catch (error) { setError(errorMessage(error)); } }}>Descargar texto (.txt)</button>
-    <div className="prepared-field"><label htmlFor="prepared-provider">Destino</label><select id="prepared-provider" disabled={busy} value={providerId} onChange={event => { setProviderId(event.target.value); setFeedback(''); }}>{destinations.map(destination => <option key={destination.providerId} value={destination.providerId}>{destination.displayName}</option>)}</select></div>
+    <div className="prepared-field"><label htmlFor="prepared-provider">Destino</label><select id="prepared-provider" data-provider-state={providerState} disabled={busy || providerState !== 'ready'} value={providerId} onChange={event => { setProviderId(event.target.value); setFeedback(''); }}>{providerState === 'loading' && <option value={providerId}>Cargando destinos…</option>}{destinations.map(destination => <option key={destination.providerId} value={destination.providerId}>{destination.displayName}</option>)}</select></div>
     <div className="dialog-actions">{busy ? <button className="secondary" onClick={cancelExecution}>Detener ejecución</button> : <><button data-nova-control="provider.execute" className="primary" onClick={execute}>Ejecutar con Qwen3</button>{selected && <button className="secondary" onClick={copyAndOpen}>Copiar y abrir {selected.displayName}</button>}</>}</div>
     {feedback && <p role="status">{feedback} {selected?.destinationUrl && <a href={selected.destinationUrl} target="_blank" rel="noopener noreferrer">Abrir {selected.displayName}</a>}</p>}
     {response && <div className="local-response"><p className="eyebrow">{complete ? 'RESPUESTA COMPLETA · SIN GUARDAR' : 'RESPUESTA EN CURSO'}</p><pre data-testid="local-qwen-response" data-complete={complete}>{response}</pre>{complete && <><span data-testid="local-response-complete" className="sr-only">Respuesta verificada</span><button className="secondary" onClick={async () => { try { await navigator.clipboard.writeText(response); setFeedback('Respuesta copiada.'); } catch (error) { setError(errorMessage(error)); } }}>Copiar respuesta</button></>}</div>}

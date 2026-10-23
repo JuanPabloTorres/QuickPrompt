@@ -1,9 +1,9 @@
 // A code-owned DOM port. Model output never supplies selectors or captions.
 export type AgentControl = 'library.home' | 'prompt.new' | 'prompt.edit' | 'prompt.use' | 'prompt.copy' | 'prompt.copy-template' | 'prompt.template-preview' | 'editor.prepare' | 'provider.execute' | 'dialog.close' | 'approval.apply';
-type Owner = 'application' | 'library' | 'workspace' | 'provider' | 'activity';
+type Owner = 'application' | 'library' | 'workspace' | 'provider';
 const owners: Record<AgentControl, Owner> = {
   'library.home': 'application', 'prompt.new': 'library', 'prompt.edit': 'workspace', 'prompt.use': 'workspace', 'prompt.copy': 'workspace',
-  'prompt.copy-template': 'workspace', 'prompt.template-preview': 'workspace', 'editor.prepare': 'workspace', 'provider.execute': 'provider', 'dialog.close': 'provider', 'approval.apply': 'activity',
+  'prompt.copy-template': 'workspace', 'prompt.template-preview': 'workspace', 'editor.prepare': 'workspace', 'provider.execute': 'provider', 'dialog.close': 'provider', 'approval.apply': 'workspace',
 };
 const workspaceMarkers = new Set(['focus-title', 'compile-ready', 'compiled-preview', 'template-preview', 'variables-inspected', 'draft-prepared', 'editor-preparation', 'clipboard-receipt']);
 const providerMarkers = new Set(['local-qwen-response', 'local-response-complete']);
@@ -45,13 +45,10 @@ export class AgentUiSurface {
   control(key: AgentControl, runId?: string): HTMLElement | null {
     const scopes: Record<Owner, () => ParentNode | null> = {
       application: () => document, library: () => this.library(), workspace: () => this.workspace(), provider: () => this.provider(),
-      activity: () => {
-        if (!runId) throw new Error('UI_PRECONDITION');
-        return this.unique(Array.from(document.querySelectorAll<HTMLElement>('[data-testid="nova-live"]')).filter(node => node.dataset.runId === runId));
-      },
     };
     const root = scopes[owners[key]]();
-    return this.unique(Array.from(root?.querySelectorAll<HTMLElement>('[data-nova-control]') ?? []).filter(node => node.dataset.novaControl === key));
+    if (key === 'approval.apply' && !runId) throw new Error('UI_PRECONDITION');
+    return this.unique(Array.from(root?.querySelectorAll<HTMLElement>('[data-nova-control]') ?? []).filter(node => node.dataset.novaControl === key && (key !== 'approval.apply' || node.dataset.novaRunId === runId)));
   }
 }
 

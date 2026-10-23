@@ -80,16 +80,35 @@ public sealed class DraftGenerationCompositionTests
         Assert.Equal(0, reviewer.Calls);
     }
 
+    [Fact]
+    public async Task SessionControlsNeverCompileIntoFutureBodyButRemainVisibleToIndependentReview()
+    {
+        const string request = "Crea un prompt para organizar archivos. Revisa conmigo antes de guardarlo.";
+        var plan = new LiveCommand(SemanticOperation.CREATE_DRAFT, request).Compile(request, SemanticContext.Empty);
+        var transport = new VerbatimTransport { BindLiteral = false, SeparateLastPassage = true }; var reviewer = new Reviewer();
+        var generator = new PromptDraftGenerator(transport, new Editor(), new Extractor(), reviewer);
+        var proposal = await generator.Generate(new(Guid.NewGuid(), request) { Interpretation = plan }, plan.Preparation(), [], default);
+        Assert.DoesNotContain("Revisa conmigo antes de guardarlo.", proposal.TemplateText);
+        Assert.Contains("No inventes datos.", proposal.TemplateText);
+        Assert.Equal(request, transport.AuthorRequest);
+        Assert.Equal(request, reviewer.Input!.TaskRequest);
+        Assert.Equal(1, reviewer.Calls);
+    }
     private sealed class VerbatimTransport : IValidatedAgentModelTransport
     {
-        public bool BindLiteral = true; public bool OutsideRange; public string Title = "Tarea";
+        public bool BindLiteral = true; public bool OutsideRange; public string Title = "Tarea"; public bool SeparateLastPassage; public string? AuthorRequest;
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
         {
             ct.ThrowIfCancellationRequested();
             using var data = JsonDocument.Parse(JsonSerializer.SerializeToElement(packet).GetProperty("messages")[1].GetProperty("content").GetString()!);
             Assert.True(data.RootElement.TryGetProperty("originalAuthoringRequest",out _));
+            AuthorRequest = data.RootElement.GetProperty("originalAuthoringRequest").GetString();
             Assert.False(data.RootElement.TryGetProperty("requestUnits",out _));
-            var reply=new {title=Title,description="",templateText="Texto generado.",verbatimBodyReference=BindLiteral?(int?)(OutsideRange?99:0):null};
+            var reference = BindLiteral ? (int?)(OutsideRange ? 99 : 0) : null;
+            var compiled = JsonSerializer.SerializeToElement(packet).GetProperty("format").GetProperty("properties").TryGetProperty("taskInstruction", out _);
+            object reply = compiled
+                ? new { title = Title, description = "", taskInstruction = "Texto generado.", requirements = new[] { "No inventes datos." }, currentSessionControls = SeparateLastPassage ? new[] { "Revisa conmigo antes de guardarlo." } : Array.Empty<string>(), verbatimBodyReference = reference }
+                : new { title = Title, description = "", templateText = SeparateLastPassage ? "Texto generado. Revisa conmigo antes de guardarlo." : "Texto generado.", verbatimBodyReference = reference };
             return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new {message=new {content=JsonSerializer.Serialize(reply)}})));
         }
         public bool UsesThinking(string model) => false;

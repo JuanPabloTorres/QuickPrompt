@@ -53,7 +53,7 @@ it('rejects a summary for another run or sequence and keeps legacy controls usab
 });
 it('shows unconfirmed activity when SSE disconnects and restores live facts on recovery', async () => {
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(view())));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' }));
   expect(await screen.findByTestId('agent-runtime')).toBeTruthy();
   act(() => Events.items[0].onerror?.());
@@ -73,7 +73,7 @@ it.each(['PAUSED', 'AWAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'] as c
 it('keeps a confirmed terminal result after normal SSE closure', async () => {
   let current = view();
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(current)));
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' }));
   current = view(); current.run.status = 'COMPLETED'; current.run.browserOpen = false;
   current.runtime!.activeTool = null; current.runtime!.modelState = 'ready';
@@ -88,7 +88,7 @@ it('updates the active tool from same-run events and ignores foreign or repeated
   let current = view();
   const transport = vi.fn(async () => Response.json(current));
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', transport);
-  render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' }));
   act(() => Events.items[0].send(secondId, 1)); expect(transport).toHaveBeenCalledTimes(1);
   current = view(); current.runtime!.activeTool = null; current.runtime!.tools[0].state = 'completed';
@@ -99,10 +99,10 @@ it('cleans old subscriptions and ignores a late control response after switching
   let finishPause: ((response: Response) => void) | undefined;
   vi.stubGlobal('EventSource', Events);
   vi.stubGlobal('fetch', vi.fn(async (path: string) => path.endsWith('/pause') ? new Promise<Response>(resolve => { finishPause = resolve; }) : Response.json(view(path.includes(secondId) ? secondId : id))));
-  const mounted = render(<NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  const mounted = render(<NovaLive runId={id} worker={false} onReview={vi.fn()} />);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' })); fireEvent.click(screen.getByRole('button', { name: 'Pausar' }));
   await waitFor(() => expect(finishPause).toBeDefined());
-  mounted.rerender(<NovaLive runId={secondId} worker={false} onCommit={async () => {}} onReview={vi.fn()} />);
+  mounted.rerender(<NovaLive runId={secondId} worker={false} onReview={vi.fn()} />);
   await waitFor(() => expect(screen.getByTestId('nova-live').dataset.runId).toBe(secondId));
   expect(Events.items[0].close).toHaveBeenCalled();
   await act(async () => { finishPause!(Response.json({ ...view().run, status: 'PAUSED', pauseRequested: true })); });
@@ -110,7 +110,7 @@ it('cleans old subscriptions and ignores a late control response after switching
 });
 it('reopens hidden runtime details from the compact control after the assistant closes', async () => {
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(view())));
-  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onCommit={async () => {}} onReview={vi.fn()} /><AgentDock context="Biblioteca" actions={null}>{null}</AgentDock></LazyMotion>);
+  render(<LazyMotion features={domAnimation}><NovaLive runId={id} worker={false} onReview={vi.fn()} /><AgentDock context="Biblioteca" actions={null}>{null}</AgentDock></LazyMotion>);
   fireEvent.click(await screen.findByRole('button', { name: 'Actividad de NOVA' }));
   expect(await screen.findByTestId('agent-runtime')).toBeTruthy();
   act(() => screen.getByRole('button', { name: 'Pausar' }).focus());

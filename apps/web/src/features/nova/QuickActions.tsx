@@ -9,6 +9,7 @@ import { errorMessage, type Prompt } from '../../services/api';
 
 import { useLibrary } from '../../hooks/useLibrary';
 import type { LiveCommand } from '../../services/live';
+import { PromptVariableFields } from '../prompts/PromptVariableFields';
 
 const actions = [
   { id: 'create', label: 'Crear prompt', icon: Plus, question: '¿Qué prompt quieres crear?', hint: 'Describe para qué lo necesitas y qué resultado esperas.', submit: 'Crear con NOVA' },
@@ -60,13 +61,13 @@ function PromptChoice({ onChoose, allowArchived }: { onChoose: (prompt: Prompt) 
   </div>;
 }
 
-function ActionForm({ action, initialPrompt, onRequest, onRemove, onClose }: {
-  action: Action; initialPrompt?: Prompt; onRequest: (message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>;
+function ActionForm({ action, initialPrompt, initialValues, onRequest, onRemove, onClose }: {
+  action: Action; initialPrompt?: Prompt; initialValues?: Record<string, string>; onRequest: (message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>;
   onRemove: (prompt: Prompt) => Promise<void>; onClose: () => void;
 }) {
   const { providers: providerClient } = useApplicationServices();
   const [prompt, setPrompt] = useState<Prompt | null>(action.id === 'create' || action.id === 'find' ? null : initialPrompt ?? null);
-  const [details, setDetails] = useState(''), [values, setValues] = useState<Record<string, string>>({});
+  const [details, setDetails] = useState(''), [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries((initialPrompt?.variableNames ?? []).map(name => [name, initialValues?.[name] ?? initialPrompt?.defaults[name] ?? ''])));
   const [copyContent, setCopyContent] = useState<'TEMPLATE' | 'RENDERED'>(action.id === 'adapt-copy' ? 'TEMPLATE' : 'RENDERED');
   const [providers, setProviders] = useState<Destination[]>([]), [providerId, setProviderId] = useState('');
   const [providerError, setProviderError] = useState(''), [providerRetry, setProviderRetry] = useState(0);
@@ -89,7 +90,8 @@ function ActionForm({ action, initialPrompt, onRequest, onRemove, onClose }: {
   const independent = action.id === 'create' || action.id === 'find';
   const ready = (independent || !!prompt) && (!needsDetails || !!details.trim())
     && (action.id !== 'prepare' || !!destination)
-    && (action.id !== 'fill' || !!prompt?.variableNames.some(name => values[name]?.trim()));
+    && (action.id !== 'fill' || !!prompt?.variableNames.some(name => values[name]?.trim()))
+    && (!needsValues || action.id === 'fill' || !!prompt?.variableNames.every(name => values[name]?.trim()));
   async function submit() {
     if (!ready || submitting.current) return;
     submitting.current = true; setBusy(true); setError('');
@@ -98,7 +100,7 @@ function ActionForm({ action, initialPrompt, onRequest, onRemove, onClose }: {
       else {
         const message = instruction(action, details, values, destination, copyContent);
         if (message.length > 16000) throw new Error('La solicitud es demasiado larga. Reduce los detalles o los valores e inténtalo de nuevo.');
-        const supplied = (action.id === 'copy' || action.id === 'adapt-copy') && copyContent === 'TEMPLATE' ? {} : Object.fromEntries(Object.entries(values).filter(([name, value]) => prompt?.variableNames.includes(name) && value.trim()));
+        const supplied = !needsValues ? {} : Object.fromEntries(Object.entries(values).filter(([name, value]) => prompt?.variableNames.includes(name) && (action.id !== 'fill' || !!value.trim())));
         const operations = { create: 'CREATE_DRAFT', find: 'SEARCH_PROMPT', update: 'PROPOSE_ADAPTATION', 'adapt-copy': 'PROPOSE_ADAPTATION', open: 'OPEN_PROMPT', fill: 'FILL_VARIABLES', prepare: 'PREPARE_PROVIDER', execute: 'EXECUTE_LOCAL', copy: 'COPY_TO_CLIPBOARD' } as const;
         await onRequest(message, prompt ?? undefined, supplied, { operation: operations[action.id], content: details.trim(),
           ...(action.id === 'execute' ? { providerId: 'ollama' } : destination ? { providerId: destination.providerId } : {}),
@@ -110,14 +112,14 @@ function ActionForm({ action, initialPrompt, onRequest, onRemove, onClose }: {
     finally { submitting.current = false; setBusy(false); }
   }
   return <form className="quick-action-form" data-nova-command="true" onSubmit={event => { event.preventDefault(); void submit(); }}>
-    {!independent && (!prompt ? <PromptChoice allowArchived={action.id === 'delete'} onChoose={selected => { setPrompt(selected); setValues({}); setError(''); }} /> : <div className="quick-selected"><div><span className="muted">Prompt elegido</span><strong>{prompt.title}</strong><p className="muted">{prompt.description || prompt.templateText.slice(0, 160)}</p></div><button type="button" className="text-button" disabled={busy} onClick={() => { setPrompt(null); setValues({}); }}>Elegir otro</button></div>)}
+    {!independent && (!prompt ? <PromptChoice allowArchived={action.id === 'delete'} onChoose={selected => { setPrompt(selected); setValues(Object.fromEntries(selected.variableNames.map(name => [name, selected.defaults[name] ?? '']))); setError(''); }} /> : <div className="quick-selected"><div><span className="muted">Prompt elegido</span><strong>{prompt.title}</strong><p className="muted">{prompt.description || prompt.templateText.slice(0, 160)}</p></div><button type="button" className="text-button" disabled={busy} onClick={() => { setPrompt(null); setValues({}); }}>Elegir otro</button></div>)}
     {(independent || prompt) && <>
       {needsDetails && <div className="prepared-field"><label htmlFor={`${id}-details`}>{action.question}</label><textarea id={`${id}-details`} rows={4} maxLength={detailLimit} required disabled={busy} value={details} onChange={event => setDetails(event.target.value)} aria-describedby={`${id}-hint`} /><p className="muted" id={`${id}-hint`}>{action.hint}</p></div>}
       {(action.id === 'copy' || action.id === 'adapt-copy') && <fieldset disabled={busy}><legend>¿Qué quieres copiar?</legend>
         <label><input type="radio" name={`${id}-copy-content`} checked={copyContent === 'TEMPLATE'} onChange={() => setCopyContent('TEMPLATE')} />Plantilla con marcadores</label>
         <label><input type="radio" name={`${id}-copy-content`} checked={copyContent === 'RENDERED'} onChange={() => setCopyContent('RENDERED')} />Texto rellenado</label>
       </fieldset>}
-      {needsValues && prompt && <fieldset className="quick-values" disabled={busy}><legend>{action.id === 'fill' ? '¿Qué datos quieres completar?' : 'Datos para usar el prompt'}</legend>{prompt.variableNames.length ? prompt.variableNames.map((name, index) => <div className="prepared-field" key={name}><label htmlFor={`${id}-value-${index}`}>{name}</label><textarea id={`${id}-value-${index}`} rows={2} maxLength={8000} value={values[name] ?? ''} onChange={event => setValues(previous => ({ ...previous, [name]: event.target.value }))} /></div>) : <p className="muted">Este prompt no tiene variables.</p>}<p className="muted">{action.id === 'fill' ? 'Completa al menos un campo. Los demás conservan su valor.' : 'Si falta algún dato necesario, NOVA te lo preguntará.'}</p></fieldset>}
+      {needsValues && prompt && <fieldset className="quick-values" disabled={busy}><legend>{action.id === 'fill' ? '¿Qué datos quieres completar?' : 'Datos para usar el prompt'}</legend>{prompt.variableNames.length ? <PromptVariableFields names={prompt.variableNames} values={values} idPrefix={`${id}-value`} maxLength={8000} fieldClassName="prepared-field" onValueChange={(name, value) => setValues(previous => ({ ...previous, [name]: value }))} /> : <p className="muted">Este prompt no tiene variables.</p>}<p className="muted">{action.id === 'fill' ? 'Completa al menos un campo. Los demás conservan su valor.' : 'Completa todos los campos necesarios antes de continuar.'}</p></fieldset>}
       {action.id === 'prepare' && <div className="prepared-field"><label htmlFor={`${id}-provider`}>¿En qué IA quieres usarlo?</label><select id={`${id}-provider`} value={providerId} disabled={busy} required onChange={event => setProviderId(event.target.value)}><option value="">Elige un destino</option>{providers.map(provider => <option key={provider.providerId} value={provider.providerId}>{provider.displayName}</option>)}</select>{providerError && <div><p role="alert" className="error">{providerError}</p><button type="button" className="text-button" onClick={() => setProviderRetry(value => value + 1)}>Reintentar destinos</button></div>}<p className="muted">Prepara el texto; tú decides cuándo enviarlo.</p></div>}
       {action.id === 'execute' && <p className="notice">Al continuar, se enviará el prompt completo al modelo local para generar una respuesta.</p>}
       {action.id === 'delete' && <p className="notice">Todavía no se eliminará. Primero verás la confirmación del prompt elegido.</p>}
@@ -127,8 +129,8 @@ function ActionForm({ action, initialPrompt, onRequest, onRemove, onClose }: {
   </form>;
 }
 
-export function QuickActions({ source, disabled = false, onRequest, onRemove, compact = false }: {
-  source?: Prompt; disabled?: boolean; onRequest: (message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>; onRemove: (prompt: Prompt) => Promise<void>; compact?: boolean;
+export function QuickActions({ source, sourceValues, disabled = false, onRequest, onRemove, compact = false }: {
+  source?: Prompt; sourceValues?: Record<string, string>; disabled?: boolean; onRequest: (message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>; onRemove: (prompt: Prompt) => Promise<void>; compact?: boolean;
 }) {
   const [action, setAction] = useState<Action | null>(null);
   const reduced = useReducedMotionConfig();
@@ -151,7 +153,7 @@ export function QuickActions({ source, disabled = false, onRequest, onRemove, co
     <div className="quick-action-buttons">{actions.slice(0, 4).map(button)}{compact && <button ref={moreTrigger} type="button" className="icon-button quick-more-trigger" aria-label="Más acciones de NOVA" aria-expanded={moreOpen} aria-controls={moreOpen ? menuId : undefined} onClick={() => setMoreOpen(value => !value)}><AppIcon glyph={MoreHorizontal} size={20} aria-hidden="true"  /><span>Más acciones</span></button>}</div>
     {compact ? <AnimatePresence>{moreOpen && <m.div id={menuId} className="quick-actions-menu" aria-label="Más acciones de NOVA" role="group" variants={reduced ? stillPanelMotion : panelMotion} initial="closed" animate="open" exit="closed">{actions.slice(4).map(button)}</m.div>}</AnimatePresence> : <details className="quick-more"><summary>Más acciones</summary><div className="quick-action-buttons">{actions.slice(4).map(button)}</div></details>}
     <Dialog open={!!action} onOpenChange={open => { if (!open) setAction(null); }} title={action?.label ?? 'Acción rápida'} description="Elige los detalles y NOVA realizará la acción en esta misma pestaña." onCloseAutoFocus={event => { event.preventDefault(); if (trigger.current?.isConnected) trigger.current.focus(); else moreTrigger.current?.focus(); }}>
-      {action && <ActionForm key={action.id} action={action} initialPrompt={source} onRequest={onRequest} onRemove={onRemove} onClose={() => setAction(null)} />}
+      {action && <ActionForm key={action.id} action={action} initialPrompt={source} initialValues={sourceValues} onRequest={onRequest} onRemove={onRemove} onClose={() => setAction(null)} />}
     </Dialog>
   </section>;
 }

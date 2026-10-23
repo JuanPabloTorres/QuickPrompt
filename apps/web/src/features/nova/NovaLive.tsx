@@ -31,8 +31,10 @@ function useActivityHost() {
   return host;
 }
 
-export function NovaLive({ runId, worker, onCommit, onReview, notice = '' }: {
-  runId: string | null; worker: boolean; onCommit: () => Promise<void>; onReview: (view: LiveView) => void;
+export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSource, onApprovalChange, notice = '' }: {
+  runId: string | null; worker: boolean; onReview: (view: LiveView) => void;
+  onPrepareReview?: () => Promise<void>; onChooseSource?: (source: { id: string; revision: number; title: string }) => Promise<void>;
+  onApprovalChange?: (approvedRunId: string | null) => void;
   notice?: string;
 }) {
   const { live, visibleSession } = useApplicationServices();
@@ -41,6 +43,9 @@ export function NovaLive({ runId, worker, onCommit, onReview, notice = '' }: {
   const [step, setStep] = useState(0), [expanded, setExpanded] = useState(false);
   const [connection, setConnection] = useState('');
   const currentRun = useRef(runId); currentRun.current = runId;
+  useEffect(() => {
+    onApprovalChange?.(worker && view?.run.runId === runId && view.run.approval === 'APPROVED' && !terminalLive(view.run.status) ? runId : null);
+  }, [runId, worker, view?.run.approval, view?.run.status, onApprovalChange]);
   const [assistantVisible, setAssistantVisible] = useState(false);
   const host = useActivityHost(), panelId = useId();
   const detailsVisible = expanded && (!host?.hasAttribute('data-nova-dock-live-host') || assistantVisible);
@@ -164,11 +169,23 @@ export function NovaLive({ runId, worker, onCommit, onReview, notice = '' }: {
   const startToast = startNotice && (!view || !terminalLive(view.run.status)) && host ? createPortal(<aside className="nova-start-toast" data-testid="nova-start-toast" role="status" aria-live="polite" aria-atomic="true"><NovaLogo state="thinking" /><div><strong>NOVA en marcha</strong><p>Estoy preparando tu solicitud.</p></div><button type="button" className="icon-button" aria-label="Cerrar aviso de NOVA" onClick={() => setStartNotice(false)}><AppIcon glyph={X} size={20} aria-hidden="true"  /></button></aside>, host.hasAttribute('data-nova-dock-live-host') ? document.body : host) : null;
   if (!runId || !view || view.run.runId !== runId) return <>{startToast}{error && <p role="alert" className="error">No se pudo consultar la actividad de NOVA. Vuelve a intentarlo.</p>}</>;
   const run = view.run, active = !terminalLive(run.status), recent = events.at(-1);
-  if (!active && !expanded) return <>{startToast}</>;
+  const providerFailure = run.status === 'FAILED' && host?.querySelector('[data-testid="prepared-provider-dialog"]')
+    ? createPortal(<p className="error" role="alert">NOVA no pudo completar la tarea. El texto preparado se conserva; revisa el destino o abre la última actividad para ver el error.</p>, host) : null;
+  if (!active && !expanded) return <>{startToast}{providerFailure}</>;
   const awaitingReview = run.status === 'AWAITING_APPROVAL';
   const savingCopy = view.proposal?.promptId == null;
   const paused = run.pauseRequested || run.status === 'PAUSED';
-  const openApprovalReview = () => { setExpanded(false); setReview(true); };
+  const openApprovalReview = async () => {
+    if (busy || !runId) return;
+    const reviewedId = runId; setBusy(true); setError('');
+    try {
+      // Every review entry uses the editor's current draft, never an older proposal.
+      await onPrepareReview?.();
+      const next = await live.get(reviewedId);
+      if (currentRun.current !== reviewedId) return;
+      setView(next); setExpanded(false); setReview(true);
+    } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
+  };
   const reviewAction = active && view.proposal && <button type="button" className="primary" disabled={busy || paused || run.approval !== 'PENDING'} onClick={openApprovalReview}>{savingCopy ? 'Revisar y guardar copia' : 'Revisar y guardar versión'}</button>;
   const operation = recent?.toolName ? operationLabels[recent.toolName] : undefined;
   const outcomes: Record<string, string> = { COMPLETED: 'Tarea completada y comprobada', CANCELLED: 'Ejecución detenida', FAILED: 'No se pudo completar', BLOCKED: 'Necesito tu atención' };
@@ -191,6 +208,7 @@ export function NovaLive({ runId, worker, onCommit, onReview, notice = '' }: {
   const renderHost = host?.hasAttribute('data-nova-dock-live-host') && (!assistantVisible || detailsVisible && !!view.runtime) ? document.body : host;
   return <>
     {startToast}
+    {providerFailure}
     {renderHost && createPortal(<aside className="nova-live" ref={floating} data-testid="nova-live" data-run-id={runId} data-status={run.status} data-approval={run.approval} data-worker={worker} onKeyDown={event => {
       if (event.key === 'Escape' && expanded) { event.preventDefault(); event.stopPropagation(); closeActivity(); }
     }}>
@@ -199,10 +217,10 @@ export function NovaLive({ runId, worker, onCommit, onReview, notice = '' }: {
         {view.observation?.title && <p className="live-subject">{view.observation.title}</p>}
         {active && (notice || connection) && <p className="notice">{notice || connection}</p>}
         {view.question && <p className="notice">{view.question}</p>}
+        {run.status === 'BLOCKED' && onChooseSource && !!view.sourceChoices?.length && <div role="group" aria-label="Elige un prompt para abrir"><p>Elige el prompt que quieres abrir. No se modificará ni ejecutará.</p>{view.sourceChoices.map(source => <button key={source.id} className="secondary candidate-choice" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { await onChooseSource(source); } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); } }}>{source.title}</button>)}</div>}
         <AgentRuntimePanel view={view} status={status} disconnected={!!connection} controls={runtimeControls} />
         <ActivityLog view={view} events={events} actions={actions} />
 
-        {active && worker && run.approval === 'APPROVED' && <button data-nova-control="approval.apply" className="primary" onClick={() => { void onCommit().catch(error => setError(errorMessage(error))); }}>Aplicar versión aprobada</button>}
         {run.mode === 'BROWSER' && view.observation?.promptId && <button className="text-button" onClick={() => onReview(view)}>Ver el resultado</button>}
         {error && <p className="error" role="alert">No se pudo completar esa acción. Revisa el borrador y vuelve a intentarlo.</p>}
       </section>}
