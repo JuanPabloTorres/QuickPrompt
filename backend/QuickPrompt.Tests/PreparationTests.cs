@@ -48,6 +48,19 @@ public sealed class PreparationTests : IDisposable
         var values = new GroundedVariableResolver().Resolve(Input(), New(source.TemplateText), source);
         Assert.Equal("TEMPLATE_DEFAULT", Assert.Single(values).ValueSource); Assert.Empty(Evaluate(Input(), New()).Variables);
     }
+    [Fact] public void ADeclarationReferenceIsNotCaseDataButExplicitLiteralInputsRemainAuthoritative()
+    {
+        var resolver=new GroundedVariableResolver();
+        var proposal=New("Procesa <dato> con <contexto>.") with {Values=[new("dato","<dato>","<dato>"),new("contexto","<dato>","<dato>")]};
+        var input=Input() with {Message="Crea una instrucción que use <dato> y <contexto>."};
+        Assert.Empty(resolver.Resolve(input,proposal,null));
+        Assert.Empty(resolver.Resolve(input with {Message="Usa la petición anterior.",AuthorizedPendingRequest=input.Message},proposal,null));
+        var sentenceEvidence=proposal with {Values=[new("dato","<dato>",input.Message)]};
+        Assert.Empty(resolver.Resolve(input,sentenceEvidence,null));
+        Assert.Empty(resolver.Resolve(input with {Message="Sigue con la petición anterior.",AuthorizedPendingRequest=input.Message},sentenceEvidence,null));
+        Assert.Equal("<dato>",Assert.Single(resolver.Resolve(input with {Values=new(){["dato"]="<dato>"}},proposal,null)).Value);
+        Assert.Equal("<dato>",Assert.Single(resolver.Resolve(input with {Message="dato: <dato>"},proposal,null)).Value);
+    }
     [Fact] public void CurrentLiteralInputsOverrideOldSessionValuesWhileExplicitCurrentUiValuesRemainAuthoritative()
     {
         var input = Input() with { Message = "tema: NUEVO", ContextValues = new() { ["tema"] = "ANTERIOR" }, AuthorizedPendingRequest = "tema: MAS_ANTIGUO" };
@@ -63,26 +76,31 @@ public sealed class PreparationTests : IDisposable
         var value = Assert.Single(values); Assert.Equal("α\nβ", value.Value); Assert.Equal("REQUEST_LABEL", value.ValueSource);
         Assert.Empty(new GroundedVariableResolver().Resolve(input with { Message = "texto: uno; texto: dos" }, New("Analiza <texto>"), null));
         Assert.Equal("α\nβ", Assert.Single(new GroundedVariableResolver().Resolve(input, New("Analiza. Texto: <documento>"), null)).Value);
-        Assert.Equal("α\nβ", Assert.Single(new GroundedVariableResolver().Resolve(input, New("Analyze <document>"), null)).Value);
+        Assert.Empty(new GroundedVariableResolver().Resolve(input, New("Analyze <document>"), null));
+        var semanticallyMapped=New("Analyze <document>") with {Values=[new("document","α\nβ","Texto: α\nβ")]};
+        Assert.Equal("α\nβ", Assert.Single(new GroundedVariableResolver().Resolve(input,semanticallyMapped,null)).Value);
         Assert.Empty(new GroundedVariableResolver().Resolve(input, New("Compare <documento_a> and <documento_b>"), null));
         var code = "  if (x) {\n    work();\n  }\n";
         Assert.Equal(code, Assert.Single(new GroundedVariableResolver().Resolve(input with { Message = "Texto:\n" + code }, New("Analiza <texto>"), null)).Value);
     }
-    [Fact] public void LiteralQuoteForAnUnrelatedFieldIsNotAcceptedAsSummaryLength()
+    [Theory]
+    [InlineData("extensión")]
+    [InlineData("length")]
+    [InlineData("detalle")]
+    public void SemanticFieldBindingsUseLiteralProvenanceWithoutFieldSpecificWordLists(string name)
     {
-        var input = Input() with { Message = "Señala la idea central en una frase. Texto: Contenido" };
-        var proposal = New("Resume <texto> en <extensión>.") with { Values = [new("extensión", "idea central", "idea central")] };
-        Assert.DoesNotContain(new GroundedVariableResolver().Resolve(input, proposal, null), value => value.Name == "extensión");
-        var valid = proposal with { Values = [new("extensión", "una frase", "una frase")] };
-        Assert.Equal("una frase", new GroundedVariableResolver().Resolve(input, valid, null).Single(value => value.Name == "extensión").Value);
-        var accented = valid with { Values = [new("extensión", "dos párrafos", "dos párrafos")] };
-        Assert.Equal("dos párrafos", new GroundedVariableResolver().Resolve(input with { Message = "Resume en dos párrafos." }, accented, null).Single().Value);
+        var input = Input() with { Message = "Usa una redacción telegráfica." };
+        var proposal = New($"Resume el informe con <{name}>.") with { Values = [new(name,"telegráfica","redacción telegráfica")] };
+        Assert.Equal("telegráfica",Assert.Single(new GroundedVariableResolver().Resolve(input,proposal,null)).Value);
+        Assert.Empty(new GroundedVariableResolver().Resolve(input,proposal with { Values=[new(name,"inventado","redacción telegráfica")] },null));
+        Assert.Empty(new GroundedVariableResolver().Resolve(input,proposal with { Values=[new(name,"telegráfica","cita que no existe telegráfica")] },null));
     }
     [Fact] public void InventedOriginsMalformedMarkersDuplicateVariablesAndUnboundedValuesAreRejected()
     {
         Assert.Throws<ValidationException>(() => Evaluate(Input(), New() with { Decision = PreparationDecision.REUSE_EXISTING, SourceId = Guid.NewGuid() }));
         Assert.Throws<ValidationException>(() => Evaluate(Input(), New("<sin cerrar")));
-        var material = Evaluate(Input(), New("Compara los documentos.") with { RequiredInputs = ["documento_a", "documento_b"] });
+        Assert.Throws<ValidationException>(() => Evaluate(Input(), New("Compara los documentos.") with { RequiredInputs = ["documento_a", "documento_b"] }));
+        var material = Evaluate(Input(), New("Compara <documento_a> y <documento_b>.") with { RequiredInputs = ["documento_a", "documento_b"] });
         Assert.Equal(PreparationState.NEEDS_INFORMATION, material.State); Assert.Equal(new[] { "documento_a", "documento_b" }, material.MissingVariables); Assert.Null(material.CompiledText);
         Assert.Throws<ValidationException>(() => Evaluate(Input(), New() with { Values = [new("x", "one", "one"), new("x", "two", "two")] }));
         Assert.Throws<ValidationException>(() => AgentOrchestrator.Validate(Input() with { Values = new() { ["x"] = new string('x', 8001) } }));
@@ -177,7 +195,8 @@ public sealed class PreparationTests : IDisposable
     }
     [Fact] public void ParserSlotsAreAuthoritativeAndMetadataCannotCreateDuplicateSynonymInputs()
     {
-        var result = Evaluate(Input(), New("Compara <documentos>.") with { RequiredInputs = ["documento_a", "documento_b"] });
+        Assert.Throws<ValidationException>(() => Evaluate(Input(), New("Compara <documentos>.") with { RequiredInputs = ["documento_a", "documento_b"] }));
+        var result = Evaluate(Input(), New("Compara <documentos>.") with { RequiredInputs = ["documentos"] });
         Assert.Equal(new[] { "documentos" }, result.MissingVariables);
         Assert.Throws<ValidationException>(() => Evaluate(Input(), New() with { RequiredInputs = ["bad>input"] }));
         var original = new PromptLibrary(prompts, prompts).Create(new("Fijo", "Responde LISTO."));
@@ -190,6 +209,16 @@ public sealed class PreparationTests : IDisposable
         for (var i = 0; i < 20; i++) library.Create(new("Arquitectura " + i, "Otra pregunta."));
         var candidates = new SqlitePromptRetriever(store).Retrieve("arquitectura", item.Id); Assert.InRange(candidates.Length, 1, 6); Assert.Equal(item.Id, candidates[0].Prompt.Id); Assert.All(candidates, c => Assert.NotNull(store.FindTemplate(c.Prompt.Id)));
     }
+    [Fact] public void BoundSourceReadsAreFreshAndRejectMissingOrArchivedRecords()
+    {
+        var library = new PromptLibrary(prompts, prompts); var source = library.Create(new("Fuente", "Explica <tema>.")); var retriever = new SqlitePromptRetriever(store);
+        Assert.Equal(source.Revision, retriever.ReadSource(source.Id).Revision);
+        var updated = library.Update(source.Id, new("Fuente revisada", "Compara <tema>.", Revision: source.Revision));
+        var fresh = retriever.ReadSource(source.Id); Assert.Equal(updated.Revision, fresh.Revision); Assert.Equal(updated.TemplateText, fresh.TemplateText);
+        var archived = library.Archive(source.Id, fresh.Revision, true); Assert.Throws<ValidationException>(() => retriever.ReadSource(source.Id));
+        var restored = library.Archive(source.Id, archived.Revision, false); Assert.Equal(restored.Revision, retriever.ReadSource(source.Id).Revision);
+        Assert.Throws<MissingPromptException>(() => retriever.ReadSource(Guid.NewGuid()));
+    }
     private AgentOrchestrator Engine(Fake inference) => new(inference, new SqlitePromptRetriever(store), inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), drafts, new());
     private record QueryArgs(string Query);
     private sealed class Fake(List<string> log) : IIntentInterpreter, IPromptGenerator
@@ -198,10 +227,13 @@ public sealed class PreparationTests : IDisposable
         public Task<Understanding> Understand(string message, string model, CancellationToken ct) { ct.ThrowIfCancellationRequested(); return Task.FromResult(new Understanding(PreparationIntent.CREATE_PROMPT, "explica", "")); }
         public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) { ct.ThrowIfCancellationRequested(); if (Fail) throw new ValidationException("Synthetic failure"); Generations++; log.Add("generation"); return Task.FromResult(New()); }
     }
-    private sealed class ContextFake : IIntentInterpreter, IPromptGenerator
+    private sealed class ContextFake : IIntentInterpreter, IPromptGenerator, ICandidateSelector
     {
         public int Calls { get; private set; }
         public Task<Understanding> Understand(string message, string model, CancellationToken ct) => Task.FromResult(new Understanding(PreparationIntent.IMPROVE_PROMPT, "mejorar", ""));
+        // This fixture declares no source match; it does not interpret language.
+        public Task<SemanticCandidateChoice> Select(string description, RetrievalCandidate[] candidates, string model, CancellationToken ct)
+        { ct.ThrowIfCancellationRequested(); return Task.FromResult(new SemanticCandidateChoice([], "Fixture tipado sin origen identificable.")); }
         public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) { Calls++; return Task.FromResult(New()); }
     }
     public void Dispose() { Directory.Delete(directory, true); }

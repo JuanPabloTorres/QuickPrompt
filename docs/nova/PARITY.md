@@ -11,7 +11,7 @@ La preservación del almacenamiento no implica paridad de toda la experiencia an
 | Edición y revisión optimista | Implementado | Conflicto rechaza sobrescritura, borrador en memoria |
 | Duplicar, favorito, archivo, recuperación, borrar confirmado | Implementado | Servicios y recorridos UI; archivo preferible al borrado |
 | Colecciones muchos-a-muchos | Implementado | Crear/asignar/filtrar probado en UI; renombrar/eliminar con revisión en backend |
-| Categorías | Se preservan en edición/import/export | Selector de categoría en React pendiente |
+| Categorías | Selector React con IDs del dominio; edición y conservación en import/export | [PAR-01 cerrado con evidencia de UI y SQLite](CATEGORIES_ACCEPTANCE.md); repetir en candidato final |
 | Defaults | Se preservan y usan | Editor de defaults y optionalidad explícita pendientes |
 | Versiones anteriores | Persistidas y consultables por API | Navegador/restauración de versiones en React pendiente |
 | Perfiles y combinaciones | Preservados/importables/exportables | Editor y selección de perfiles en React pendientes |

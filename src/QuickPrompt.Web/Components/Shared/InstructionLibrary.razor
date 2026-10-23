@@ -1,7 +1,10 @@
 @using QuickPrompt.Local
 @using QuickPrompt.Domain.Enums
-@using QuickPrompt.Web.Infrastructure
-@inject LocalStore Store
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
+@inject ICollectionReader Collections
+@inject IInstructionCatalog Instructions
+@inject IInstructionWriter InstructionWriter
 @inject IJSRuntime JS
 @{ var form = draft; }
 <div class="workspace organization-workspace">
@@ -29,14 +32,14 @@
     private string T(string es,string en)=>Language=="es"?es:en;
     protected override void OnInitialized()=>Reload();
     protected override async Task OnAfterRenderAsync(bool first){if(focus){focus=false;await JS.InvokeVoidAsync("qp.focus","#instruction-name");}}
-    private void Reload(){groups=Store.Groups();catalog=Store.QueryInstructions(new(Search:search,Category:category,Favorites:favorites,GroupId:Guid.TryParse(group,out var id)?id:null,Ungrouped:group=="ungrouped",Page:page));if(persisted)versions=Store.InstructionVersions(draft.Id);}
+    private void Reload(){groups=Collections.Groups().ToList();catalog=Instructions.QueryInstructions(new(Search:search,Category:category,Favorites:favorites,GroupId:Guid.TryParse(group,out var id)?id:null,Ungrouped:group=="ungrouped",Page:page));if(persisted)versions=Instructions.InstructionVersions(draft.Id);}
     private void Filter(){page=0;Reload();}private void Move(int delta){page+=delta;Reload();}
-    private static InstructionProfile Clone(InstructionProfile p)=>System.Text.Json.JsonSerializer.Deserialize<InstructionProfile>(System.Text.Json.JsonSerializer.Serialize(p,LocalStore.Json),LocalStore.Json)!;
+    private static InstructionProfile Clone(InstructionProfile p)=>WorkspaceSnapshots.Copy(p);
     private void New(){draft=new();persisted=false;versions=[];message="";focus=true;}
-    private void Edit(InstructionProfile p){if(persisted&&draft.Id==p.Id&&draft.Revision==p.Revision){focus=true;return;}draft=Clone(p);persisted=true;message="";versions=Store.InstructionVersions(p.Id);focus=true;}
+    private void Edit(InstructionProfile p){if(persisted&&draft.Id==p.Id&&draft.Revision==p.Revision){focus=true;return;}draft=Clone(p);persisted=true;message="";versions=Instructions.InstructionVersions(p.Id);focus=true;}
     private void Duplicate(Guid id){if(draft.Id!=id)return;draft=Clone(draft);draft.Id=Guid.NewGuid();draft.Revision=1;draft.Name+=" · "+T("copia","copy");persisted=false;versions=[];focus=true;message="";}
-    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();Store.SaveInstruction(draft);persisted=true;Reload();error=false;message=T("Instrucción guardada como nueva versión.","Instruction saved as a new version.");await Changed.InvokeAsync();}catch(Exception e)when(e is ValidationException or ConflictException or Microsoft.Data.Sqlite.SqliteException){error=true;message=e is Microsoft.Data.Sqlite.SqliteException?T("No se pudo guardar la instrucción.","Could not save instruction."):e.Message;}}
-    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar la instrucción y sus versiones? El historial compilado permanece.","Delete instruction and versions? Compiled history remains.")))return;if(draft.Id!=id)return;try{Store.DeleteInstruction(id);New();Reload();message=T("Instrucción eliminada. Historial conservado.","Instruction deleted. History kept.");error=false;await Changed.InvokeAsync();}catch(Microsoft.Data.Sqlite.SqliteException){error=true;message=T("No se pudo eliminar la instrucción.","Could not delete instruction.");}}
+    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();InstructionWriter.SaveInstruction(draft);persisted=true;Reload();error=false;message=T("Instrucción guardada como nueva versión.","Instruction saved as a new version.");await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo guardar la instrucción.","Could not save instruction."):e.Message;}}
+    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar la instrucción y sus versiones? El historial compilado permanece.","Delete instruction and versions? Compiled history remains.")))return;if(draft.Id!=id)return;try{InstructionWriter.DeleteInstruction(id,new(draft.Revision,true));New();Reload();message=T("Instrucción eliminada. Historial conservado.","Instruction deleted. History kept.");error=false;await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo eliminar la instrucción.","Could not delete instruction."):e.Message;}}
     private Task Use(Guid id)=>draft.Id==id?UseInstruction.InvokeAsync(id):Task.CompletedTask;
-    private async Task MembershipChanged(){groups=Store.Groups();await Changed.InvokeAsync();}
+    private async Task MembershipChanged(){groups=Collections.Groups().ToList();await Changed.InvokeAsync();}
 }

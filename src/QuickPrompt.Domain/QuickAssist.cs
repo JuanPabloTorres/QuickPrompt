@@ -18,19 +18,3 @@ public sealed record AssistPlan(AssistStep[] Steps,string Source)
         if(Steps.Take(Steps.Length-1).Any(s=>s.Action is AssistAction.Create or AssistAction.Improve or AssistAction.SuggestVariables or AssistAction.PrepareValues))throw new ValidationException("La propuesta debe ser el último paso / Proposal must be the last step.");
     }
 }
-public static class QuickAssistCommands
-{
-    public static AssistPlan? Parse(string command)
-    {
-        command=command.Trim();if(command.Length is 0 or >1000)throw new ValidationException("Comando vacío o demasiado largo / Empty or oversized command.");
-        AssistStep? step=command.ToLowerInvariant() switch
-        {
-            "favoritos" or "favorites"=>new(AssistAction.Favorites),"recientes" or "recent"=>new(AssistAction.Recent),
-            "mejorar" or "improve"=>new(AssistAction.Improve),"sugerir variables" or "suggest variables"=>new(AssistAction.SuggestVariables),_=>null
-        };
-        foreach(var (prefix,action) in new[]{("buscar ",AssistAction.Search),("search ",AssistAction.Search),("grupo ",AssistAction.OpenGroup),("group ",AssistAction.OpenGroup),("abrir ",AssistAction.OpenTemplate),("open ",AssistAction.OpenTemplate),("crear ",AssistAction.Create),("create ",AssistAction.Create),("proponer grupo ",AssistAction.ProposeGroup),("propose group ",AssistAction.ProposeGroup)})
-            if(command.StartsWith(prefix,StringComparison.OrdinalIgnoreCase)){step=new(action,command[prefix.Length..].Trim());break;}
-        if(step is null)return null;
-        var plan=new AssistPlan([step],"deterministic");plan.Validate();return plan;
-    }
-}

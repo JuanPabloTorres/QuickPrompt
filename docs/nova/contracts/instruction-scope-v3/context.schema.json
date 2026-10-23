@@ -1,0 +1,302 @@
+{
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string"
+    },
+    "currentUserDirective": {
+      "type": "string"
+    },
+    "authorizedPendingUserDirective": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "title",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "existingDefinition": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "excerptTruncated": {
+          "type": "boolean"
+        },
+        "bodyHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "role",
+        "text",
+        "excerptTruncated",
+        "bodyHash"
+      ],
+      "additionalProperties": false
+    },
+    "inputNames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "suppliedInputFields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hasValue": {
+            "type": "boolean"
+          },
+          "characters": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "hasValue",
+          "characters"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "existingScopedInputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/suppliedInputFields/items"
+      }
+    },
+    "userPassages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "origin",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "SEARCH_PROMPT",
+              "RESOLVE_PROMPT",
+              "OPEN_PROMPT",
+              "PROPOSE_ADAPTATION",
+              "CREATE_DRAFT",
+              "VALIDATE_DRAFT",
+              "FILL_VARIABLES",
+              "COMPILE_PROMPT",
+              "PREPARE_LOCAL_EXECUTION",
+              "EXECUTE_LOCAL",
+              "PREPARE_PROVIDER",
+              "COPY_PROMPT",
+              "EXPLAIN",
+              "ASK_CLARIFICATION",
+              "CANCEL",
+              "PAUSE",
+              "RESUME",
+              "REQUEST_SAVE_VERSION",
+              "REQUEST_SAVE_COPY",
+              "REQUEST_DELETE"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "toolNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "writes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "UserWorkOrder",
+                "LiteralAuthoringDirective",
+                "ReusableInstruction",
+                "CaseValues",
+                "RenderedInstruction"
+              ]
+            }
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "UserWorkOrder",
+                "LiteralAuthoringDirective",
+                "ReusableInstruction",
+                "CaseValues",
+                "RenderedInstruction"
+              ]
+            }
+          }
+        },
+        "required": [
+          "operation",
+          "description",
+          "toolNames"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "retrievedKnowledge": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "catalogVersion": {
+          "type": "string"
+        },
+        "embeddingIdentity": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "permission": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "default": null
+              },
+              "arguments": {
+                "default": null
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "relation": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "from",
+              "relation",
+              "to"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "catalogVersion",
+        "embeddingIdentity",
+        "nodes",
+        "edges"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "currentUserDirective",
+    "authorizedPendingUserDirective",
+    "source",
+    "existingDefinition",
+    "inputNames",
+    "suppliedInputFields",
+    "existingScopedInputs",
+    "userPassages",
+    "capabilities",
+    "retrievedKnowledge"
+  ],
+  "additionalProperties": false
+}

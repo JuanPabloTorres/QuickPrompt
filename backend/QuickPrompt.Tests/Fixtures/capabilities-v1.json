@@ -1,0 +1,540 @@
+{
+  "uiTools": [
+    {
+      "Name": "ui_navigate_library",
+      "Description": "Return to the actual library to search a different prompt. Never discard an open editor draft.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_open_create_prompt",
+      "Description": "Open the real new-prompt form, without saving. Only for a new draft requested by the user.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_prepare_creation",
+      "Description": "Generate the requested new reusable prompt with Qwen and type the validated title and body into the real open form. Arguments MUST be empty {}: do not pass title, body or text. Code invokes the generator with the original request. Never saves.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_load_active_draft",
+      "Description": "Load the authorized previous conversation draft into the real editor. No text arguments; content is bound by code to the session artifact. Use before changing, copying or running that draft.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_search_prompt",
+      "Description": "Search the actual visible library using a short title or topic; never a full request.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_open_prompt",
+      "Description": "Click one real prompt currently visible in the library; verify its identity. A user-selected visible ID may be opened directly.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "type": "string",
+            "maxLength": 36
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_open_editor",
+      "Description": "Open the selected prompt\u0027s actual editor, without saving.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_fill_variable",
+      "Description": "Fill one visible variable with an EXACT value from the user\u0027s request or explicitly supplied values. evidence must quote that value literally.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 16000
+          }
+        },
+        "required": [
+          "promptId",
+          "name",
+          "value",
+          "evidence"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_prepare_update",
+      "Description": "Ask the existing Qwen editor to modify this DRAFT according to the ORIGINAL USER REQUEST held by the server. The executor fills that exact request in the editor; do not rewrite it or pass new instructions. Never saves the source.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_show_compiled_prompt",
+      "Description": "Inspect the deterministic compiled preview; ask for missing inputs if not ready.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_open_provider_picker",
+      "Description": "Open the existing provider picker for review only. No external navigation, copying or submission.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_execute_local",
+      "Description": "Execute the compiled prompt with local Qwen ONLY when the user\u0027s original request explicitly asks for local execution.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "EXPLICIT_LOCAL_EXECUTION",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_read_visible_state",
+      "Description": "Read visible React controls and current state without changing them.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_verify_prompt_state",
+      "Description": "Independently compare visible identity/revision/compiled values with the domain source; no mutation.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_request_save_version",
+      "Description": "Request review of this exact draft and source revision. This does not save. A human must confirm the proposal.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "REQUIRES_PROPOSAL_APPROVAL",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_review_deletion",
+      "Description": "Present the code-owned deletion review for a resolved saved record; no deletion occurs.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "type": "string",
+            "maxLength": 36
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "promptId",
+          "revision"
+        ]
+      },
+      "Permission": "REQUIRES_DELETE_REVIEW",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_enable_deletion_confirmation",
+      "Description": "Enable the human confirmation control after the bound native review receipt was validated.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "type": "string",
+            "maxLength": 36
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "promptId",
+          "revision"
+        ]
+      },
+      "Permission": "REQUIRES_DELETE_REVIEW",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ui_verify_deletion",
+      "Description": "Verify the already human-confirmed record is absent from the visible library; no write.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "promptId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "promptId"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "finish",
+      "Description": "Finish when every requested effect has been independently observed. A changed draft is held for human review, never silently saved.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    },
+    {
+      "Name": "ask_clarification",
+      "Description": "Ask one concrete question when no unique source exists or required data is missing. Never select arbitrarily.",
+      "ArgumentsSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "question"
+        ]
+      },
+      "Permission": "READ_OR_PREPARE",
+      "TimeoutSeconds": 120
+    }
+  ],
+  "labels": {
+    "ui_navigate_library": "Volver a la biblioteca",
+    "ui_open_create_prompt": "Abrir el formulario de creaci\u00F3n",
+    "ui_prepare_creation": "Generar y escribir el nuevo borrador",
+    "ui_load_active_draft": "Recuperar el borrador de la conversaci\u00F3n",
+    "ui_search_prompt": "Buscar en la biblioteca",
+    "ui_open_prompt": "Abrir el prompt seleccionado",
+    "ui_open_editor": "Abrir el editor",
+    "ui_fill_variable": "Completar un campo autorizado",
+    "ui_prepare_update": "Preparar el cambio con Qwen en el editor",
+    "ui_show_compiled_prompt": "Revisar la vista previa compilada",
+    "ui_open_provider_picker": "Mostrar los destinos disponibles",
+    "ui_execute_local": "Ejecutar con Qwen local",
+    "ui_read_visible_state": "Leer el estado visible",
+    "ui_verify_prompt_state": "Verificar el prompt y su revisi\u00F3n",
+    "ui_request_save_version": "Pedir revisi\u00F3n de la nueva versi\u00F3n",
+    "ui_review_deletion": "Mostrar la revisi\u00F3n de eliminaci\u00F3n",
+    "ui_enable_deletion_confirmation": "Esperar tu confirmaci\u00F3n de eliminaci\u00F3n",
+    "ui_verify_deletion": "Verificar el prompt eliminado",
+    "finish": "Terminar y verificar el resultado",
+    "ask_clarification": "Pedir una aclaraci\u00F3n"
+  },
+  "operationTools": {
+    "SEARCH_PROMPT": [
+      "search_prompts",
+      "ui_search_prompt"
+    ],
+    "RESOLVE_PROMPT": [
+      "resolve_prompt",
+      "ui_open_prompt",
+      "ui_search_prompt",
+      "ui_load_active_draft"
+    ],
+    "OPEN_PROMPT": [
+      "open_prompt",
+      "open_working_draft",
+      "ui_open_prompt"
+    ],
+    "PROPOSE_ADAPTATION": [
+      "propose_prompt_update",
+      "revise_prompt_once",
+      "ui_open_editor",
+      "ui_prepare_update"
+    ],
+    "CREATE_DRAFT": [
+      "propose_new_prompt",
+      "revise_prompt_once",
+      "ui_open_create_prompt",
+      "ui_prepare_creation"
+    ],
+    "VALIDATE_DRAFT": [
+      "validate_prompt",
+      "ui_verify_prompt_state"
+    ],
+    "FILL_VARIABLES": [
+      "resolve_variable_values",
+      "ui_fill_variable"
+    ],
+    "COMPILE_PROMPT": [
+      "compile_prompt",
+      "ui_show_compiled_prompt"
+    ],
+    "PREPARE_LOCAL_EXECUTION": [
+      "prepare_local_execution",
+      "ui_show_compiled_prompt",
+      "ui_open_provider_picker"
+    ],
+    "EXECUTE_LOCAL": [
+      "execute_local_llm",
+      "ui_execute_local"
+    ],
+    "PREPARE_PROVIDER": [
+      "prepare_provider_transfer",
+      "ui_open_provider_picker"
+    ],
+    "COPY_PROMPT": [
+      "compile_prompt",
+      "ui_show_compiled_prompt"
+    ],
+    "EXPLAIN": [],
+    "ASK_CLARIFICATION": [
+      "ask_clarification"
+    ],
+    "CANCEL": [],
+    "PAUSE": [],
+    "RESUME": [],
+    "REQUEST_SAVE_VERSION": [
+      "ui_request_save_version"
+    ],
+    "REQUEST_SAVE_COPY": [],
+    "REQUEST_DELETE": [
+      "ui_review_deletion",
+      "ui_enable_deletion_confirmation",
+      "ui_verify_deletion"
+    ]
+  }
+}

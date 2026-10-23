@@ -6,6 +6,11 @@ public sealed class PreparationPreferenceStore(LocalStore store) : IPreparationP
 {
     public PreparationPreferences Get() => store.ReadPreparationPreferences();
     public void Save(PreparationPreferences preferences) { PreparationPreferenceRules.Validate(preferences); store.WritePreparationPreferences(preferences); }
+    public PreparationPreferences Confirm(PreferenceApproval input)
+    {
+        if (!input.Confirmed || input.Preferences is null) throw new QuickPrompt.Local.ValidationException("Confirma las preferencias que quieres conservar.");
+        Save(input.Preferences); return Get();
+    }
     public void Forget() => store.ForgetPreparationPreferences();
 }
 public sealed partial class LocalStore

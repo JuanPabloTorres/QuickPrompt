@@ -1,23 +1,19 @@
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace QuickPrompt.Web.Infrastructure;
 
-public sealed class NovaInference : INovaInference, IDisposable
+public sealed class NovaInference : INovaInference
 {
     private readonly ILocalLlmClient client;
-    private readonly HttpClient planner;
-    public NovaInference(ILocalLlmClient client, string endpoint, TimeSpan timeout)
+    private readonly ISemanticIntentInterpreter semantic;
+    public NovaInference(ILocalLlmClient client, ISemanticIntentInterpreter semantic)
     {
-        this.client = client;
-        planner = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false })
-        { BaseAddress = OllamaClient.ValidateEndpoint(endpoint), Timeout = timeout, MaxResponseContentBufferSize = 256000 };
+        this.client = client ?? throw new ArgumentNullException(nameof(client));
+        this.semantic = semantic ?? throw new ArgumentNullException(nameof(semantic));
     }
     public async Task<NovaPlan> Interpret(string message, string model, CancellationToken ct)
     {
-        using var semantic = new PreparationInference(planner.BaseAddress!.AbsoluteUri, localEditor: client);
         var interpretation = await semantic.Interpret(message, SemanticContext.Empty, model, ct);
         var intent = interpretation.Creates ? NovaIntent.CREATE_DRAFT : interpretation.Adapts ? NovaIntent.IMPROVE_DRAFT : interpretation.Executes ? NovaIntent.RUN_LOCAL
             : interpretation.Has(SemanticOperation.PREPARE_LOCAL_EXECUTION) || interpretation.Has(SemanticOperation.PREPARE_PROVIDER) ? NovaIntent.SELECT_PROVIDER
@@ -31,5 +27,4 @@ public sealed class NovaInference : INovaInference, IDisposable
     public Task<AiProposal> Propose(string intent, string context, Template? source, string model, CancellationToken ct, bool shortening, string? contentChange) => client.Propose(intent, context, source, model, ct, allowRevision: true, requestedShortening: shortening, interpretation: contentChange is null ? null : new(contentChange));
     public Task<AiProposal> Propose(string intent, string context, Template? source, string model, CancellationToken ct, bool shortening, string? contentChange, string[] targetTerms) => client.Propose(intent, context, source, model, ct, allowRevision: true, requestedShortening: shortening, interpretation: contentChange is null ? null : new(contentChange, TargetTerms: targetTerms));
     public Task<Dictionary<string, string>> Suggest(Template source, string context, string model, CancellationToken ct) => client.Suggest(source, context, model, ct);
-    public void Dispose() => planner.Dispose();
 }

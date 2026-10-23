@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Reference Include="QuickPrompt.Infrastructure"><HintPath>$(FrozenRuntime)/QuickPrompt.Infrastructure.dll</HintPath></Reference>
+    <Reference Include="QuickPrompt.Application"><HintPath>$(FrozenRuntime)/QuickPrompt.Application.dll</HintPath></Reference>
+    <Reference Include="QuickPrompt.Domain"><HintPath>$(FrozenRuntime)/QuickPrompt.Domain.dll</HintPath></Reference>
+    <Reference Include="System.Text.Json"><HintPath>$(FrozenRuntime)/System.Text.Json.dll</HintPath></Reference>
+    <Reference Include="System.Text.Encodings.Web"><HintPath>$(FrozenRuntime)/System.Text.Encodings.Web.dll</HintPath></Reference>
+    <Reference Include="System.IO.Pipelines"><HintPath>$(FrozenRuntime)/System.IO.Pipelines.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

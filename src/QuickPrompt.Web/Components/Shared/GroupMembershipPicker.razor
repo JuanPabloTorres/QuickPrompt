@@ -1,6 +1,7 @@
 @using QuickPrompt.Local
-@using QuickPrompt.Web.Infrastructure
-@inject LocalStore Store
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
+@inject IGroupMemberships Memberships
 <details class="group-memberships"><summary>@T("Grupos", "Groups") (@members.Count)</summary>
 @if(Groups.Count==0){<p class="hint">@T("Crea un grupo aquí para organizar este prompt.", "Create a group here to organize this prompt.")</p>}
 @foreach(var item in Groups){<label class="check"><input type="checkbox" checked="@members.Contains(item.Group.Id)" @onchange="e=>Toggle(item.Group.Id,e.Value is true)" />@T("Grupo: ","Group: ")@item.Group.Name</label>}
@@ -15,9 +16,9 @@
     [Parameter]public EventCallback Changed{get;set;}
     [Parameter]public EventCallback Manage{get;set;}
     private string newName="";
-    private async Task Create(){try{var group=new PromptGroup{Name=newName.Trim()};Store.CreateGroupAndAssign(group,Kind,EntityId);members.Add(group.Id);newName="";error="";await Changed.InvokeAsync();}catch(Exception e)when(e is ValidationException or ConflictException or Microsoft.Data.Sqlite.SqliteException){error=e is Microsoft.Data.Sqlite.SqliteException?T("No se pudo crear el grupo.","Could not create group."):e.Message;}}
-    private Guid loaded;private HashSet<Guid> members=[];private string error="";
+    private async Task Create(){try{var group=new PromptGroup{Name=newName.Trim()};Memberships.CreateGroupAndAssign(group,Kind,EntityId);members.Add(group.Id);newName="";error="";await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=StorageFailures.IsFailure(e)?T("No se pudo crear el grupo.","Could not create group."):e.Message;}}
+    private (string Kind,Guid Id)? loaded;private HashSet<Guid> members=[];private string error="";
     private string T(string es,string en)=>Language=="es"?es:en;
-    protected override void OnParametersSet(){if(loaded!=EntityId){loaded=EntityId;members=Store.GroupsFor(Kind,EntityId).ToHashSet();error="";}}
-    private async Task Toggle(Guid id,bool member){try{Store.AssignGroup(id,Kind,[EntityId],member);if(member)members.Add(id);else members.Remove(id);error="";await Changed.InvokeAsync();}catch(Exception e)when(e is ValidationException or Microsoft.Data.Sqlite.SqliteException){error=T("No se pudo cambiar el grupo. Recarga y reintenta.","Could not change group. Reload and retry.");}}
+    protected override void OnParametersSet(){if(loaded!=(Kind,EntityId)){members=Memberships.GroupsFor(Kind,EntityId).ToHashSet();loaded=(Kind,EntityId);newName="";error="";}}
+    private async Task Toggle(Guid id,bool member){try{Memberships.AssignGroup(id,Kind,[EntityId],member);if(member)members.Add(id);else members.Remove(id);error="";await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException) || StorageFailures.IsFailure(e)){error=T("No se pudo cambiar el grupo. Recarga y reintenta.","Could not change group. Reload and retry.");}}
 }

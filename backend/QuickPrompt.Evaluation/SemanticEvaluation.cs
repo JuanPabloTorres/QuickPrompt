@@ -15,7 +15,7 @@ public static class SemanticEvaluation
         using var modelLease = new FileStream(Path.Combine(Path.GetTempPath(), "QuickPrompt.Nova.SemanticModel.lease"),
             FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true };
-        var runtimeHashes = new[] { typeof(PreparationInference).Assembly, typeof(SemanticPlanCompiler).Assembly, typeof(TemplateCompiler).Assembly }
+        var runtimeHashes = new[] { typeof(PreparationInference).Assembly, typeof(AdaptiveCoreModelTransport).Assembly, typeof(SemanticPlanCompiler).Assembly, typeof(TemplateCompiler).Assembly }
             .ToDictionary(assembly => Path.GetFileName(assembly.Location), assembly => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))).ToLowerInvariant());
         using var modelInfo = new HttpClient(new SocketsHttpHandler { UseProxy = false, AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(5) };
         using var installedModels = JsonDocument.Parse(await modelInfo.GetStringAsync("http://127.0.0.1:11434/api/tags"));
@@ -32,7 +32,10 @@ public static class SemanticEvaluation
             var arch = library.Create(new("Arquitectura", "Evalúa la arquitectura de <codigo>. Identifica límites y dependencias. No inventes datos."));
             var mail = library.Create(new("Correos", "Redacta un correo a <persona> sobre <asunto>. No inventes compromisos."));
             var mail2 = library.Create(new("Correos a clientes", "Redacta una respuesta a <cliente>."));
-            var observations = new List<InferenceObservation>(); using var inference = new PreparationInference("http://127.0.0.1:11434", observations.Add);
+            bool Flag(string key, bool fallback) => bool.TryParse(Environment.GetEnvironmentVariable(key), out var value) ? value : fallback;
+            var profile = new { semanticThinking = Flag("NOVA_EVAL_SEMANTIC_THINKING", true), authoringReview = "unchanged", contextualReferenceReasoning = "unchanged" };
+            var observations = new List<InferenceObservation>(); using var inference = new PreparationInference("http://127.0.0.1:11434", observations.Add,
+                semanticThinking: profile.semanticThinking);
             var rows = new List<object>(); var samples = new List<(Scenario Case, SemanticInterpretation? Plan, bool Correct, bool Critical, long Ms)>();
             foreach (var scenario in scenarios) {
                 var a = SemanticEntity.From(arch); var m = SemanticEntity.From(mail); var m2 = SemanticEntity.From(mail2);
@@ -42,9 +45,9 @@ public static class SemanticEvaluation
                     "two_candidates" => SemanticContext.Empty with { Selected = a, DraftSource = a, Candidates = [a, m] },
                     "ambiguous_search" => SemanticContext.Empty with { Candidates = [m, m2] }, _ => SemanticContext.Empty };
                 SemanticInterpretation? plan = null; string? error = null; var timer = Stopwatch.StartNew();
-                var attempts = new List<object>(); inference.SemanticDiagnostic = (attempt, content, rejected) => attempts.Add(new { attempt, content, rejected });
+                var attempts = new List<object>(); inference.SemanticDiagnostic = (attempt, content, rejected) => attempts.Add(new { attempt, contentHash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(content))), rejected = rejected is not null });
                 try { using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(90)); plan = await inference.Interpret(scenario.Message, context, "qwen3:8b", cancel.Token); }
-                catch (Exception exception) { error = exception is PreparationToolException tool ? tool.Code : exception.GetType().Name + ": " + exception.Message; }
+                catch (Exception exception) { error = exception is PreparationToolException tool ? tool.Code : exception.GetType().Name; }
                 var actual = plan?.Intentions.Select(op => op.ToString()).ToArray() ?? [];
                 var referenceCorrect = scenario.Context != "previous_arch" || plan is not null && (plan.ResolvedTargetId == arch.Id || plan.ResolvedTargetId is null && plan.TargetReference is TargetReference.PREVIOUS_RESULT or TargetReference.ACTIVE_DRAFT);
                 if (scenario.Context == "two_candidates") referenceCorrect = plan is not null && (plan.DesiredOutcome == SemanticOutcome.CLARIFICATION || plan.ResolvedTargetId == mail.Id || plan.TargetReference == TargetReference.OTHER_CANDIDATE);
@@ -52,7 +55,9 @@ public static class SemanticEvaluation
                 var critical = plan?.Executes == true && !scenario.Required.Contains("EXECUTE_LOCAL") || plan?.ResolvedTargetId is { } id && !context.Ids.Contains(id)
                     || scenario.Context == "ambiguous_search" && plan?.ResolvedTargetId is not null;
                 samples.Add((scenario, plan, correct, critical, timer.ElapsedMilliseconds));
-                rows.Add(new { scenario.Id, scenario.Split, scenario.Family, scenario.Message, context, expected = new { scenario.Required, scenario.Forbidden, scenario.Outcomes }, interpretation = plan, attempts, referenceCorrect, correct, critical, error, elapsedMs = timer.ElapsedMilliseconds });
+                rows.Add(new { scenario.Id, scenario.Split, scenario.Family, expected = new { scenario.Required, scenario.Forbidden, scenario.Outcomes },
+                    interpretation = plan is null ? null : new { plan.Intentions, plan.DesiredOutcome, plan.TargetReference, plan.ResolvedTargetId, plan.ProposedSteps, plan.ProviderId },
+                    attempts, referenceCorrect, correct, critical, error, elapsedMs = timer.ElapsedMilliseconds });
                 Console.WriteLine($"{scenario.Id} {scenario.Family} {(correct && !critical ? "PASS" : "FAIL")} {timer.ElapsedMilliseconds}ms {error}");
                 Report(false);
             }
@@ -62,16 +67,16 @@ public static class SemanticEvaluation
                 var metrics = samples.GroupBy(s => s.Case.Family).Select(g => new { family = g.Key, count = g.Count(), correct = g.Count(s => s.Correct), accuracy = g.Count(s => s.Correct) / (double)g.Count() }).ToArray();
                 var times = samples.Select(s => s.Ms).Order().ToArray();
                 var groups = samples.Where(s => s.Case.MetamorphicGroup is not null).GroupBy(s => s.Case.MetamorphicGroup).Select(g => new { group = g.Key, equivalent = g.All(s => s.Plan?.Adapts == true && !s.Plan.Executes), count = g.Count() }).ToArray();
-                var equivalence = groups.Length == 0 ? 1 : groups.Count(g => g.equivalent) / (double)groups.Length;
+                double? equivalence = groups.Length == 0 || groups.Any(g => g.count < 2) ? null : groups.Count(g => g.equivalent) / (double)groups.Length;
                 var expectedCount = args[2] == "all" ? dataset.Scenarios.Length : gate.GetProperty(args[2]).GetInt32();
                 var pass = samples.Count == expectedCount && correct / (double)samples.Count >= gate.GetProperty("semanticAccuracy").GetDouble()
                     && valid / (double)samples.Count >= gate.GetProperty("validPlanRate").GetDouble() && critical == gate.GetProperty("criticalUnauthorizedEffects").GetInt32()
                     && equivalence >= gate.GetProperty("metamorphicEquivalence").GetDouble();
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(args[1]))!);
                 File.WriteAllText(args[1], JsonSerializer.Serialize(new { status = complete ? args.Length >= 4 ? "DIAGNOSTIC_COMPLETE" : pass ? "PASS" : "FAIL" : "RUNNING", evaluationComplete = complete, acceptanceComplete = complete && pass && args.Length < 4, dataset.Version, datasetSha256 = Convert.ToHexString(SHA256.HashData(bytes)), split = args[2], model = "qwen3:8b", modelDigest, runtimeHashes, count = samples.Count,
-                    semanticAccuracy = samples.Count == 0 ? 0 : correct / (double)samples.Count, validPlanRate = samples.Count == 0 ? 0 : valid / (double)samples.Count, criticalErrors = critical,
+                    profile, contentLogged = false, semanticAccuracy = samples.Count == 0 ? 0 : correct / (double)samples.Count, validPlanRate = samples.Count == 0 ? 0 : valid / (double)samples.Count, criticalErrors = critical,
                     p50Ms = times.Length == 0 ? 0 : times[(times.Length - 1) / 2], p95Ms = times.Length == 0 ? 0 : times[(int)Math.Ceiling(times.Length * .95) - 1], metrics, metamorphicGroups = groups,
-                    thresholds = gate, metamorphicEquivalence = equivalence,
+                    thresholds = gate, metamorphicEquivalence = equivalence, metamorphicStatus = equivalence is null ? "NOT_TESTED" : "MEASURED",
                     modelCalls = observations.Count(o => o.Kind == "CHAT_USAGE"), modelStages = observations.Where(o => o.Kind != "CHAT_USAGE").GroupBy(o => o.Kind).ToDictionary(g => g.Key, g => g.Count()),
                     promptTokens = observations.Where(o => o.Kind == "CHAT_USAGE").Sum(o => o.PromptTokens ?? 0), generatedTokens = observations.Where(o => o.Kind == "CHAT_USAGE").Sum(o => o.GeneratedTokens ?? 0),
                     boundedPlanRetries = observations.Count(o => o.Kind == "SEMANTIC_PLAN_RETRY"), rows,

@@ -5,11 +5,57 @@ using QuickPrompt.Local;
 namespace QuickPrompt.Nova.Application;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum SemanticOperation { SEARCH_PROMPT, RESOLVE_PROMPT, OPEN_PROMPT, PROPOSE_ADAPTATION, CREATE_DRAFT, VALIDATE_DRAFT, FILL_VARIABLES, COMPILE_PROMPT, PREPARE_LOCAL_EXECUTION, EXECUTE_LOCAL, PREPARE_PROVIDER, COPY_PROMPT, EXPLAIN, ASK_CLARIFICATION, CANCEL, PAUSE, RESUME, REQUEST_SAVE_VERSION, REQUEST_SAVE_COPY }
+public enum SemanticOperation
+{
+    [AgentOperation("Locate saved prompts without changing them.", "search_prompts", "ui_search_prompt")]
+    SEARCH_PROMPT,
+    [AgentOperation("Resolve one real source and its current revision.", "resolve_prompt", "ui_open_prompt", "ui_search_prompt", "ui_load_active_draft")]
+    RESOLVE_PROMPT,
+    [AgentOperation("Open the resolved saved prompt or authorized working draft.", "open_prompt", "open_working_draft", "ui_open_prompt")]
+    OPEN_PROMPT,
+    [AgentOperation("Prepare revised reusable instruction text without saving.", "propose_prompt_update", "revise_prompt_once", "ui_open_editor", "ui_prepare_update", Writes = new[] { AgentRepresentation.ReusableInstruction })]
+    PROPOSE_ADAPTATION,
+    [AgentOperation("Prepare a distinct reusable instruction without saving.", "propose_new_prompt", "revise_prompt_once", "ui_open_create_prompt", "ui_prepare_creation", Writes = new[] { AgentRepresentation.ReusableInstruction })]
+    CREATE_DRAFT,
+    [AgentOperation("Validate the exact proposed draft before further effects.", "validate_prompt", "ui_verify_prompt_state")]
+    VALIDATE_DRAFT,
+    [AgentOperation("Assign authorized case values to actual template inputs.", "resolve_variable_values", "ui_fill_variable", Writes = new[] { AgentRepresentation.CaseValues }, Requires = new[] { AgentRepresentation.CaseValues })]
+    FILL_VARIABLES,
+    [AgentOperation("Render the template deterministically with its input values.", "compile_prompt", "ui_show_compiled_prompt", Writes = new[] { AgentRepresentation.RenderedInstruction })]
+    COMPILE_PROMPT,
+    [AgentOperation("Prepare a complete prompt for local execution; do not run it.", "prepare_local_execution", "ui_show_compiled_prompt", "ui_open_provider_picker")]
+    PREPARE_LOCAL_EXECUTION,
+    [AgentOperation("Run the prepared prompt only with explicit execution authority.", "execute_local_llm", "ui_execute_local")]
+    EXECUTE_LOCAL,
+    [AgentOperation("Prepare the chosen destination without external submission.", "prepare_provider_transfer", "ui_open_provider_picker")]
+    PREPARE_PROVIDER,
+    [AgentOperation("Prepare compiled text for copying.", "compile_prompt", "ui_show_compiled_prompt", ModelName = "PREPARE_COPY_PREVIEW", Writes = new[] { AgentRepresentation.RenderedInstruction })]
+    COPY_PROMPT,
+    [AgentOperation("Explain without changing the artifact.")]
+    EXPLAIN,
+    [AgentOperation("Ask for essential missing information without guessing.", "ask_clarification")]
+    ASK_CLARIFICATION,
+    [AgentOperation("Cancel the current task.")]
+    CANCEL,
+    [AgentOperation("Pause the current task.")]
+    PAUSE,
+    [AgentOperation("Resume the current task under its existing authority.")]
+    RESUME,
+    [AgentOperation("Request human review of an existing-record update; this is not approval.", "ui_request_save_version")]
+    REQUEST_SAVE_VERSION,
+    [AgentOperation("Request human review of a separate copy; this is not approval.")]
+    REQUEST_SAVE_COPY,
+    [AgentOperation("Request review of deletion of one resolved record; never delete without confirmation.", "ui_review_deletion", "ui_enable_deletion_confirmation", "ui_verify_deletion")]
+    REQUEST_DELETE,
+    [AgentOperation("Write the exact compiled prompt to the clipboard now through the visible application control, with a fresh receipt.", "ui_copy_compiled_prompt", ModelName = "WRITE_CLIPBOARD_NOW")]
+    COPY_TO_CLIPBOARD
+}
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TargetReference { NONE, NAMED, SELECTED, PREVIOUS_RESULT, ACTIVE_DRAFT, CANDIDATE, OTHER_CANDIDATE }
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SemanticOutcome { READ, DRAFT, NEW_DRAFT, READY_LOCAL, READY_PROVIDER, LOCAL_RESPONSE, ADVICE, CLARIFICATION, CANCELLED, PAUSED, RESUMED, REVIEW }
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum CopyContent { RENDERED, TEMPLATE }
 public record SemanticStep(int Id, SemanticOperation Operation, int[] DependsOn);
 public record SemanticConstraints(SemanticOperation[] ForbiddenOperations, bool PreserveOriginal, string? Language, string? Format, string[] LiteralClauses, string[] TargetTerms, bool Shortening, string[]? UserProhibitions = null);
 public record SemanticInterpretation(SemanticOperation[] Intentions, TargetReference TargetReference, string TargetDescription, Guid? ResolvedTargetId,
@@ -17,12 +63,32 @@ public record SemanticInterpretation(SemanticOperation[] Intentions, TargetRefer
     string[] MissingInformation, bool RequiresConfirmation, string ExecutionEvidence, string? ProviderId, string Explanation, string[]? ValidationNotes = null,
     SemanticOperation[]? DeferredGoals = null, SemanticOutcome? DeferredOutcome = null, bool ContinuesPendingTask = false)
 {
+    [JsonIgnore] public TaskGoal? Goal { get; init; }
+    [JsonIgnore] public TaskIntentContract? IntentContract { get; init; }
+    [JsonIgnore] public InstructionAuthoring? Authoring { get; init; }
+    [JsonIgnore] public WorkflowGoalSnapshot? WorkflowGoals { get; init; }
+    [JsonIgnore] public UserInputScope? InputScope { get; init; }
+    [JsonIgnore] public string? DeletionEvidence { get; init; }
+    [JsonIgnore] public string? ClipboardEvidence { get; init; }
+    // Only the trusted interpreter can attach actual read observations. Never model JSON authority.
+    [JsonIgnore] public SemanticEntity[] ObservedSources { get; init; } = [];
+    [JsonIgnore] public bool Deletes => Has(SemanticOperation.REQUEST_DELETE);
     public bool Has(SemanticOperation operation) => Intentions.Contains(operation);
+    public bool RequestsApprovalFor(SemanticOperation operation) => Goal?.ApprovalRequirements.Contains(operation) ?? Has(operation);
     [JsonIgnore] public bool Adapts => Has(SemanticOperation.PROPOSE_ADAPTATION);
     [JsonIgnore] public bool Creates => Has(SemanticOperation.CREATE_DRAFT);
     [JsonIgnore] public bool Executes => Has(SemanticOperation.EXECUTE_LOCAL);
+    // Filling an individual input is a valid task even when other inputs remain blank.
+    // Only effects that consume the whole prompt require a complete compilation.
+    // An explicit UI choice owns this representation. It never grants an effect.
+    [JsonIgnore] public CopyContent CopyContent { get; init; } = CopyContent.RENDERED;
+    [JsonIgnore] public bool RequiresTemplatePreview => CopyContent == CopyContent.TEMPLATE && (Has(SemanticOperation.COPY_PROMPT) || Has(SemanticOperation.COPY_TO_CLIPBOARD));
+    [JsonIgnore] public bool RequiresCompiledOutput => CopyContent == CopyContent.RENDERED && (Has(SemanticOperation.COPY_PROMPT) || Has(SemanticOperation.COPY_TO_CLIPBOARD))
+        || Has(SemanticOperation.PREPARE_LOCAL_EXECUTION) || Has(SemanticOperation.PREPARE_PROVIDER) || Executes;
+    [JsonIgnore] public bool RequiresProvidedValues => Has(SemanticOperation.FILL_VARIABLES)
+        && (Goal?.RequestedEffects.Contains(SemanticOperation.FILL_VARIABLES) ?? !RequiresCompiledOutput);
     public Understanding Preparation() => new(Creates ? PreparationIntent.CREATE_PROMPT : Adapts ? PreparationIntent.ADAPT_PROMPT : Executes ? PreparationIntent.RUN_LOCAL
-        : Has(SemanticOperation.FILL_VARIABLES) ? PreparationIntent.COMPLETE_PROMPT : Has(SemanticOperation.PREPARE_LOCAL_EXECUTION) || Has(SemanticOperation.PREPARE_PROVIDER) || Has(SemanticOperation.COPY_PROMPT) ? PreparationIntent.USE_PROMPT
+        : Has(SemanticOperation.FILL_VARIABLES) ? PreparationIntent.COMPLETE_PROMPT : Has(SemanticOperation.PREPARE_LOCAL_EXECUTION) || Has(SemanticOperation.PREPARE_PROVIDER) || (Has(SemanticOperation.COPY_PROMPT) || Has(SemanticOperation.COPY_TO_CLIPBOARD)) ? PreparationIntent.USE_PROMPT
         : DesiredOutcome is SemanticOutcome.CLARIFICATION or SemanticOutcome.ADVICE ? PreparationIntent.UNKNOWN : PreparationIntent.FIND_PROMPT,
         Query, string.Join(" ", MissingInformation), Intentions.Select(op => op switch { SemanticOperation.PROPOSE_ADAPTATION => PreparationIntent.ADAPT_PROMPT,
             SemanticOperation.CREATE_DRAFT => PreparationIntent.CREATE_PROMPT, SemanticOperation.EXECUTE_LOCAL => PreparationIntent.RUN_LOCAL,
@@ -37,6 +103,30 @@ public record SemanticContext(SemanticEntity? Selected, SemanticEntity[] Candida
     SemanticInterpretation? LastProposal, SemanticOperation? PendingAction, string Approval, SemanticConstraints? Constraints, Dictionary<string, string>? AuthorizedValues = null,
     Dictionary<string, string>? ActiveDraftValues = null, SemanticInterpretation? PendingPlan = null, Guid? ExplicitTargetId = null, string? PendingRequest = null, string[]? ActiveDraftInputNames = null)
 {
+    [JsonIgnore] public bool CanContinuePendingTask => PendingPlan is not null && !string.IsNullOrWhiteSpace(PendingRequest);
+    [JsonIgnore] public DraftRef? DraftReference { get; init; }
+    [JsonIgnore] public WorkflowGoalSnapshot? RefinementWorkflowGoals { get; init; }
+    [JsonIgnore] public InstructionAuthoring? RefinementAuthoring { get; init; }
+    [JsonIgnore] public ResolvedTaskReference? ResolvedReference { get; init; }
+    // A freshly looked-up source is not the item selected in the user's UI.
+    [JsonIgnore] public SemanticEntity? ResolvedSource { get; init; }
+    [JsonIgnore] public UserInputScope? InputScope { get; init; }
+    // Recall hints are not results previously shown to the user and grant no identity binding.
+    [JsonIgnore] public SemanticEntity[] CatalogCandidates { get; init; } = [];
+    [JsonIgnore] public RetrievalFilter? RetrievalScope { get; init; }
+    public (TargetReference Role, SemanticEntity? Entity, bool Unique) CurrentSubject() {
+        if (ActiveDraft is not null && DraftSource is null) return (TargetReference.ACTIVE_DRAFT, null, true);
+        var entity = DraftSource ?? Selected ?? (Candidates.Length == 1 ? Candidates[0] : null);
+        var role = DraftSource is not null ? TargetReference.PREVIOUS_RESULT : Selected is not null ? TargetReference.SELECTED : entity is not null ? TargetReference.CANDIDATE : TargetReference.NONE;
+        // An incidental UI selection or other search results do not create a second
+        // conversational task artifact. Ambiguous candidates alone still have no default.
+        return (role, entity, entity is not null && !entity.Stale);
+    }
+    public string[] CurrentInputNames() {
+        if (ResolvedSource?.InputNames is { } resolvedNames) return resolvedNames;
+        var subject = CurrentSubject();
+        return (subject.Role is TargetReference.PREVIOUS_RESULT or TargetReference.ACTIVE_DRAFT ? ActiveDraftInputNames : null) ?? subject.Entity?.InputNames ?? [];
+    }
     public static SemanticContext Empty => new(null, [], null, null, null, null, "NONE", null);
     [JsonIgnore] public Guid[] Ids => Candidates.Where(c => !c.Stale).Select(c => c.Id).Concat(Selected is null || Selected.Stale ? [] : new[] { Selected.Id }).Concat(DraftSource is null || DraftSource.Stale ? [] : new[] { DraftSource.Id }).Distinct().ToArray();
 }
@@ -48,18 +138,17 @@ public interface ISemanticIntentInterpreter
 // Validates typed model output, never classifies natural language. Persistence is deliberately absent.
 public static class SemanticPlanValidator
 {
-    public static readonly IReadOnlyDictionary<SemanticOperation, string[]> Tools = new Dictionary<SemanticOperation, string[]> {
-        [SemanticOperation.SEARCH_PROMPT] = ["search_prompts", "ui_search_prompt"], [SemanticOperation.RESOLVE_PROMPT] = ["resolve_prompt", "ui_open_prompt", "ui_search_prompt", "ui_load_active_draft"],
-        [SemanticOperation.OPEN_PROMPT] = ["open_prompt", "open_working_draft", "ui_open_prompt"], [SemanticOperation.PROPOSE_ADAPTATION] = ["propose_prompt_update", "revise_prompt_once", "ui_open_editor", "ui_prepare_update"],
-        [SemanticOperation.CREATE_DRAFT] = ["propose_new_prompt", "revise_prompt_once", "ui_open_create_prompt", "ui_prepare_creation"], [SemanticOperation.VALIDATE_DRAFT] = ["validate_prompt", "ui_verify_prompt_state"],
-        [SemanticOperation.FILL_VARIABLES] = ["resolve_variable_values", "ui_fill_variable"], [SemanticOperation.COMPILE_PROMPT] = ["compile_prompt", "ui_show_compiled_prompt"],
-        [SemanticOperation.PREPARE_LOCAL_EXECUTION] = ["prepare_local_execution", "ui_show_compiled_prompt", "ui_open_provider_picker"],
-        [SemanticOperation.EXECUTE_LOCAL] = ["execute_local_llm", "ui_execute_local"], [SemanticOperation.PREPARE_PROVIDER] = ["prepare_provider_transfer", "ui_open_provider_picker"],
-        [SemanticOperation.COPY_PROMPT] = ["compile_prompt", "ui_show_compiled_prompt"], [SemanticOperation.EXPLAIN] = [], [SemanticOperation.ASK_CLARIFICATION] = ["ask_clarification"],
-        [SemanticOperation.CANCEL] = [], [SemanticOperation.PAUSE] = [], [SemanticOperation.RESUME] = [],
-        [SemanticOperation.REQUEST_SAVE_VERSION] = ["ui_request_save_version"], [SemanticOperation.REQUEST_SAVE_COPY] = [] };
+    public static readonly IReadOnlyDictionary<SemanticOperation, string[]> Tools =
+        SemanticCapabilityCatalog.All.ToDictionary(capability => capability.Operation, capability => capability.ToolNames.ToArray());
+    public static void ValidateIntent(SemanticInterpretation plan)
+    {
+        if (plan.IntentContract is { } intent && (!ReferenceEquals(plan.Goal?.IntentContract, intent) || !intent.Allows(plan))) Reject("INTENT_PLAN_DIVERGED");
+    }
     public static void Validate(SemanticInterpretation plan, SemanticContext context, string message, int budget = 16)
     {
+        ValidateIntent(plan);
+        plan.Authoring?.ValidateFor(plan, message, context.PendingRequest);
+        using var measurement = NovaTelemetry.Measure("planning.validation");
         if (plan.Intentions.Length is < 1 or > 12 || plan.Intentions.Distinct().Count() != plan.Intentions.Length || plan.Intentions.Any(op => !Tools.ContainsKey(op))
             || plan.ProposedSteps.Length is < 1 or > 12 || plan.ProposedSteps.Length > budget || !Enum.IsDefined(plan.TargetReference) || !Enum.IsDefined(plan.DesiredOutcome)) Reject("PLAN_SHAPE");
         var seen = new HashSet<int>();
@@ -70,7 +159,7 @@ public static class SemanticPlanValidator
         }
         if (plan.Intentions.Any(op => !plan.ProposedSteps.Any(step => step.Operation == op)) || plan.ProposedSteps.GroupBy(s => s.Operation).Any(g => g.Count() > 1)) Reject("PLAN_COVERAGE");
         if (plan.Constraints.ForbiddenOperations.Any(plan.Has) || plan.AdaptsAndCreates()) Reject("FORBIDDEN_OPERATION");
-        if (plan.ContinuesPendingTask && (context.PendingPlan is null || string.IsNullOrWhiteSpace(context.PendingRequest))) Reject("UNVERIFIED_PENDING_TASK");
+        if (plan.ContinuesPendingTask && !context.CanContinuePendingTask) Reject("UNVERIFIED_PENDING_TASK");
         if (plan.ResolvedTargetId is { } id && !context.Ids.Contains(id)) Reject("UNVERIFIED_TARGET_ID");
         if (plan.TargetReference == TargetReference.NONE && plan.ResolvedTargetId is not null) Reject("UNEXPECTED_TARGET_ID");
         if (plan.TargetReference == TargetReference.NONE && plan.Has(SemanticOperation.RESOLVE_PROMPT)) Reject("SOURCE_ACCESS_REQUIRES_REFERENCE");
@@ -84,12 +173,37 @@ public static class SemanticPlanValidator
         if (plan.TargetReference is TargetReference.PREVIOUS_RESULT or TargetReference.ACTIVE_DRAFT && plan.ResolvedTargetId is { } previous && previous != context.DraftSource?.Id) Reject("CONVERSATION_TARGET_MISMATCH");
         if (plan.TargetReference == TargetReference.CANDIDATE && context.Candidates.Length > 1 && plan.ResolvedTargetId is { } candidateId) {
             var candidate = context.Candidates.Single(c => c.Id == candidateId);
-            if (!message.Contains(candidate.Title, StringComparison.OrdinalIgnoreCase) || context.Candidates.Count(c => string.Equals(c.Title, candidate.Title, StringComparison.OrdinalIgnoreCase)) > 1) Reject("AMBIGUOUS_TARGET_ID");
+            if ((plan.Goal is null && !message.Contains(candidate.Title, StringComparison.OrdinalIgnoreCase)) || context.Candidates.Count(c => string.Equals(c.Title, candidate.Title, StringComparison.OrdinalIgnoreCase)) > 1) Reject("AMBIGUOUS_TARGET_ID");
         }
         if ((plan.Has(SemanticOperation.REQUEST_SAVE_VERSION) || plan.Has(SemanticOperation.REQUEST_SAVE_COPY)) && !plan.RequiresConfirmation) Reject("SAVE_CONFIRMATION_REQUIRED");
+        if (plan.Deletes) {
+            if (!plan.RequiresConfirmation || plan.DesiredOutcome != SemanticOutcome.REVIEW) Reject("DELETE_CONFIRMATION_REQUIRED");
+            if (plan.Intentions.Any(operation => operation is not (SemanticOperation.SEARCH_PROMPT or SemanticOperation.RESOLVE_PROMPT or SemanticOperation.OPEN_PROMPT or SemanticOperation.REQUEST_DELETE))) Reject("DELETE_EFFECT_CONFLICT");
+            var names = context.Selected?.InputNames ?? context.DraftSource?.InputNames ?? context.ActiveDraftInputNames ?? [];
+            var directive = GroundedVariableResolver.InstructionDirective(message, names, plan.InputScope);
+            var pending = plan.ContinuesPendingTask && context.PendingPlan is {} previousDeletion
+                && (previousDeletion.Deletes || previousDeletion.DeferredGoals?.Contains(SemanticOperation.REQUEST_DELETE) == true) ? context.PendingRequest : null;
+            if (!DirectEvidence(directive, plan.DeletionEvidence ?? "")
+                && (pending is null || !DirectEvidence(GroundedVariableResolver.InstructionDirective(pending, names), plan.DeletionEvidence ?? ""))) Reject("DELETE_NOT_REQUESTED");
+            RequireDependency(plan, SemanticOperation.REQUEST_DELETE, SemanticOperation.RESOLVE_PROMPT);
+        }
         if (plan.Constraints.PreserveOriginal && plan.Has(SemanticOperation.REQUEST_SAVE_VERSION)) Reject("ORIGINAL_PROTECTED");
-        if (plan.Executes && (plan.DesiredOutcome != SemanticOutcome.LOCAL_RESPONSE || !DirectEvidence(message, plan.ExecutionEvidence)
+        var scopedInputNames = plan.InputScope?.SourceId is { } scopeSource
+            ? context.Candidates.Concat(new[] { context.Selected, context.DraftSource, context.ResolvedSource }.OfType<SemanticEntity>())
+                .FirstOrDefault(entity => entity.Id == scopeSource)?.InputNames
+            : context.ActiveDraftInputNames;
+        var executionDirective = plan.InputScope is null ? message : GroundedVariableResolver.InstructionDirective(message,
+            scopedInputNames ?? context.CurrentInputNames().Concat(plan.InputScope.Names).Distinct().ToArray(), plan.InputScope);
+        if (plan.Executes && (plan.DesiredOutcome != SemanticOutcome.LOCAL_RESPONSE || !DirectEvidence(executionDirective, plan.ExecutionEvidence)
             || context.AuthorizedValues?.Values.Any(value => value.Contains(plan.ExecutionEvidence, StringComparison.Ordinal)) == true)) Reject("LOCAL_EXECUTION_NOT_REQUESTED");
+        var clipboardDirective = GroundedVariableResolver.InstructionDirective(message, scopedInputNames ?? context.CurrentInputNames().Concat(plan.InputScope?.Names ?? []).Distinct().ToArray(), plan.InputScope);
+        var pendingClipboardDirective = plan.ContinuesPendingTask && context.PendingPlan is {} priorClipboard
+            && (priorClipboard.Has(SemanticOperation.COPY_TO_CLIPBOARD) || priorClipboard.DeferredGoals?.Contains(SemanticOperation.COPY_TO_CLIPBOARD) == true)
+            && context.PendingRequest is {} pendingClipboardRequest
+                ? GroundedVariableResolver.InstructionDirective(pendingClipboardRequest, scopedInputNames ?? context.CurrentInputNames()) : "";
+        if (plan.Has(SemanticOperation.COPY_TO_CLIPBOARD) && ((!DirectEvidence(clipboardDirective, plan.ClipboardEvidence ?? "") && !DirectEvidence(pendingClipboardDirective, plan.ClipboardEvidence ?? ""))
+            || context.AuthorizedValues?.Values.Any(value => value.Contains(plan.ClipboardEvidence ?? "", StringComparison.Ordinal)) == true)) Reject("CLIPBOARD_NOT_REQUESTED");
+        RequireDependency(plan, SemanticOperation.COPY_TO_CLIPBOARD, SemanticOperation.COMPILE_PROMPT);
         if (plan.ProviderId is { } provider && !ProviderRegistry.Providers.Any(p => p.ProviderId == provider)) Reject("UNKNOWN_PROVIDER");
         RequireDependency(plan, SemanticOperation.PROPOSE_ADAPTATION, SemanticOperation.RESOLVE_PROMPT);
         if (plan.AdaptsOrCreates()) {
@@ -130,9 +244,26 @@ public static class SemanticPlanValidator
     }
     public static bool ToolAllowed(SemanticInterpretation plan, string tool)
     {
+        if (tool is "ui_show_template" or "ui_copy_template" && !plan.RequiresTemplatePreview) return false;
+        if (tool is "ui_show_compiled_prompt" or "ui_copy_compiled_prompt" && plan.RequiresTemplatePreview && !plan.RequiresCompiledOutput) return false;
+        if (plan.IntentContract is { } intent && (!ReferenceEquals(plan.Goal?.IntentContract, intent) || !intent.Allows(plan))) return false;
+        // A later model/tool decision cannot enlarge the process-owned task contract.
+        if (plan.Goal is { } goal && plan.DesiredOutcome != SemanticOutcome.CLARIFICATION && !goal.AllowsPlan(plan)) return false;
+        // Shared dependency aliases must not re-authorize a specifically prohibited effect.
+        // For example RESOLVE permits opening an ID, but a user may request search results only.
+        var effect = tool switch { "ui_open_prompt" => SemanticOperation.OPEN_PROMPT, "ui_prepare_update" => SemanticOperation.PROPOSE_ADAPTATION,
+            "ui_prepare_creation" => SemanticOperation.CREATE_DRAFT, "ui_fill_variable" => SemanticOperation.FILL_VARIABLES,
+            "ui_execute_local" => SemanticOperation.EXECUTE_LOCAL, "ui_copy_compiled_prompt" or "ui_copy_template" => SemanticOperation.COPY_TO_CLIPBOARD, "ui_request_save_version" => SemanticOperation.REQUEST_SAVE_VERSION, _ => (SemanticOperation?)null };
+        if (effect is { } prohibited && plan.Constraints.ForbiddenOperations.Contains(prohibited)) return false;
+        if (tool == "ui_show_template") return plan.RequiresTemplatePreview;
+        if (tool == "ui_copy_template") return plan.RequiresTemplatePreview && plan.Has(SemanticOperation.COPY_TO_CLIPBOARD);
         if (tool is "ui_navigate_library" or "ui_read_visible_state" or "ui_verify_prompt_state" or "finish" or "ask_clarification") return true;
         // Compilation/validation are mandatory domain checks, not extra user effects.
         if (tool is "compile_prompt" or "validate_prompt") return true;
+        if (tool == "ui_fill_variable" && plan.Goal is { } inputGoal && inputGoal.RequestedEffects.Any(operation => operation is SemanticOperation.FILL_VARIABLES
+                or SemanticOperation.COPY_PROMPT or SemanticOperation.COPY_TO_CLIPBOARD or SemanticOperation.PREPARE_PROVIDER or SemanticOperation.PREPARE_LOCAL_EXECUTION or SemanticOperation.EXECUTE_LOCAL)
+            && plan.Has(SemanticOperation.COMPILE_PROMPT)
+            && !plan.Constraints.ForbiddenOperations.Contains(SemanticOperation.FILL_VARIABLES)) return true;
         return plan.Intentions.Any(op => Tools[op].Contains(tool));
     }
     private static void Reject(string code) => throw new PreparationToolException(code, "semantic_plan", "El plan semántico no pasó la validación: " + code + ". No se ejecutaron sus efectos.");

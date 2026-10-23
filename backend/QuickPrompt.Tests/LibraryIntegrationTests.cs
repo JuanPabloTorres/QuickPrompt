@@ -2,6 +2,7 @@ using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 using QuickPrompt.Web.Infrastructure;
 using Xunit;
+using QuickPrompt.Domain.Enums;
 
 namespace QuickPrompt.Nova.Tests;
 
@@ -13,6 +14,28 @@ public sealed class LibraryIntegrationTests : IDisposable
     public LibraryIntegrationTests()
     {
         store = new(path); var adapter = new NovaPromptStore(store); library = new(adapter, adapter);
+    }
+    [Fact] public void CategoryCatalogueUsesPersistedDomainIdsAndSurvivesEditAndArchiveRoundTrip()
+    {
+        var categories = PromptCategories.All;
+        Assert.Equal(Enum.GetValues<PromptCategory>().Select(value => (int)value), categories.Select(value => value.Id));
+        Assert.All(categories, category => Assert.False(string.IsNullOrWhiteSpace(category.Name)));
+        foreach (var category in categories)
+        {
+            var prompt = library.Create(new("Categoría " + category.Name, "Explica <tema>.", CategoryId: category.Id));
+            Assert.Equal(category.Id, prompt.CategoryId);
+        }
+        var original = library.Search(new(Size: 100)).Items.First();
+        var changed = library.Update(original.Id, new(original.Title, original.TemplateText, CategoryId: (int)PromptCategory.Education, Revision: original.Revision));
+        Assert.Equal((int)PromptCategory.Education, changed.CategoryId);
+        Assert.Throws<ValidationException>(() => library.Update(changed.Id, new(changed.Title, changed.TemplateText, CategoryId: 99999, Revision: changed.Revision)));
+        Assert.Equal(changed.Revision, library.Get(changed.Id).Revision);
+        var targetStore = new LocalStore(Path.Combine(Path.GetDirectoryName(path)!, "categories-restored.sqlite"));
+        targetStore.Import(store.Export(), true);
+        var target = new NovaPromptStore(targetStore); var restored = new PromptLibrary(target, target);
+        foreach (var prompt in library.Search(new(Size: 100)).Items)
+            Assert.Equal(prompt.CategoryId, restored.Get(prompt.Id).CategoryId);
+        Assert.Equal("ok", targetStore.CheckIntegrity());
     }
     [Fact] public void PreviewIsReadOnlyAndCopyUsageSurvivesRestartExactlyOnce()
     {

@@ -1,0 +1,319 @@
+{
+  "version": "semantic-recovery-1.0",
+  "syntheticOnly": true,
+  "split": "holdout",
+  "fixtures": [
+    [
+      "Análisis de encuestas",
+      "Analiza <respuestas> de satisfacción. No inventes respuestas."
+    ],
+    [
+      "Cuidados de plantas",
+      "Explica cuidados para <especie> con luz <luz>. No inventes tratamientos."
+    ],
+    [
+      "Análisis de resultados médicos",
+      "Ordena resultados médicos sin diagnosticar."
+    ],
+    [
+      "Análisis de resultados deportivos",
+      "Ordena resultados deportivos."
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "recovery-v1-holdout-01",
+      "family": "search",
+      "context": "home",
+      "message": "Necesito localizar el prompt para interpretar cuestionarios de satisfacción.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "holdout-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-holdout-02",
+      "family": "search",
+      "context": "home",
+      "message": "Busca mi instrucción de análisis de encuestas.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "holdout-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-holdout-03",
+      "family": "open",
+      "context": "selected_recipe",
+      "message": "Abre esta ficha para leerla y deja su texto intacto.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-04",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Reduce el tamaño de la instrucción sin inventar respuestas.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "holdout-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-holdout-05",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Necesito que la plantilla ocupe menos texto, conservando la regla sobre respuestas inventadas.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "holdout-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-holdout-06",
+      "family": "create",
+      "context": "home",
+      "message": "Redacta un prompt reutilizable para comparar métodos de compostaje.",
+      "required": [
+        "CREATE_DRAFT"
+      ],
+      "outcomes": [
+        "NEW_DRAFT"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-07",
+      "family": "variables",
+      "context": "selected_recipe",
+      "message": "Rellena únicamente estos campos.\nespecie: albahaca\nluz: indirecta",
+      "required": [
+        "FILL_VARIABLES"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-08",
+      "family": "reference",
+      "context": "previous_report",
+      "message": "Retoma el borrador anterior y oriéntalo a detectar oportunidades de mejora.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-09",
+      "family": "reference",
+      "context": "two_candidates",
+      "message": "Quiero ver el otro prompt de los resultados.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-10",
+      "family": "negation",
+      "context": "selected_report",
+      "message": "Solo quiero leerlo; no lo adaptes ni hagas una copia.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-11",
+      "family": "multi",
+      "context": "selected_recipe",
+      "message": "Haz una adaptación para cultivo interior y prepara su vista previa para copiar. No guardes ni ejecutes.",
+      "required": [
+        "PROPOSE_ADAPTATION",
+        "COPY_PROMPT"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION",
+        "REQUEST_SAVE_COPY"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-12",
+      "family": "ambiguity",
+      "context": "ambiguous",
+      "message": "Abre el análisis de resultados.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-13",
+      "family": "missing",
+      "context": "home",
+      "message": "Revisa ese y déjalo listo.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-14",
+      "family": "english",
+      "context": "selected_report",
+      "message": "Please tailor the current instruction to customer feedback about delivery speed. Leave the stored source alone.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-15",
+      "family": "cancel",
+      "context": "selected_recipe",
+      "message": "Detén esta operación ahora.",
+      "required": [
+        "CANCEL"
+      ],
+      "outcomes": [
+        "CANCELLED"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-holdout-16",
+      "family": "prepare",
+      "context": "selected_report",
+      "message": "Ponlo listo para ChatGPT sin lanzarlo ni reescribirlo.",
+      "required": [
+        "PREPARE_PROVIDER"
+      ],
+      "outcomes": [
+        "READY_PROVIDER"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    }
+  ]
+}

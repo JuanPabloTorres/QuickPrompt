@@ -9,6 +9,21 @@ public sealed class SharingTests : IDisposable
     private readonly string dir=Path.Combine(Path.GetTempPath(),"qp-sharing-"+Guid.NewGuid());
     private LocalStore NewStore()=>new(Path.Combine(dir,Guid.NewGuid()+".sqlite"));
     public void Dispose(){if(Directory.Exists(dir))Directory.Delete(dir,true);}
+    [Fact] public void SharingAnExpectedRevisionCannotExportAnUnreviewedNewerSnapshot()
+    {
+        var store = NewStore();
+        var template = store.Save(new() { Title = "Revisada", Template = "Hola <persona>.", Variables = new() { ["persona"] = "PRIVATE_DEFAULT" } });
+        var revision = template.Revision;
+        Assert.Equal(store.ExportTemplate(template.Id), store.ExportTemplate(template.Id, revision));
+        template.Template = "Texto posterior para <persona>, sin revisar."; store.Save(template);
+        var before = store.Export();
+        Assert.Throws<ConflictException>(() => store.ExportTemplate(template.Id, revision));
+        Assert.Equal(before, store.Export());
+        var current = store.ExportTemplate(template.Id, template.Revision);
+        using var packet = JsonDocument.Parse(current);
+        Assert.Equal(template.Template, packet.RootElement.GetProperty("prompt").GetProperty("template").GetString());
+        Assert.DoesNotContain("PRIVATE_DEFAULT", current);
+    }
     [Fact] public void PortableProjectionOmitsDefaultsPrivateHistorySettingsAndIdentity()
     {
         var store=NewStore();var t=store.Save(new(){Title="Correo",Template="Hola <nombre>",Variables=new(){{"nombre","PRIVATE_DEFAULT"}}});

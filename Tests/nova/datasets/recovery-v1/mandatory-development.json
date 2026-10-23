@@ -1,0 +1,20 @@
+{
+  "version": "semantic-recovery-1.0-mandatory-diagnostic",
+  "syntheticOnly": true,
+  "split": "development-diagnostic",
+  "fixtures": [
+    ["Redactar correos", "Redacta un correo profesional, breve y respetuoso. Usa únicamente los datos proporcionados. No inventes nombres, fechas ni información personal."],
+    ["Proyecto técnico", "Revisa el proyecto <proyecto> y enumera tres mejoras. No inventes datos."]
+  ],
+  "scenarios": [{
+    "id": "mandatory-home",
+    "family": "adapt",
+    "context": "home",
+    "message": "Encuentra el prompt que utilizo para redactar correos, conviértelo en una versión breve para solicitar una entrevista y déjalo listo para copiar. No modifiques el original.",
+    "required": ["PROPOSE_ADAPTATION", "COPY_PROMPT"],
+    "outcomes": ["DRAFT"],
+    "forbidden": ["REQUEST_SAVE_VERSION", "REQUEST_SAVE_COPY", "EXECUTE_LOCAL"],
+    "target": "report",
+    "metamorphicGroup": null
+  }]
+}

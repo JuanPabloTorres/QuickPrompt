@@ -9,6 +9,11 @@ public static class NovaEndpoints
 {
     public static void MapNova(this RouteGroupBuilder api)
     {
+        api.MapPost("/nova/command", (LocalCommandInput input, LocalCommands commands, CancellationToken ct) => commands.Resolve(input, ct)).RequireRateLimiting("ai");
+        api.MapPost("/nova/semantic/interpret", async (LocalCommandInput input, ITaskPlanner planning, CancellationToken ct) => {
+            if (string.IsNullOrWhiteSpace(input.Message) || input.Message.Length > 16000) throw new ValidationException("Solicitud semántica inválida.");
+            return (await planning.Interpret(input.Message, input.SessionId ?? Guid.NewGuid(), input.SourcePromptId, input.SourceRevision, LocalModelPolicy.Production.DefaultModel, null, ct)).Interpretation;
+        }).RequireRateLimiting("ai");
         api.MapGet("/ai/local/models", async (ILocalLlmClient client, CancellationToken ct) => new { models = await client.Available(ct) });
         api.MapPost("/nova/interpret", (NovaRequest input, NovaAssistant assistant, HttpContext context, LiveRuns live) => Observed(context, live, "Interpretation", ct => assistant.Interpret(input, context.TraceIdentifier, ct))).RequireRateLimiting("ai");
         api.MapPost("/nova/propose", (ProposalInput input, NovaAssistant assistant, HttpContext context, LiveRuns live) => {
@@ -16,23 +21,22 @@ public static class NovaEndpoints
                 var authority = live.Active(parent);
                 if (authority.Semantic?.Adapts != true || input.Context != (authority.VisibleTaskRequest ?? authority.AuthorizedTaskRequest ?? authority.Input.Message) || input.PromptId != authority.Observation?.PromptId || input.Revision != authority.Observation?.Revision)
                     throw new ValidationException("La edición no corresponde a la solicitud y al origen del run visible.");
-                input = input with { Context = authority.AuthorizedTaskRequest ?? authority.Input.Message, InterpretedShortening = authority.Semantic.Constraints.Shortening, InterpretedContentChange = authority.Semantic.RequestedTransformation, InterpretedTargetTerms = authority.Semantic.Constraints.TargetTerms };
+                input = input with { Context = authority.AuthorizedTaskRequest ?? authority.Input.Message, InterpretedShortening = authority.Semantic.Constraints.Shortening, InterpretedContentChange = authority.Semantic.RequestedTransformation, InterpretedTargetTerms = authority.Semantic.Constraints.TargetTerms,AuthorizedTaskPlan=authority.Semantic };
             }
             if (Guid.TryParse(context.Request.Headers["X-Nova-Live-Run"], out var id) && live.Get(id).Mode is "BROWSER" or "SAME_TAB" && live.Active(id).WorkingDraft is { } working) {
                 var control = live.Active(id);
                 if (control.Semantic?.Adapts != true || input.Context != (control.AuthorizedTaskRequest ?? control.Input.Message) || input.PromptId != working.SourceId || input.Revision != working.SourceRevision
-                    || control.Observation?.TemplateText != working.TemplateText) throw new ValidationException("La edición no corresponde al borrador activo y a la petición autorizada.");
+                    || control.Observation?.TemplateText != working.TemplateText || working.SourceId is null || working.SourceRevision is null) throw new ValidationException("La edición no corresponde al borrador activo y a la petición autorizada.");
                 input = input with { AuthorizedWorkingSource = new Template { Id = working.SourceId!.Value, Revision = working.SourceRevision!.Value, Title = working.Title, Description = working.Description, Template = working.TemplateText } };
             }
+            if (Guid.TryParse(context.Request.Headers["X-Nova-Live-Run"], out var scopedRun) && live.Active(scopedRun).Semantic?.Goal is { } goal)
+                input = input with { Context = goal.ContentRequest };
             return Observed(context, live, "Generation", ct => assistant.Propose(input, ct));
         }).RequireRateLimiting("ai");
         api.MapPost("/nova/variables", (NovaRequest input, NovaAssistant assistant, HttpContext context, LiveRuns live) => Observed(context, live, "Variables", ct => assistant.Suggest(input, ct))).RequireRateLimiting("ai");
-        api.MapPost("/ai/local/execute", async (ExecuteInput input, IPromptReader reader, ILocalLlmClient client, HttpContext context) =>
+        api.MapPost("/ai/local/execute", async (ExecuteInput input, PromptLibrary library, ILocalLlmClient client, HttpContext context) =>
         {
-            if (!input.Confirmed || input.Values is null || input.Values.Count > 60 || input.Values.Any(x => x.Key.Length > 80 || x.Value is null || x.Value.Length > 8000))
-                throw new ValidationException("Confirma el prompt y revisa sus valores antes de ejecutar.");
-            var compiled = reader.Preview(input.PromptId, input.Revision, input.Values);
-            if (compiled.Text != input.ExpectedText) throw new ConflictException("El texto final cambió. Revisa el prompt antes de ejecutarlo.");
+            var compiled = library.ReviewExecution(input);
             var ct = context.RequestAborted;
             context.Response.ContentType = "text/event-stream";
             context.Response.Headers.CacheControl = "no-store";
@@ -56,6 +60,7 @@ public static class NovaEndpoints
         if (!Guid.TryParse(context.Request.Headers["X-Nova-Live-Run"], out var id)) return await operation(context.RequestAborted);
         var run = live.Get(id); var control = live.Active(id);
         if (LiveRuns.Terminal(run.Status)) throw new ConflictException("La ejecución ya terminó.");
+        using var performance = run.Mode == "LIVE" ? NovaTelemetry.Begin(id) : NovaTelemetry.Attach(id);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, control.Cancellation.Token);
         await live.Boundary(id, linked.Token); var timer = System.Diagnostics.Stopwatch.StartNew();
         var previousNotice = OllamaClient.OperationNotice.Value;

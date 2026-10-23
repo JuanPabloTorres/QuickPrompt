@@ -1,7 +1,8 @@
+import { useApplicationServices } from '../../components/ServiceContext';
 import { useState } from 'react';
-import { z } from 'zod';
 import { Dialog } from '../../components/ui/Dialog';
-import { errorMessage, post, request } from '../../services/api';
+import { errorMessage } from '../../services/api';
+
 
 const lessons = [
   ['01-biblioteca', '1. Usar un prompt de la biblioteca', 'Elige una colección, abre una tarea, completa tus datos y usa Qwen para obtener una respuesta.'],
@@ -9,15 +10,16 @@ const lessons = [
   ['03-variables', '3. Crear y quitar variables con un botón', 'Selecciona una palabra o frase del contenido. El mismo botón la convierte en variable o la devuelve a texto.'],
 ];
 export function LearningCenter({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const { archives } = useApplicationServices();
   const [busy, setBusy] = useState(false); const [feedback, setFeedback] = useState(''); const [error, setError] = useState('');
   async function addLibrary() {
     if (busy) return; setBusy(true); setError('');
     try {
       const response = await fetch('/library/biblioteca-practica.es.json'); if (!response.ok) throw new Error('No se pudo abrir la biblioteca práctica.');
       const data: unknown = await response.json();
-      const preview = await request('/library/import/preview', z.object({ conflicts: z.number() }), post(data));
+      const preview = await archives.inspect(data);
       if (preview.conflicts) throw new Error('Hay versiones diferentes en tu biblioteca. Revisa el archivo en Datos y respaldos antes de añadirlo.');
-      const result = await request('/library/import', z.object({ imported: z.number() }), post({ data, confirmed: true }));
+      const result = await archives.import({ data, confirmed: true });
       setFeedback(result.imported ? `${result.imported} prompts añadidos. Cierra esta guía y elige una colección.` : 'Ya tienes estos prompts. No se añadieron duplicados.'); onImported();
     } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
   }

@@ -1,7 +1,8 @@
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SameTabAgent } from '../src/features/nova/SameTabAgent';
-import { applyAgentProposal } from '../src/features/nova/AgentUiDriver';
+import { createAgentProposalSession } from '../src/features/nova/AgentProposalSession';
+import { AgentUiProvider } from '../src/features/nova/AgentUiContext';
 import { startVisible, surfaceCapability } from '../src/services/live';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -40,9 +41,11 @@ it('discards an old in-flight poll after switching runs and releases the complet
     throw new Error('Unexpected endpoint ' + path);
   }));
   const session = crypto.randomUUID(), first = await startVisible('Primera petición', session);
-  const active = vi.fn(); const view = render(<SameTabAgent runId={first.runId} onActive={active} />);
+  const active = vi.fn(); const proposalSession = createAgentProposalSession();
+  const agent = (runId: string) => <AgentUiProvider session={proposalSession}><SameTabAgent runId={runId} onActive={active} /></AgentUiProvider>;
+  const view = render(agent(first.runId));
   await waitFor(() => expect(pending.has(first.runId)).toBe(true));
-  const second = await startVisible('Segunda petición', session); view.rerender(<SameTabAgent runId={second.runId} onActive={active} />);
+  const second = await startVisible('Segunda petición', session); view.rerender(agent(second.runId));
   await waitFor(() => expect(pending.has(second.runId)).toBe(true));
   expect(active.mock.calls.at(-1)).toEqual([true]);
   pending.get(first.runId)!(Response.json({ run: record(first.runId, 'COMPLETED'), action: null }));
@@ -50,7 +53,7 @@ it('discards an old in-flight poll after switching runs and releases the complet
   pending.get(second.runId)!(Response.json({ run: record(second.runId, 'COMPLETED'), action: null }));
   await waitFor(() => expect(active.mock.calls.at(-1)).toEqual([false]));
   expect(surfaceCapability(second.runId)).toBeUndefined();
-  expect(await applyAgentProposal('Edición manual posterior.', new AbortController().signal)).toBe(false);
+  expect(await proposalSession.apply('Edición manual posterior.', new AbortController().signal)).toBe(false);
 });
 
 it('recovers a transient poll failure in a hidden tab without requiring Continue or replaying a write', async () => {
@@ -73,9 +76,32 @@ it('recovers a transient poll failure in a hidden tab without requiring Continue
   }));
   await startVisible('Crea una instrucción.', crypto.randomUUID());
   const active = vi.fn();
-  render(<><section data-testid="prompt-editor" data-prompt-id=""><input id="prompt-title" defaultValue="" /><textarea id="prompt-content" defaultValue="" /><span data-testid="variables-inspected" /></section><SameTabAgent runId={id} speed="fast" onActive={active} /></>);
+  render(<><section data-testid="prompt-editor" data-prompt-id=""><input id="prompt-title" defaultValue="" /><textarea id="prompt-content" defaultValue="" /><span data-testid="variables-inspected" /><span data-testid="compile-ready" /></section><SameTabAgent runId={id} speed="fast" onActive={active} /></>);
   await waitFor(() => expect(active.mock.calls.at(-1)).toEqual([false]), { timeout: 3000 });
   expect(document.getElementById('prompt-title')).toHaveProperty('value', 'Primera petición');
   expect(document.getElementById('prompt-content')).toHaveProperty('value', 'Una instrucción completa.');
   expect(receipts).toBe(1); expect(calls.some(path => path.endsWith('/pause') || path.endsWith('/resume'))).toBe(false);
+});
+
+it('remembers an SSE wake received during an in-flight poll and ignores another run', async () => {
+  let id = '', polls = 0; let acceptFirst: (response: Response) => void = () => {};
+  vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {
+    if (path === '/api/v1/nova/live') { id = JSON.parse(options!.body as string).runId; return Response.json(record(id)); }
+    if (path.includes('/actions?')) {
+      polls++;
+      if (polls === 1) return await new Promise<Response>(resolve => { acceptFirst = resolve; });
+      return Response.json({ run: record(id), action: null });
+    }
+    throw Error('Unexpected endpoint');
+  }));
+  await startVisible('Consulta el prompt.', crypto.randomUUID());
+  const rendered = render(<SameTabAgent runId={id} onActive={vi.fn()} />);
+  await waitFor(() => expect(polls).toBe(1));
+  await act(async () => {
+    window.dispatchEvent(new CustomEvent('nova-ui-state-available', { detail: id }));
+    acceptFirst(Response.json({ run: record(id), action: null }));
+  });
+  expect(polls).toBe(2);
+  await act(async () => { window.dispatchEvent(new CustomEvent('nova-ui-state-available', { detail: crypto.randomUUID() })); });
+  expect(polls).toBe(2); rendered.unmount();
 });

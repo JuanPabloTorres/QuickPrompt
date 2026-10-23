@@ -19,6 +19,49 @@ public sealed class LiveExecutionTests : IDisposable
     private UiVisibleState State(PromptDocument source, bool changed = false) => new("create", [], source.Id, source.Revision, source.Title,
         changed ? "Nueva instrucción breve, sin inventar información." : source.TemplateText, [], [], changed, false, null, null, false, false);
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task VisibleReadDoesNotDemandOrApplyIncidentalCaseValues(bool withGoal)
+    {
+        var source=library.Create(new("Lectura protegida","Explica <tema>."));
+        var before=JsonSerializer.Serialize(library.Get(source.Id));
+        const string request="Abre este prompt sólo para leerlo.\ntema: dato incidental";
+        var input=new LiveStartInput(Guid.NewGuid(),Guid.NewGuid(),request,SourceId:source.Id,SourceRevision:source.Revision);
+        live.Create(input);var sessions=new AgentSessions();var inference=new RejectedExtraction();var retriever=new SqlitePromptRetriever(store);
+        var plan=SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT,SemanticOperation.OPEN_PROMPT],TargetReference.SELECTED,source.Id,outcome:SemanticOutcome.READ);
+        if(withGoal)plan=plan with {Goal=TaskGoal.Create(request,SemanticContext.Empty with {Selected=SemanticEntity.From(source)},plan,
+            [new(TaskClauseRole.WORKFLOW,request)],[SemanticOperation.OPEN_PROMPT])};
+        var model=new FixedSemantic(plan);
+        var engine=new AgentOrchestrator(inference,retriever,inference,new GroundedVariableResolver(),new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store),new(),sessions:sessions,taskPlanner:new NovaTaskPlanner(model,retriever,sessions,model),executeGroundedPlan:true,stopAfterVerifiedResult:true);
+        var browser=new ObservedBrowser(State(source) with {Mode="focus",VariableNames=["tema"],Values=new(){["tema"]=""}});
+        live.Active(input.RunId).Cancellation.CancelAfter(TimeSpan.FromSeconds(5));
+        await engine.RunVisible(input,"http://127.0.0.1:5226",live,new InvalidDecision(),browser,library);
+        Assert.True(live.Get(input.RunId).Status==LiveStatus.COMPLETED,JsonSerializer.Serialize(live.View(input.RunId)));
+        Assert.DoesNotContain("ui_fill_variable",browser.Tools);Assert.DoesNotContain("ui_execute_local",browser.Tools);
+        Assert.Equal("",live.View(input.RunId).Observation!.Values["tema"]);
+        Assert.Equal(before,JsonSerializer.Serialize(library.Get(source.Id)));Assert.Null(live.View(input.RunId).Proposal);
+    }
+    [Theory]
+    [InlineData("session")]
+    [InlineData("draft")]
+    [InlineData("revision")]
+    [InlineData("content")]
+    [InlineData("source")]
+    [InlineData("visible")]
+    public void AForeignOrChangedWorkingCheckpointCannotBecomeASaveProposal(string invalid)
+    {
+        var input = Start();
+        var draft = new DeterministicPromptEvaluator().Evaluate(new(input.RunId, "Crear explicación.", SessionId: input.SessionId),
+            new(PreparationIntent.CREATE_PROMPT, "", ""), new(PreparationDecision.CREATE_NEW, null, "Explicación", "", "Explica el tema sin inventar datos.", [], "", "Creación sintética verificada."), [], []) with { SessionId = input.SessionId };
+        live.Active(input.RunId).WorkingDraft = invalid == "source" ? draft with { SourceId = Guid.NewGuid(), SourceRevision = 1 } : draft;
+        var reference = new DraftRef(invalid == "draft" ? Guid.NewGuid() : draft.Id, invalid == "session" ? Guid.NewGuid() : input.SessionId,
+            invalid == "revision" ? 0 : 1, null, invalid == "content" ? "Otro contenido." : draft.TemplateText);
+        var state = new UiVisibleState("create", [], null, null, draft.Title, invalid == "visible" ? "Cambio manual." : draft.TemplateText, [], [], true, false, null, null, false, false);
+        Assert.Throws<ConflictException>(() => live.ProposeSave(input.RunId, state, workingReference: reference));
+        Assert.Null(live.View(input.RunId).Proposal); Assert.Empty(store.Templates());
+    }
+    [Theory]
     [InlineData(true, false, true, false)]
     [InlineData(false, false, false, false)]
     [InlineData(false, true, false, true)]
@@ -172,7 +215,7 @@ public sealed class LiveExecutionTests : IDisposable
     {
         var input = Start("Abre un prompt."); var inference = new UnusedInference(); var browser = new FaultBrowser();
         var fakeSemantic = new FixedSemantic(SemanticFixture.Plan([SemanticOperation.SEARCH_PROMPT], query: "arquitectura"));
-        var engine = new AgentOrchestrator(inference, new SqlitePromptRetriever(store), inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), semanticPlanning: new(fakeSemantic, new SqlitePromptRetriever(store), new(), fakeSemantic));
+        var engine = new AgentOrchestrator(inference, new SqlitePromptRetriever(store), inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), taskPlanner: new NovaTaskPlanner(fakeSemantic, new SqlitePromptRetriever(store), new(), fakeSemantic));
         await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
         Assert.Equal(LiveStatus.BLOCKED, live.Get(input.RunId).Status); Assert.Equal("UI_TOOL_NOT_ALLOWED", live.Get(input.RunId).ErrorCode); Assert.True(browser.Disposed);
         Assert.Equal(["ui_read_visible_state"], browser.Tools); Assert.Empty(store.Templates()); Assert.False(live.Get(input.RunId).BrowserOpen);
@@ -185,10 +228,10 @@ public sealed class LiveExecutionTests : IDisposable
     {
         const string request = "Orienta la instrucción anterior a una API.";
         var input = Start(request); var inference = new UnusedInference(); var browser = new FaultBrowser(); var sessions = new AgentSessions();
-        var pending = SemanticPlanning.Clarify(SemanticFixture.Plan([SemanticOperation.PROPOSE_ADAPTATION], TargetReference.PREVIOUS_RESULT, outcome: SemanticOutcome.DRAFT), "¿Cuál instrucción?");
+        var pending = TaskClarification.Apply(SemanticFixture.Plan([SemanticOperation.PROPOSE_ADAPTATION], TargetReference.PREVIOUS_RESULT, outcome: SemanticOutcome.DRAFT), "¿Cuál instrucción?");
         var plan = advice ? SemanticFixture.Plan([SemanticOperation.EXPLAIN], outcome: SemanticOutcome.ADVICE) with { Explanation = "Puedes revisar el borrador antes de guardarlo." } : pending;
         var model = new FixedSemantic(plan); var retriever = new SqlitePromptRetriever(store);
-        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, semanticPlanning: new(model, retriever, sessions, model));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(model, retriever, sessions, model));
         await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
         Assert.Empty(browser.Tools); Assert.False(browser.Disposed); Assert.Empty(store.Templates());
         if (advice) { Assert.Equal(LiveStatus.COMPLETED, live.Get(input.RunId).Status); Assert.Null(sessions.Get(input.SessionId)?.PendingRequest); }
@@ -204,7 +247,7 @@ public sealed class LiveExecutionTests : IDisposable
         var inference = new UnusedInference(); var browser = new FaultBrowser(); var sessions = new AgentSessions();
         sessions.Put(new(input.SessionId, source, null, [], DateTime.UtcNow, PendingRequest: "Petición pendiente literal."));
         var model = new FixedSemantic(SemanticFixture.Plan([operation], outcome: outcome)); var retriever = new SqlitePromptRetriever(store);
-        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, semanticPlanning: new(model, retriever, sessions, model));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(model, retriever, sessions, model));
         await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
         Assert.Empty(browser.Tools); Assert.False(browser.Disposed); Assert.Equal(JsonSerializer.Serialize(source), JsonSerializer.Serialize(library.Get(source.Id))); Assert.Single(store.Versions(source.Id));
         Assert.Equal(operation == SemanticOperation.CANCEL ? LiveStatus.CANCELLED : LiveStatus.BLOCKED, live.Get(input.RunId).Status);
@@ -218,7 +261,7 @@ public sealed class LiveExecutionTests : IDisposable
         live.Create(input); var inference = new UncertainExtraction(); var sessions = new AgentSessions();
         var plan = SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT, SemanticOperation.OPEN_PROMPT, SemanticOperation.FILL_VARIABLES, SemanticOperation.COMPILE_PROMPT], TargetReference.SELECTED, source.Id);
         var semantic = new FixedSemantic(plan); var retriever = new SqlitePromptRetriever(store);
-        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, semanticPlanning: new(semantic, retriever, sessions, semantic));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic));
         var state = State(source) with { Mode = "focus", Values = new() { ["tema"] = "" }, VariableNames = ["tema"] };
         var browser = new ObservedBrowser(state);
         await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
@@ -233,7 +276,16 @@ public sealed class LiveExecutionTests : IDisposable
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public async Task CompletedLocalExecutionDoesNotReopenAnExternalPickerOrAskForUnneededData(bool previousResponse, bool bindSource)
+    public Task CompletedLocalExecutionDoesNotReopenAnExternalPickerOrAskForUnneededData(bool previousResponse, bool bindSource)
+        => VerifyCompletedLocalExecution(previousResponse, bindSource, false);
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public Task VerifiedLocalResultCompletesWithoutASecondModelDecision(bool previousResponse, bool bindSource)
+        => VerifyCompletedLocalExecution(previousResponse, bindSource, true);
+    private async Task VerifyCompletedLocalExecution(bool previousResponse, bool bindSource, bool stopAfterVerifiedResult)
     {
         var source = library.Create(new("Ficha", "Explica <tema>."));
         const string message = "Ejecuta con el modelo local ahora.\ntema: SQLite";
@@ -243,7 +295,7 @@ public sealed class LiveExecutionTests : IDisposable
         var plan = SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT, SemanticOperation.OPEN_PROMPT, SemanticOperation.FILL_VARIABLES, SemanticOperation.COMPILE_PROMPT, SemanticOperation.PREPARE_LOCAL_EXECUTION, SemanticOperation.EXECUTE_LOCAL], TargetReference.SELECTED, source.Id, outcome: SemanticOutcome.LOCAL_RESPONSE)
             with { ProviderId = "ollama", ExecutionEvidence = "Ejecuta con el modelo local ahora." };
         var semantic = new FixedSemantic(plan); var retriever = new SqlitePromptRetriever(store);
-        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, semanticPlanning: new(semantic, retriever, sessions, semantic));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic), stopAfterVerifiedResult: stopAfterVerifiedResult);
         var state = State(source) with { Mode = "focus", Values = new() { ["tema"] = "SQLite" }, VariableNames = ["tema"], CompiledReady = true, CompiledText = "Explica SQLite.", ProviderOpen = true, ProviderId = "chatgpt", ResponseComplete = previousResponse, Response = previousResponse ? "Respuesta anterior." : null };
         var browser = new LocalResultBrowser(state, () => {
             Assert.Equal(source.Id, live.Get(input.RunId).TargetId);
@@ -251,10 +303,146 @@ public sealed class LiveExecutionTests : IDisposable
             Assert.Equal(state.CompiledText, live.Active(input.RunId).Observation!.CompiledText);
         }); var decisions = new CompleteLocalDecision(source.Id);
         await engine.RunVisible(input, "http://127.0.0.1:5226", live, decisions, browser, library);
-        Assert.Equal(2, decisions.Calls); Assert.Equal(LiveStatus.COMPLETED, live.Get(input.RunId).Status);
+        Assert.Equal(stopAfterVerifiedResult ? 1 : 2, decisions.Calls); Assert.Equal(LiveStatus.COMPLETED, live.Get(input.RunId).Status);
         Assert.Equal(1, browser.Tools.Count(tool => tool == "ui_execute_local")); Assert.DoesNotContain("ui_open_provider_picker", browser.Tools);
         Assert.Equal("Respuesta observada.", live.View(input.RunId).Observation!.Response);
         Assert.Equal(JsonSerializer.Serialize(source), JsonSerializer.Serialize(library.Get(source.Id)));
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task IndependentCreationFromFocusDoesNotInheritTheOldSourceOrItsFieldValues(bool useSourceBasis)
+    {
+        var message = useSourceBasis ? "Crea otra instrucción basada en la actual para explicar de forma sencilla." : "Crea una instrucción independiente para explicar un tema.";
+        var source = library.Create(new("Anterior", "Describe <tema>."));
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), message, "SAME_TAB", SourceId: source.Id, SourceRevision: source.Revision,
+            Values: new() { ["tema"] = "SYNTHETIC_PREVIOUS_VALUE" }); live.Create(input);
+        var plan = SemanticPlanCompiler.Compile(new([SemanticOperation.CREATE_DRAFT], useSourceBasis ? TargetReference.SELECTED : TargetReference.NONE, "", useSourceBasis ? source.Id : null, "", message,
+            new([SemanticOperation.REQUEST_SAVE_VERSION, SemanticOperation.REQUEST_SAVE_COPY, SemanticOperation.EXECUTE_LOCAL], true, null, null, [], [], false),
+            SemanticOutcome.NEW_DRAFT, [], false, "", null, "Crear un borrador independiente."));
+        plan = plan with { Goal = TaskGoal.Create(message, SemanticContext.Empty with { Selected = SemanticEntity.From(source) }, plan, [new(TaskClauseRole.CONTENT, message)]) };
+        var semantic = new FixedSemantic(plan); var inference = new CreationOnlyInference(useSourceBasis ? source : null); var retriever = new SqlitePromptRetriever(store); var sessions = new AgentSessions();
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(),
+            sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic), executeGroundedPlan: true);
+        var browser = new CreationBrowser(State(source) with { Mode = "focus" });
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.True(live.Get(input.RunId).Status == LiveStatus.COMPLETED,
+            $"{live.Get(input.RunId).ErrorCode}: {live.View(input.RunId).Question}; tools: {string.Join(',', browser.Tools)}");
+        Assert.False(live.Get(input.RunId).EffectCommitted);
+        Assert.Null(live.Active(input.RunId).Input.SourceId); Assert.Null(live.Active(input.RunId).Input.Values);
+        Assert.Equal("", live.View(input.RunId).Observation!.Values["tema"]); Assert.DoesNotContain("ui_fill_variable", browser.Tools);
+        Assert.Null(live.View(input.RunId).Observation!.PromptId); Assert.Single(store.Templates());
+        Assert.Equal(JsonSerializer.Serialize(source), JsonSerializer.Serialize(library.Get(source.Id)));
+    }
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task VisibleUnsavedDraftSurvivesAFollowupAndInterruptedGeneration(bool interrupt, bool withGoal)
+    {
+        var sessions = new AgentSessions(); var retriever = new SqlitePromptRetriever(store); var sessionId = Guid.NewGuid();
+        var browser = new CreationBrowser(new("discover", [], null, null, null, null, [], [], false, false, null, null, false, false));
+        var creation = new CreationOnlyInference();
+        var first = new LiveStartInput(Guid.NewGuid(), sessionId, "Crea una explicación.", "SAME_TAB"); live.Create(first);
+        var plan = SemanticPlanCompiler.Compile(new([SemanticOperation.CREATE_DRAFT], TargetReference.NONE, "", null, "", "Crear una explicación",
+            new([], true, null, null, [], [], false), SemanticOutcome.NEW_DRAFT, [], false, "", null, "Crear"));
+        plan = plan with { Goal = TaskGoal.Create(first.Message, SemanticContext.Empty, plan, [new(TaskClauseRole.CONTENT, first.Message)], [SemanticOperation.CREATE_DRAFT]) };
+        AgentOrchestrator Engine(IIntentInterpreter interpreter, IPromptGenerator generator, SemanticInterpretation task) {
+            var semantic = new FixedSemantic(task);
+            return new(interpreter, retriever, generator, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(),
+                sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic), executeGroundedPlan: true);
+        }
+        await Engine(creation, creation, plan).RunVisible(first, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.Equal(LiveStatus.COMPLETED, live.Get(first.RunId).Status);
+        var original = sessions.Get(sessionId)!.UnsavedDraft!; Assert.NotNull(original); Assert.Null(original.SourceRevision);
+        var reference = sessions.Get(sessionId)!.WorkingDraftReference!;
+        Assert.Equal(sessionId, reference.SessionId); Assert.Equal(1, reference.DraftRevision); Assert.Null(reference.SourceRef);
+        var next = new LiveStartInput(Guid.NewGuid(), sessionId, "Adapta este borrador para principiantes.", "SAME_TAB"); live.Create(next);
+        var edit = SemanticPlanCompiler.Compile(new([SemanticOperation.PROPOSE_ADAPTATION], TargetReference.ACTIVE_DRAFT, "", null, "", "Explicar para principiantes",
+            new([], true, null, null, [], [], false), SemanticOutcome.DRAFT, [], false, "", null, "Adaptar"));
+        var context = SemanticContext.Empty with { ActiveDraft = original.TemplateText, ActiveDraftInputNames = ["tema"] };
+        if (withGoal) edit = edit with { Goal = TaskGoal.Create(next.Message, context, edit, [new(TaskClauseRole.CONTENT, next.Message)], [SemanticOperation.PROPOSE_ADAPTATION]) };
+        var generation = new WorkingAdaptInference(original, interrupt);
+        await Engine(generation, generation, edit).RunVisible(next, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.True(live.Get(next.RunId).Status == (interrupt ? LiveStatus.FAILED : LiveStatus.COMPLETED),
+            $"{live.Get(next.RunId).ErrorCode}: {live.View(next.RunId).Question}; tools: {string.Join(',', browser.Tools)}");
+        var retained = sessions.Get(sessionId)!.UnsavedDraft!;
+        Assert.Equal(original.Id, retained.Id); Assert.Null(retained.SourceId); Assert.Empty(store.Templates());
+        Assert.Equal(interrupt ? 1 : 2, sessions.Get(sessionId)!.WorkingDraftReference!.DraftRevision);
+        Assert.Equal(interrupt ? original.TemplateText : WorkingAdaptInference.Body, retained.TemplateText);
+        Assert.DoesNotContain("ui_execute_local", browser.Tools); Assert.DoesNotContain("ui_request_save_version", browser.Tools);
+        if (!interrupt) {
+            var save = new LiveStartInput(Guid.NewGuid(), sessionId, "Solicita aprobación para guardar este borrador como una copia.", "SAME_TAB"); live.Create(save);
+            var savePlan = SemanticPlanCompiler.Compile(new([SemanticOperation.REQUEST_SAVE_COPY], TargetReference.ACTIVE_DRAFT, "", null, "", "",
+                new([SemanticOperation.REQUEST_SAVE_VERSION, SemanticOperation.EXECUTE_LOCAL], true, null, null, [], [], false), SemanticOutcome.REVIEW, [], true, "", null, "Guardar copia"));
+            if (withGoal) savePlan = savePlan with { Goal = TaskGoal.Create(save.Message, context, savePlan, [new(TaskClauseRole.WORKFLOW, save.Message)], [SemanticOperation.REQUEST_SAVE_COPY]) };
+            var task = Engine(generation, generation, savePlan).RunVisible(save, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (!task.IsCompleted && live.Get(save.RunId).Status != LiveStatus.AWAITING_APPROVAL) await Task.Delay(10, deadline.Token);
+            try {
+                Assert.True(live.Get(save.RunId).Status == LiveStatus.AWAITING_APPROVAL, $"{live.Get(save.RunId).ErrorCode}: {live.View(save.RunId).Question}");
+                var proposal = live.View(save.RunId).Proposal!;
+                Assert.Null(proposal.PromptId); Assert.Equal(retained.TemplateText, proposal.Draft.TemplateText); Assert.Empty(store.Templates());
+            } finally { live.Cancel(save.RunId); await task; }
+        }
+    }
+    [Fact] public async Task LegacyDraftOnlyCreationCompletesWithoutRequestingUnauthorizedPersistence()
+    {
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Redacta una instrucción; conserva solo el borrador.", "SAME_TAB"); live.Create(input);
+        var plan = SemanticPlanCompiler.Compile(new([SemanticOperation.CREATE_DRAFT], TargetReference.NONE, "", null, "", "Crear una explicación",
+            new([], true, null, null, [], [], false), SemanticOutcome.NEW_DRAFT, [], false, "", null, "Crear borrador."));
+        Assert.Null(plan.Goal);
+        var inference = new CreationOnlyInference(); var semantic = new FixedSemantic(plan); var retriever = new SqlitePromptRetriever(store); var sessions = new AgentSessions();
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(),
+            sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic), executeGroundedPlan: true);
+        var browser = new CreationBrowser(new("discover", [], null, null, null, null, [], [], false, false, null, null, false, false));
+        live.Active(input.RunId).Cancellation.CancelAfter(TimeSpan.FromSeconds(5));
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.True(live.Get(input.RunId).Status == LiveStatus.COMPLETED,
+            $"{live.Get(input.RunId).ErrorCode}: {live.View(input.RunId).Question}; tools: {string.Join(',', browser.Tools)}");
+        Assert.False(live.Get(input.RunId).EffectCommitted); Assert.Null(live.View(input.RunId).Proposal);
+        Assert.Empty(store.Templates()); Assert.NotNull(sessions.Get(input.SessionId)!.UnsavedDraft);
+    }
+    private sealed class WorkingAdaptInference(PreparedDraft expected, bool interrupt) : IIntentInterpreter, IPromptGenerator
+    {
+        public const string Body = "Explica <tema> para principiantes con ejemplos cotidianos. No inventes datos.";
+        public Task<Understanding> Understand(string message, string model, CancellationToken ct) => throw new NotSupportedException();
+        public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) {
+            Assert.Equal(expected.Id, input.WorkingDraft!.Id); Assert.Equal(expected.TemplateText, input.WorkingDraft.TemplateText);
+            Assert.Null(input.SourcePromptId); Assert.Empty(candidates);
+            if (interrupt) throw new OperationCanceledException();
+            input.Interpretation!.Goal?.RecordContentAssessment(Body);
+            return Task.FromResult(new PromptProposal(PreparationDecision.CREATE_NEW, null, expected.Title, "", Body, [], "", "Adaptación controlada."));
+        }
+    }
+    private sealed class CreationOnlyInference(PromptDocument? expectedBasis = null) : IIntentInterpreter, IPromptGenerator
+    {
+        public Task<Understanding> Understand(string message, string model, CancellationToken ct) => throw new NotSupportedException();
+        public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) {
+            Assert.Null(input.SourcePromptId); Assert.Null(input.Values);
+            if (expectedBasis is null) Assert.Empty(candidates);
+            else { Assert.Single(candidates); Assert.Equal(expectedBasis.Id, candidates[0].Prompt.Id); Assert.Equal(expectedBasis.TemplateText, candidates[0].Prompt.TemplateText); }
+            const string text="Explica <tema> de forma sencilla. No inventes datos.";
+            input.Interpretation?.Goal?.RecordContentAssessment(text); // Controlled reviewer for this UI/identity fixture.
+            return Task.FromResult(new PromptProposal(PreparationDecision.CREATE_NEW, null, "Explicar", "", text, [], "", "Nueva instrucción."));
+        }
+    }
+    private sealed class CreationBrowser(UiVisibleState initial) : IVisibleBrowser, IVisibleBrowserFactory
+    {
+        private UiVisibleState state = initial; public List<string> Tools = [];
+        public IVisibleBrowser Create(Action<string>? disconnected = null) => this;
+        public Task<UiVisibleState> Start(Guid runId, string origin, bool localExecutionAllowed, CancellationToken ct, string editRequest = "") => Task.FromResult(state);
+        public Task<UiVisibleState> Execute(string tool, JsonElement args, CancellationToken ct) {
+            Tools.Add(tool);
+            if (tool == "ui_fill_variable") throw new InvalidOperationException("An old source value must not enter an independent draft.");
+            if (tool == "ui_open_create_prompt") state = new("create", [], null, null, "", "", [], [], false, false, null, null, false, false);
+            if (tool is "ui_prepare_creation" or "ui_prepare_update") state = state with { Title = args.GetProperty("title").GetString(), TemplateText = args.GetProperty("templateText").GetString(),
+                DraftChanged = true, VariableNames = ["tema"], Values = new() { ["tema"] = "" } };
+            return Task.FromResult(state);
+        }
+        public Task Focus(CancellationToken ct) => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
     private sealed class CompleteLocalDecision(Guid id) : IUiDecisionModel
     {
@@ -279,6 +467,206 @@ public sealed class LiveExecutionTests : IDisposable
         public Task<UiVisibleState> Execute(string tool, JsonElement args, CancellationToken ct) { Tools.Add(tool); if (tool == "ui_execute_local") { beforeExecute?.Invoke(); state = state with { Response = "Respuesta observada.", ResponseComplete = true }; } return Task.FromResult(state); }
         public Task Focus(CancellationToken ct) => Task.CompletedTask;
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+    [Theory]
+    [InlineData(SemanticOperation.FILL_VARIABLES, LiveStatus.COMPLETED)]
+    [InlineData(SemanticOperation.PREPARE_LOCAL_EXECUTION, LiveStatus.BLOCKED)]
+    [InlineData(SemanticOperation.EXECUTE_LOCAL, LiveStatus.BLOCKED)]
+    public async Task APartialFieldTaskDoesNotAskForUnrequestedInputsOrPermitIncompleteExecution(SemanticOperation operation, LiveStatus expected)
+    {
+        var source = library.Create(new("Ficha parcial", "Explica <tema> para <publico>."));
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Realiza la acción seleccionada.\ntema: SQLite", SourceId: source.Id, SourceRevision: source.Revision,
+            Values: new() { ["tema"] = "SQLite" }, Command: new(operation));
+        live.Create(input); var sessions = new AgentSessions(); var inference = new UnusedInference();
+        var retriever = new SqlitePromptRetriever(store); var semantic = new FixedSemantic(SemanticFixture.Plan([operation], TargetReference.SELECTED, source.Id));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic), executeGroundedPlan: true, stopAfterVerifiedResult: true);
+        var browser = new FillingBrowser(State(source) with { Mode = "focus", VariableNames = ["tema", "publico"], Values = new() { ["tema"] = "", ["publico"] = "" } });
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.True(expected == live.Get(input.RunId).Status, JsonSerializer.Serialize(new { expected, view = live.View(input.RunId), browser.Tools }));
+        Assert.True(live.View(input.RunId).Observation!.Values["tema"] == "SQLite", JsonSerializer.Serialize(new { view = live.View(input.RunId), browser.Tools }));
+        Assert.Equal("", live.View(input.RunId).Observation!.Values["publico"]);
+        Assert.Single(browser.Tools, tool => tool == "ui_fill_variable");
+        Assert.DoesNotContain("ui_execute_local", browser.Tools);
+        Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+        if (expected == LiveStatus.BLOCKED) {
+            Assert.Contains("publico", live.View(input.RunId).Question!);
+            Assert.Contains(operation, sessions.Get(input.SessionId)!.PendingPlan!.Intentions);
+            // The resumed task is not dependent on the entry point that created it.
+            sessions.Put(sessions.Get(input.SessionId)! with { PendingCommand = null });
+            var reply = new LiveStartInput(Guid.NewGuid(), input.SessionId, "publico: principiantes", SourceId: source.Id, SourceRevision: source.Revision);
+            live.Create(reply);
+            await engine.RunVisible(reply, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+            Assert.True(live.Get(reply.RunId).Status == LiveStatus.COMPLETED, JsonSerializer.Serialize(live.View(reply.RunId)));
+            Assert.Equal("SQLite", live.View(reply.RunId).Observation!.Values["tema"]);
+            Assert.Equal("principiantes", live.View(reply.RunId).Observation!.Values["publico"]);
+            Assert.Equal(operation == SemanticOperation.EXECUTE_LOCAL ? 1 : 0, browser.Tools.Count(tool => tool == "ui_execute_local"));
+            Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+        } else Assert.Null(live.View(input.RunId).Question);
+    }
+    private sealed class FillingBrowser(UiVisibleState initial) : IVisibleBrowser, IVisibleBrowserFactory
+    {
+        private UiVisibleState state = initial; public List<string> Tools = [];
+        public IVisibleBrowser Create(Action<string>? disconnected = null) => this;
+        public Task<UiVisibleState> Start(Guid runId, string origin, bool localExecutionAllowed, CancellationToken ct, string editRequest = "") => Task.FromResult(state);
+        public Task<UiVisibleState> Execute(string tool, JsonElement args, CancellationToken ct) {
+            Tools.Add(tool);
+            if (tool == "ui_fill_variable") {
+                var values = new Dictionary<string, string>(state.Values) { [args.GetProperty("name").GetString()!] = args.GetProperty("value").GetString()! };
+                var ready = state.VariableNames.All(name => !string.IsNullOrWhiteSpace(values.GetValueOrDefault(name)));
+                state = state with { Values = values, CompiledReady = ready, CompiledText = ready ? TemplateCompiler.Render(state.TemplateText!, values) : null };
+            }
+            if (tool == "ui_open_provider_picker") state = state with { ProviderOpen = true, ProviderId = "ollama" };
+            if (tool == "ui_execute_local") state = state with { Response = "Respuesta local observada.", ResponseComplete = true };
+            return Task.FromResult(state);
+        }
+        public Task Focus(CancellationToken ct) => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+    [Fact]
+    public async Task AReadyLiteralFieldActionPrecedesInferenceAndCompletesWithoutInventingOtherInputs()
+    {
+        var source = library.Create(new("Ficha con datos", "Describe <tema> para <publico>."));
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Completa los datos.\ntema: SQLite", SourceId: source.Id, SourceRevision: source.Revision);
+        live.Create(input); var sessions = new AgentSessions(); var inference = new UnexpectedExtraction();
+        var authorship = SemanticFixture.Plan([SemanticOperation.PROPOSE_ADAPTATION], TargetReference.SELECTED, source.Id);
+        var prior = new DeterministicPromptEvaluator().Evaluate(new(Guid.NewGuid(), "Preparación anterior.", SessionId: input.SessionId),
+            authorship.Preparation(), new(PreparationDecision.ADAPT_EXISTING, source.Id, source.Title, "", source.TemplateText, [], "", "Borrador de conversación anterior."),
+            [new(source, 10, "Origen")], []) with { SessionId = input.SessionId, Semantic = authorship };
+        sessions.Put(new(input.SessionId, source, prior, [], DateTime.UtcNow, LastProposal: authorship) { DraftRevision = 4 });
+        var retriever = new SqlitePromptRetriever(store);
+        var model = new FixedSemantic(SemanticFixture.Plan([SemanticOperation.FILL_VARIABLES], TargetReference.SELECTED, source.Id));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(model, retriever, sessions, model), executeGroundedPlan: true, stopAfterVerifiedResult: true);
+        var browser = new FillingBrowser(State(source) with { Mode = "focus", VariableNames = ["tema", "publico"], Values = new() { ["tema"] = "anterior", ["publico"] = "" } });
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.Equal(LiveStatus.COMPLETED, live.Get(input.RunId).Status);
+        Assert.Equal("SQLite", live.View(input.RunId).Observation!.Values["tema"]);
+        Assert.Equal("", live.View(input.RunId).Observation!.Values["publico"]);
+        Assert.Single(browser.Tools, tool => tool == "ui_fill_variable");
+        Assert.Equal(0, inference.Extractions);
+        Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+        var conversation = sessions.Get(input.SessionId)!;
+        Assert.Equal(prior.Id, conversation.WorkingDraftReference!.DraftId);
+        Assert.Equal(4, conversation.WorkingDraftReference.DraftRevision);
+        Assert.Same(authorship, conversation.Draft!.Semantic);
+        Assert.Same(authorship, conversation.LastProposal);
+    }
+    private sealed class UnexpectedExtraction : IIntentInterpreter, IPromptGenerator, IInputValueExtractor
+    {
+        public int Extractions;
+        public Task<Understanding> Understand(string message, string model, CancellationToken ct) => throw new NotSupportedException();
+        public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) => throw new NotSupportedException();
+        public Task<InputValueExtraction> ExtractInputs(PrepareInput input, string template, string[] names, CancellationToken ct) { Extractions++; throw new InvalidOperationException("No missing input is required by the partial-fill goal."); }
+    }
+    [Fact]
+    public async Task AnUnboundFillCannotCompleteByReusingAnAlreadyFilledFormOrAModelSuccessClaim()
+    {
+        var source = library.Create(new("Ficha previa", "Explica <tema>."));
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Completa los campos de la ficha.", SourceId: source.Id, SourceRevision: source.Revision);
+        live.Create(input); var sessions = new AgentSessions(); var inference = new UnusedInference();
+        var retriever = new SqlitePromptRetriever(store);
+        var model = new FixedSemantic(SemanticFixture.Plan([SemanticOperation.FILL_VARIABLES], TargetReference.SELECTED, source.Id));
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(model, retriever, sessions, model), executeGroundedPlan: true, stopAfterVerifiedResult: true);
+        var browser = new ObservedBrowser(State(source) with { Mode = "focus", VariableNames = ["tema"], Values = new() { ["tema"] = "anterior" }, CompiledReady = true, CompiledText = "Explica anterior." });
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new ClaimFinish(), browser, library);
+        Assert.Equal(LiveStatus.BLOCKED, live.Get(input.RunId).Status);
+        Assert.DoesNotContain("ui_fill_variable", browser.Tools);
+        Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+    }
+    private sealed class ClaimFinish : IUiDecisionModel
+    {
+        public Task<UiDecision> Decide(UiDecisionContext context, CancellationToken ct) => Task.FromResult(new UiDecision("finish", UiToolCatalog.NoArguments));
+    }
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task TaskMemoryContainsOnlyVerifiedEffectsAndNeverAdoptsAnUnrelatedPendingRequest(bool ignoreWrite, bool continuation)
+    {
+        var source = library.Create(new("Ficha con dos campos", "Explica <tema> para <publico>."));
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Completa esta ficha.\ntema: SQLite\npublico: desarrolladores",
+            SourceId: source.Id, SourceRevision: source.Revision,
+            Values: new() { ["tema"] = "SQLite", ["publico"] = "desarrolladores" });
+        live.Create(input); var sessions = new AgentSessions();
+        var plan = SemanticFixture.Plan([SemanticOperation.FILL_VARIABLES], TargetReference.SELECTED, source.Id);
+        const string original = "Completa la ficha con los datos que te proporcionaré.";
+        sessions.Put(new(input.SessionId, source, null, [], DateTime.UtcNow,
+            PendingRequest: continuation ? original : "UNRELATED_PENDING_TASK_DO_NOT_ADOPT", PendingPlan: continuation ? plan : null));
+        var inference = new UnusedInference(); var retriever = new SqlitePromptRetriever(store);
+        var semantic = new FixedSemantic(plan with { ContinuesPendingTask = continuation });
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(semantic, retriever, sessions, semantic));
+        var initial = State(source) with { Mode = "focus", Values = new() { ["tema"] = "", ["publico"] = "" }, VariableNames = ["tema", "publico"], CompiledReady = false, CompiledText = null };
+        IVisibleBrowserFactory browser = ignoreWrite ? new ObservedBrowser(initial) : new FillingBrowser(initial);
+        var model = new FillObservedFields();
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, model, browser, library);
+        Assert.Equal(continuation ? original : input.Message, model.Contexts[0].Memory!.OriginalRequest);
+        Assert.Equal(continuation ? new[] { input.Message } : [], model.Contexts[0].Memory!.Clarifications);
+        Assert.Empty(model.Contexts[0].Memory!.Receipts);
+        Assert.DoesNotContain("UNRELATED_PENDING_TASK", JsonSerializer.Serialize(model.Contexts.Select(context => context.Memory)));
+        Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+        if (ignoreWrite) {
+            Assert.Single(model.Contexts);
+            Assert.Equal(LiveStatus.FAILED, live.Get(input.RunId).Status);
+            Assert.Equal("VALUES_NOT_APPLIED", live.Get(input.RunId).ErrorCode);
+            Assert.DoesNotContain(live.Events(input.RunId, 0), item => item.Stage == "Observation" && item.ToolName == "ui_fill_variable");
+        } else {
+            Assert.Equal(LiveStatus.COMPLETED, live.Get(input.RunId).Status);
+            Assert.Equal(3, model.Contexts.Count);
+            var first = Assert.Single(model.Contexts[1].Memory!.Receipts);
+            Assert.Equal("ui_fill_variable", first.ToolName);
+            Assert.Equal("SQLite", first.WrittenValues["tema"]);
+            Assert.Equal(source.Id, first.PromptId);
+            Assert.Equal(source.Revision, first.Revision);
+            Assert.Equal(2, model.Contexts[2].Memory!.Receipts.Length);
+            Assert.Equal("desarrolladores", model.Contexts[2].Memory!.Receipts[1].WrittenValues["publico"]);
+        }
+    }
+    private sealed class FillObservedFields : IUiDecisionModel
+    {
+        public List<UiDecisionContext> Contexts = [];
+        public Task<UiDecision> Decide(UiDecisionContext context, CancellationToken ct)
+        {
+            Contexts.Add(context);
+            var pending = context.AuthorizedValues!.FirstOrDefault(value => context.State.Values.GetValueOrDefault(value.Key) != value.Value);
+            return Task.FromResult(pending.Key is null ? new UiDecision("finish", UiToolCatalog.NoArguments)
+                : new UiDecision("ui_fill_variable", JsonSerializer.SerializeToElement(new { promptId = context.State.PromptId, name = pending.Key, value = pending.Value, evidence = pending.Value })));
+        }
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectedInputSuggestionsPreserveTheTaskAndAskWithoutWritingOrExecuting(bool executes)
+    {
+        var source = library.Create(new("Ficha protegida", "Explica <tema>."));
+        const string message = "Aplica los datos y ejecuta el prompt con el modelo local ahora.";
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), message, SourceId: source.Id, SourceRevision: source.Revision);
+        live.Create(input); var sessions = new AgentSessions(); var inference = new RejectedExtraction();
+        var retriever = new SqlitePromptRetriever(store);
+        var plan = SemanticFixture.Plan(executes ? [SemanticOperation.FILL_VARIABLES, SemanticOperation.COMPILE_PROMPT, SemanticOperation.PREPARE_LOCAL_EXECUTION, SemanticOperation.EXECUTE_LOCAL]
+            : [SemanticOperation.FILL_VARIABLES], TargetReference.SELECTED, source.Id, outcome: executes ? SemanticOutcome.LOCAL_RESPONSE : SemanticOutcome.READ)
+            with { ProviderId = executes ? "ollama" : null, ExecutionEvidence = executes ? message : "" };
+        var model = new FixedSemantic(plan);
+        var engine = new AgentOrchestrator(inference, retriever, inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator(),
+            new PreparedDraftStore(store), new(), sessions: sessions, taskPlanner: new NovaTaskPlanner(model, retriever, sessions, model), executeGroundedPlan: true, stopAfterVerifiedResult: true);
+        var browser = new ObservedBrowser(State(source) with { Mode = "focus", VariableNames = ["tema"], Values = new() { ["tema"] = "" } });
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        Assert.True(live.Get(input.RunId).Status == LiveStatus.BLOCKED, JsonSerializer.Serialize(live.View(input.RunId)));
+        Assert.Equal("NEEDS_CLARIFICATION", live.Get(input.RunId).ErrorCode);
+        Assert.Equal(message, sessions.Get(input.SessionId)!.PendingRequest);
+        Assert.Equal(executes, sessions.Get(input.SessionId)!.PendingPlan!.Executes);
+        Assert.DoesNotContain("ui_fill_variable", browser.Tools); Assert.DoesNotContain("ui_execute_local", browser.Tools);
+        Assert.Equal("", live.View(input.RunId).Observation!.Values["tema"]);
+        Assert.Equal(source.Revision, library.Get(source.Id).Revision);
+    }
+    private sealed class RejectedExtraction : IIntentInterpreter, IPromptGenerator, IInputValueExtractor
+    {
+        public Task<Understanding> Understand(string message, string model, CancellationToken ct) => throw new NotSupportedException();
+        public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) => throw new NotSupportedException();
+        public Task<InputValueExtraction> ExtractInputs(PrepareInput input, string template, string[] names, CancellationToken ct)
+            => Task.FromResult(new InputValueExtraction([new("tema", "INVENTED_VALUE", "INVENTED_VALUE")], ""));
     }
     private sealed class UncertainExtraction : IIntentInterpreter, IPromptGenerator, IInputValueExtractor
     {

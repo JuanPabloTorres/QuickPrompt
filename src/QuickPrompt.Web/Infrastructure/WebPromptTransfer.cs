@@ -3,14 +3,6 @@ using QuickPrompt.Local;
 
 namespace QuickPrompt.Web.Infrastructure;
 
-public interface IWebPromptTransfer
-{
-    event Action<PromptTransferResult>? Progress;
-    ValueTask<PromptTransferResult> Detect(CancellationToken cancellationToken = default);
-    ValueTask<PromptTransferResult> Transfer(PromptTransferRequest request, CancellationToken cancellationToken = default);
-    ValueTask Cancel(Guid requestId);
-}
-
 // Browser-only transport. The ASP.NET host never contacts provider websites.
 public sealed class WebPromptTransfer(IJSRuntime js) : IWebPromptTransfer, IAsyncDisposable
 {

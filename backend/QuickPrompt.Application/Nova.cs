@@ -1,3 +1,4 @@
+using LocalModelPolicy = QuickPrompt.Web.Infrastructure.LocalModelPolicy;
 using System.Text.Json.Serialization;
 using QuickPrompt.Local;
 
@@ -6,16 +7,17 @@ namespace QuickPrompt.Nova.Application;
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum NovaIntent { SEARCH, OPEN, CREATE_DRAFT, IMPROVE_DRAFT, FILL_VARIABLES, COMPILE, RUN_LOCAL, SELECT_PROVIDER, HELP, UNKNOWN }
 public record NovaPlan(NovaIntent Intent, string Query, int ToolSteps);
-public record NovaRequest(string Message, string Model = "qwen3:8b", Guid? PromptId = null, int? Revision = null, Guid? SessionId = null);
+public record NovaRequest(string Message, string Model = LocalModelPolicy.DefaultModelName, Guid? PromptId = null, int? Revision = null, Guid? SessionId = null);
 public record NovaAction(int ContractVersion, Guid Id, NovaIntent Intent, string Arguments, Guid[] SourcePromptIds,
     bool RequiresConfirmation, string ProposedEffect, string ValidationStatus, string CorrelationId,
     PromptDocument[] Candidates, string Message, SemanticInterpretation? Semantic = null);
-public record ProposalInput(string Intent, string Context, string Model = "qwen3:8b", Guid? PromptId = null, int? Revision = null)
+public record ProposalInput(string Intent, string Context, string Model = LocalModelPolicy.DefaultModelName, Guid? PromptId = null, int? Revision = null)
 {
     [JsonIgnore] public Template? AuthorizedWorkingSource { get; init; }
     [JsonIgnore] public bool? InterpretedShortening { get; init; }
     [JsonIgnore] public string? InterpretedContentChange { get; init; }
     [JsonIgnore] public string[]? InterpretedTargetTerms { get; init; }
+    [JsonIgnore] public SemanticInterpretation? AuthorizedTaskPlan { get; init; }
 }
 public record ExecuteInput(Guid PromptId, int Revision, Dictionary<string, string> Values, string Model, bool Confirmed, string ExpectedText);
 
@@ -30,20 +32,20 @@ public interface INovaInference
 }
 
 // Finite read/propose workflow. This class has no writer, database, shell or browser capability.
-public sealed class NovaAssistant(IPromptReader reader, INovaInference inference, SemanticPlanning? semanticPlanning = null, ISemanticContentInterpreter? contentInterpreter = null)
+public sealed class NovaAssistant(IPromptReader reader, INovaInference inference, ITaskPlanner? taskPlanner = null, ISemanticContentInterpreter? contentInterpreter = null,IPromptGenerator? goalGenerator=null)
 {
     public async Task<NovaAction> Interpret(NovaRequest input, string correlationId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input.Message) || input.Message.Length > 1000) throw new ValidationException("Escribe una intención de hasta 1000 caracteres.");
-        if (semanticPlanning is not null) {
+        if (taskPlanner is not null) {
             var sessionId = input.SessionId ?? Guid.NewGuid();
-            var resolution = await semanticPlanning.Interpret(input.Message, sessionId, input.PromptId, input.Revision, input.Model, null, ct);
-            if (resolution.Interpretation.Has(SemanticOperation.RESOLVE_PROMPT)) resolution = await semanticPlanning.Resolve(resolution, input.Message, sessionId, input.Model, null, ct);
+            var resolution = await taskPlanner.Interpret(input.Message, sessionId, input.PromptId, input.Revision, input.Model, null, ct);
+            if (resolution.Interpretation.Has(SemanticOperation.RESOLVE_PROMPT)) resolution = await taskPlanner.Resolve(resolution, input.Message, sessionId, input.Model, null, ct);
             var semantic = resolution.Interpretation;
             var kind = semantic.Creates ? NovaIntent.CREATE_DRAFT : semantic.Adapts ? NovaIntent.IMPROVE_DRAFT : semantic.Executes ? NovaIntent.RUN_LOCAL
                 : semantic.Has(SemanticOperation.FILL_VARIABLES) ? NovaIntent.FILL_VARIABLES : semantic.Has(SemanticOperation.PREPARE_LOCAL_EXECUTION) || semantic.Has(SemanticOperation.PREPARE_PROVIDER) ? NovaIntent.SELECT_PROVIDER
                 : semantic.Has(SemanticOperation.OPEN_PROMPT) ? NovaIntent.OPEN : semantic.Has(SemanticOperation.SEARCH_PROMPT) ? NovaIntent.SEARCH : semantic.DesiredOutcome == SemanticOutcome.ADVICE ? NovaIntent.HELP : NovaIntent.UNKNOWN;
-            var found = resolution.Candidates.Where(c => c.Score >= 2).Take(3).Select(c => c.Prompt).ToArray();
+            var found = resolution.Candidates.Where(c => c.Score >= 2).Select(c => c.Prompt).ToArray();
             return new(1, Guid.NewGuid(), kind, semantic.Query, found.Select(p => p.Id).ToArray(), semantic.RequiresConfirmation,
                 "Interpretación y plan sin cambios guardados. La ejecución completa se prepara desde el lienzo.", "validated", correlationId, found,
                 semantic.MissingInformation.Length > 0 ? string.Join(" ", semantic.MissingInformation) : semantic.Explanation, semantic);
@@ -98,6 +100,24 @@ public sealed class NovaAssistant(IPromptReader reader, INovaInference inference
             source = working;
         }
         if ((input.Intent == "improve") != (source is not null)) throw new ValidationException("Selecciona el origen correcto para la propuesta.");
+        if(input.AuthorizedTaskPlan is {Goal:not null} plan) {
+            if(!plan.Adapts||plan.Creates||source is null||plan.ResolvedTargetId!=source.Id||goalGenerator is null) throw new ValidationException("La adaptación requiere su contrato y la canalización de generación validada.");
+            var document=PromptLibrary.Document(source);
+            var preparedInput=new PrepareInput(Guid.NewGuid(),plan.Goal.UserRequest,input.Model,SourcePromptId:source.Id,SourceRevision:source.Revision){Interpretation=plan};
+            var requirements=new PromptRequirements(plan.Constraints.Language,plan.Constraints.Format,
+                TemplateConstraints.Required(source.Template).Concat(plan.Constraints.LiteralClauses).Distinct().ToArray(),
+                plan.Constraints.TargetTerms,plan.Constraints.Shortening,plan.Goal.ContentRequest,plan.RequestedTransformation,source.Template);
+            for(var attempt=0;attempt<2;attempt++) {
+                try {
+                    var generated=await goalGenerator.Generate(preparedInput,plan.Preparation(),[new(document,10,"Origen vigente autorizado del run visible.")],ct);
+                    if(generated.Decision!=PreparationDecision.ADAPT_EXISTING||generated.SourceId!=source.Id)throw new ValidationException("La generación cambió el origen o la operación autorizada.");
+                    return new(Guid.NewGuid(),source.Id,source.Revision,generated.TemplateText,[generated.Reason],["Borrador ajustado y revisado."],[],TemplateCompiler.Names(generated.TemplateText),input.Model);
+                } catch(ValidationException failure) when(attempt==0) {
+                    preparedInput=preparedInput with {ValidationFeedback=PromptPreparationPipeline.CorrectionFeedback([failure.Message[..Math.Min(500,failure.Message.Length)]],requirements,source.Template)};
+                }
+            }
+            throw new ValidationException("No se obtuvo un borrador válido dentro del presupuesto de corrección.");
+        }
         var shortening = input.InterpretedShortening ?? (contentInterpreter is not null && source is not null && !string.IsNullOrWhiteSpace(input.Context)
             ? (await contentInterpreter.ExtractContent(input.Context, SemanticContext.Empty with { Selected = SemanticEntity.From(PromptLibrary.Document(source)) }, input.Model, ct)).Shortening : false);
         return await inference.Propose(input.Intent, input.Context, source, input.Model, ct, shortening, input.InterpretedContentChange, input.InterpretedTargetTerms ?? []);

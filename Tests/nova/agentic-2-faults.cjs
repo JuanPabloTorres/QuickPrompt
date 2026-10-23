@@ -1,3 +1,4 @@
+const { configurePreparation } = require('./ui-settings.cjs');
 // Real Edge + API + SQLite. Ollama is deliberately replaced ONLY in this fault suite.
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict'), http = require('node:http');
 const { spawn } = require('node:child_process'), { randomUUID } = require('node:crypto'), { DatabaseSync } = require('node:sqlite');
@@ -48,7 +49,7 @@ async function api(route, body, method) { const response = await fetch(origin + 
   page.on('pageerror', e => errors.push(e.message)); page.on('request', r => { if (!r.url().startsWith(origin) && !r.url().startsWith('data:')) externalRequests.push(r.url()); });
   await page.goto(origin); const input = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?', exact: true }); let lastRun;
   page.on('request', r => { if (r.url().endsWith('/nova/prepare')) lastRun = r.postDataJSON().operationId; });
-  async function ask(text) { if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA', { exact: true }).selectOption('LIVE'); await input.fill(text); const [sent]=await Promise.all([page.waitForRequest(r=>r.url()===origin+'/api/v1/nova/prepare'),page.getByRole('button', { name: 'Preparar prompt', exact: true }).click()]);lastRun=sent.postDataJSON().operationId;return sent; }
+  async function ask(text) { await configurePreparation(page, { mode: 'LIVE' }); await input.fill(text); const [sent]=await Promise.all([page.waitForRequest(r=>r.url()===origin+'/api/v1/nova/prepare'),page.getByRole('button', { name: 'Preparar prompt', exact: true }).click()]);lastRun=sent.postDataJSON().operationId;return sent; }
   await ask('Crea una instrucción sintética sencilla.'); let dialog = page.getByRole('dialog').filter({ has: page.locator('.prepared-result') }); await dialog.waitFor(); const preparedId = lastRun;
   await dialog.getByRole('button', { name: 'Cerrar resultado', exact: true }).click();
   for (const fault of ['offline', 'unknown-tool', 'invalid-id', 'timeout', 'semantic-id']) {
@@ -150,7 +151,7 @@ async function api(route, body, method) { const response = await fetch(origin + 
     else { assert.match(indexedResponse.data, /event: complete/); const indexedDraft = JSON.parse(indexedResponse.data.split('event: complete\ndata: ')[1].split('\n\n')[0]); assert.equal(indexedDraft.sourceId, source.id); assert.equal(indexedDraft.templateText, source.templateText); }
     assert.deepEqual(snapshot(), before); pass(indexedMode === 'invalid-source-role' ? 'An out-of-catalog source role is rejected before any domain tool or mutation' : 'A typed model source role opens the actual separate UI selection without rewriting either source');
   } mode = 'healthy';
-  await page.getByRole('button', { name: 'Datos y respaldos', exact: true }).click(); const settings = page.getByRole('dialog', { name: 'Tu biblioteca permanece contigo', exact: true });
+  await page.getByRole('button', { name: 'Configuración', exact: true }).click(); const settings = page.getByRole('dialog', { name: 'Configuración', exact: true });
   await settings.getByText('Preferencias de NOVA', { exact: true }).click(); await settings.getByLabel('Idioma de respuesta', { exact: true }).selectOption('en'); await settings.getByLabel('Formato preferido', { exact: true }).selectOption('JSON');
   assert.equal((await api('/nova/preferences')).data.language, null); await settings.getByRole('button', { name: 'Confirmar preferencias', exact: true }).click(); await settings.getByText('Preferencias confirmadas en este equipo.', { exact: true }).waitFor();
   assert.equal((await api('/nova/preferences')).data.language, 'en'); await settings.getByRole('button', { name: 'Eliminar preferencias', exact: true }).click(); await settings.getByText('Preferencias eliminadas.', { exact: true }).waitFor(); assert.equal((await api('/nova/preferences')).data.language, null);

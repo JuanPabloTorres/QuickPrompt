@@ -1,8 +1,10 @@
 @using QuickPrompt.Local
 @using QuickPrompt.Web.Infrastructure
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
 @inject IWebPromptTransfer Transfer
 @inject IJSRuntime JS
-@inject LocalStore Store
+@inject ITransferActivityWriter Audit
 @implements IDisposable
 <section class="provider-panel" aria-labelledby="provider-title" data-testid="provider-actions">
 <h3 id="provider-title">@T("Usar el texto en otra web","Use the text on another website")</h3>
@@ -62,7 +64,7 @@ var name=provider==ProviderId.ChatGptWeb?"ChatGPT":"Claude";
         catch(JSException){Observe(new(id,TransferState.NeedsManualPaste,"clipboard-blocked"));}
         Record(provider,TransferAction.PrepareOnly,result!);allowSend=false;privacyAccepted=false;
     }
-    private void Record(ProviderId provider,TransferAction action,PromptTransferResult value){if(disposed)return;try{Store.RecordTransfer(new(value.RequestId,Prompt.TemplateId==Guid.Empty?null:Prompt.TemplateId,Prompt.Revision,provider,action,value.State,WebTransferSession.PhaseFor(value),value.Code,value.DurationMs,value.AdapterVersion,DateTime.UtcNow));}catch(Exception e)when(e is ValidationException or Microsoft.Data.Sqlite.SqliteException){auditWarning=T("El resultado mostrado se conserva, pero no se pudo guardar su registro local. Revisa la web antes de repetir una acción.","The displayed outcome is preserved, but its local audit could not be saved. Check the website before repeating an action.");}}
+    private void Record(ProviderId provider,TransferAction action,PromptTransferResult value){if(disposed)return;try{Audit.RecordTransfer(new(value.RequestId,Prompt.TemplateId==Guid.Empty?null:Prompt.TemplateId,Prompt.Revision,provider,action,value.State,WebTransferSession.PhaseFor(value),value.Code,value.DurationMs,value.AdapterVersion,DateTime.UtcNow));}catch(Exception e)when((e is ValidationException) || StorageFailures.IsFailure(e)){auditWarning=T("El resultado mostrado se conserva, pero no se pudo guardar su registro local. Revisa la web antes de repetir una acción.","The displayed outcome is preserved, but its local audit could not be saved. Check the website before repeating an action.");}}
     private sealed record FallbackOutcome(bool Copied,bool Opened);
     private string StateLabel(TransferState state)=>state switch {
         TransferState.Ready=>T("Extensión lista", "Extension ready"),TransferState.ExtensionMissing=>T("Extensión no detectada", "Extension not detected"),

@@ -1,8 +1,25 @@
 # QuickPrompt NOVA — entrega ejecutable 1
 
+**Versión inicial 1.0.0: CERRADA por aceptación del usuario**, con flujo por acciones e IA para búsqueda/contenido. REL-09 aceptado por su confirmación de uso satisfactorio. [Acta de release](../releases/NOVA_1.0.0.md), tag `nova-v1.0.0`. La [matriz histórica de alcance ampliado](VERSION_CLOSURE_MATRIX.md) conserva sus resultados y requisitos adicionales sin afirmar certificación universal.
+
+El [goal activo de finalización](VERSION_COMPLETION_GOAL.md) define el trabajo y la aceptación necesarios para completar esa matriz, sin dar por terminados los pendientes al crear el plan.
+
+**Adaptive Core aplicado:** [integración ejecutable con el SDK existente](../../agents/nova-core/README.md).
+Incluye lectura de QuickPrompt desde el SDK Python con Qwen local y la nueva acción
+**Copiar con NOVA** sobre los controles reales. Es una integración acotada; no cierra
+la versión ni elimina los fallos semánticos documentados.
+
+La [planificación modular actual](SEMANTIC_SCOPE_RELIABILITY.md) documenta la sustitución del planificador, sus contratos y las diferencias entre pruebas tipadas y peticiones libres. Los fallos conservados siguen sujetos a la matriz de cierre.
+
 **Empieza por la [guía de uso con tres videos](../COMO_USAR_QUICKPROMPT.md).** La biblioteca práctica aporta 60 prompts en 20 colecciones. Dentro de la aplicación, pulsa **Empieza aquí: guía y videos**.
 
 Los botones de **acciones rápidas** permiten crear, actualizar, abrir o revisar la eliminación de un prompt sin redactar la orden completa. **Más acciones** ofrece variables, destinos y ejecución local. Al abrir un prompt, los accesos ya conocen el elemento seleccionado. [Cómo usarlos](../COMO_USAR_QUICKPROMPT.md#pedirle-una-instrucción-a-nova), [validación de las acciones rápidas](QUICK_ACTIONS_ACCEPTANCE.md).
+
+**Historial de resultados:** el icono de reloj de la cabecera abre las instrucciones
+utilizadas y las respuestas ya guardadas, con su versión original. Permite consultar,
+copiar, descargar y borrar el historial tras revisar su alcance. Si cambió desde esa
+revisión, vuelve a consultarlo antes de confirmar. Las respuestas marcadas «SIN
+GUARDAR» conservan ese estado. [Verificación y límites del incremento](ORDERED_AGENT_CLOSURE_20261020.md#segundo-incremento-del-skill-de-entrega--2026-10-21).
 
 Reconstrucción independiente en React/TypeScript y ASP.NET Core Web API. La biblioteca funciona sin Ollama. Esta entrega incluye además una primera integración NOVA/Qwen local y destinos de copiar/abrir. **No representa la aceptación de todo el SOW ni autoriza retirar Blazor.**
 

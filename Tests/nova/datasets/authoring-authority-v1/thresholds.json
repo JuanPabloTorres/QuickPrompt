@@ -1,0 +1,10 @@
+{
+  "scope": "DEVELOPMENT_COMPONENT_ONLY_NOT_RELEASE_ACCEPTANCE",
+  "frozenBeforeCandidateResults": true,
+  "caseCount": 6,
+  "reviewAgreement": 1.0,
+  "falseAcceptances": 0,
+  "falseRejections": 0,
+  "invalidOrUnavailableReviews": 0,
+  "notes": "Controlled proposed bodies, original requests and writer-selected requirement subsets. Does not prove generation, real UI, persistence, holdout or release readiness. Existing recovery-v1 thresholds remain unchanged."
+}

@@ -5,7 +5,8 @@ namespace QuickPrompt.Nova.Application;
 
 public sealed class MissingPromptException() : Exception("El prompt ya no está disponible.");
 
-public record PromptDocument(Guid Id, string Title, string Description, string TemplateText,
+public record PromptDocument(Guid Id, string Title, string Description,
+    [property: AgentRepresentation(AgentRepresentation.ReusableInstruction, "The reusable instruction definition for a FUTURE assistant. Its imperatives describe that future task, not current NOVA actions. It can legitimately describe prompt creation or approval as its future task. Source identity/revision and unchanged parts remain domain-owned.")] string TemplateText,
     int CategoryId, bool IsFavorite, bool IsArchived, int Revision, DateTime CreatedAt,
     DateTime UpdatedAt, int Uses, DateTime? LastUsedAt, string[] VariableNames,
     IReadOnlyDictionary<string, string> Defaults);
@@ -23,7 +24,9 @@ public record LibraryImportInput(System.Text.Json.JsonElement Data, bool Confirm
 
 public interface IPromptReader
 {
+    int ActiveCount => Search(new(Size: 1)).Total;
     Template? Find(Guid id);
+    TemplateVersion[] Versions(Guid id) => throw new NotSupportedException("El lector no ofrece historial de versiones.");
     CatalogPage<Template> Search(CatalogQuery query);
     CompiledPrompt Preview(Guid id, int revision, Dictionary<string, string> values);
 }
@@ -35,13 +38,21 @@ public interface IPromptWriter
     void RecordUse(Guid id, UseInput input);
 }
 
+public interface IPromptCatalog
+{
+    PromptDocument Get(Guid id);
+    CatalogPage<PromptDocument> Search(CatalogQuery query);
+    TemplateVersion[] Versions(Guid id);
+}
+
 // Business operations are independent of HTTP and React. Existing parser remains authoritative.
-public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer)
+public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer) : IPromptCatalog
 {
     public static PromptDocument Document(Template t) => new(t.Id, t.Title, t.Description, t.Template,
         (int)t.Category, t.IsFavorite, !t.IsActive, t.Revision, t.CreatedAt, t.UpdatedAt,
         t.Uses, t.LastUsed, TemplateCompiler.Names(t.Template), new Dictionary<string, string>(t.Variables));
     public PromptDocument Get(Guid id) => Document(reader.Find(id) ?? throw new MissingPromptException());
+    public TemplateVersion[] Versions(Guid id) { Get(id); return reader.Versions(id); }
     public CatalogPage<PromptDocument> Search(CatalogQuery query)
     {
         var page = reader.Search(query);
@@ -68,6 +79,18 @@ public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer)
         if (input.Revision < 1) throw new ValidationException("Revisión requerida para editar.");
         return Document(writer.Change(id, input.Revision, t => Apply(t, input), "nova edit"));
     }
+    public PromptDocument RestoreVersion(Guid id, int versionRevision, ConfirmInput input)
+    {
+        if (!input.Confirmed || input.Revision < 1 || versionRevision < 1 || versionRevision >= input.Revision)
+            throw new ValidationException("Confirma una versión anterior y la revisión actual antes de restaurar.");
+        var version = Versions(id).SingleOrDefault(item => item.TemplateId == id && item.Revision == versionRevision)
+            ?? throw new MissingPromptException();
+        if (version.Snapshot.Id != id) throw new ValidationException("El historial no corresponde al prompt.");
+        var snapshot = version.Snapshot;
+        return Document(writer.Change(id, input.Revision, current => Apply(current,
+            new(snapshot.Title, snapshot.Template, snapshot.Description, (int)snapshot.Category, Defaults: new(snapshot.Variables))),
+            "nova restore version " + versionRevision));
+    }
     public PromptDocument Favorite(Guid id, int revision) =>
         Document(writer.Change(id, revision, t => t.ToggleFavorite(), "nova favorite"));
     public PromptDocument Archive(Guid id, int revision, bool archive) => Document(writer.Change(id, revision, t =>
@@ -92,6 +115,15 @@ public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer)
         ValidateValues(input.Values);
         if (input.OperationId == Guid.Empty || input.ExpectedText is null || input.ExpectedText.Length > 64000) throw new ValidationException("Identificador y snapshot de uso requeridos.");
         writer.RecordUse(id, input);
+    }
+    public CompiledPrompt ReviewExecution(ExecuteInput input)
+    {
+        if (!input.Confirmed || input.Values is null)
+            throw new ValidationException("Confirma el prompt y revisa sus valores antes de ejecutar.");
+        ValidateValues(input.Values);
+        var compiled = reader.Preview(input.PromptId, input.Revision, input.Values);
+        if (compiled.Text != input.ExpectedText) throw new ConflictException("El texto final cambió. Revisa el prompt antes de ejecutarlo.");
+        return compiled;
     }
     public void Delete(Guid id, ConfirmInput input)
     {

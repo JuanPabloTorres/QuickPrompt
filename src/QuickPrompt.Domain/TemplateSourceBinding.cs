@@ -8,6 +8,23 @@ public record BoundSourceTemplate(string Text, string[] RetainedConstraints, str
 // This composes data, never infers an intent, grants effects, or invents a variable/value.
 public static class TemplateSourceBinding
 {
+    // This validates the boundary of a code-composed artifact, not natural-language
+    // intent. A core cannot repeat a protected clause or end with its truncated prefix.
+    public static void ValidateEditableCore(string core, string[] protectedClauses)
+    {
+        static string[] Words(string text) => text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => word.Trim().TrimEnd('.', ',', ';', ':', '!', '?', '…').ToUpperInvariant()).Where(word => word.Length > 0).ToArray();
+        var coreWords = Words(core);
+        foreach (var clause in protectedClauses) {
+            var occurrence = core.IndexOf(clause, StringComparison.OrdinalIgnoreCase);
+            if (occurrence >= 0 && core.IndexOf(clause, occurrence + clause.Length, StringComparison.OrdinalIgnoreCase) >= 0)
+                throw new ValidationException("El núcleo repite una restricción protegida. Devuelve una sola instrucción completa, sin duplicar restricciones.");
+            var words = Words(clause);
+            for (var length = Math.Min(coreWords.Length, words.Length - 1); length >= 2; length--)
+                if (coreWords.TakeLast(length).SequenceEqual(words.Take(length)))
+                    throw new ValidationException("El núcleo termina con un fragmento de una restricción protegida. Devuelve una instrucción completa, sin copiar ni abreviar las restricciones que compone el dominio.");
+        }
+    }
     public static BoundSourceTemplate Bind(string source, string candidate)
     {
         var names = TemplateCompiler.Names(source);

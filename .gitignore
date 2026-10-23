@@ -401,6 +401,7 @@ appsettings.*.json
 
 # Firebase secrets
 Resources/Secrets/**
+apps/mobile/Resources/Secrets/**
 *.keystore
 key.keystore
 
@@ -440,3 +441,9 @@ docs/evidence/*
 !docs/evidence/README.md
 !docs/evidence/validation-summary.json
 *.trx
+
+# Versioned release notes and manifests; packaged binaries stay local.
+!docs/releases/
+docs/releases/*
+!docs/releases/*.md
+!docs/releases/*.json

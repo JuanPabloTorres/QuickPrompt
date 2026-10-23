@@ -32,7 +32,7 @@ public sealed class OrganizationTests : IDisposable
     {
         var s=Store();var t=s.Save(Prompt());var a=s.SaveGroup(new(){Name="Desarrollo"});var b=s.SaveGroup(new(){Name="Trabajo"});
         s.AssignGroup(a.Id,"template",[t.Id]);s.AssignGroup(a.Id,"template",[t.Id]);s.AssignGroup(b.Id,"template",[t.Id]);Assert.Equal(2,s.GroupsFor("template",t.Id).Count);Assert.Single(s.Templates());Assert.All(s.Groups(),g=>Assert.Equal(1,g.Templates));
-        s.DeleteGroup(a.Id);Assert.Single(s.GroupsFor("template",t.Id));Assert.Equal(t.Template,s.FindTemplate(t.Id)!.Template);s.AssignGroup(b.Id,"template",[t.Id],false);Assert.Empty(s.GroupsFor("template",t.Id));Assert.Equal(1,s.QueryTemplates(new(Ungrouped:true)).Total);
+        s.NovaDeleteGroup(a.Id,new(a.Revision,true));Assert.Single(s.GroupsFor("template",t.Id));Assert.Equal(t.Template,s.FindTemplate(t.Id)!.Template);s.AssignGroup(b.Id,"template",[t.Id],false);Assert.Empty(s.GroupsFor("template",t.Id));Assert.Equal(1,s.QueryTemplates(new(Ungrouped:true)).Total);
     }
     [Fact] public void GroupNameUniquenessPinOrderAndOptimisticConcurrencySurviveRestart()
     {
@@ -47,7 +47,7 @@ public sealed class OrganizationTests : IDisposable
     [Fact] public void InstructionVersionsFavoritesGroupsAndDeletionPreserveHistoricalComposition()
     {
         var s=Store();var t=s.Save(Prompt());var p=s.SaveInstruction(Profile());var g=s.SaveGroup(new(){Name="Arquitectura"});s.AssignGroup(g.Id,"instruction",[p.Id]);p.Text+=" Revisa pruebas.";p.IsFavorite=true;s.SaveInstruction(p);Assert.Equal(2,s.InstructionVersions(p.Id).Count);Assert.Equal(1,s.QueryInstructions(new(Favorites:true,GroupId:g.Id)).Total);
-        var h=s.Compile(t.Id,new(){{"cambio","el contrato"}},p.Id);s.DeleteInstruction(p.Id);Assert.Null(s.FindInstruction(p.Id));Assert.Equal(p.Text,Store().History().Single().Composition!.Profile);Assert.Equal(h.Text,s.History().Single().Text);Assert.Empty(s.InstructionVersions(p.Id));
+        var h=s.Compile(t.Id,new(){{"cambio","el contrato"}},p.Id);s.DeleteInstruction(p.Id,new(p.Revision,true));Assert.Null(s.FindInstruction(p.Id));Assert.Equal(p.Text,Store().History().Single().Composition!.Profile);Assert.Equal(h.Text,s.History().Single().Text);Assert.Empty(s.InstructionVersions(p.Id));
     }
     [Fact] public void CompilationIsDeterministicAndSnapshotsProfileSettingsAndAdjustments()
     {
@@ -70,7 +70,7 @@ public sealed class OrganizationTests : IDisposable
     {
         var s=Store();var t=s.Save(Prompt());var p=s.SaveInstruction(Profile());var g=s.SaveGroup(new(){Name="Trabajo",IsPinned=true,SortOrder=5});s.AssignGroup(g.Id,"template",[t.Id]);s.AssignGroup(g.Id,"instruction",[p.Id]);s.SaveCombination(new(Guid.NewGuid(),"Revisión segura",t.Id,p.Id,"No modifiques código.",DateTime.UtcNow));s.Compile(t.Id,new(){{"cambio","x"}},p.Id);
         var json=s.Export();Assert.Contains("\"schemaVersion\": 2",json);var target=Store("copy");Assert.Equal(1,target.Import(json));Assert.Equal(0,target.Import(json));Assert.Single(target.Groups());Assert.Single(target.GroupsFor("instruction",p.Id));Assert.Single(target.InstructionVersions(p.Id));Assert.Single(target.Combinations(t.Id));
-        s.DeleteGroup(g.Id);s.DeleteInstruction(p.Id);s.Import(json,true);Assert.Equal(json,s.Export());Assert.Equal("ok",s.CheckIntegrity());
+        s.NovaDeleteGroup(g.Id,new(g.Revision,true));s.DeleteInstruction(p.Id,new(p.Revision,true));s.Import(json,true);Assert.Equal(json,s.Export());Assert.Equal("ok",s.CheckIntegrity());
     }
     [Fact] public void ImportMapsGroupsAndEquivalentEntitiesWithoutDuplicatingOrOverwriting()
     {

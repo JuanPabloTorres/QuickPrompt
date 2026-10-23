@@ -1,0 +1,27 @@
+{
+  "syntheticOnly": true,
+  "scope": "Capability knowledge recall only; relevant operations are NOT authorizations or intended actions, especially in negative requests.",
+  "minimumRecallAt5": 0.9,
+  "cases": [
+    {"id":"dev-01","split":"development","query":"Completa los campos con los datos que te doy.","relevant":["FILL_VARIABLES"]},
+    {"id":"dev-02","split":"development","query":"Muéstrame el prompt guardado sin cambiarlo.","relevant":["OPEN_PROMPT"]},
+    {"id":"dev-03","split":"development","query":"Déjalo listo para copiar al portapapeles.","relevant":["COPY_PROMPT"]},
+    {"id":"dev-04","split":"development","query":"Prepara una nueva instrucción reutilizable.","relevant":["CREATE_DRAFT"]},
+    {"id":"dev-05","split":"development","query":"Modifica el borrador según mi nueva audiencia.","relevant":["PROPOSE_ADAPTATION"]},
+    {"id":"dev-06","split":"development","query":"Quiero revisar el cambio antes de guardar una nueva versión del mismo registro.","relevant":["REQUEST_SAVE_VERSION"]},
+    {"id":"dev-07","split":"development","query":"Necesito confirmar la eliminación de este registro de la biblioteca.","relevant":["REQUEST_DELETE"]},
+    {"id":"dev-08","split":"development","query":"Ejecuta el prompt ahora con Qwen local y muestra la respuesta.","relevant":["EXECUTE_LOCAL"]},
+    {"id":"dev-09","split":"development","query":"Prepara el prompt para otra IA sin enviarlo.","relevant":["PREPARE_PROVIDER"]},
+    {"id":"dev-10","split":"development","query":"Necesito una explicación, sin cambiar mi prompt.","relevant":["EXPLAIN"]},
+    {"id":"val-01","split":"validation","query":"Pon mis valores en las entradas de la plantilla y déjala lista para copiar.","relevant":["FILL_VARIABLES","COPY_PROMPT"]},
+    {"id":"val-02","split":"validation","query":"Enséñame la ficha actual tal como está.","relevant":["OPEN_PROMPT"]},
+    {"id":"val-03","split":"validation","query":"Quiero llevar el texto preparado al portapapeles, sin ejecutar ningún modelo.","relevant":["COPY_PROMPT","EXECUTE_LOCAL"]},
+    {"id":"val-04","split":"validation","query":"Diseña desde cero una plantilla que pueda utilizar después.","relevant":["CREATE_DRAFT"]},
+    {"id":"val-05","split":"validation","query":"Reformula la instrucción existente para otra audiencia.","relevant":["PROPOSE_ADAPTATION"]},
+    {"id":"val-06","split":"validation","query":"Conserva el original y solicita mi aprobación para guardar una copia separada.","relevant":["REQUEST_SAVE_COPY"]},
+    {"id":"val-07","split":"validation","query":"No borres nada; sólo dime qué confirmación haría falta para remover esta ficha.","relevant":["REQUEST_DELETE","EXPLAIN"]},
+    {"id":"val-08","split":"validation","query":"Déjalo preparado para usar el modelo de esta máquina pero todavía no lo corras.","relevant":["PREPARE_LOCAL_EXECUTION"]},
+    {"id":"val-09","split":"validation","query":"Muestra las opciones para usarlo en Claude, sin mandar el contenido.","relevant":["PREPARE_PROVIDER"]},
+    {"id":"val-10","split":"validation","query":"Interrumpe la tarea actual y conserva mis registros.","relevant":["CANCEL"]}
+  ]
+}

@@ -22,6 +22,41 @@ internal sealed class FixedSemantic(SemanticInterpretation plan) : ISemanticInte
 public sealed class SemanticPlanTests
 {
     [Theory]
+    [InlineData(SemanticOperation.SEARCH_PROMPT)]
+    [InlineData(SemanticOperation.OPEN_PROMPT)]
+    [InlineData(SemanticOperation.PROPOSE_ADAPTATION)]
+    public void AnExplicitTypedLookupDescriptionResolvesBeforeAskingForASourceTitle(SemanticOperation operation)
+    {
+        var meaning=new SemanticMeaning(new[]{SemanticOperation.SEARCH_PROMPT,operation}.Distinct().ToArray(),TargetReference.NONE,"",null,"descripción funcional autorizada","Cambio solicitado",
+            SemanticFixture.Read.Constraints,operation==SemanticOperation.PROPOSE_ADAPTATION?SemanticOutcome.DRAFT:SemanticOutcome.READ,[],false,"",null,"Objetivo interpretado.");
+        var plan=SemanticPlanCompiler.Compile(meaning);
+        Assert.Equal(TargetReference.NAMED,plan.TargetReference);Assert.Null(plan.ResolvedTargetId);
+        Assert.True(plan.Has(SemanticOperation.SEARCH_PROMPT));Assert.True(plan.Has(SemanticOperation.RESOLVE_PROMPT));Assert.True(plan.Has(operation));
+        Assert.False(plan.Has(SemanticOperation.ASK_CLARIFICATION));Assert.False(plan.Executes);Assert.False(plan.RequiresConfirmation);
+        var missing=SemanticPlanCompiler.Compile(meaning with {Query=""});
+        Assert.Equal(new[]{SemanticOperation.ASK_CLARIFICATION},missing.Intentions);Assert.Null(missing.ResolvedTargetId);
+        var unscopedId=SemanticPlanCompiler.Compile(meaning with {ResolvedTargetId=Guid.NewGuid()});
+        Assert.Equal(new[]{SemanticOperation.ASK_CLARIFICATION},unscopedId.Intentions);Assert.Null(unscopedId.ResolvedTargetId);
+    }
+    [Fact] public void ALookupDescriptionCannotAttachAnIncidentalSourceToIndependentCreation()
+    {
+        var meaning=new SemanticMeaning([SemanticOperation.CREATE_DRAFT],TargetReference.NONE,"",null,"unscoped description","Nueva instrucción",
+            SemanticFixture.Read.Constraints,SemanticOutcome.NEW_DRAFT,[],false,"",null,"Crear.");
+        var plan=SemanticPlanCompiler.Compile(meaning);
+        Assert.Equal(TargetReference.NONE,plan.TargetReference);Assert.Null(plan.ResolvedTargetId);
+        Assert.False(plan.Has(SemanticOperation.SEARCH_PROMPT));Assert.False(plan.Has(SemanticOperation.RESOLVE_PROMPT));
+    }
+    [Theory]
+    [InlineData(SemanticOperation.OPEN_PROMPT)]
+    [InlineData(SemanticOperation.PROPOSE_ADAPTATION)]
+    public void AStrayQueryDoesNotGrantSearchWhenNoLookupOrSourceWasSelected(SemanticOperation operation)
+    {
+        var meaning=new SemanticMeaning([operation],TargetReference.NONE,"",null,"unbound description","Cambio solicitado",
+            SemanticFixture.Read.Constraints,SemanticOutcome.DRAFT,[],false,"",null,"Falta el origen.");
+        var plan=SemanticPlanCompiler.Compile(meaning);
+        Assert.Equal(new[]{SemanticOperation.ASK_CLARIFICATION},plan.Intentions);Assert.Null(plan.ResolvedTargetId);
+    }
+    [Theory]
     [InlineData(SemanticOperation.PREPARE_LOCAL_EXECUTION)]
     [InlineData(SemanticOperation.PREPARE_PROVIDER)]
     [InlineData(SemanticOperation.EXECUTE_LOCAL)]

@@ -1,0 +1,322 @@
+{
+  "version": "semantic-recovery-1.0",
+  "syntheticOnly": true,
+  "split": "development",
+  "fixtures": [
+    [
+      "Informe semanal",
+      "Resume el avance de <equipo>. Identifica logros y riesgos. No inventes cifras."
+    ],
+    [
+      "Plan de comidas",
+      "Propón una receta con <ingredientes> para <personas> personas. No inventes alergias."
+    ],
+    [
+      "Facturas nacionales",
+      "Examina una factura nacional."
+    ],
+    [
+      "Facturas internacionales",
+      "Examina una factura internacional."
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "recovery-v1-development-01",
+      "family": "search",
+      "context": "home",
+      "message": "Localiza la plantilla de informes semanales.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "development-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-development-02",
+      "family": "search",
+      "context": "home",
+      "message": "Necesito encontrar la instrucción que resume el avance de la semana.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "development-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-development-03",
+      "family": "open",
+      "context": "selected_report",
+      "message": "Muéstrame esta instrucción tal como está.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-04",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Acorta la redacción manteniendo la regla de no inventar cifras.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "development-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-development-05",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Quiero una versión más concisa, sin perder la prohibición de inventar cifras.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "development-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-development-06",
+      "family": "create",
+      "context": "home",
+      "message": "Crea un prompt reutilizable para diseñar actividades de lectura infantil.",
+      "required": [
+        "CREATE_DRAFT"
+      ],
+      "outcomes": [
+        "NEW_DRAFT"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-07",
+      "family": "variables",
+      "context": "selected_recipe",
+      "message": "Completa los campos sin cambiar la plantilla.\ningredientes: arroz y lentejas\npersonas: tres",
+      "required": [
+        "FILL_VARIABLES"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-08",
+      "family": "reference",
+      "context": "previous_report",
+      "message": "Usa la propuesta anterior y enfócala en obstáculos del equipo.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-09",
+      "family": "reference",
+      "context": "two_candidates",
+      "message": "Abre el otro resultado, sin retocarlo.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-10",
+      "family": "negation",
+      "context": "selected_report",
+      "message": "No reescribas ni ejecutes nada; solo muéstrame el informe.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-11",
+      "family": "multi",
+      "context": "selected_recipe",
+      "message": "Adapta la instrucción para cocina vegetariana y déjala lista para copiar sin guardar.",
+      "required": [
+        "PROPOSE_ADAPTATION",
+        "COPY_PROMPT"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION",
+        "REQUEST_SAVE_COPY"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-12",
+      "family": "ambiguity",
+      "context": "ambiguous",
+      "message": "Abre el prompt de facturas.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-13",
+      "family": "missing",
+      "context": "home",
+      "message": "Hazlo más claro.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "CREATE_DRAFT"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-14",
+      "family": "english",
+      "context": "selected_report",
+      "message": "Make this instruction suitable for a board briefing, but keep the saved original.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-15",
+      "family": "cancel",
+      "context": "selected_report",
+      "message": "Cancela la tarea pendiente.",
+      "required": [
+        "CANCEL"
+      ],
+      "outcomes": [
+        "CANCELLED"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-development-16",
+      "family": "prepare",
+      "context": "selected_recipe",
+      "message": "Prepara el uso en Qwen local, pero no lo ejecutes.",
+      "required": [
+        "PREPARE_LOCAL_EXECUTION"
+      ],
+      "outcomes": [
+        "READY_LOCAL"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    }
+  ]
+}

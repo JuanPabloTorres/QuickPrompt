@@ -1,3 +1,4 @@
+using LocalModelPolicy = QuickPrompt.Web.Infrastructure.LocalModelPolicy;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using QuickPrompt.Local;
@@ -10,7 +11,7 @@ public enum PreparationState { RECEIVED, UNDERSTANDING, SEARCHING, SELECTING_OR_
 public enum PreparationIntent { FIND_PROMPT, CREATE_PROMPT, ADAPT_PROMPT, COMPLETE_PROMPT, IMPROVE_PROMPT, SAVE_PROMPT, USE_PROMPT, RUN_LOCAL, ORGANIZE_PROMPT, UNKNOWN }
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PreparationDecision { REUSE_EXISTING, ADAPT_EXISTING, CREATE_NEW, ASK_CLARIFICATION }
-public record PrepareInput(Guid OperationId, string Message, string Model = "qwen3:8b", bool RememberDraft = false,
+public record PrepareInput(Guid OperationId, string Message, string Model = LocalModelPolicy.DefaultModelName, bool RememberDraft = false,
     Guid? SourcePromptId = null, int? SourceRevision = null, Dictionary<string, string>? Values = null,
     Guid? SessionId = null, RetrievalFilter? Filter = null)
 {
@@ -20,6 +21,8 @@ public record PrepareInput(Guid OperationId, string Message, string Model = "qwe
     [JsonIgnore] public PreparedDraft? WorkingDraft { get; init; }
     [JsonIgnore] public string? AuthorizedPendingRequest { get; init; }
     [JsonIgnore] public Dictionary<string, string>? ContextValues { get; init; }
+    [JsonIgnore] public UserInputScope? InputScope { get; init; }
+    [JsonIgnore] public VerbatimBodyBinding? VerbatimBody { get; init; }
     [JsonIgnore] public string TaskRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : System.Text.Json.JsonSerializer.Serialize(new {
         authorizedEarlierUserRequest = AuthorizedPendingRequest, currentUserReply = Message }, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 }
@@ -44,10 +47,31 @@ public interface IPromptRetriever
 {
     RetrievalCandidate[] Retrieve(string query, Guid? sourceId);
     RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter) => Retrieve(query, sourceId);
+    // An already-bound identity needs a fresh read, not a ranked library search.
+    PromptDocument ReadSource(Guid id) => Retrieve("", id).Single(candidate => candidate.Prompt.Id == id).Prompt;
 }
-public interface IPromptGenerator { Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct); }
+public interface IPromptGenerator
+{
+    Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct);
+    // Optional per-call diagnostics. Existing providers retain their original implementation.
+    Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct,
+        Action<int, string, string?>? diagnostic) => Generate(input, understanding, candidates, ct);
+}
 public record SemanticCandidateChoice(Guid[] PromptIds, string Reason);
-public interface ICandidateSelector { Task<SemanticCandidateChoice> Select(string message, RetrievalCandidate[] candidates, string model, CancellationToken ct); }
+public record GroundedSourceChoice(TargetReference Reference, SemanticCandidateChoice Choice);
+public interface IGroundedSourceSelector
+{
+    Task<GroundedSourceChoice> SelectSource(string message, RetrievalCandidate[] candidates, SemanticContext context, string model, CancellationToken ct);
+}
+// Compare an already resolved source description with real library records.
+// Application instructions and case values belong to later task execution.
+public record SourceLookupContext(string SourceDescription, string UserDirective, string? AuthorizedEarlierDirective = null);
+public interface ICandidateSelector
+{
+    Task<SemanticCandidateChoice> Select(string sourceDescription, RetrievalCandidate[] candidates, string model, CancellationToken ct);
+    Task<SemanticCandidateChoice> Select(SourceLookupContext lookup, RetrievalCandidate[] candidates, string model, CancellationToken ct)
+        => Select(lookup.SourceDescription, candidates, model, ct);
+}
 public interface IVariableResolver { VariableValue[] Resolve(PrepareInput input, PromptProposal proposal, PromptDocument? source); }
 public record InputValueExtraction(GroundedValue[] Values, string Question);
 public interface IInputValueExtractor { Task<InputValueExtraction> ExtractInputs(PrepareInput input, string template, string[] names, CancellationToken ct); }
@@ -65,12 +89,24 @@ public interface IPreparedDraftStore
 // Grounding is decided by code, never by a model's confidence score.
 public sealed class GroundedVariableResolver : IVariableResolver
 {
-    public static Dictionary<string, string> LiteralAssignments(string message, string[] names) => names.Distinct(StringComparer.OrdinalIgnoreCase)
+    public static (int LabelStart, int ValueStart, int End)[] InputRanges(string message, string[] names)
+    {
+        // Keep every occurrence, including ambiguous repeated labels: literal field data cannot
+        // acquire execution authority merely because its value cannot yet be uniquely bound.
+        var labels = names.Distinct(StringComparer.OrdinalIgnoreCase).SelectMany(name => LabelMatches(message, name).Cast<Match>())
+            .OrderBy(match => match.Index).DistinctBy(match => match.Index).ToArray();
+        return labels.Select((label, i) => (label.Index, label.Index + label.Length, i + 1 < labels.Length ? labels[i + 1].Index : message.Length)).ToArray();
+    }
+    public static Dictionary<string, string> LiteralAssignments(string message, string[] names, UserInputScope? scope = null) => scope?.Values(message, names) ?? names.Distinct(StringComparer.OrdinalIgnoreCase)
         .Select(name => new { Name = name, Value = LabeledValue(message, name, names) }).Where(value => value.Value is not null).ToDictionary(value => value.Name, value => value.Value!);
     public static string[] AmbiguousLabels(string message, string[] names) => names.Where(name => LabelMatches(message, name).Count > 1).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-    public static string DirectiveOutsideInputs(string message, string[] names)
+    public static string DirectiveOutsideInputs(string message, string[] names, UserInputScope? scope = null)
+        => DirectiveOutsideInputs(message, names, names, scope);
+    public static string DirectiveOutsideInputs(string message, string[] names, string[] maskedNames, UserInputScope? scope = null)
     {
-        var spans = names.Select(name => LabeledBinding(message, name, names)).Where(binding => binding is not null).Cast<LiteralBinding>().OrderBy(binding => binding.Start);
+        if (scope is not null) return scope.Project(message, names, false, maskedNames);
+        var spans = names.Where(name => maskedNames.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .Select(name => LabeledBinding(message, name, names)).Where(binding => binding is not null).Cast<LiteralBinding>().OrderBy(binding => binding.Start);
         var result = new System.Text.StringBuilder(); var cursor = 0;
         foreach (var span in spans) {
             var end = span.Start + span.Value.Length; if (end <= cursor) continue;
@@ -81,8 +117,9 @@ public sealed class GroundedVariableResolver : IVariableResolver
     }
     // Content authorship must not treat a supplied field assignment (including its
     // label or a synthetic replacement marker) as a reusable-instruction change.
-    public static string InstructionDirective(string message, string[] names)
+    public static string InstructionDirective(string message, string[] names, UserInputScope? scope = null)
     {
+        if (scope is not null) return scope.Project(message, names, true);
         var spans = names.Select(name => new { Labels = LabelMatches(message, name), Binding = LabeledBinding(message, name, names) })
             .Where(item => item.Binding is not null && item.Labels.Count == 1)
             .Select(item => new { Start = item.Labels[0].Index, End = item.Binding!.Start + item.Binding.Value.Length }).OrderBy(item => item.Start);
@@ -97,13 +134,21 @@ public sealed class GroundedVariableResolver : IVariableResolver
     public VariableValue[] Resolve(PrepareInput input, PromptProposal proposal, PromptDocument? source)
     {
         var names = TemplateCompiler.Names(proposal.TemplateText);
+        var references=names.Select(name=>"<"+name+">").ToHashSet(StringComparer.Ordinal);
+        // A declaration remains a declaration even when the model cites the whole
+        // request sentence around it. Explicit UI/labeled literal values still work.
+        bool BareReference(GroundedValue suggestion)=>suggestion.Value?.Trim() is { } value&&references.Contains(value);
         var result = new List<VariableValue>();
+        var scoped = input.InputScope?.Values(input.InputScope.Matches(input.Message) ? input.Message : input.AuthorizedPendingRequest ?? input.Message, names);
         foreach (var name in names)
         {
             if (input.Values?.TryGetValue(name, out var explicitValue) == true && !string.IsNullOrWhiteSpace(explicitValue))
                 result.Add(new(name, explicitValue, "USER_INPUT", "VALIDATED"));
+            else if (scoped?.TryGetValue(name, out var bounded) == true)
+                result.Add(new(name, bounded, "REQUEST_SCOPE", "VALIDATED"));
             else if (LabelMatches(input.Message, name).Count > 1) continue;
             else if (proposal.Values.SingleOrDefault(v => v.Name == name) is { } suggestion && !string.IsNullOrWhiteSpace(suggestion.Value)
+                && !BareReference(suggestion)
                 && !string.IsNullOrWhiteSpace(suggestion.Evidence) && input.Message.Contains(suggestion.Evidence, StringComparison.Ordinal)
                 && suggestion.Evidence.Contains(suggestion.Value, StringComparison.Ordinal))
                 result.Add(new(name, suggestion.Value, "REQUEST_QUOTE", "VALIDATED"));
@@ -114,21 +159,16 @@ public sealed class GroundedVariableResolver : IVariableResolver
             else if (input.AuthorizedPendingRequest is { } previousRequest && ResolveLabel(previousRequest, proposal.TemplateText, name, names) is { } previousLabel)
                 result.Add(new(name, previousLabel, "REQUEST_LABEL", "VALIDATED"));
             else if (input.AuthorizedPendingRequest is { } original && proposal.Values.SingleOrDefault(v => v.Name == name) is { } priorSuggestion
+                && !BareReference(priorSuggestion)
                 && !string.IsNullOrWhiteSpace(priorSuggestion.Value) && !string.IsNullOrWhiteSpace(priorSuggestion.Evidence)
                 && original.Contains(priorSuggestion.Evidence, StringComparison.Ordinal) && priorSuggestion.Evidence.Contains(priorSuggestion.Value, StringComparison.Ordinal))
                 result.Add(new(name, priorSuggestion.Value, "REQUEST_QUOTE", "VALIDATED"));
             else if (source?.Defaults.TryGetValue(name, out var fallback) == true && !string.IsNullOrWhiteSpace(fallback))
                 result.Add(new(name, fallback, "TEMPLATE_DEFAULT", "VALIDATED"));
         }
-        return result.Where(value => value.ValueSource is "USER_INPUT" or "TEMPLATE_DEFAULT" or "SESSION_CONTEXT" || CompatibleExtractedValue(value, proposal.TemplateText)).ToArray();
-    }
-    private static bool CompatibleExtractedValue(VariableValue value, string template)
-    {
-        // Literal grounding alone does not prove field relevance. A summary length must describe
-        // a length, rather than an unrelated phrase that happens to occur in the request.
-        var name = PromptSearch.Normalize(value.Name);
-        if (name is not ("EXTENSION" or "LONGITUD" or "LENGTH") || !Regex.IsMatch(template, @"\b(resume|resumir|resumen|summary|summari[sz]e)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100))) return true;
-        return Regex.IsMatch(PromptSearch.Normalize(value.Value), @"\d|\b(palabras?|words?|frases?|sentences?|parrafos?|paragraphs?|lineas?|lines?|paginas?|pages?|breve|brief|short|conciso|concise|detallado|detailed)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        // Semantic field relevance belongs to inference. This layer checks real names,
+        // explicit inputs and literal provenance uniformly for every task and field.
+        return result.ToArray();
     }
     private static string? ResolveLabel(string message, string template, string name, string[] names)
     {
@@ -140,9 +180,6 @@ public sealed class GroundedVariableResolver : IVariableResolver
                 var label = Regex.Match(tokens[index - 1].Text, @"(?:^|[.!?;\r\n])\s*(?<label>[\p{L}\p{N}_][\p{L}\p{M}\p{N}_ -]{0,79}):\s*$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
                 if (label.Success) labels.Add(label.Groups["label"].Value.Trim());
             }
-        // A single material input may use either language; no guessing between multiple documents.
-        string[] material = ["texto", "text", "documento", "document", "documentos", "documents", "contenido", "content"];
-        if (names.Length == 1 && material.Contains(name, StringComparer.OrdinalIgnoreCase)) foreach (var alias in material) labels.Add(alias);
         var candidates = labels.Select(label => LabeledValue(message, label, names.Concat(labels).Distinct().ToArray())).Where(value => value is not null).Distinct(StringComparer.Ordinal).ToArray();
         return candidates.Length == 1 ? candidates[0] : null;
     }
@@ -167,6 +204,19 @@ public sealed class GroundedVariableResolver : IVariableResolver
 
 public sealed class DeterministicPromptEvaluator : IPromptEvaluator
 {
+    // The reusable body owns its slots. Metadata cannot author extra content.
+    public static PromptProposal Canonicalize(PromptProposal proposal)
+    {
+        if (proposal.Decision == PreparationDecision.ASK_CLARIFICATION) return proposal;
+        if (proposal.RequiredInputs is not { } inputs) return proposal;
+        if (inputs.Length > 60 || inputs.Distinct().Count() != inputs.Length || inputs.Any(name => string.IsNullOrWhiteSpace(name) || TemplateCompiler.Names($"<{name}>").SingleOrDefault() != name))
+            throw new ValidationException("Nombres de insumos inválidos.");
+        if (proposal.Decision != PreparationDecision.REUSE_EXISTING
+            && inputs.Except(TemplateCompiler.Names(proposal.TemplateText), StringComparer.Ordinal).Any())
+            throw new ValidationException("El borrador declara entradas que no aparecen como <variables> en su texto. Usa sólo las entradas materiales necesarias; los resultados que debe producir no son entradas.");
+        return proposal;
+    }
+
     public PreparedDraft Evaluate(PrepareInput input, Understanding understanding, PromptProposal proposal, RetrievalCandidate[] candidates, VariableValue[] values)
     {
         if (!Enum.IsDefined(proposal.Decision) || proposal.Values is null || proposal.Values.Length > 60
@@ -179,6 +229,7 @@ public sealed class DeterministicPromptEvaluator : IPromptEvaluator
         if (proposal.Decision is PreparationDecision.REUSE_EXISTING or PreparationDecision.ADAPT_EXISTING && source is null)
             throw new ValidationException("La propuesta requiere un origen real.");
         if (proposal.Decision == PreparationDecision.CREATE_NEW && source is not null) throw new ValidationException("Origen incompatible con una creación.");
+        proposal = Canonicalize(proposal);
         var title = proposal.Decision == PreparationDecision.REUSE_EXISTING ? source!.Title : proposal.Title;
         var description = proposal.Decision == PreparationDecision.REUSE_EXISTING ? source!.Description : proposal.Description;
         var text = proposal.Decision == PreparationDecision.REUSE_EXISTING ? source!.TemplateText : proposal.TemplateText;
@@ -187,19 +238,6 @@ public sealed class DeterministicPromptEvaluator : IPromptEvaluator
                 string.IsNullOrWhiteSpace(proposal.Clarification) ? "¿Qué resultado necesitas obtener?" : proposal.Clarification, proposal.Reason, candidates,
                 source?.Id, source?.Revision, source?.CategoryId ?? 0, input.RememberDraft, DateTime.UtcNow);
         var names = TemplateCompiler.Names(text);
-        if (proposal.RequiredInputs is { } inputs)
-        {
-            if (inputs.Length > 60 || inputs.Distinct().Count() != inputs.Length || inputs.Any(name => string.IsNullOrWhiteSpace(name) || TemplateCompiler.Names($"<{name}>").SingleOrDefault() != name))
-                throw new ValidationException("Nombres de insumos inválidos.");
-            // The parser owns variable definitions. If generation describes missing material but omits
-            // all slots, code adds literal input slots; it never invents their content. Existing slots
-            // remain authoritative, avoiding duplicate fields from model metadata synonyms.
-            if (proposal.Decision != PreparationDecision.REUSE_EXISTING && names.Length == 0 && inputs.Length > 0)
-            {
-                text += "\n\n" + string.Join("\n\n", inputs.Select(name => $"{name}:\n<{name}>"));
-                names = TemplateCompiler.Names(text);
-            }
-        }
         new Template { Title = title, Description = description, Template = text }.Validate();
         if (values.Any(v => !names.Contains(v.Name) || v.Value.Length > 8000)) throw new ValidationException("Valores incompatibles con la plantilla.");
         var missing = names.Where(n => !values.Any(v => v.Name == n)).ToArray();

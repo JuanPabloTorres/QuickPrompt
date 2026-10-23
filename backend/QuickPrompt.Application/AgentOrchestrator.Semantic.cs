@@ -34,8 +34,9 @@ public sealed partial class AgentOrchestrator
                 resolution = await planning.Interpret(original.Message, sessionId, original.SourcePromptId, original.SourceRevision, original.Model, original.Filter, stage.Token);
             }
             var plan = resolution.Interpretation; var understanding = plan.Preparation();
+            if (plan.Deletes) throw new ValidationException("Solicita la eliminación desde NOVA en esta pestaña para revisar y confirmar el registro.");
             SemanticPlanValidator.Validate(plan, resolution.Context, original.Message, options.SemanticMaxSteps);
-            var input = original with { Interpretation = plan, AuthorizedPendingRequest = plan.ContinuesPendingTask ? resolution.Context.PendingRequest : null }; PromptProposal? proposal = null; PreparedDraft? draft = null;
+            var input = original with { Interpretation = plan, AuthorizedPendingRequest = plan.ContinuesPendingTask ? resolution.Context.PendingRequest : null, InputScope = plan.InputScope }; PromptProposal? proposal = null; PreparedDraft? draft = null;
             var approvedPreferences = plan.Adapts || plan.Creates ? preferences?.Get() : null;
             if (approvedPreferences is not null && (approvedPreferences.Language is not null || approvedPreferences.Format is not null || approvedPreferences.ProviderId is not null)) input = input with { ApprovedPreferences = approvedPreferences };
             var requirements = plan.Requirements with { Language = plan.Constraints.Language ?? approvedPreferences?.Language, Format = plan.Constraints.Format ?? approvedPreferences?.Format, EditInstruction = input.TaskRequest, ContentTransformation = plan.RequestedTransformation };
@@ -65,16 +66,12 @@ public sealed partial class AgentOrchestrator
             string CorrectionFeedback(string[] failures, string? rejectedCandidate = null)
             {
                 var actualSource = input.WorkingDraft?.TemplateText ?? candidates.SingleOrDefault(candidate => candidate.Prompt.Id == input.SourcePromptId)?.Prompt.TemplateText ?? "";
-                return JsonSerializer.Serialize(new {
-                    failures, rejectedCandidate, requiredVariableNames = TemplateCompiler.Names(actualSource),
-                    requiredVerbatimConstraints = requirements.Constraints, requiredTargetTerms = requirements.TargetTerms ?? [],
-                    maximumCharacters = requirements.Shortening ? Math.Max(1, actualSource.Length - 1) : 32000,
-                    correction = "Return a corrected reusable instruction applying the actual requested change. Every requiredVariableName must occur as <name> in text, not only metadata. Every requiredVerbatimConstraint must be an exact unchanged substring; requiredTargetTerms must remain in the task context. These lists are validation metadata: do not append their labels, this feedback, or the editing request to text. Do not return the unchanged source." });
+                return PromptPreparationPipeline.CorrectionFeedback(failures,requirements,actualSource,rejectedCandidate);
             }
             async Task<PromptProposal> Generate(CancellationToken cancel) {
                 modelConsulted?.Invoke("Generation");
                 try { return await pipeline.DraftGeneration(input, understanding, candidates, cancel); }
-                catch (ValidationException failure) when (plan.Adapts && !didRevise) {
+                catch (ValidationException failure) when ((plan.Adapts || plan.Creates) && !didRevise) {
                     // The shared editor can reject a malformed/variable-changing body before a
                     // PreparedDraft exists. That rejection consumes the SAME single correction budget.
                     didRevise = true; modelConsulted?.Invoke("Revision");
@@ -88,22 +85,22 @@ public sealed partial class AgentOrchestrator
                 if (proposal is null) throw new ValidationException("No hay propuesta que validar.");
                 var checkedDraft = pipeline.PromptCompilation(input, understanding, proposal, candidates);
                 diagnostics?.Put(input.OperationId, checkedDraft, null);
-                if (!PromptPreparationPipeline.Validation(checkedDraft, requirements).Valid && !didRevise) {
+                if (!PromptPreparationPipeline.Validation(checkedDraft, requirements,plan.Goal).Valid && !didRevise) {
                     didRevise = true; modelConsulted?.Invoke("Revision");
-                    var revision = input with { ValidationFeedback = CorrectionFeedback(PromptPreparationPipeline.Validation(checkedDraft, requirements).Errors, checkedDraft.TemplateText) };
+                    var revision = input with { ValidationFeedback = CorrectionFeedback(PromptPreparationPipeline.Validation(checkedDraft, requirements,plan.Goal).Errors, checkedDraft.TemplateText) };
                     proposal = await generator.Generate(revision, understanding, candidates, cancel);
                     checkedDraft = pipeline.PromptCompilation(input, understanding, proposal, candidates); diagnostics?.Put(input.OperationId, null, checkedDraft);
                 }
-                return PromptPreparationPipeline.FinalPreparation(checkedDraft, requirements);
+                return PromptPreparationPipeline.FinalPreparation(checkedDraft, requirements,plan.Goal);
             });
             toolRegistry.Register<EmptyArgs, PreparedDraft>("compile_prompt", ToolPermission.Prepare, empty, (_, cancel) => {
                 cancel.ThrowIfCancellationRequested();
                 if (proposal is null) throw new ValidationException("Falta el prompt validado.");
-                return Task.FromResult(PromptPreparationPipeline.FinalPreparation(pipeline.PromptCompilation(input, understanding, proposal, candidates), requirements)); });
+                return Task.FromResult(PromptPreparationPipeline.FinalPreparation(pipeline.PromptCompilation(input, understanding, proposal, candidates), requirements,plan.Goal)); });
             toolRegistry.Register<EmptyArgs, VariableValue[]>("resolve_variable_values", ToolPermission.Prepare, empty, async (_, cancel) => {
                 cancel.ThrowIfCancellationRequested(); proposal ??= Reuse(source);
                 var names = TemplateCompiler.Names(proposal.TemplateText);
-                var literal = GroundedVariableResolver.LiteralAssignments(input.Message, names);
+                var literal = GroundedVariableResolver.LiteralAssignments(input.Message, names, input.InputScope);
                 var ambiguous = GroundedVariableResolver.AmbiguousLabels(input.Message, names);
                 bool Grounded(GroundedValue value) => !string.IsNullOrWhiteSpace(value.Value) && !string.IsNullOrWhiteSpace(value.Evidence)
                     && value.Evidence.Contains(value.Value, StringComparison.Ordinal) && (input.Message.Contains(value.Evidence, StringComparison.Ordinal)
@@ -111,7 +108,7 @@ public sealed partial class AgentOrchestrator
                 var missing = names.Where(name => !literal.ContainsKey(name) && !ambiguous.Contains(name)
                     && !(input.Values?.TryGetValue(name, out var explicitValue) == true && !string.IsNullOrWhiteSpace(explicitValue))
                     && !proposal.Values.Any(value => value.Name == name && Grounded(value) && input.Message.Contains(value.Evidence, StringComparison.Ordinal))).ToArray();
-                if (generator is IInputValueExtractor extractor && missing.Length > 0) {
+                if (fieldExtractor is { } extractor && missing.Length > 0) {
                     modelConsulted?.Invoke("InputExtraction");
                     var extracted = await extractor.ExtractInputs(input, proposal.TemplateText, missing, cancel);
                     if (extracted.Values is null || extracted.Values.Length > missing.Length || extracted.Values.Select(value => value.Name).Distinct().Count() != extracted.Values.Length
@@ -182,9 +179,9 @@ public sealed partial class AgentOrchestrator
                         await progress(PreparationState.VALIDATING); draft = await toolRegistry.Call<EmptyArgs, PreparedDraft>("validate_prompt", new(), ToolPermission.Prepare, token); break;
                     case SemanticOperation.FILL_VARIABLES:
                         proposal ??= Reuse(source);
-                        if (TemplateCompiler.Names(proposal.TemplateText).Length == 0) { plan = SemanticPlanning.Clarify(plan, "Este prompt no tiene campos para completar. ¿Quieres cambiar su instrucción o usarlo tal como está?", "NO_TEMPLATE_INPUTS"); return await Finish(Question(plan)); }
+                        if (TemplateCompiler.Names(proposal.TemplateText).Length == 0) { plan = TaskClarification.Apply(plan, "Este prompt no tiene campos para completar. ¿Quieres cambiar su instrucción o usarlo tal como está?", "NO_TEMPLATE_INPUTS"); return await Finish(Question(plan)); }
                         await toolRegistry.Call<EmptyArgs, VariableValue[]>("resolve_variable_values", new(), ToolPermission.Prepare, token);
-                        if (!string.IsNullOrWhiteSpace(inputQuestion)) { plan = SemanticPlanning.Clarify(plan, inputQuestion, "AMBIGUOUS_INPUT_VALUES"); return await Finish(Question(plan)); }
+                        if (!string.IsNullOrWhiteSpace(inputQuestion)) { plan = TaskClarification.Apply(plan, inputQuestion, "AMBIGUOUS_INPUT_VALUES"); return await Finish(Question(plan)); }
                         break;
                     case SemanticOperation.COMPILE_PROMPT:
                     case SemanticOperation.COPY_PROMPT:
@@ -198,11 +195,20 @@ public sealed partial class AgentOrchestrator
                     case SemanticOperation.EXECUTE_LOCAL:
                         if (draft?.State != PreparationState.READY) return await Finish(draft ?? Question(plan));
                         draft = draft with { LocalResponse = await toolRegistry.Call<EmptyArgs, string>("execute_local_llm", new(), ToolPermission.LocalExecution, token) }; break;
+                    case SemanticOperation.COPY_TO_CLIPBOARD:
+                        throw new PreparationToolException("VISIBLE_CLIPBOARD_REQUIRED", "ui_copy_compiled_prompt", "La copia real requiere el agente en la pestaña visible. El texto preparado se conserva.");
                     case SemanticOperation.CANCEL:
                         var cancelled = sessions?.Get(sessionId)?.Draft;
                         if (cancelled is not null) { drafts.Forget(cancelled.Id); diagnostics?.Forget(cancelled.Id); }
                         sessions?.Forget(sessionId); return await Finish(Question(plan) with { State = PreparationState.CANCELLED, Reason = "Preparación cancelada. Los registros guardados se conservan." });
                     case SemanticOperation.EXPLAIN:
+                        if (plan.Goal is { } adviceGoal && manualAdvice is { } advisor) {
+                            var answer = await advisor.Explain(original.Message, source, resolution.ActiveDraft, input.Model, token);
+                            if (!GoalCompletionValidator.ValidateAdvice(adviceGoal, plan, answer, source, source is null ? null : retriever.ReadSource(source.Id)).Complete)
+                                throw new PreparationToolException("GOAL_INCOMPLETE", "explain_advice", "No se pudo verificar el origen de la explicación.");
+                            plan = plan with { Explanation = answer };
+                        }
+                        return await Finish(Question(plan));
                     case SemanticOperation.ASK_CLARIFICATION:
                         return await Finish(Question(plan));
                     case SemanticOperation.REQUEST_SAVE_VERSION:
@@ -211,7 +217,7 @@ public sealed partial class AgentOrchestrator
                         break;
                     case SemanticOperation.PAUSE:
                     case SemanticOperation.RESUME:
-                        return await Finish(Question(SemanticPlanning.Clarify(plan, "Usa los controles de la ejecución activa para pausarla o reanudarla.")));
+                        return await Finish(Question(TaskClarification.Apply(plan, "Usa los controles de la ejecución activa para pausarla o reanudarla.")));
                 }
                 completed.Add(step.Id);
             }
@@ -221,6 +227,20 @@ public sealed partial class AgentOrchestrator
             async Task<PreparedDraft> Finish(PreparedDraft result)
             {
                 token.ThrowIfCancellationRequested();
+                if (plan.Goal is { } goal && result.State == PreparationState.READY) {
+                    var applied = plan.ProposedSteps.Where(step => completed.Contains(step.Id)).Select(step => step.Operation).ToHashSet();
+                    var receipts = new List<string>();
+                    if (applied.Contains(SemanticOperation.PROPOSE_ADAPTATION)) receipts.Add("ui_prepare_update");
+                    if (applied.Contains(SemanticOperation.CREATE_DRAFT)) receipts.Add("ui_prepare_creation");
+                    if (applied.Contains(SemanticOperation.EXECUTE_LOCAL)) receipts.Add("ui_execute_local");
+                    var visibleResult = new UiVisibleState(plan.Adapts || plan.Creates ? "create" : "focus", [], result.SourceId, result.SourceRevision,
+                        result.Title, result.TemplateText, result.Values.ToDictionary(v => v.Name, v => v.Value), result.Variables.Select(v => v.Name).ToArray(),
+                        plan.Creates || plan.Adapts && result.TemplateText != source?.TemplateText, result.CompiledText is not null, result.CompiledText,
+                        result.LocalResponse, result.LocalResponse is not null, plan.Has(SemanticOperation.PREPARE_PROVIDER), ProviderId: result.ProviderId ?? plan.ProviderId);
+                    var completion = GoalCompletionValidator.Validate(goal, plan, visibleResult, source, source is null ? null : retriever.ReadSource(source.Id), receipts,
+                        result.Values.ToDictionary(v => v.Name, v => v.Value), PromptPreparationPipeline.Validation(result, requirements).Valid, false);
+                    if (!completion.Complete) throw new PreparationToolException("GOAL_INCOMPLETE", "finish", "Faltan resultados obligatorios del contrato de la tarea.");
+                }
                 if (result.State == PreparationState.NEEDS_INFORMATION && plan.DesiredOutcome == SemanticOutcome.READ
                     && (plan.Has(SemanticOperation.OPEN_PROMPT) || plan.Has(SemanticOperation.SEARCH_PROMPT)) && !plan.Has(SemanticOperation.COPY_PROMPT) && !plan.Has(SemanticOperation.FILL_VARIABLES))
                     result = result with { State = PreparationState.USER_ACTION, Question = "", Reason = "Origen recuperado sin modificar. Completa sus campos solo cuando quieras utilizarlo." };
@@ -232,13 +252,16 @@ public sealed partial class AgentOrchestrator
                 var selectedValues = result.SourceId == selectedSource?.Id && result.SourceRevision == selectedSource?.Revision && result.SourceId is not null
                     ? result.Values.ToDictionary(value => value.Name, value => value.Value)
                     : scope?.Source?.Id == selectedSource?.Id && scope?.Source?.Revision == selectedSource?.Revision ? scope?.Values ?? [] : [];
-                var sameArtifact = resolution.ActiveDraft is { } activeArtifact && activeArtifact.SourceId == result.SourceId && activeArtifact.SourceRevision == result.SourceRevision && activeArtifact.TemplateText == result.TemplateText;
-                var artifactProposal = sameArtifact && !plan.Adapts && !plan.Creates ? scope?.LastProposal ?? resolution.ActiveDraft?.Semantic ?? plan : plan;
-                if (result.State != PreparationState.CANCELLED) sessions?.Put(new(sessionId, selectedSource,
+                var observation = new AgentSession(sessionId, selectedSource,
                     result.TemplateText.Length > 0 ? result : resolution.ActiveDraft, selectedValues, DateTime.UtcNow,
-                    scope?.Candidates ?? [], result.TemplateText.Length > 0 ? artifactProposal : scope?.LastProposal, plan.DesiredOutcome == SemanticOutcome.CLARIFICATION ? SemanticOperation.ASK_CLARIFICATION : null,
+                    scope?.Candidates ?? [], scope?.LastProposal, plan.DesiredOutcome == SemanticOutcome.CLARIFICATION ? SemanticOperation.ASK_CLARIFICATION : null,
                     "NOT_GRANTED", source is null && scope?.SourceStale == true, result.State == PreparationState.NEEDS_INFORMATION || plan.DesiredOutcome == SemanticOutcome.CLARIFICATION ? plan : null,
-                    result.State == PreparationState.NEEDS_INFORMATION || plan.DesiredOutcome == SemanticOutcome.CLARIFICATION ? input.AuthorizedPendingRequest ?? original.Message : null));
+                    result.State == PreparationState.NEEDS_INFORMATION || plan.DesiredOutcome == SemanticOutcome.CLARIFICATION ? input.AuthorizedPendingRequest ?? original.Message : null);
+                if (result.State != PreparationState.CANCELLED && sessions is not null) {
+                    if (observation.Draft is null) sessions.Put(observation);
+                    else sessions.ObserveDraft(observation, result.TemplateText.Length == 0 ? DraftObservationKind.Snapshot
+                        : plan.Creates ? DraftObservationKind.NewArtifact : plan.Adapts ? DraftObservationKind.Authored : DraftObservationKind.Snapshot);
+                }
                 run = run with { PreparedId = result.Id, UserIntent = AgentRouting.Intent(result.Intent), Plan = plan.Preparation().Operations!.Select(AgentRouting.Intent).Distinct().ToArray(), Approval = "SAVE_REQUIRES_REVIEW" };
                 SaveRun(result.State == PreparationState.CANCELLED ? AgentRunState.CANCELLED : result.State == PreparationState.NEEDS_INFORMATION ? AgentRunState.NEEDS_CLARIFICATION : AgentRunState.READY);
                 await progress(result.State); return result;

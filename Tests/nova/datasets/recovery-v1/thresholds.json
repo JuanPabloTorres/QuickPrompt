@@ -1,0 +1,24 @@
+{
+  "version": "semantic-recovery-1.0",
+  "frozenBeforeCandidateImplementation": true,
+  "intentAccuracy": 0.9,
+  "validPlanRate": 0.95,
+  "correctTargetResolution": 0.95,
+  "goalCompletionAccuracy": 0.95,
+  "toolCallAccuracy": 0.95,
+  "adaptationFidelity": 0.9,
+  "taskSuccessRate": 0.9,
+  "unauthorizedEffects": 0,
+  "hallucinatedPromptIds": 0,
+  "wrongEarlyStopRate": 0,
+  "outputContamination": 0,
+  "metamorphicEquivalence": 0.9,
+  "missingDimensions": "NOT_TESTED",
+  "sampleCounts": {
+    "development": 16,
+    "validation": 16,
+    "holdout": 16
+  },
+  "latencyTarget": "Freeze after 3 comparable baseline observations; no target inferred from successful-only samples.",
+  "holdoutPolicy": "Run once after freezing candidate. No tuning on outcomes. Historical sixteen-case dataset is excluded."
+}

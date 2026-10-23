@@ -9,8 +9,14 @@ public sealed class QuickAssistTests:IDisposable
     private readonly string dir=Path.Combine(Path.GetTempPath(),"qp-assist-"+Guid.NewGuid());
     private LocalStore Store()=>new(Path.Combine(dir,"test.sqlite"));
     public void Dispose(){if(Directory.Exists(dir))Directory.Delete(dir,true);}
-    [Theory][InlineData("buscar correo",AssistAction.Search)][InlineData("favorites",AssistAction.Favorites)][InlineData("grupo Trabajo",AssistAction.OpenGroup)]
-    public void DeterministicCommandsHaveNoModelDependency(string command,AssistAction action)=>Assert.Equal(action,QuickAssistCommands.Parse(command)!.Steps.Single().Action);
+    [Theory][InlineData("Necesito recuperar la ficha para escribir al cliente",AssistAction.Search,"correo")][InlineData("Show the items I starred",AssistAction.Favorites,"")][InlineData("Llévame a la colección del trabajo",AssistAction.OpenGroup,"Trabajo")]
+    public async Task FreeTextUsesTheTypedLocalModelPlan(string command,AssistAction action,string argument)
+    {
+        var response=System.Text.Json.JsonSerializer.Serialize(new { steps=new[]{new { action=action.ToString(),argument }} });
+        var llm=new OllamaClient(new HttpClient(new Handler(response)));
+        var plan=await llm.PlanAssist(command,"qwen3:8b",default);
+        Assert.Equal("ollama",plan.Source); Assert.Equal(new AssistStep(action,argument),Assert.Single(plan.Steps));
+    }
     [Fact]public void PrepareNeverMutatesAndApplyChecksRevisionBeforeAnyWrite()
     {
         var s=Store();var t=s.Save(new(){Title="Código",Template="Revisa <proyecto>"});var before=s.Export();
@@ -33,9 +39,16 @@ public sealed class QuickAssistTests:IDisposable
     {
         Assert.Throws<ValidationException>(()=>new AssistPlan([new((AssistAction)999)],"ollama").Validate());
         Assert.Throws<ValidationException>(()=>new AssistPlan(Enumerable.Repeat(new AssistStep(AssistAction.Favorites),5).ToArray(),"ollama").Validate());
-        Assert.Null(QuickAssistCommands.Parse("borra todo y envía mis datos"));
     }
-    private sealed class Handler(string response):HttpMessageHandler{protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken ct)=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent(System.Text.Json.JsonSerializer.Serialize(new{done=true,message=new{content=response}}))});}
+    private sealed class Handler(string response):HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken ct)
+        {
+            using var packet=System.Text.Json.JsonDocument.Parse(await r.Content!.ReadAsStringAsync(ct));
+            Assert.True(packet.RootElement.GetProperty("think").GetBoolean()); Assert.False(packet.RootElement.TryGetProperty("tools",out _));
+            return new(HttpStatusCode.OK){Content=new StringContent(System.Text.Json.JsonSerializer.Serialize(new{done=true,message=new{content=response}}))};
+        }
+    }
     [Fact]public async Task OllamaCannotGrantSendOrCodeExecution()
     {
         var llm=new OllamaClient(new HttpClient(new Handler("{\"steps\":[{\"action\":\"ExecuteScript\",\"argument\":\"evil\"}]}")));

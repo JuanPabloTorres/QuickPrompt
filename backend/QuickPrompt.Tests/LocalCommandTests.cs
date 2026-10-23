@@ -10,7 +10,7 @@ public sealed class LocalCommandTests : IDisposable
     private readonly PromptLibrary library;
     private readonly Semantic model = new();
     private readonly AgentSessions sessions = new();
-    private readonly SemanticPlanning planning;
+    private readonly NovaTaskPlanner planning;
     private readonly LocalCommands commands;
     public LocalCommandTests() {
         store = new(Path.Combine(directory, "synthetic.sqlite")); var adapter = new NovaPromptStore(store); library = new(adapter, adapter);

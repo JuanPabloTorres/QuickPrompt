@@ -29,7 +29,7 @@ public sealed class SimplicityTests
     {
         var s=Store();var t=s.Save(new(){Title="Lectura",Template="Lee un capítulo."});var before=s.Export();
         Assert.Throws<ValidationException>(()=>s.CreateGroupAndAssign(new(){Name="Estudios"},"template",Guid.NewGuid()));Assert.Equal(before,s.Export());
-        var g=s.CreateGroupAndAssign(new(){Name="Estudios"},"template",t.Id);Assert.Equal(g.Id,Assert.Single(s.GroupsFor("template",t.Id)));s.DeleteGroup(g.Id);Assert.Equal(t.Template,s.FindTemplate(t.Id)!.Template);
+        var g=s.CreateGroupAndAssign(new(){Name="Estudios"},"template",t.Id);Assert.Equal(g.Id,Assert.Single(s.GroupsFor("template",t.Id)));s.NovaDeleteGroup(g.Id,new(g.Revision,true));Assert.Equal(t.Template,s.FindTemplate(t.Id)!.Template);
     }
     [Fact] public void AcceptedEditorImprovementStagesOnlyAndCannotBeReplayed()
     {

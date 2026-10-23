@@ -1,4 +1,5 @@
 using QuickPrompt.Local;
+using QuickPrompt.Nova.Application;
 using QuickPrompt.Web.Infrastructure;
 using QuickPrompt.Domain.Enums;
 using Xunit;
@@ -11,7 +12,7 @@ public sealed class PanelSessionTests:IDisposable
     [Fact] public void PanelUsesAuthoritativeCompilationAndRejectsStaleRevisionWithoutUsage()
     {
         var store=new LocalStore(Path.Combine(dir,"test.sqlite"));var t=store.Save(new(){Title="Código",Template="Explica <tema>",Variables=new(){{"tema","PRIVATE_DEFAULT"}},Category=PromptCategory.Programming});store.SaveSettings(new(GeneralInstructions:"En español."));
-        var panel=new PanelSession(store);var item=Assert.Single(panel.Library("",false,0).Items);Assert.Equal(new[]{"tema"},item.Variables);
+        var panel=new PanelSession(new PromptPanel(new NovaPromptStore(store),store));var item=Assert.Single(panel.Library("",false,0).Items);Assert.Equal(new[]{"tema"},item.Variables);
         var compiled=panel.Compile(t.Id,t.Revision,new(){{"tema","SQLite"}});Assert.Equal(store.History().Single().Text,compiled.Text);Assert.Contains("SQLite",compiled.Text);
         var updated=store.FindTemplate(t.Id)!;store.Save(updated);Assert.Throws<ConflictException>(()=>panel.Compile(t.Id,item.Revision,new(){{"tema","Blazor"}}));Assert.Single(store.History());
         Assert.Throws<ValidationException>(()=>panel.Compile(t.Id,updated.Revision,new(){{"extra","x"}}));Assert.Single(store.History());

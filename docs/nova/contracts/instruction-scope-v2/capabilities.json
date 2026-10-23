@@ -1,0 +1,184 @@
+[
+  {
+    "operation": "SEARCH_PROMPT",
+    "description": "Locate saved prompts without changing them.",
+    "toolNames": [
+      "search_prompts",
+      "ui_search_prompt"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "RESOLVE_PROMPT",
+    "description": "Resolve one real source and its current revision.",
+    "toolNames": [
+      "resolve_prompt",
+      "ui_open_prompt",
+      "ui_search_prompt",
+      "ui_load_active_draft"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "OPEN_PROMPT",
+    "description": "Open the resolved saved prompt or authorized working draft.",
+    "toolNames": [
+      "open_prompt",
+      "open_working_draft",
+      "ui_open_prompt"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "PROPOSE_ADAPTATION",
+    "description": "Prepare revised reusable instruction text without saving.",
+    "toolNames": [
+      "propose_prompt_update",
+      "revise_prompt_once",
+      "ui_open_editor",
+      "ui_prepare_update"
+    ],
+    "writes": [
+      "ReusableInstruction"
+    ]
+  },
+  {
+    "operation": "CREATE_DRAFT",
+    "description": "Prepare a distinct reusable instruction without saving.",
+    "toolNames": [
+      "propose_new_prompt",
+      "revise_prompt_once",
+      "ui_open_create_prompt",
+      "ui_prepare_creation"
+    ],
+    "writes": [
+      "ReusableInstruction"
+    ]
+  },
+  {
+    "operation": "VALIDATE_DRAFT",
+    "description": "Validate the exact proposed draft before further effects.",
+    "toolNames": [
+      "validate_prompt",
+      "ui_verify_prompt_state"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "FILL_VARIABLES",
+    "description": "Assign authorized case values to actual template inputs.",
+    "toolNames": [
+      "resolve_variable_values",
+      "ui_fill_variable"
+    ],
+    "writes": [
+      "CaseValues"
+    ]
+  },
+  {
+    "operation": "COMPILE_PROMPT",
+    "description": "Render the template deterministically with its input values.",
+    "toolNames": [
+      "compile_prompt",
+      "ui_show_compiled_prompt"
+    ],
+    "writes": [
+      "RenderedInstruction"
+    ]
+  },
+  {
+    "operation": "PREPARE_LOCAL_EXECUTION",
+    "description": "Prepare a complete prompt for local execution; do not run it.",
+    "toolNames": [
+      "prepare_local_execution",
+      "ui_show_compiled_prompt",
+      "ui_open_provider_picker"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "EXECUTE_LOCAL",
+    "description": "Run the prepared prompt only with explicit execution authority.",
+    "toolNames": [
+      "execute_local_llm",
+      "ui_execute_local"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "PREPARE_PROVIDER",
+    "description": "Prepare the chosen destination without external submission.",
+    "toolNames": [
+      "prepare_provider_transfer",
+      "ui_open_provider_picker"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "COPY_PROMPT",
+    "description": "Prepare compiled text for copying.",
+    "toolNames": [
+      "compile_prompt",
+      "ui_show_compiled_prompt"
+    ],
+    "writes": [
+      "RenderedInstruction"
+    ]
+  },
+  {
+    "operation": "EXPLAIN",
+    "description": "Explain without changing the artifact.",
+    "toolNames": [],
+    "writes": []
+  },
+  {
+    "operation": "ASK_CLARIFICATION",
+    "description": "Ask for essential missing information without guessing.",
+    "toolNames": [
+      "ask_clarification"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "CANCEL",
+    "description": "Cancel the current task.",
+    "toolNames": [],
+    "writes": []
+  },
+  {
+    "operation": "PAUSE",
+    "description": "Pause the current task.",
+    "toolNames": [],
+    "writes": []
+  },
+  {
+    "operation": "RESUME",
+    "description": "Resume the current task under its existing authority.",
+    "toolNames": [],
+    "writes": []
+  },
+  {
+    "operation": "REQUEST_SAVE_VERSION",
+    "description": "Request human review of an existing-record update; this is not approval.",
+    "toolNames": [
+      "ui_request_save_version"
+    ],
+    "writes": []
+  },
+  {
+    "operation": "REQUEST_SAVE_COPY",
+    "description": "Request human review of a separate copy; this is not approval.",
+    "toolNames": [],
+    "writes": []
+  },
+  {
+    "operation": "REQUEST_DELETE",
+    "description": "Request review of deletion of one resolved record; never delete without confirmation.",
+    "toolNames": [
+      "ui_review_deletion",
+      "ui_enable_deletion_confirmation",
+      "ui_verify_deletion"
+    ],
+    "writes": []
+  }
+]

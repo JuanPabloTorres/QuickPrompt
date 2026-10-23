@@ -1,3 +1,4 @@
+const { configurePreparation, openAssistant } = require('./ui-settings.cjs');
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/estju/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
@@ -27,9 +28,10 @@ async function focused(page, selector) { await page.waitForFunction(value => doc
     let preparations = 0;
     page.on('request', request => { if (request.url() === origin + '/api/v1/nova/prepare') preparations++; });
     await page.goto(origin);
+    await openAssistant(page);
     const home = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?', exact: true });
     await home.fill('Encuentra el prompt Responder comentarios de clientes');
-    if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA', { exact: true }).selectOption('LIVE'); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click();
+    await configurePreparation(page, { mode: 'LIVE' }); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click();
     const result = page.getByRole('dialog', { name: 'Responder comentarios de clientes', exact: true });
     await result.waitFor({ timeout: 180000 }); await result.getByLabel('comentarios', { exact: true }).waitFor();
     console.log('OPEN modal', width);

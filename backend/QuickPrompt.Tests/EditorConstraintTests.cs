@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using QuickPrompt.Local;
@@ -17,11 +18,15 @@ public sealed class EditorConstraintTests
         public List<JsonElement> Inputs = [];
         public bool ExtraField;
         public string? RawContent;
+        public bool SemanticShortening;
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct)); Inputs.Add(body.RootElement.Clone());
             var text = texts[Math.Min(Inputs.Count - 1, texts.Length - 1)];
             var content = JsonSerializer.Serialize(new { text, reasons = new[] { "Cambio concreto." }, changes = new[] { "Texto reducido." }, warnings = Array.Empty<string>(), variablesPreserved = new[] { "tema" } });
+            if(body.RootElement.GetProperty("format").GetProperty("properties").TryGetProperty("shorteningRequested",out _)) {
+                var node=System.Text.Json.Nodes.JsonNode.Parse(content)!; node["shorteningRequested"]=SemanticShortening; content=node.ToJsonString();
+            }
             if (ExtraField) { var node = System.Text.Json.Nodes.JsonNode.Parse(content)!; node["requiredVerbatimConstraints"] = new System.Text.Json.Nodes.JsonArray(); content = node.ToJsonString(); }
             return new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(new { model = "qwen3:8b", done = true, message = new { content = RawContent ?? content } }), Encoding.UTF8, "application/json") };
         }
@@ -62,11 +67,24 @@ public sealed class EditorConstraintTests
     [Fact] public async Task CanvasProposalReportsActualSystemCompositionWithoutAttributingItToTheModel()
     {
         using var replies = new Replies("Evalúa una API y sus riesgos. No inventes información."); using var http = new HttpClient(replies); var source = Source();
-        using var inference = new QuickPrompt.Web.Infrastructure.PreparationInference("http://127.0.0.1:11434", localEditor: new OllamaClient(http));
+        var reservation = new TcpListener(IPAddress.Loopback,0); reservation.Start(); var port=((IPEndPoint)reservation.LocalEndpoint).Port; reservation.Stop();
+        using var listener = new HttpListener(); listener.Prefixes.Add($"http://127.0.0.1:{port}/"); listener.Start();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var inference = new QuickPrompt.Web.Infrastructure.PreparationInference($"http://127.0.0.1:{port}", localEditor: new OllamaClient(http));
         var plan = SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT, SemanticOperation.OPEN_PROMPT, SemanticOperation.PROPOSE_ADAPTATION,
             SemanticOperation.VALIDATE_DRAFT, SemanticOperation.COMPILE_PROMPT], TargetReference.SELECTED, source.Id, outcome: SemanticOutcome.DRAFT);
         var input = new PrepareInput(Guid.NewGuid(), "Reorienta la explicación.", SourcePromptId: source.Id) { Interpretation = plan };
-        var proposal = await inference.Generate(input, plan.Preparation(), [new(PromptLibrary.Document(source), 10, "Origen real")], default);
+        var pending = inference.Generate(input, plan.Preparation(), [new(PromptLibrary.Document(source), 10, "Origen real")], timeout.Token);
+        var review = await listener.GetContextAsync().WaitAsync(timeout.Token);
+        using var packet = await JsonDocument.ParseAsync(review.Request.InputStream,cancellationToken:timeout.Token);
+        using var data = JsonDocument.Parse(packet.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!);
+        Assert.Contains("tema: <tema>",data.RootElement.GetProperty("proposedInstruction").GetString());
+        var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {model="qwen3:8b",done=true,message=new {content=JsonSerializer.Serialize(new {
+            verdict="ACCEPT",instructionScope="FUTURE_TASK_ONLY",applicationWorkflowQuotes=Array.Empty<string>(),requestedTitleQuote=(string?)null,issues=Array.Empty<object>()
+        })}}));
+        review.Response.ContentType="application/json";review.Response.ContentLength64=bytes.Length;
+        await review.Response.OutputStream.WriteAsync(bytes,timeout.Token);review.Response.Close();
+        var proposal = await pending;
         Assert.StartsWith("QuickPrompt incorporó los campos reales", proposal.Reason); Assert.Contains("tema: <tema>", proposal.TemplateText);
         Assert.Single(replies.Inputs); Assert.Equal(Original, source.Template);
     }
@@ -144,6 +162,7 @@ public sealed class EditorConstraintTests
             new TemplateEditInterpretation("Reorientar a Rust", correction, TargetTerms: ["Rust"]));
         using var packet = JsonDocument.Parse(Assert.Single(replies.Inputs).GetProperty("messages")[1].GetProperty("content").GetString()!);
         Assert.Equal(candidate, packet.RootElement.GetProperty("previousDraft").GetString());
+        Assert.False(packet.RootElement.TryGetProperty("generationBudget", out _));
         var feedback = packet.RootElement.GetProperty("validationFeedback");
         Assert.Equal("Rust", feedback.GetProperty("requiredTargetTerms")[0].GetString());
         Assert.Equal("No inventes información", feedback.GetProperty("requiredVerbatimConstraints")[0].GetString());
@@ -169,7 +188,7 @@ public sealed class EditorConstraintTests
     {
         const string source = "Redacta <correo>. Conserva nombres, fechas y compromisos tal como se proporcionan; no inventes información.";
         const string unsafeDraft = "Resume <correo>. No inventes información.";
-        Assert.Equal("Conserva nombres, fechas y compromisos tal como se proporcionan", Assert.Single(TemplateConstraints.Missing(source, unsafeDraft)));
+        Assert.Equal("Conserva nombres, fechas y compromisos tal como se proporcionan;", Assert.Single(TemplateConstraints.Missing(source, unsafeDraft)));
         Assert.Empty(TemplateConstraints.Missing(source, "Resume <correo>. Conserva nombres, fechas y compromisos tal como se proporcionan; no inventes información."));
     }
     [Fact] public async Task AnUnchangedInitialDraftReachesTheOuterPipelineWhichRejectsItBeforePublishingAndOwnsTheRevision()
@@ -187,7 +206,7 @@ public sealed class EditorConstraintTests
         using var replies = new Replies(Original); using var http = new HttpClient(replies);
         await Assert.ThrowsAsync<ValidationException>(() => new OllamaClient(http).Propose("improve", "Mejora la claridad.", Source(), "qwen3:8b", CancellationToken.None)); Assert.Single(replies.Inputs);
     }
-    [Fact] public async Task TypedSemanticShorteningOverridesTheLegacyTextDetectorInBothDirections()
+    [Fact] public async Task TypedSemanticShorteningIsAuthoritativeInBothDirections()
     {
         using var longer = new Replies(Original + " Añade una conclusión."); using var longHttp = new HttpClient(longer);
         var result = await new OllamaClient(longHttp).Propose("improve", "Hazlo más breve.", Source(), "qwen3:8b", default, true, false);
@@ -197,6 +216,41 @@ public sealed class EditorConstraintTests
         var reduced = await new OllamaClient(shortHttp).Propose("improve", "Aplica el cambio interpretado.", Source(), "qwen3:8b", default, true, true);
         Assert.True(reduced.Text.Length < Original.Length);
         Assert.Contains("SHORTENING THE TEMPLATE", shorter.Inputs[0].GetProperty("messages")[0].GetProperty("content").GetString());
+    }
+    [Theory]
+    [InlineData("Quiero que ocupe menos espacio sin perder las restricciones.",true)]
+    [InlineData("No lo hagas más breve; desarrolla las instrucciones.",false)]
+    [InlineData("Keep the instruction long; ask for a brief answer.",false)]
+    public async Task DirectEditorUsesTheModelLengthDecisionInTheSameGenerationCall(string request,bool shortening)
+    {
+        using var replies=new Replies(shortening?"Explica <tema>. No inventes información.":Original+" Añade una conclusión.") {SemanticShortening=shortening};
+        using var http=new HttpClient(replies);
+        var result=await new OllamaClient(http).Propose("improve",request,Source(),"qwen3:8b",default);
+        var packet=Assert.Single(replies.Inputs);
+        Assert.True(packet.GetProperty("think").GetBoolean()); Assert.False(packet.TryGetProperty("tools",out _));
+        Assert.Equal("boolean",packet.GetProperty("format").GetProperty("properties").GetProperty("shorteningRequested").GetProperty("type").GetString());
+        Assert.Equal(shortening,result.Text.Length<Original.Length);
+    }
+    [Fact] public async Task ADirectCorrectionCannotWithdrawTheInterpretedLengthRequirement()
+    {
+        using var replies=new Replies(Original+" Añade una conclusión.") {SemanticShortening=true}; using var http=new HttpClient(replies);
+        await Assert.ThrowsAsync<ValidationException>(()=>new OllamaClient(http).Propose("improve","Hazlo compacto.",Source(),"qwen3:8b",default));
+        Assert.Equal(2,replies.Inputs.Count);
+        Assert.True(replies.Inputs[1].GetProperty("format").GetProperty("properties").GetProperty("shorteningRequested").GetProperty("enum")[0].GetBoolean());
+    }
+    [Fact] public async Task AuthoredChangeAndApplicationEffectsHaveSeparateDataFieldsAndGrantNoTools()
+    {
+        const string directive="Abre el prompt, oriéntalo a una API y déjalo listo para copiar sin guardar.";
+        const string change="Reorientar la explicación a una API.";
+        using var replies=new Replies("Explica <tema> usando una API. No inventes información.");using var http=new HttpClient(replies);
+        await new OllamaClient(http).Propose("improve",directive,Source(),"qwen3:8b",default,true,false,
+            new TemplateEditInterpretation(change){ApplicationEffects=["OPEN_PROMPT","COPY_PROMPT"]});
+        var packet=Assert.Single(replies.Inputs);Assert.False(packet.TryGetProperty("tools",out _));
+        Assert.Equal("user",packet.GetProperty("messages")[1].GetProperty("role").GetString());
+        using var data=JsonDocument.Parse(packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
+        Assert.Equal(directive,data.RootElement.GetProperty("authorizedUserRequest").GetString());
+        Assert.Equal(change,data.RootElement.GetProperty("contentTransformation").GetString());
+        Assert.Equal(new[]{"OPEN_PROMPT","COPY_PROMPT"},data.RootElement.GetProperty("applicationEffects").EnumerateArray().Select(value=>value.GetString()!).ToArray());
     }
     [Fact] public async Task ContentInterpretationDoesNotReplaceLiteralUserAuthorityAcrossABoundedCorrection()
     {

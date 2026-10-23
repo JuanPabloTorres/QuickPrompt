@@ -1,4 +1,23 @@
-# QuickPrompt Web — local-first
+# QuickPrompt NOVA 1.0.0 — versión inicial
+
+**Versión inicial cerrada y aceptada por el usuario.** Flujo principal: elegir una acción y usar IA para buscar o generar contenido; revisar antes de guardar o eliminar. REL-09 cerrado por confirmación del usuario: «lo probé y funcionó». [Acta y alcance de 1.0.0](docs/releases/NOVA_1.0.0.md). Tag de esta entrega: `nova-v1.0.0`; los tags sin prefijo pertenecen al historial anterior.
+
+**NOVA actual:** React/TypeScript + ASP.NET Core API, con Qwen local y agente en la misma pestaña. Arranque: `./scripts/Start-Nova.ps1`. [Guía actual](docs/nova/README.md) · [matriz de cierre](docs/nova/VERSION_CLOSURE_MATRIX.md).
+
+Estructura actual: `apps/mobile/` contiene MAUI y sus pruebas históricas;
+`apps/web/` contiene React; `backend/` contiene API, aplicación e infraestructura;
+`agents/nova-core/` contiene el adaptador y los lanzadores de Adaptive Core;
+`src/` conserva el dominio compartido y el consumidor Blazor de compatibilidad.
+`Tests/` aloja los arneses web/agente; `docs/` y `scripts/` conservan documentación
+y herramientas. La base privada de raíz no se mueve ni se utiliza en QA sintético. Su copia e
+importación local autorizadas están documentadas en el registro actual de cierre.
+
+El arranque normal selecciona Core explícitamente y exige Python/SDK existentes.
+Se pueden configurar `-CorePython` y `-CoreSdkRoot`. `-AgentRuntime native`
+conserva la comparación con los consumidores anteriores; nunca se activa por
+un fallo de Core. Las tareas de VS Code usan las rutas nuevas.
+
+**Registro histórico anterior al cierre 1.0.0:** la revisión 2026-10-21 estaba abierta y conservaba fallos de interpretación libre y autoría. El usuario eligió posteriormente el flujo por acciones y aceptó su prueba humana. La [matriz histórica de alcance ampliado](docs/nova/VERSION_CLOSURE_MATRIX.md) conserva los criterios no certificados; no se convierten en PASS ni en garantía de fiabilidad universal. Las cifras y guías Blazor que siguen son históricas.
 
 **Para usar NOVA:** abre `http://127.0.0.1:5190` y pulsa **Empieza aquí: guía y videos**. Incluye 60 prompts prácticos, 20 colecciones y cuatro videos cortos. [Guía paso a paso](docs/COMO_USAR_QUICKPROMPT.md) · [Biblioteca de tareas](docs/BIBLIOTECA_PRACTICA.md) · [Arrancar NOVA](docs/nova/README.md).
 
@@ -76,9 +95,9 @@ Lo siguiente describe el legado. Sus comandos de build, proveedores externos y c
 # 🚀 QuickPrompt - AI Prompt Management Made Simple
 
 [![.NET MAUI](https://img.shields.io/badge/.NET%20MAUI-9.0-blue.svg)](https://dotnet.microsoft.com/apps/maui)
-[![Tests](https://img.shields.io/badge/tests-77%20passing-brightgreen.svg)](QuickPrompt.Tests)
+[![Tests](https://img.shields.io/badge/tests-77%20passing-brightgreen.svg)](apps/mobile/tests/windows)
 [![Coverage](https://img.shields.io/badge/coverage-100%25%20Use%20Cases-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 > A modern cross-platform application for creating, organizing, and executing AI prompts with ChatGPT, Gemini, Grok, and Copilot.
 
@@ -147,55 +166,25 @@ Lo siguiente describe el legado. Sus comandos de build, proveedores externos y c
 
 ## 📁 Project Structure
 
-```plaintext
-QuickPrompt/
-│
-├── ApplicationLayer/           # Business Logic Layer
-│   ├── Common/
-│   │   ├── Result.cs          # Result Pattern Implementation
-│   │   └── Interfaces/        # Service Contracts
-│   └── Prompts/
-│       └── UseCases/          # Business Operations
-│           ├── CreatePromptUseCase.cs
-│           ├── UpdatePromptUseCase.cs
-│           ├── DeletePromptUseCase.cs
-│           ├── ExecutePromptUseCase.cs
-│           └── GetPromptByIdUseCase.cs
-│
-├── Infrastructure/             # Infrastructure Layer
-│   └── Services/
-│       ├── UI/                # UI Services
-│       │   ├── DialogService.cs
-│       │   └── TabBarService.cs
-│       └── Cache/             # Caching Services
-│           └── PromptCacheService.cs
-│
-├── Features/                   # Presentation Layer
-│   └── Prompts/
-│       ├── ViewModels/        # MVVM ViewModels
-│       └── Pages/             # XAML Pages
-│
-├── Core/                       # Core Domain
-│   ├── Models/                # Domain Models
-│   │   ├── PromptTemplate.cs
-│   │   ├── FinalPrompt.cs
-│   │   └── PromptVariableCache.cs
-│   ├── Services/              # Core Services
-│   └── Utilities/             # Helper Classes
-│
-├── Components/                 # Reusable UI Components
-│   ├── Buttons/
-│   ├── Containers/
-│   └── Inputs/
-│
-├── Resources/                  # Application Resources
-│   ├── Styles/
-│   ├── LottieAnimations/
-│   └── Icons/
-│
-└── QuickPrompt.Tests/         # Unit Tests
-    └── UseCases/              # Use Case Tests (77 tests, 100% coverage)
+```text
+QuickPrompt-Web/
+├── apps/
+│   ├── web/                         # React / TypeScript, UI actual
+│   └── mobile/                      # MAUI, recursos y tests/windows + tests/portable
+├── backend/                         # API .NET, aplicación, infraestructura y pruebas
+├── agents/nova-core/                # Worker y puente del SDK Adaptive Core existente
+├── src/                             # Dominio compartido y consumidor Blazor compatible
+├── Tests/nova/                      # Evaluación y recorridos reales del agente web
+├── scripts/                         # Arranque y verificaciones; archive/ no ejecutable
+├── docs/                            # Guías, decisiones y evidencias
+└── .vscode/                         # Tareas y depuración con las rutas actuales
 ```
+
+Los comandos MAUI históricos se ejecutan desde `apps/mobile`. La versión web
+usa .NET 8; compilar MAUI requiere .NET 9 y sus workloads, fuera del alcance web.
+La base privada de raíz conserva su ubicación. La copia autorizada se importó
+en un almacén nuevo, conservando el respaldo y las limitaciones documentadas. `Check-RepositoryLayout.cjs` verifica soluciones, referencias,
+entradas y exclusiones privadas tras los movimientos.
 
 ---
 
@@ -424,7 +413,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The historical README declares the MIT License; its referenced LICENSE file is not included in this checkout.
 
 ---
 

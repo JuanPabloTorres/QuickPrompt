@@ -132,5 +132,144 @@
     "acceptedHallucinatedPromptIds": 0,
     "details": "../nova/GOAL08_ACCEPTANCE.md",
     "portableMetrics": "../nova/GOAL08_VALIDATION_SUMMARY.json"
+  },
+  "latestValidation": {
+    "date": "2026-10-21",
+    "scope": "Local repository reorganization, obsolete-code retirement, Core composition and actual browser workflows; no remote release.",
+    "status": "PARTIAL",
+    "layout": "PASS",
+    "backend": {
+      "total": 1022,
+      "passed": 1022,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "sharedBlazor": {
+      "total": 168,
+      "passed": 168,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "react": {
+      "passed": 239,
+      "failed": 0,
+      "build": "PASS"
+    },
+    "integrity": {
+      "moved": 293,
+      "unchanged": 286,
+      "missing": 0
+    },
+    "realQwenBrowser": {
+      "evidence": "docs/evidence/layout-20261021/layout-stable/1792586393990/results.json",
+      "status": "FAIL",
+      "passed": 8,
+      "failed": 4,
+      "checks": [
+        {
+          "name": "explicit-ui-choice-navigates-fills-copies-native-clipboard-and-records-one-use",
+          "status": "PASS"
+        },
+        {
+          "name": "second-request-requires-new-receipt-for-new-values",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-prepare",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-create_literal",
+          "status": "FAIL"
+        },
+        {
+          "name": "real-qwen-read",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-field_data",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-named_source",
+          "status": "FAIL"
+        },
+        {
+          "name": "real-qwen-literal_unicode",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-actual",
+          "status": "FAIL"
+        },
+        {
+          "name": "real-qwen-execute",
+          "status": "PASS"
+        },
+        {
+          "name": "real-qwen-save_literal",
+          "status": "FAIL"
+        },
+        {
+          "name": "other-record-and-single-tab-preserved",
+          "status": "PASS"
+        }
+      ],
+      "note": "Every listed scenario executed against this one frozen candidate. Positive results from rejected contracts are not combined. Original preparation passed; literal creation, named source, immediate copy and save approval failed."
+    },
+    "privateMigration": {
+      "authorization": "Explicit user reply for copy, backup and import into a new local database",
+      "status": "PARTIAL",
+      "templates": 22,
+      "history": 1,
+      "backupIntegrity": "ok",
+      "sourceUnchanged": true,
+      "supportedFieldsCompared": true,
+      "importExportExact": true,
+      "secondImportAdded": 0,
+      "restartExact": true,
+      "realUiReopened": true,
+      "externalBrowserRequests": 0,
+      "modelInference": false,
+      "limitation": "FinalPrompt.UpdatedAt is not represented in the web history model; original metadata retained in the private SQLite backup. No private content, IDs or hashes in this report."
+    },
+    "reviewService": {
+      "url": "http://127.0.0.1:5196/",
+      "replacement": "REJECTED_BY_AUTOMATIC_REVIEW",
+      "reason": "blocked by policy; no more specific reason supplied",
+      "previousInstance": "ACTIVE_HEALTH_OK",
+      "newArtifactLoaded": false
+    },
+    "release": {
+      "mandatory": 88,
+      "closed": 33,
+      "open": 55,
+      "matrixValid": true,
+      "developmentQualification": "NOT_RUN_AFTER_FUNCTIONAL_GATE_FAILED",
+      "validationAndHoldout": "NOT_RUN",
+      "humanAcceptance": "NOT_RUN"
+    },
+    "localDetails": "docs/evidence/layout-20261021/summary.json",
+    "workRecord": "docs/nova/ORDERED_AGENT_CLOSURE_20261020.md",
+    "realBrowserWithoutInference": [
+      {
+        "scope": "Typed visible UI and manual save/reopen on current web build",
+        "status": "PASS",
+        "passed": 7,
+        "evidence": "docs/evidence/ui-surface-20261019/1792586871564/results.json"
+      },
+      {
+        "scope": "Offline baseline and visible model failure on current web build",
+        "status": "PASS",
+        "passed": 4,
+        "evidence": "docs/evidence/runtime-view/offline-1792586871563/acceptance.json"
+      },
+      {
+        "scope": "Import, restore, sharing and SQLite upload through both actual web consumers",
+        "status": "PASS",
+        "passed": 14,
+        "evidence": "docs/evidence/archive-ui-1792586904600/results.json"
+      }
+    ]
   }
 }

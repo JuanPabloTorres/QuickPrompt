@@ -8,7 +8,9 @@ namespace QuickPrompt.Web.Infrastructure;
 
 public sealed class NovaPromptStore(LocalStore store) : IPromptReader, IPromptWriter
 {
+    public int ActiveCount => store.ActiveTemplateCount();
     public Template? Find(Guid id) => store.FindTemplate(id);
+    public TemplateVersion[] Versions(Guid id) => store.Versions(id).ToArray();
     public CatalogPage<Template> Search(CatalogQuery query) => store.QueryTemplates(query);
     public Template Create(Template prompt) => store.Save(prompt, "nova create");
     public Template Change(Guid id, int revision, Action<Template> change, string reason) => store.NovaChange(id, revision, change, reason);

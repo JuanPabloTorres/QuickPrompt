@@ -18,8 +18,8 @@ public sealed class AgenticRuntimeTests : IDisposable
         store = new(Path.Combine(directory, "library.sqlite")); drafts = new(store); runs = new(store);
         var prompts = new NovaPromptStore(store); library = new(prompts, prompts);
     }
-    private AgentOrchestrator Engine(Inference inference, Executor? executor = null, int max = 5, SemanticInterpretation? semantic = null) => new(inference, new SqlitePromptRetriever(store), inference,
-        new GroundedVariableResolver(), new DeterministicPromptEvaluator(), drafts, new(max), runs, sessions, executor, new PreparationReadTools(library, store), semanticPlanning: semantic is null ? null : new(new FixedSemantic(semantic), new SqlitePromptRetriever(store), sessions, new FixedSemantic(semantic)));
+    private AgentOrchestrator Engine(Inference inference, Executor? executor = null, int max = 5, SemanticInterpretation? semantic = null, ICandidateSelector? selector = null) => new(inference, new SqlitePromptRetriever(store), inference,
+        new GroundedVariableResolver(), new DeterministicPromptEvaluator(), drafts, new(max), runs, sessions, executor, new PreparationReadTools(library, new NovaCollectionStore(store, library)), candidateSelector: selector, taskPlanner: semantic is null ? null : new NovaTaskPlanner(new FixedSemantic(semantic), new SqlitePromptRetriever(store), sessions, new FixedSemantic(semantic)));
     private static PrepareInput Input(string message = "Crea una instrucción breve.", Guid? session = null) => new(Guid.NewGuid(), message, SessionId: session);
     private static Task<PreparedDraft> Prepare(AgentOrchestrator engine, PrepareInput input, CancellationToken ct = default) => engine.Prepare(input, _ => Task.CompletedTask, (_, _, _) => { }, ct);
     [Fact] public async Task CheckpointSurvivesRestartWithoutTaskContentAndUsesBoundedTools()
@@ -85,9 +85,9 @@ public sealed class AgenticRuntimeTests : IDisposable
     }
     [Fact] public async Task AmbiguousAndDuplicateSourcesAskRatherThanChoosingOrGenerating()
     {
-        library.Create(new("Arquitectura API", "Revisa límites.")); library.Create(new("Arquitectura móvil", "Revisa límites."));
+        var first = library.Create(new("Arquitectura API", "Revisa límites.")); var second = library.Create(new("Arquitectura móvil", "Revisa límites."));
         var inference = new Inference { Intent = PreparationIntent.ADAPT_PROMPT, Query = "arquitectura" };
-        var result = await Prepare(Engine(inference), Input("Adapta mi prompt de arquitectura.")); Assert.Equal(PreparationDecision.ASK_CLARIFICATION, result.Decision); Assert.Equal(0, inference.Generations);
+        var result = await Prepare(Engine(inference, selector: new Selector(first.Id, second.Id)), Input("Adapta mi prompt de arquitectura.")); Assert.Equal(PreparationDecision.ASK_CLARIFICATION, result.Decision); Assert.Equal(0, inference.Generations);
         Assert.Equal(2, result.Candidates.Length); Assert.Null(result.CompiledText);
     }
     [Fact] public void FiltersAndGroupRankingAreAppliedToRealSqliteResults()
@@ -124,7 +124,7 @@ public sealed class AgenticRuntimeTests : IDisposable
     }
     [Fact] public async Task RegistryReadContractsCheckIdsRevisionsAndArguments()
     {
-        var source = library.Create(new("Real", "Real.")); var tools = new PreparationTools(5, 3, (_, _, _) => { }); new PreparationReadTools(library, store).Register(tools);
+        var source = library.Create(new("Real", "Real.")); var tools = new PreparationTools(5, 3, (_, _, _) => { }); new PreparationReadTools(library, new NovaCollectionStore(store, library)).Register(tools);
         Assert.Equal(source.Id, (await tools.Call<PreparationReadTools.PromptIdArgs, PromptDocument>("get_prompt", new(source.Id), ToolPermission.Read, default)).Id);
         Assert.Equal(1, (await tools.Call<PreparationReadTools.RevisionArgs, TemplateVersion>("get_prompt_revision", new(source.Id, 1), ToolPermission.Read, default)).Revision);
         await Assert.ThrowsAsync<MissingPromptException>(() => tools.Call<PreparationReadTools.PromptIdArgs, PromptDocument>("get_prompt", new(Guid.NewGuid()), ToolPermission.Read, default));
@@ -154,6 +154,32 @@ public sealed class AgenticRuntimeTests : IDisposable
         var restarted = new PreparationPreferenceStore(new LocalStore(Path.Combine(directory, "library.sqlite"))); Assert.Equal("JSON", restarted.Get().Format);
         restarted.Forget(); Assert.Equal(new PreparationPreferences(), restarted.Get());
     }
+    [Theory]
+    [InlineData("Busca la plantilla de preparación de reuniones.","Preparar reuniones")]
+    [InlineData("Busca la plantilla de preparación de reuniones","Preparar reuniones")]
+    [InlineData("Quiero ver la plantilla de seguimiento.","Seguimiento comercial")]
+    [InlineData("Quiero ver la plantilla de seguimiento.","Seguimiento de proyectos")]
+    public void SentencePunctuationCannotRemoveCompatibleRecallCandidates(string query,string expected)
+    {
+        library.Create(new("Preparar reuniones","Organiza una agenda con <puntos>. Registra acuerdos sin inventar responsables."));
+        library.Create(new("Manualidades","Diseña una actividad con <materiales> para la edad <edad>. No inventes datos."));
+        library.Create(new("Seguimiento comercial","Resume el seguimiento comercial."));
+        library.Create(new("Seguimiento de proyectos","Resume el seguimiento de proyectos."));
+        var found=new SqlitePromptRetriever(store).Retrieve(query,null);
+        Assert.Contains(found,candidate=>candidate.Prompt.Title==expected && candidate.Score>=2);
+    }
+
+    [Theory]
+    [InlineData(".NET.",".NET")]
+    [InlineData("C++.","C++")]
+    [InlineData("C#.","C#")]
+    [InlineData("8.0.","8.0")]
+    public void RecallPreservesTechnicalIdentifiersButNotSentenceTerminators(string query,string identifier)
+    {
+        var source=library.Create(new("Referencia "+identifier,"Contenido técnico."));
+        Assert.True(new SqlitePromptRetriever(store).Retrieve(query,null).Single(c=>c.Prompt.Id==source.Id).Score>=4);
+    }
+
     [Fact] public void DuplicateContentIsDetectedWithoutCollapsingRealIdentities()
     {
         library.Create(new("Diseño uno", "El mismo contenido.")); library.Create(new("Diseño dos", "El mismo contenido."));
@@ -219,11 +245,12 @@ public sealed class AgenticRuntimeTests : IDisposable
         Assert.Contains("<div>{{value}}</div>", result.CompiledText); Assert.Contains("<literal>", result.CompiledText);
         Assert.Contains("COMPILER_MISMATCH", PromptPreparationPipeline.Validation(result with { CompiledText = "texto ajeno" }, new(null, null, [])).Errors);
     }
-    [Fact] public void BoundedBilingualRecallUsesRealSqliteRecords()
+    [Fact] public void RecallUsesLiteralModelQueriesWithoutLanguageSpecificExpansion()
     {
         var architecture = library.Create(new("Arquitectura", "Evalúa límites.")); var summary = library.Create(new("Resumen", "Resume <texto>.")); var retrieval = new SqlitePromptRetriever(store);
-        Assert.Equal(architecture.Id, retrieval.Retrieve("architecture", null)[0].Prompt.Id); Assert.True(retrieval.Retrieve("architecture", null)[0].Score >= 2);
-        Assert.Equal(summary.Id, retrieval.Retrieve("summary", null)[0].Prompt.Id); Assert.True(retrieval.Retrieve("summary", null)[0].Score >= 2);
+        Assert.Equal(architecture.Id, retrieval.Retrieve("arquitectura", null)[0].Prompt.Id); Assert.True(retrieval.Retrieve("arquitectura", null)[0].Score >= 2);
+        Assert.Equal(summary.Id, retrieval.Retrieve("resumen", null)[0].Prompt.Id); Assert.True(retrieval.Retrieve("resumen", null)[0].Score >= 2);
+        Assert.All(retrieval.Retrieve("architecture summary",null),candidate=>Assert.True(candidate.Score<2));
     }
     [Fact] public void ExplicitContextMustAppearInThePromptAndMaterialDoesNotBecomeAnInstruction()
     {
@@ -264,10 +291,10 @@ public sealed class AgenticRuntimeTests : IDisposable
         else { var result = await Prepare(engine, Input("Localiza una revisión de acoplamiento.")); Assert.Equal(source.Id, result.SourceId); Assert.Equal(PreparationState.READY, result.State); }
         Assert.Single(store.Templates()); Assert.Single(store.Versions(source.Id)); Assert.Equal(1, selector.Calls);
     }
-    private sealed class Selector(Guid id) : ICandidateSelector
+    private sealed class Selector(params Guid[] ids) : ICandidateSelector
     {
         public int Calls { get; private set; }
-        public Task<SemanticCandidateChoice> Select(string message, RetrievalCandidate[] candidates, string model, CancellationToken ct) { Calls++; return Task.FromResult(new SemanticCandidateChoice([id], "Selección de prueba.")); }
+        public Task<SemanticCandidateChoice> Select(string message, RetrievalCandidate[] candidates, string model, CancellationToken ct) { Calls++; return Task.FromResult(new SemanticCandidateChoice(ids.ToArray(), "Selección de prueba.")); }
     }
     private sealed class RevisionInference(PromptDocument source) : IIntentInterpreter, IPromptGenerator
     {

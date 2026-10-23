@@ -35,4 +35,17 @@ public sealed class TemplateSourceBindingTests
         => Assert.Throws<ValidationException>(() => TemplateSourceBinding.Bind(source, candidate));
     [Fact] public void CompositionCannotBypassTheFinalLengthLimit()
         => Assert.Throws<ValidationException>(() => TemplateSourceBinding.Bind("Explica <tema>.", new string('x', 31999)));
+
+    [Theory]
+    [InlineData("Explica el proceso. No inventes datos.", "No inventes datos.")]
+    [InlineData("Explain the process. Keep actual identifiers; Do not invent dates.", "Keep actual identifiers;\nDo not invent dates.")]
+    [InlineData("Resume. Preserva <datos>\nNunca publiques información privada.", "Preserva <datos>\nNunca publiques información privada.")]
+    public void RestoredConstraintsRetainSourcePunctuationAndAdjacentClauses(string source, string suffix)
+    {
+        const string candidate = "Evalúa los riesgos del proceso.";
+        var result = TemplateSourceBinding.Bind(source, candidate);
+        Assert.Equal(candidate + "\n\n" + suffix, result.Text);
+        Assert.Empty(TemplateConstraints.Missing(source, result.Text));
+        Assert.Equal(result.Text, TemplateSourceBinding.Bind(source, result.Text).Text);
+    }
 }

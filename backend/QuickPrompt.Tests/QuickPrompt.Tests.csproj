@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Fixtures/capabilities-v1.json" />
     <None Include="../../apps/web/public/library/biblioteca-practica.es.json" Link="biblioteca-practica.es.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../QuickPrompt.Infrastructure/QuickPrompt.Infrastructure.csproj" />
+    <ProjectReference Include="../QuickPrompt.Api/QuickPrompt.Api.csproj" />
+    <ProjectReference Include="../QuickPrompt.Evaluation/QuickPrompt.Evaluation.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />

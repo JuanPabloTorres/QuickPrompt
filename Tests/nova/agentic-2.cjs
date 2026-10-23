@@ -1,3 +1,4 @@
+const { configurePreparation } = require('./ui-settings.cjs');
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { DatabaseSync } = require('node:sqlite');
@@ -32,7 +33,7 @@ async function api(route, body, method) {
   const before = snapshot();
   await page.goto(origin);
   const input = page.getByRole('textbox', { name: '¿Qué quieres hacer hoy?', exact: true });
-  async function ask(text) { if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA', { exact: true }).selectOption('LIVE'); await input.fill(text); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click(); }
+  async function ask(text) { await configurePreparation(page, { mode: 'LIVE' }); await input.fill(text); await page.getByRole('button', { name: 'Preparar prompt', exact: true }).click(); }
   async function result() { const dialog = page.getByRole('dialog').filter({ has: page.locator('.prepared-result') }); await dialog.waitFor({ timeout: 240000 }); const id = runs.at(-1)?.id; if (id) { try { fs.writeFileSync(path.join(evidence, id + '-synthetic-draft.json'), JSON.stringify(await api('/nova/drafts/' + id), null, 2)); } catch {} } return dialog; }
   async function close() { await page.getByRole('button', { name: 'Cerrar resultado', exact: true }).click(); }
   async function verifyChain() {

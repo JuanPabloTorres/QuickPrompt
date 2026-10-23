@@ -39,8 +39,18 @@ public sealed class PreparationDiagnostics
     public DraftDiagnostics? Get(Guid id) => items.TryGetValue(id, out var item) && item.UpdatedAt > DateTime.UtcNow.AddHours(-2) ? item : null;
     public void Forget(Guid id) => items.TryRemove(id, out _);
 }
+public record DraftRef(Guid DraftId, Guid SessionId, int DraftRevision, GoalTarget? SourceRef, string CurrentContent);
+public enum DraftObservationKind { Snapshot, Authored, NewArtifact, Restored }
 public record AgentSession(Guid Id, PromptDocument? Source, PreparedDraft? Draft, Dictionary<string, string> Values, DateTime UpdatedAt,
-    PromptDocument[]? Candidates = null, SemanticInterpretation? LastProposal = null, SemanticOperation? PendingAction = null, string Approval = "NONE", bool SourceStale = false, SemanticInterpretation? PendingPlan = null, string? PendingRequest = null);
+    PromptDocument[]? Candidates = null, SemanticInterpretation? LastProposal = null, SemanticOperation? PendingAction = null, string Approval = "NONE", bool SourceStale = false, SemanticInterpretation? PendingPlan = null, string? PendingRequest = null)
+{
+    public int DraftRevision { get; init; } = 1;
+    public LiveCommand? PendingCommand { get; init; }
+    public DraftRef? WorkingDraftReference => Draft is null ? null : new(Draft.Id, Id, DraftRevision,
+        Draft.SourceId is { } source && Draft.SourceRevision is { } revision ? new(source, revision) : null, Draft.TemplateText);
+    public PreparedDraft? UnsavedDraft => Draft is { SourceId: null } ? Draft : null;
+    public int? SourceRevision => Draft?.SourceRevision ?? Source?.Revision;
+}
 // Temporary task context only. Never written to SQLite or general logs, bounded by age and count.
 public sealed class AgentSessions
 {
@@ -52,6 +62,44 @@ public sealed class AgentSessions
         return sessions.GetValueOrDefault(id);
     }
     public void Put(AgentSession session) { Get(session.Id); sessions[session.Id] = session; }
+    public DraftRef RequireWorkingDraft(DraftRef expected)
+    {
+        var current = Get(expected.SessionId)?.WorkingDraftReference;
+        if (expected.DraftId == Guid.Empty || expected.SessionId == Guid.Empty || expected.DraftRevision < 1
+            || current is null || current != expected)
+            throw new ConflictException("El borrador de la sesión cambió o caducó. Revisa su versión actual antes de continuar.");
+        return current;
+    }
+    // Conversation identity is independent from immutable preparation operation receipts.
+    // Only a verified authoring action may replace the artifact's semantic provenance.
+    public AgentSession ObserveDraft(AgentSession observation, DraftObservationKind kind = DraftObservationKind.Snapshot)
+    {
+        var draft = observation.Draft ?? throw new ValidationException("Falta el borrador observado.");
+        if (observation.Id == Guid.Empty || draft.SessionId is { } sessionId && sessionId != observation.Id
+            || (draft.SourceId is null) != (draft.SourceRevision is null)
+            || draft.SourceId is { } sourceId
+                && !(observation.Source?.Id == sourceId && observation.Source.Revision == draft.SourceRevision)
+                && !draft.Candidates.Any(candidate => candidate.Prompt.Id == sourceId && candidate.Prompt.Revision == draft.SourceRevision)
+            || !Enum.IsDefined(kind)) throw new ValidationException("Identidad del borrador observado inválida.");
+        Get(observation.Id);
+        return sessions.AddOrUpdate(observation.Id, _ => Transition(null), (_, previous) => Transition(previous));
+
+        AgentSession Transition(AgentSession? previous)
+        {
+            var prior = previous?.Draft;
+            var sameIdentity = kind != DraftObservationKind.NewArtifact && prior is not null
+                && prior.SourceId == draft.SourceId && prior.SourceRevision == draft.SourceRevision;
+            var sameContent = sameIdentity && prior!.Title == draft.Title && prior.TemplateText == draft.TemplateText;
+            var provenance = kind != DraftObservationKind.Snapshot ? draft.Semantic ?? observation.LastProposal
+                : sameContent ? prior!.Semantic ?? previous!.LastProposal : null;
+            return observation with {
+                Draft = draft with { Id = sameIdentity ? prior!.Id : Guid.NewGuid(), SessionId = observation.Id, Semantic = provenance },
+                DraftRevision = sameIdentity ? previous!.DraftRevision + (sameContent ? 0 : 1) : 1,
+                LastProposal = provenance, Approval = "NOT_GRANTED",
+                Values = new(observation.Values), UpdatedAt = DateTime.UtcNow
+            };
+        }
+    }
     public void Forget(Guid id) => sessions.TryRemove(id, out _);
 }
 

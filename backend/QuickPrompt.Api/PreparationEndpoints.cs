@@ -8,7 +8,7 @@ using QuickPrompt.Web.Infrastructure;
 namespace QuickPrompt.Nova.Api;
 
 public record CompletePreparedInput(Guid OperationId, Dictionary<string, string> Values);
-public record ExecutePreparedInput(bool Confirmed, string ExpectedText, string Model = "qwen3:8b", Guid? OperationId = null);
+public record ExecutePreparedInput(bool Confirmed, string ExpectedText, string Model = LocalModelPolicy.DefaultModelName, Guid? OperationId = null);
 public record SessionContextInput(Guid PromptId, int Revision, Dictionary<string, string>? Values = null, bool AllowStaleContext = false);
 public record DraftContextInput(Guid DraftId);
 public static class PreparationEndpoints
@@ -17,8 +17,7 @@ public static class PreparationEndpoints
     public static void MapPreparation(this RouteGroupBuilder api)
     {
         api.MapGet("/nova/preferences", (IPreparationPreferences preferences) => preferences.Get());
-        api.MapPut("/nova/preferences", (PreferenceApproval input, IPreparationPreferences preferences) =>
-        { if (!input.Confirmed || input.Preferences is null) throw new ValidationException("Confirma las preferencias que quieres conservar."); preferences.Save(input.Preferences); return preferences.Get(); });
+        api.MapPut("/nova/preferences", (PreferenceApproval input, IPreparationPreferences preferences) => preferences.Confirm(input));
         api.MapDelete("/nova/preferences", (IPreparationPreferences preferences) => { preferences.Forget(); return Results.NoContent(); });
         api.MapGet("/nova/runs/{id:guid}", (Guid id, IAgentRunStore runs) => runs.Get(id) ?? throw new MissingPromptException());
         api.MapDelete("/nova/runs/{id:guid}", (Guid id, IAgentRunStore runs) => { runs.Forget(id); return Results.NoContent(); });
@@ -33,7 +32,8 @@ public static class PreparationEndpoints
             var stale = prompt.Revision != input.Revision;
             if (stale) prompt = previous?.Source?.Id == prompt.Id && previous.Source.Revision == input.Revision ? previous.Source : prompt with { Revision = input.Revision, TemplateText = "", Defaults = new Dictionary<string, string>(), VariableNames = [] };
             sessions.Put(new(id, prompt, previous?.Draft, same ? previous!.Values.Concat(input.Values ?? []).GroupBy(v => v.Key).ToDictionary(g => g.Key, g => g.Last().Value) : input.Values ?? [], DateTime.UtcNow,
-                previous?.Candidates, previous?.LastProposal, previous?.PendingAction, "NOT_GRANTED", stale, previous?.PendingPlan, previous?.PendingRequest)); return Results.NoContent();
+                previous?.Candidates, previous?.LastProposal, previous?.PendingAction, "NOT_GRANTED", stale, previous?.PendingPlan, previous?.PendingRequest) {
+                    DraftRevision = previous?.DraftRevision ?? 1, PendingCommand = same && !stale ? previous?.PendingCommand : null }); return Results.NoContent();
         });
         api.MapDelete("/nova/sessions/{id:guid}", (Guid id, AgentSessions sessions) => { sessions.Forget(id); return Results.NoContent(); });
         api.MapPost("/nova/sessions/{id:guid}/draft-context", (Guid id, DraftContextInput input, IPreparedDraftStore drafts, AgentSessions sessions) =>
@@ -41,14 +41,15 @@ public static class PreparationEndpoints
             if (id == Guid.Empty) throw new ValidationException("Sesión inválida.");
             var draft = drafts.Get(input.DraftId) ?? throw new MissingPromptException();
             var previous = sessions.Get(id);
-            sessions.Put(new(id, previous?.Source, draft, previous?.Values ?? [], DateTime.UtcNow,
+            sessions.ObserveDraft(new(id, previous?.Source, draft with { SessionId = id }, previous?.Values ?? [], DateTime.UtcNow,
                 draft.Candidates.Select(c => c.Prompt).Take(6).ToArray(), draft.Semantic, null, "NOT_GRANTED", previous?.SourceStale ?? false,
-                draft.State == PreparationState.NEEDS_INFORMATION ? draft.Semantic : null, previous?.Draft?.Id == draft.Id ? previous.PendingRequest : null));
+                draft.State == PreparationState.NEEDS_INFORMATION ? draft.Semantic : null, previous?.Draft?.Id == draft.Id ? previous.PendingRequest : null), DraftObservationKind.Restored);
             return Results.NoContent();
         });
         api.MapPost("/nova/prepare", async (PrepareInput input, AgentOrchestrator orchestrator, HttpContext context, ILogger<AgentOrchestrator> logger, LiveRuns live) =>
         {
             AgentOrchestrator.Validate(input);
+            using var performance = NovaTelemetry.Begin(input.OperationId);
             live.Create(new(input.OperationId, input.SessionId ?? input.OperationId, input.Message, "LIVE", input.SourcePromptId, input.SourceRevision, input.Values, input.Model));
             using var liveCancellation = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, live.Active(input.OperationId).Cancellation.Token);
             context.Response.ContentType = "text/event-stream";
@@ -97,54 +98,14 @@ public static class PreparationEndpoints
         api.MapGet("/nova/drafts", (IPreparedDraftStore drafts) => drafts.Recent());
         api.MapGet("/nova/drafts/{id:guid}", (Guid id, IPreparedDraftStore drafts) => drafts.Get(id) ?? throw new MissingPromptException());
         api.MapDelete("/nova/drafts/{id:guid}", (Guid id, IPreparedDraftStore drafts) => { drafts.Forget(id); return Results.NoContent(); });
-        api.MapPost("/nova/drafts/{id:guid}/save", (Guid id, SavePreparedInput input, IPreparedDraftStore drafts, IAgentRunStore runs) =>
-        {
-            if (!input.Confirmed) throw new ValidationException("Guardar en la biblioteca requiere una acción explícita.");
-            var timer = System.Diagnostics.Stopwatch.StartNew();
-            var saved = drafts.Save(id, input.UpdateSource);
-            if (runs.Get(id) is { } run)
-            {
-                var durations = new Dictionary<string, double>(run.StageDurations ?? []) { ["Approval"] = timer.Elapsed.TotalMilliseconds };
-                runs.Put(run with { Approval = input.UpdateSource ? "APPROVED_SOURCE_VERSION" : "APPROVED_COPY_OR_REUSE", StageDurations = durations, UpdatedAt = DateTime.UtcNow });
-            }
-            return saved;
-        });
-        api.MapPost("/nova/drafts/{id:guid}/complete", (Guid id, CompletePreparedInput input, IPreparedDraftStore drafts, IAgentRunStore runs, AgentSessions sessions, LiveRuns live) =>
-        {
-            var source = drafts.Get(id) ?? throw new MissingPromptException();
-            if (input.OperationId == Guid.Empty || input.OperationId == id || input.Values is null || input.Values.Count > 60
-                || input.Values.Any(v => !source.Variables.Any(d => d.Name == v.Key) || string.IsNullOrWhiteSpace(v.Value) || v.Value.Length > 8000)) throw new ValidationException("Revisa los valores del borrador.");
-            var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id, values = input.Values.OrderBy(v => v.Key, StringComparer.Ordinal) }))));
-            if (drafts.Fingerprint(input.OperationId) is { } previous)
-            { if (previous != fingerprint) throw new ConflictException("Identificador ya utilizado."); return drafts.Get(input.OperationId)!; }
-            var values = source.Values.Where(v => !input.Values.ContainsKey(v.Name)).Concat(input.Values.Select(v => new VariableValue(v.Key, v.Value, "USER_INPUT", "VALIDATED"))).ToArray();
-            var missing = source.Variables.Where(v => !values.Any(value => value.Name == v.Name)).Select(v => v.Name).ToArray();
-            var result = source with { Id = input.OperationId, Values = values, MissingVariables = missing,
-                CompiledText = missing.Length == 0 ? TemplateCompiler.Render(source.TemplateText, values.ToDictionary(v => v.Name, v => v.Value)) : null,
-                State = missing.Length == 0 ? PreparationState.READY : PreparationState.NEEDS_INFORMATION, Question = missing.Length == 0 ? "" : $"¿Puedes aportar {string.Join(", ", missing)}?", CreatedAt = DateTime.UtcNow };
-            var run = new AgentCheckpoint(result.Id, source.SessionId ?? source.Id, fingerprint,
-                result.State == PreparationState.READY ? AgentRunState.READY : AgentRunState.NEEDS_CLARIFICATION, [AgentIntent.FILL, AgentIntent.COMPILE],
-                result.Candidates.Select(c => c.Prompt.Id).ToArray(), result.Candidates.ToDictionary(c => c.Prompt.Id, c => c.Prompt.Revision),
-                [new("compile_prompt", "OK", 0), new("validate_prompt", "OK", 0)], 5, "SAVE_REQUIRES_REVIEW", null, result.Id,
-                "deterministic", AgentOrchestrator.ContractVersion, DateTime.UtcNow, AgentIntent.FILL);
-            if (!runs.TryBegin(run)) throw new ConflictException("Esta operación ya se inició. No se repetirá.");
-            drafts.Put(result, fingerprint);
-            var sessionId = result.SessionId ?? source.Id;
-            var session = sessions.Get(sessionId);
-            sessions.Put(new(sessionId, result.Candidates.SingleOrDefault(c => c.Prompt.Id == result.SourceId)?.Prompt ?? session?.Source,
-                result, result.Values.ToDictionary(v => v.Name, v => v.Value), DateTime.UtcNow,
-                result.Candidates.Select(c => c.Prompt).Take(6).ToArray(), result.Semantic ?? session?.LastProposal, null, "NOT_GRANTED", session?.SourceStale ?? false,
-                result.State == PreparationState.NEEDS_INFORMATION ? result.Semantic : null, result.State == PreparationState.NEEDS_INFORMATION ? session?.PendingRequest : null));
-            live.Create(new(result.Id, result.SessionId ?? source.Id, "Completar el borrador con los valores aportados.", "LIVE", result.SourceId, result.SourceRevision));
-            live.Emit(result.Id, LiveStatus.VERIFYING, LiveActor.RULE_SELECTED, "Compilación determinista completada con los valores aportados; no se consultó al modelo.", "Compilation", "compile_prompt", result.SourceId);
-            live.Emit(result.Id, result.State == PreparationState.READY ? LiveStatus.COMPLETED : LiveStatus.BLOCKED, LiveActor.SYSTEM_VALIDATION, result.State == PreparationState.READY ? "Resultado compilado y listo para revisar." : "Todavía faltan datos.", "Completion", target: result.SourceId);
-            return result;
-        });
+        api.MapPost("/nova/drafts/{id:guid}/save", (Guid id, SavePreparedInput input, IPreparedDraftSaving saving) => saving.Save(id, input));
+        api.MapPost("/nova/drafts/{id:guid}/complete", (Guid id, CompletePreparedInput input, IPreparedDraftCompletion completion) =>
+            completion.Complete(id, new(input.OperationId, input.Values)));
         // Uses the existing local executor. Preparation alone never executes or saves a final prompt.
         api.MapPost("/nova/drafts/{id:guid}/execute", async (Guid id, ExecutePreparedInput input, IPreparedDraftStore drafts, ILocalLlmClient client, IAgentRunStore runs, HttpContext context, LiveRuns live, PromptLibrary library) =>
         {
             var draft = drafts.Get(id) ?? throw new MissingPromptException();
-            if (!input.Confirmed || input.OperationId == Guid.Empty || draft.State != PreparationState.READY || string.IsNullOrWhiteSpace(draft.CompiledText) || draft.CompiledText != input.ExpectedText || !OllamaClientModels(input.Model)) throw new ValidationException("Revisa y confirma el prompt final antes de ejecutar.");
+            if (!input.Confirmed || input.OperationId == Guid.Empty || draft.State != PreparationState.READY || string.IsNullOrWhiteSpace(draft.CompiledText) || draft.CompiledText != input.ExpectedText || !LocalModelPolicy.Production.Allows(input.Model)) throw new ValidationException("Revisa y confirma el prompt final antes de ejecutar.");
             if (draft.SourceId is { } guardedSourceId) {
                 var currentSource = library.Get(guardedSourceId);
                 if (currentSource.IsArchived || currentSource.Revision != draft.SourceRevision) throw new ConflictException("El origen cambió. Prepara una nueva ejecución con la versión vigente.");
@@ -153,13 +114,14 @@ public static class PreparationEndpoints
             if (parentRun is { } parent)
             {
                 var authority = live.Active(parent); var parentState = live.Get(parent);
-                if (LiveRuns.Terminal(parentState.Status) || parentState.Mode is not ("BROWSER" or "SAME_TAB") || authority.Semantic?.Executes != true || input.Model != "qwen3:8b"
+                if (LiveRuns.Terminal(parentState.Status) || parentState.Mode is not ("BROWSER" or "SAME_TAB") || authority.Semantic?.Executes != true || !LocalModelPolicy.Production.AllowsAgentControl(input.Model)
                     || draft.SourceId != parentState.TargetId || draft.SourceRevision != parentState.Revision || draft.CompiledText != authority.Observation?.CompiledText)
                     throw new ValidationException("La ejecución no corresponde al prompt y a los permisos del run visible.");
                 if (draft.Values.Any(value => value.Value.Contains(authority.Semantic.ExecutionEvidence, StringComparison.Ordinal))) throw new ValidationException("Los valores del prompt no autorizan una ejecución.");
             }
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { id, input.Model, input.ExpectedText })));
             var executionId = input.OperationId ?? new Guid(hash.AsSpan(0, 16));
+            using var performance = parentRun is { } observedRun ? NovaTelemetry.Attach(observedRun) : NovaTelemetry.Begin(executionId);
             var run = new AgentCheckpoint(executionId, draft.SessionId ?? draft.Id, Convert.ToHexString(hash), AgentRunState.EXECUTE_TOOLS,
                 [AgentIntent.EXECUTE], draft.SourceId is { } sourceId ? [sourceId] : [], draft.SourceId is { } source ? new() { [source] = draft.SourceRevision!.Value } : [], [], 1,
                 "EXPLICIT_REVIEWED_EXECUTION", null, draft.Id, input.Model, AgentOrchestrator.ContractVersion, DateTime.UtcNow, AgentIntent.EXECUTE, true);
@@ -179,5 +141,4 @@ public static class PreparationEndpoints
             catch (Exception error) when (error is ValidationException or LlmUnavailableException) { runs.Put(run with { State = AgentRunState.FAILED, ErrorCode = error.GetType().Name, UpdatedAt = DateTime.UtcNow }); await Send("error", new { message = error.Message }); }
         }).RequireRateLimiting("ai");
     }
-    private static bool OllamaClientModels(string model) => model is "qwen3:8b" or "qwen2.5:7b-instruct";
 }

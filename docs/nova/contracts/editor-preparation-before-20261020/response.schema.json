@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "requestedOperations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "SEARCH_PROMPT",
+              "RESOLVE_PROMPT",
+              "OPEN_PROMPT",
+              "PROPOSE_ADAPTATION",
+              "CREATE_DRAFT",
+              "VALIDATE_DRAFT",
+              "FILL_VARIABLES",
+              "COMPILE_PROMPT",
+              "PREPARE_LOCAL_EXECUTION",
+              "EXECUTE_LOCAL",
+              "PREPARE_PROVIDER",
+              "COPY_PROMPT",
+              "EXPLAIN",
+              "ASK_CLARIFICATION",
+              "CANCEL",
+              "PAUSE",
+              "RESUME",
+              "REQUEST_SAVE_VERSION",
+              "REQUEST_SAVE_COPY",
+              "REQUEST_DELETE"
+            ]
+          },
+          "supportingPassage": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operation",
+          "supportingPassage"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "requestedOperations"
+  ],
+  "additionalProperties": false
+}

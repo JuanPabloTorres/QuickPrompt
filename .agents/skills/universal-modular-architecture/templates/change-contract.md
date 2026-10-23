@@ -1,0 +1,22 @@
+# Change Contract
+- Request / user outcome:
+- Observed architecture and evidence:
+- Existing capability owner and callers:
+- Actual composition (entry/factory -> port -> implementation; profile/artifact and state lifetime):
+- Observed path (file/symbol, input -> transformation -> output/effect; unknown edges):
+- Value/artifact authority (source/provenance, permitted writer, allowed derivation, consumer postcondition):
+- First evidenced invariant violation; causal mechanism vs competing explanation:
+- Test-oracle audit (requirement/safety/compatibility vs implementation assumption):
+- Domain invariants and negative paths:
+- Security/tenant boundaries:
+- Proposed module(s) and responsibility:
+- Public interfaces, input/output schemas and error semantics:
+- Dependencies and data/state ownership:
+- Optional vs required components and disabled behavior:
+- Alternatives (extend current / small abstraction / new module):
+- Choice and reason:
+- Compatibility, migrations and rollback:
+- Verification matrix (unit / contract / integration / e2e / security / load as relevant):
+- Falsifiable correction prediction, preserved positive behavior and distinguishing negative control:
+- Bounded experiment and rejection rule; shared-invariant consumers affected:
+- Evidence: PASS / FAIL / BLOCKED / NOT RUN:

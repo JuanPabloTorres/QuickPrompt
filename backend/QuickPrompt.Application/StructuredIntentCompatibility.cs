@@ -29,15 +29,16 @@ internal sealed class StructuredIntentCompatibility(IIntentInterpreter legacy) :
             understood.Query, creates ? null : context.Selected?.Id, understood.Query, changes ? message : "", new([], false, null, null, [], [], false),
             understood.Intent == PreparationIntent.UNKNOWN ? SemanticOutcome.CLARIFICATION : execute ? SemanticOutcome.LOCAL_RESPONSE : changes ? SemanticOutcome.DRAFT : creates ? SemanticOutcome.NEW_DRAFT : SemanticOutcome.READ,
             steps.ToArray(), string.IsNullOrWhiteSpace(understood.Clarification) ? [] : [understood.Clarification], false, execute ? message : "", null, understood.Clarification);
-        return string.IsNullOrWhiteSpace(understood.Clarification) ? result : SemanticPlanning.Clarify(result, understood.Clarification);
+        return string.IsNullOrWhiteSpace(understood.Clarification) ? result : TaskClarification.Apply(result, understood.Clarification);
     }
 }
-internal sealed class RankedCandidateCompatibility : ICandidateSelector
+// Absence is explicit. Retrieval scores cannot supply missing semantic authority.
+internal sealed class MissingCandidateSelector : ICandidateSelector
 {
     public Task<SemanticCandidateChoice> Select(string message, RetrievalCandidate[] candidates, string model, CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested(); var relevant = candidates.Where(c => c.Score >= 2).ToArray();
-        var ids = relevant.Length == 0 ? [] : relevant.Where(c => c.Score >= relevant[0].Score * .85).Take(3).Select(c => c.Prompt.Id).ToArray();
-        return Task.FromResult(new SemanticCandidateChoice(ids, "Adaptador del contrato estructurado anterior; no usado para interpretar lenguaje natural en la API."));
+        ct.ThrowIfCancellationRequested();
+        throw new PreparationToolException("CAPABILITY_UNAVAILABLE", "match_candidates",
+            "La selección semántica de orígenes no está disponible. Selecciona un prompt explícitamente o configura esa capacidad.");
     }
 }

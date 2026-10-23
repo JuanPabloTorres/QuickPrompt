@@ -1,3 +1,4 @@
+const { configurePreparation } = require('./ui-settings.cjs');
 // Real Ollama + real headed Edge. All writes are restricted to a fresh synthetic library.
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict'), http = require('node:http');
 const {spawn} = require('node:child_process'), {randomUUID, createHash} = require('node:crypto');
@@ -29,7 +30,7 @@ async function ask(message){
     if(await page.getByTestId('prompt-editor').count()){await leaveActualEditor();}
     if(await page.getByTestId('prompt-focus').count())await page.getByRole('button',{name:'Biblioteca',exact:true}).click();
   }
-  if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA',{exact:true}).selectOption('LIVE');
+  await configurePreparation(page, { mode: 'LIVE' });
   await page.getByRole('textbox',{name:'¿Qué quieres hacer hoy?',exact:true}).fill(message);
   const [response]=await Promise.all([page.waitForResponse(r=>r.url()===origin+'/api/v1/nova/prepare'&&r.request().method()==='POST',{timeout:300000}),page.getByRole('button',{name:'Preparar prompt',exact:true}).click()]);
   assert.equal(response.status(),200);const id=response.request().postDataJSON().operationId;runs.push(id);
@@ -95,7 +96,7 @@ async function record(name,message,result,source,checks){
   rows.push({name,input:message,...trace,context:trace.context??{sourceId:source?.id,revision:source?.revision,sessionId:result.sessionId},interpretation:result.semantic,plan:result.semantic.proposedSteps,tools:run.tools,modelCallRange:lastModelSpan,result,validation:[...checks,'Actual rendered result verified','Executed effects agree with validated plan'],status:'PASS'});
   report('RUNNING');console.log('PASS',name);
 }
-async function visible(message){const modelStart=calls.length;if(await page.locator('.preparation-options').getAttribute('open')===null) await page.getByText('Opciones de preparación',{exact:true}).click();await page.getByLabel('Modo de NOVA',{exact:true}).selectOption('SAME_TAB');await page.getByRole('textbox',{name:'¿Qué quieres hacer hoy?',exact:true}).fill(message);const[r]=await Promise.all([page.waitForResponse(r=>r.url()===origin+'/api/v1/nova/live'&&r.request().method()==='POST'),page.getByRole('button',{name:'Preparar prompt',exact:true}).click()]);const start=await r.json();assert.ok(r.ok(),JSON.stringify(start));runs.push(start.runId);const view=await until(()=>api('/nova/live/'+start.runId),v=>['COMPLETED','AWAITING_APPROVAL','FAILED','BLOCKED','CANCELLED'].includes(v.run.status),480000);lastModelSpan={start:modelStart,end:calls.length};return view;}
+async function visible(message){const modelStart=calls.length;await configurePreparation(page, { mode: 'SAME_TAB' });await page.getByRole('textbox',{name:'¿Qué quieres hacer hoy?',exact:true}).fill(message);const[r]=await Promise.all([page.waitForResponse(r=>r.url()===origin+'/api/v1/nova/live'&&r.request().method()==='POST'),page.getByRole('button',{name:'Preparar prompt',exact:true}).click()]);const start=await r.json();assert.ok(r.ok(),JSON.stringify(start));runs.push(start.runId);const view=await until(()=>api('/nova/live/'+start.runId),v=>['COMPLETED','AWAITING_APPROVAL','FAILED','BLOCKED','CANCELLED'].includes(v.run.status),480000);lastModelSpan={start:modelStart,end:calls.length};return view;}
 (async()=>{
   // Transparent loopback recording, forwarding actual responses without substitutions.
   proxy=http.createServer((req,res)=>{let body='';req.on('data',x=>body+=x);req.on('end',()=>{let request;try{request=JSON.parse(body);}catch{}const entry={path:req.url,request,startedAt:new Date().toISOString()};calls.push(entry);const forward=http.request({hostname:'127.0.0.1',port:11434,path:req.url,method:req.method,headers:{'Content-Type':'application/json'}},up=>{res.writeHead(up.statusCode,up.headers);let reply='';up.on('data',x=>{reply+=x;res.write(x);});up.on('end',()=>{entry.response=reply;entry.endedAt=new Date().toISOString();res.end();});});forward.on('error',e=>{entry.error=e.message;if(!res.headersSent)res.writeHead(502);res.end();});res.on('close',()=>{if(!res.writableEnded)forward.destroy();});forward.end(body);});});await new Promise(r=>proxy.listen(5234,'127.0.0.1',r));

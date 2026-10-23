@@ -6,21 +6,25 @@ namespace QuickPrompt.Web.Infrastructure;
 
 public sealed class SqlitePromptRetriever(LocalStore store) : IPromptRetriever
 {
-    private static readonly string[][] RecallEquivalents = [
-        ["ARCHITECTURE", "ARQUITECTURA"], ["SUMMARY", "RESUMEN"], ["SUMMARIZE", "RESUMIR"], ["LETTER", "CARTA"],
-        ["LETTERS", "CARTAS"], ["INTERVIEW", "ENTREVISTA"], ["SECURITY", "SEGURIDAD"], ["DESIGN", "DISENO"],
-        ["BOUNDARIES", "LIMITES"], ["DEPENDENCIES", "DEPENDENCIAS"], ["TESTS", "PRUEBAS"], ["RESEARCH", "INVESTIGACION"] ];
+    public PromptDocument ReadSource(Guid id)
+    {
+        using var measurement = NovaTelemetry.Measure("retrieval.source");
+        var source = store.FindTemplate(id) ?? throw new MissingPromptException();
+        if (!source.IsActive) throw new ValidationException("El origen está archivado.");
+        return PromptLibrary.Document(source);
+    }
     public RetrievalCandidate[] Retrieve(string query, Guid? sourceId)
         => Retrieve(query, sourceId, null);
     public RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter)
     {
+        using var measurement = NovaTelemetry.Measure("retrieval.sqlite");
         var found = new Dictionary<Guid, Template>();
         void Add(CatalogQuery q) { foreach (var item in store.QueryTemplates(q with { GroupId = filter?.GroupId, Category = filter?.CategoryId?.ToString() ?? "", Favorites = filter?.Favorites == true || q.Favorites }).Items) found.TryAdd(item.Id, item); }
         // Bounded OR recall across existing SQL title/body/category/group search. No vectors or new schema.
-        var filler = new HashSet<string>("BUSCA ABRE MUESTRAME FIND OPEN PROMPT PLANTILLA INSTRUCCION MI MIS EL LA LOS LAS DE DEL Y PARA QUE TENGO GUARDADO QUIERO POR FAVOR".Split(' '));
-        var terms = System.Text.RegularExpressions.Regex.Matches(PromptSearch.Normalize(query), @"[\p{L}\p{N}+#.]+", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromMilliseconds(100))
-            .Select(m => m.Value).Where(t => t.Length > 1 && !filler.Contains(t)).Distinct().Take(6).ToArray();
-        terms = terms.Concat(RecallEquivalents.Where(group => group.Any(term => terms.Contains(term))).SelectMany(group => group)).Distinct().Take(12).ToArray();
+        // Sentence terminators are not part of a search term. Preserve internal
+        // dots and technical prefixes (.NET, 8.0, C++, C#) without interpreting intent.
+        var terms = System.Text.RegularExpressions.Regex.Matches(PromptSearch.Normalize(query), @"\.?[\p{L}\p{N}+#]+(?:\.[\p{L}\p{N}+#]+)*", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromMilliseconds(100))
+            .Select(m => m.Value).Where(t => t.Length > 1).Distinct().Take(12).ToArray();
         foreach (var term in terms) Add(new(Search: term, Size: 12));
         Add(new(Favorites: true, Size: 6)); Add(new(Size: 6, Sort: "recent", Recent: true));
         if (found.Count == 0) Add(new(Size: 6));

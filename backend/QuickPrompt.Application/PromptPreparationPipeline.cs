@@ -9,6 +9,12 @@ public record PromptEvaluation(bool Valid, string[] Errors);
 // Kept separate from generation: structural facts are enforced by code; semantic quality is measured in evals.
 public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVariableResolver resolver, IPromptEvaluator evaluator)
 {
+    public static string CorrectionFeedback(string[] failures,PromptRequirements requirements,string actualSource,string? rejectedCandidate=null)
+        =>System.Text.Json.JsonSerializer.Serialize(new {
+            failures,rejectedCandidate,requiredVariableNames=TemplateCompiler.Names(actualSource),
+            requiredVerbatimConstraints=requirements.Constraints,requiredTargetTerms=requirements.TargetTerms??[],
+            maximumCharacters=requirements.Shortening?Math.Max(1,actualSource.Length-1):32000,
+            correction="Return a corrected reusable instruction applying the actual requested change. Every requiredVariableName must occur as <name> in text, not only metadata. Every requiredVerbatimConstraint must be an exact unchanged substring; requiredTargetTerms must remain in the task context. These lists are validation metadata: do not append their labels, this feedback, or the editing request to text. Do not return the unchanged source." });
     public Task<PromptProposal> DraftGeneration(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct) => generator.Generate(input, understanding, candidates, ct);
     public PreparedDraft PromptCompilation(PrepareInput input, Understanding understanding, PromptProposal proposal, RetrievalCandidate[] candidates)
     {
@@ -20,7 +26,7 @@ public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVaria
         if (input.SourcePromptId is { } selected && proposal.SourceId != selected) throw new ValidationException("La propuesta no respeta el origen seleccionado.");
         return evaluator.Evaluate(input, understanding, proposal, candidates, resolver.Resolve(input, proposal, source));
     }
-    public static PromptEvaluation Validation(PreparedDraft draft, PromptRequirements requirements)
+    public static PromptEvaluation Validation(PreparedDraft draft, PromptRequirements requirements,TaskGoal? goal=null)
     {
         if (draft.Decision == PreparationDecision.ASK_CLARIFICATION) return new(true, []);
         var errors = new List<string>();
@@ -49,8 +55,9 @@ public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVaria
         if (draft.Intent is PreparationIntent.ADAPT_PROMPT or PreparationIntent.IMPROVE_PROMPT or PreparationIntent.CREATE_PROMPT)
             foreach (var target in requirements.TargetTerms ?? []) if (!normalized.Contains(PromptSearch.Normalize(target), StringComparison.Ordinal)) errors.Add("TARGET_CONTEXT");
         foreach (var constraint in requirements.Constraints) if (!normalized.Contains(PromptSearch.Normalize(constraint), StringComparison.Ordinal)) errors.Add("CONSTRAINT");
-        if (requirements.Format is { } format && !normalized.Contains(format, StringComparison.Ordinal)) errors.Add("FORMAT");
-        if (requirements.Language is { } language)
+        var semanticsAssessed=goal?.HasContentAssessment(draft.TemplateText)==true;
+        if (!semanticsAssessed && requirements.Format is { } format && !normalized.Contains(format, StringComparison.Ordinal)) errors.Add("FORMAT");
+        if (!semanticsAssessed && requirements.Language is { } language)
         {
             // This checks an explicit output-language instruction, not an unreliable language-detector score.
             var target = language == "es" ? @"\b(ESPANOL|SPANISH)\b" : @"\b(INGLES|ENGLISH)\b";
@@ -58,9 +65,9 @@ public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVaria
         }
         return new(errors.Count == 0, errors.Distinct().ToArray());
     }
-    public static PreparedDraft FinalPreparation(PreparedDraft draft, PromptRequirements requirements)
+    public static PreparedDraft FinalPreparation(PreparedDraft draft, PromptRequirements requirements,TaskGoal? goal=null)
     {
-        var evaluation = Validation(draft, requirements);
+        var evaluation = Validation(draft, requirements,goal);
         if (!evaluation.Valid) throw new ValidationException("El resultado no conserva todos los requisitos. Ajusta la solicitud o vuelve a preparar.");
         return draft;
     }

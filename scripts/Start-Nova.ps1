@@ -4,12 +4,28 @@ param(
     [switch]$NoBuild,
     [switch]$NoBrowser,
     [switch]$Background,
-    [switch]$QaBrowser
+    [switch]$QaBrowser,
+    [ValidateSet('adaptive-core','native')][string]$AgentRuntime = 'adaptive-core',
+    [string]$CorePython,
+    [string]$CoreSdkRoot
 )
 $ErrorActionPreference = 'Stop'
 $novaRoot = Split-Path -Parent $PSScriptRoot
 $novaWeb = Join-Path $novaRoot 'apps/web'
 $novaApi = Join-Path $novaRoot 'backend/QuickPrompt.Api'
+if ($AgentRuntime -eq 'adaptive-core') {
+    if (-not $CorePython) {
+        $CorePython = @((Join-Path $novaRoot '.venv/Scripts/python.exe'),
+            "$env:USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe") |
+            Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    }
+    if (-not $CoreSdkRoot) { $CoreSdkRoot = Join-Path (Split-Path $novaRoot -Parent) 'Adaptive-AI-Core' }
+    $novaCoreWorker = Join-Path $novaRoot 'agents/nova-core/nova_worker.py'
+    if (-not $CorePython) { throw 'Configura -CorePython con un intérprete existente. No se instala software ni se cambia de agente automáticamente.' }
+    foreach ($novaCoreFile in @($CorePython, $novaCoreWorker, (Join-Path $CoreSdkRoot 'adaptive_core/runtime.py'))) {
+        if (-not (Test-Path -LiteralPath $novaCoreFile -PathType Leaf)) { throw "Falta la dependencia Core: $novaCoreFile. Configura -CorePython/-CoreSdkRoot; no hay fallback automático." }
+    }
+}
 if (-not $NoBuild) {
     if (-not (Test-Path -LiteralPath (Join-Path $novaWeb 'node_modules/react/package.json'))) {
         throw 'Faltan paquetes aprobados. Instala explícitamente con npm ci --ignore-scripts desde apps/web. Este script no instala software.'
@@ -20,7 +36,8 @@ if (-not $NoBuild) {
         & node (Join-Path $novaWeb 'node_modules/typescript/bin/tsc') -p (Join-Path $novaRoot 'automation/browser-worker/tsconfig.json')
         if ($LASTEXITCODE -ne 0) { throw 'Falló el build BrowserWorker. No se instalaron dependencias.' }
     }
-    & dotnet build (Join-Path $novaApi 'QuickPrompt.Api.csproj') --no-restore
+    # Restored sources can be older than a previous experimental binary.
+    & dotnet build (Join-Path $novaApi 'QuickPrompt.Api.csproj') --no-restore --no-incremental
     if ($LASTEXITCODE -ne 0) { throw 'Falló el build API. Si faltan assets, restaura explícitamente los paquetes .NET documentados.' }
 }
 $novaDll = Join-Path $novaApi 'bin/Debug/net8.0/QuickPrompt.Api.dll'
@@ -30,6 +47,12 @@ $novaLogs = Join-Path $novaRoot '.nova-build/logs'
 New-Item -ItemType Directory -Path $novaLogs -Force | Out-Null
 $novaStamp = [Guid]::NewGuid().ToString('N')
 $novaArguments = @(('"' + $novaDll + '"'), ('--QuickPrompt:Port=' + $Port), ('"--QuickPrompt:WebRoot=' + $novaDist + '"'))
+$novaArguments += '--QuickPrompt:Agent:Runtime=' + $AgentRuntime
+if ($AgentRuntime -eq 'adaptive-core') {
+    $novaArguments += '"--QuickPrompt:AdaptiveCore:Python=' + [IO.Path]::GetFullPath($CorePython) + '"'
+    $novaArguments += '"--QuickPrompt:AdaptiveCore:SdkRoot=' + [IO.Path]::GetFullPath($CoreSdkRoot) + '"'
+    $novaArguments += '"--QuickPrompt:AdaptiveCore:Worker=' + $novaCoreWorker + '"'
+}
 if ($QaBrowser) { $novaArguments += '--QuickPrompt:Live:AllowQaBrowser=true'; $novaArguments += '"--QuickPrompt:Live:Worker=' + (Join-Path $novaRoot '.playwright/browser-worker-build/worker.cjs') + '"' }
 if ($DataPath) { $novaArguments += '"--QuickPrompt:DataPath=' + [System.IO.Path]::GetFullPath($DataPath) + '"' }
 $novaServer = Start-Process -FilePath dotnet -ArgumentList $novaArguments -WorkingDirectory $novaApi -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $novaLogs "$novaStamp.out.log") -RedirectStandardError (Join-Path $novaLogs "$novaStamp.err.log")

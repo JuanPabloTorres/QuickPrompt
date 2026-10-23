@@ -2,16 +2,53 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, expect, it, vi } from 'vitest';
 import { QuickActions } from '../src/features/nova/QuickActions';
 import type { Prompt } from '../src/services/api';
+import type { LiveCommand } from '../src/services/live';
 
 const source: Prompt = { id: '10000000-0000-4000-8000-000000000001', title: 'Evaluar proyectos', description: 'Evalúa sin inventar datos.', templateText: 'Evalúa <proyecto>. Tono: <tono>.', categoryId: 0, isFavorite: false, isArchived: false, revision: 3, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), uses: 0, lastUsedAt: null, variableNames: ['proyecto', 'tono'], defaults: {} };
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-function setup(prompt?: Prompt, onRequest = vi.fn<(message: string, source?: Prompt, values?: Record<string, string>) => Promise<void>>(async () => {})) {
+function setup(prompt?: Prompt, onRequest = vi.fn<(message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>>(async () => {})) {
   const onRemove = vi.fn<(prompt: Prompt) => Promise<void>>(async () => {});
   render(<QuickActions source={prompt} onRequest={onRequest} onRemove={onRemove} />);
   return { onRequest, onRemove };
 }
 function choose(label: string) { fireEvent.click(screen.getByRole('button', { name: label })); return screen.getByRole('dialog', { name: label }); }
 function more() { fireEvent.click(screen.getByText('Más acciones')); }
+
+it('searches by meaning with the original description and no incidental open prompt or case values', async () => {
+  const { onRequest } = setup(source);
+  choose('Buscar por significado');
+  expect(screen.queryByText('Prompt elegido')).toBeNull();
+  expect(screen.queryByLabelText('proyecto')).toBeNull();
+  const description = 'Una instrucción para revisar el avance del equipo. Debe permitir analizar riesgos.';
+  fireEvent.change(screen.getByLabelText('¿Qué prompt necesitas?'), { target: { value: description } });
+  fireEvent.click(screen.getByRole('button', { name: 'Buscar con IA' }));
+  await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
+  expect(onRequest.mock.calls[0]).toEqual([description, undefined, {}, { operation: 'SEARCH_PROMPT', content: description }]);
+});
+
+it.each(['TEMPLATE', 'RENDERED'] as const)('declares adaptation plus %s copy preparation from an explicit UI choice without authorizing save or clipboard', async copyContent => {
+  const { onRequest } = setup(source); more(); choose('Adaptar y preparar copia');
+  fireEvent.change(screen.getByLabelText('¿Qué quieres adaptar?'), { target: { value: 'Centrar la instrucción en decisiones.' } });
+  fireEvent.click(screen.getByRole('radio', { name: copyContent === 'TEMPLATE' ? 'Plantilla con marcadores' : 'Texto rellenado' }));
+  expect(screen.queryByLabelText('proyecto') !== null).toBe(copyContent === 'RENDERED');
+  fireEvent.click(screen.getByRole('button', { name: 'Adaptar y preparar' }));
+  await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
+  expect(onRequest.mock.calls[0][3]).toEqual({ operation: 'PROPOSE_ADAPTATION', content: 'Centrar la instrucción en decisiones.',
+    requestedOutcomes: ['PROPOSE_ADAPTATION', 'COPY_PROMPT'], copyContent });
+  expect(onRequest.mock.calls[0][0]).toContain('sin copiar ahora, guardar ni ejecutar');
+});
+
+it('does not send hidden case values after changing a copy choice back to reusable template', async () => {
+  const { onRequest } = setup(source); more(); choose('Adaptar y preparar copia');
+  fireEvent.change(screen.getByLabelText('¿Qué quieres adaptar?'), { target: { value: 'Adaptar para decisiones.' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Texto rellenado' }));
+  fireEvent.change(screen.getByLabelText('proyecto'), { target: { value: 'Datos anteriores' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Plantilla con marcadores' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Adaptar y preparar' }));
+  await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
+  expect(onRequest.mock.calls[0][2]).toEqual({});
+  expect(onRequest.mock.calls[0][0]).not.toContain('Datos anteriores');
+});
 
 it('asks only for the new prompt need and launches once after submitting, never on button selection', async () => {
   let finish!: () => void;
@@ -25,8 +62,23 @@ it('asks only for the new prompt need and launches once after submitting, never 
   fireEvent.change(screen.getByLabelText('¿Qué prompt quieres crear?'), { target: { value: 'Una guía para preparar clases de música.' } });
   fireEvent.click(submit); fireEvent.click(submit);
   expect(onRequest).toHaveBeenCalledOnce();
-  expect(onRequest.mock.calls[0]).toEqual(['Crea un nuevo prompt reutilizable desde cero para esta necesidad:\nUna guía para preparar clases de música.', undefined]);
+  expect(onRequest.mock.calls[0]).toEqual(['Una guía para preparar clases de música.', undefined, {}, { operation: 'CREATE_DRAFT', content: 'Una guía para preparar clases de música.' }]);
   finish(); await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+});
+
+it.each([
+  ['Crear prompt', '¿Qué prompt quieres crear?', 'Crear con NOVA', 'CREATE_DRAFT'],
+  ['Actualizar prompt', '¿Qué quieres cambiar?', 'Preparar cambios', 'PROPOSE_ADAPTATION'],
+])('keeps literal user title and body authority separate from the typed %s action', async (label, field, submit, operation) => {
+  const { onRequest } = setup(source);
+  const details = 'Título: «Mi guía: acciones». Cuerpo literal: «Resume <notas>. No inventes datos.»';
+  choose(label);
+  fireEvent.change(screen.getByLabelText(field), { target: { value: `  ${details}\n` } });
+  fireEvent.click(screen.getByRole('button', { name: submit }));
+  await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
+  expect(onRequest.mock.calls[0][0]).toBe(details);
+  expect(onRequest.mock.calls[0][3]).toEqual({ operation, content: details });
+  expect(onRequest.mock.calls[0][1]).toEqual(operation === 'CREATE_DRAFT' ? undefined : source);
 });
 
 it('selects a real library identity, preserves change details on failure, and allows a deliberate retry', async () => {
@@ -41,7 +93,7 @@ it('selects a real library identity, preserves change details on failure, and al
   expect((await screen.findByRole('alert')).textContent).toContain('Modelo no disponible.');
   expect((screen.getByLabelText('¿Qué quieres cambiar?') as HTMLTextAreaElement).value).toBe('Añade una tabla de prioridades.');
   expect(onRequest.mock.calls[0][1]).toEqual(other);
-  expect(onRequest.mock.calls[0][0]).toBe('Actualiza el prompt seleccionado según estos cambios:\nAñade una tabla de prioridades.');
+  expect(onRequest.mock.calls[0][0]).toBe('Añade una tabla de prioridades.');
   fireEvent.click(screen.getByRole('button', { name: 'Preparar cambios' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull()); expect(onRequest).toHaveBeenCalledTimes(2);
 });
@@ -52,7 +104,7 @@ it('reuses the current selection for read-only opening without asking for a new 
   expect(screen.queryByLabelText('proyecto')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Abrir con NOVA' }));
   await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
-  expect(onRequest.mock.calls[0]).toEqual([expect.stringContaining('sin modificar su contenido ni ejecutar su tarea'), source]);
+  expect(onRequest.mock.calls[0]).toEqual([expect.stringContaining('sin modificar su contenido ni ejecutar su tarea'), source, {}, { operation: 'OPEN_PROMPT', content: '' }]);
 });
 
 it('builds variable inputs from the selected template and preserves multiline Unicode values literally', async () => {
@@ -68,7 +120,7 @@ it('builds variable inputs from the selected template and preserves multiline Un
 });
 
 it('loads actual registered destinations and separates preparation from explicit local execution', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => Response.json([{ providerId: 'custom', displayName: 'Destino disponible', modesSupported: ['COPY_AND_OPEN'] }])));
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json([{ providerId: 'custom', displayName: 'Destino disponible', modesSupported: ['COPY_AND_OPEN'], destinationUrl: 'https://example.invalid/', canSubmit: false, availabilityStatus: 'MANUAL_PASTE' }])));
   const { onRequest } = setup(source); more(); choose('Preparar para una IA');
   await screen.findByRole('option', { name: 'Destino disponible' });
   expect((screen.getByRole('button', { name: 'Preparar con NOVA' }) as HTMLButtonElement).disabled).toBe(true);
@@ -79,6 +131,7 @@ it('loads actual registered destinations and separates preparation from explicit
   choose('Ejecutar con IA local'); fireEvent.click(screen.getByRole('button', { name: 'Ejecutar ahora' }));
   await waitFor(() => expect(onRequest).toHaveBeenCalledTimes(2));
   expect(onRequest.mock.calls[1][0]).toContain('Ejecuta ahora');
+  expect(onRequest.mock.calls[1][3]).toEqual({ operation: 'EXECUTE_LOCAL', content: '', providerId: 'ollama' });
 });
 
 it('asks for deletion review of an explicitly chosen prompt, including archived prompts, without issuing DELETE', async () => {

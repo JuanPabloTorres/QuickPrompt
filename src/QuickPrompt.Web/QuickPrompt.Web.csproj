@@ -9,8 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../QuickPrompt.Domain/QuickPrompt.Domain.csproj" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.29" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <ProjectReference Include="../../backend/QuickPrompt.Infrastructure/QuickPrompt.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

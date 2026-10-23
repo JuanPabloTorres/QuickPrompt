@@ -33,7 +33,7 @@ public partial class Home
     }
     private bool HasEditorChanges()
     {
-        var original=Store.FindTemplate(draft.Id);
+        var original=Templates.Find(draft.Id);
         return original is null ? !string.IsNullOrWhiteSpace(draft.Title+draft.Template+draft.Description) || draft.Variables.Count>0
             : draft.Title!=original.Title || draft.Template!=original.Template || draft.Description!=original.Description || draft.Category!=original.Category || !draft.Variables.OrderBy(x=>x.Key).SequenceEqual(original.Variables.OrderBy(x=>x.Key));
     }
@@ -61,9 +61,9 @@ public partial class Home
         get
         {
             if(selected is null)return "";
-            try{return Store.Preview(selected.Id,values,Guid.TryParse(instructionId,out var id)?id:null,promptAdjustments).Text;}
+            try{return Compiled.Preview(selected.Id,values,Guid.TryParse(instructionId,out var id)?id:null,promptAdjustments).Text;}
             catch(ValidationException){return T("Completa las variables para ver el texto final.","Fill the variables to preview the final text.");}
         }
     }
-    private void CreateFilterGroup()=>Safe(()=>{var group=new PromptGroup{Name=newGroupName.Trim()};Store.SaveGroup(group);newGroupName="";Reload();Notice(T("Grupo creado.","Group created."));});
+    private void CreateFilterGroup()=>Safe(()=>{var group=new PromptGroup{Name=newGroupName.Trim()};GroupAuthoring.SaveGroup(group);newGroupName="";Reload();Notice(T("Grupo creado.","Group created."));});
 }

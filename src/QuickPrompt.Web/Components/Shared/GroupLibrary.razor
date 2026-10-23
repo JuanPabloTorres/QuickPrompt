@@ -1,6 +1,9 @@
 @using QuickPrompt.Local
-@using QuickPrompt.Web.Infrastructure
-@inject LocalStore Store
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
+@inject ICollectionReader Collections
+@inject ICollectionWriter CollectionWriter
+@inject IGroupAuthoring Groups
 @inject IJSRuntime JS
 @{ var form = draft; }
 <div class="workspace organization-workspace">
@@ -19,12 +22,12 @@
     [Parameter]public string Language{get;set;}="es";[Parameter]public EventCallback Changed{get;set;}
     private List<GroupSummary> groups=[];private PromptGroup draft=new();private bool persisted,error;private string message="";private bool focus;
     private string T(string es,string en)=>Language=="es"?es:en;
-    protected override void OnInitialized()=>groups=Store.Groups();
+    protected override void OnInitialized()=>groups=Collections.Groups().ToList();
     protected override async Task OnAfterRenderAsync(bool first){if(focus){focus=false;await JS.InvokeVoidAsync("qp.focus","#group-name");}}
     private void New(){draft=new();persisted=false;message="";focus=true;}
-    private void Edit(PromptGroup value){if(persisted&&draft.Id==value.Id&&draft.Revision==value.Revision){focus=true;return;}draft=System.Text.Json.JsonSerializer.Deserialize<PromptGroup>(System.Text.Json.JsonSerializer.Serialize(value,LocalStore.Json),LocalStore.Json)!;persisted=true;message="";focus=true;}
-    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();Store.SaveGroup(draft);persisted=true;groups=Store.Groups();error=false;message=T("Grupo guardado.","Group saved.");await Changed.InvokeAsync();}catch(Exception e)when(e is ValidationException or ConflictException or Microsoft.Data.Sqlite.SqliteException){error=true;message=e is Microsoft.Data.Sqlite.SqliteException?T("No se pudo guardar el grupo.","Could not save group."):e.Message;}}
-    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar el grupo? Sus prompts e instrucciones se conservarán.","Delete group? Its prompts and instructions will be kept.")))return;if(draft.Id!=id)return;try{Store.DeleteGroup(id);New();groups=Store.Groups();message=T("Grupo eliminado; contenido conservado.","Group deleted; content kept.");error=false;await Changed.InvokeAsync();}catch(Microsoft.Data.Sqlite.SqliteException){error=true;message=T("No se pudo eliminar el grupo.","Could not delete group.");}}
+    private void Edit(PromptGroup value){if(persisted&&draft.Id==value.Id&&draft.Revision==value.Revision){focus=true;return;}draft=WorkspaceSnapshots.Copy(value);persisted=true;message="";focus=true;}
+    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();Groups.SaveGroup(draft);persisted=true;groups=Collections.Groups().ToList();error=false;message=T("Grupo guardado.","Group saved.");await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo guardar el grupo.","Could not save group."):e.Message;}}
+    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar el grupo? Sus prompts e instrucciones se conservarán.","Delete group? Its prompts and instructions will be kept.")))return;if(draft.Id!=id)return;try{CollectionWriter.Delete(id,new(draft.Revision,true));New();groups=Collections.Groups().ToList();message=T("Grupo eliminado; contenido conservado.","Group deleted; content kept.");error=false;await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo eliminar el grupo.","Could not delete group."):e.Message;}}
     private string IconLabel(string value)=>value switch{"library"=>T("Colección","Collection"),"braces"=>T("Código","Code"),"sparkles"=>T("Ideas","Ideas"),"star"=>T("Estrella","Star"),"archive"=>T("Archivo","Archive"),_=>T("Historial","History")};
     private string ColorLabel(string value)=>value switch{"blue"=>T("Azul","Blue"),"teal"=>T("Teal","Teal"),"yellow"=>T("Amarillo","Yellow"),"purple"=>T("Violeta","Purple"),_=>T("Rojo","Red")};
 }

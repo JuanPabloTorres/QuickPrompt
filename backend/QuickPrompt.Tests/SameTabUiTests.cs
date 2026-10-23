@@ -8,6 +8,19 @@ namespace QuickPrompt.Nova.Tests;
 
 public sealed class SameTabUiTests : IAsyncLifetime
 {
+    [Fact] public void TemporaryReferenceWorksWithoutTaskGoalButCannotReplaceAnotherDraftOrSession()
+    {
+        var request = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), "Adapta este borrador.", "SAME_TAB");
+        var reference = new DraftRef(Guid.NewGuid(), request.SessionId, 1, null, "Explica <tema>.");
+        var plan = SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT, SemanticOperation.PROPOSE_ADAPTATION], TargetReference.ACTIVE_DRAFT);
+        var state = State with { Mode = "create", TemplateText = reference.CurrentContent };
+        var decision = new UiDecision("ui_load_active_draft", JsonSerializer.SerializeToElement(new { promptId = (Guid?)null }));
+        UiToolCatalog.Validate(decision, UiToolCatalog.All, state, request, plan, reference);
+        Assert.Throws<ValidationException>(() => UiToolCatalog.Validate(decision, UiToolCatalog.All, state, request, plan));
+        Assert.Throws<ValidationException>(() => UiToolCatalog.Validate(decision, UiToolCatalog.All, state, request, plan, reference with { SessionId = Guid.NewGuid() }));
+        Assert.Throws<ConflictException>(() => UiToolCatalog.Validate(decision, UiToolCatalog.All, state with { TemplateText = "Cambio manual" }, request, plan, reference));
+        Assert.Throws<ConflictException>(() => UiToolCatalog.Validate(decision, UiToolCatalog.All, state with { PromptId = Guid.NewGuid() }, request, plan, reference));
+    }
     private readonly string directory = Path.Combine(Path.GetTempPath(), "nova-same-tab-tests-" + Guid.NewGuid());
     private readonly LiveRuns live;
     private readonly PromptLibrary library;
@@ -49,13 +62,14 @@ public sealed class SameTabUiTests : IAsyncLifetime
         await Task.Delay(30); Assert.False(pending.IsCompleted); live.Resume(id);
         Assert.Equal(State, await pending.WaitAsync(TimeSpan.FromSeconds(2)));
     }
-    [Fact] public async Task UnknownOutcomeBlocksWithoutRetryingAndConcurrentActionIsRejected()
+    [Theory] [InlineData("MANUAL_INTERVENTION")] [InlineData("UI_TARGET_AMBIGUOUS")]
+    public async Task UnknownOutcomeBlocksWithoutRetryingAndConcurrentActionIsRejected(string failureCode)
     {
         await using var driver = dispatcher.Factory().Create(); var pending = driver.Start(id, "", false, CancellationToken.None);
         await Assert.ThrowsAsync<ConflictException>(() => driver.Execute("ui_read_visible_state", UiToolCatalog.NoArguments, CancellationToken.None));
         var action = dispatcher.Poll(id, capability, true).Action!;
-        dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "INTERRUPTED", "UNKNOWN", null, "MANUAL_INTERVENTION"));
-        var error = await Assert.ThrowsAsync<PreparationToolException>(() => pending); Assert.Equal("MANUAL_INTERVENTION", error.Code);
+        dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "INTERRUPTED", "UNKNOWN", null, failureCode));
+        var error = await Assert.ThrowsAsync<PreparationToolException>(() => pending); Assert.Equal(failureCode, error.Code);
         Assert.Null(dispatcher.Poll(id, capability, true).Action);
     }
     [Fact] public async Task CancelReleasesPendingActionAndRejectsLateReceipt()

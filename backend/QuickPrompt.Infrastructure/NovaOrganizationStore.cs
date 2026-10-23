@@ -41,6 +41,12 @@ public sealed partial class LocalStore
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Export() + "\0" + operational)));
         }
     }
+    public LibraryRestorePreview NovaRestorePreview(System.Text.Json.JsonElement data)
+    {
+        // One owning store instance publishes the reviewed state and fingerprint
+        // together; its other operations cannot write between these reads.
+        lock (gate) return new(PreviewImport(data.GetRawText(), true), NovaSnapshot());
+    }
     public string NovaBackup() => Read(db =>
     {
         var path = new SqliteConnectionStringBuilder(connectionString).DataSource;

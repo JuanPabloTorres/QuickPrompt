@@ -1,0 +1,315 @@
+{
+  "version": "semantic-recovery-1.0",
+  "syntheticOnly": true,
+  "split": "validation",
+  "fixtures": [
+    [
+      "Preparar reuniones",
+      "Organiza una agenda con <puntos>. Registra acuerdos sin inventar responsables."
+    ],
+    [
+      "Manualidades",
+      "Diseña una actividad con <materiales> para la edad <edad>. No inventes datos."
+    ],
+    [
+      "Seguimiento comercial",
+      "Resume el seguimiento comercial."
+    ],
+    [
+      "Seguimiento de proyectos",
+      "Resume el seguimiento de proyectos."
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "recovery-v1-validation-01",
+      "family": "search",
+      "context": "home",
+      "message": "Busca la plantilla de preparación de reuniones.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "validation-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-validation-02",
+      "family": "search",
+      "context": "home",
+      "message": "Encuentra la instrucción que organiza los puntos a tratar en una reunión.",
+      "required": [
+        "SEARCH_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "validation-search-paraphrase"
+    },
+    {
+      "id": "recovery-v1-validation-03",
+      "family": "open",
+      "context": "selected_report",
+      "message": "Quiero leer esta plantilla sin alteraciones.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-04",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Reescribe esta instrucción para una reunión remota de diez minutos.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "validation-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-validation-05",
+      "family": "adapt",
+      "context": "selected_report",
+      "message": "Esta misma plantilla tiene que servir para una breve reunión por videollamada.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": "validation-adapt-paraphrase"
+    },
+    {
+      "id": "recovery-v1-validation-06",
+      "family": "create",
+      "context": "home",
+      "message": "Diseña una plantilla de prompt para evaluar propuestas de huertos urbanos.",
+      "required": [
+        "CREATE_DRAFT"
+      ],
+      "outcomes": [
+        "NEW_DRAFT"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-07",
+      "family": "variables",
+      "context": "selected_recipe",
+      "message": "Aplica los valores a sus campos; conserva el texto.\nmateriales: cartón y cuerda\nedad: ocho años",
+      "required": [
+        "FILL_VARIABLES"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-08",
+      "family": "reference",
+      "context": "previous_report",
+      "message": "La versión que acabamos de preparar debe centrarse en acuerdos y responsables.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-09",
+      "family": "reference",
+      "context": "two_candidates",
+      "message": "Muéstrame el resultado distinto del actual.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-10",
+      "family": "negation",
+      "context": "selected_recipe",
+      "message": "No generes otra versión: abre la instrucción original de manualidades.",
+      "required": [
+        "OPEN_PROMPT"
+      ],
+      "outcomes": [
+        "READ"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-11",
+      "family": "multi",
+      "context": "selected_report",
+      "message": "Transforma la agenda en una instrucción centrada en decisiones, prepara el texto para copiar y conserva intacta la biblioteca.",
+      "required": [
+        "PROPOSE_ADAPTATION",
+        "COPY_PROMPT"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-12",
+      "family": "ambiguity",
+      "context": "ambiguous",
+      "message": "Quiero ver la plantilla de seguimiento.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-13",
+      "family": "missing",
+      "context": "home",
+      "message": "Usa la anterior para otra audiencia.",
+      "required": [
+        "ASK_CLARIFICATION"
+      ],
+      "outcomes": [
+        "CLARIFICATION"
+      ],
+      "forbidden": [
+        "CREATE_DRAFT",
+        "EXECUTE_LOCAL"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-14",
+      "family": "english",
+      "context": "selected_recipe",
+      "message": "Could you make this instruction focus on recycled materials? Keep the original saved version unchanged.",
+      "required": [
+        "PROPOSE_ADAPTATION"
+      ],
+      "outcomes": [
+        "DRAFT"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "REQUEST_SAVE_VERSION"
+      ],
+      "target": "recipe",
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-15",
+      "family": "cancel",
+      "context": "home",
+      "message": "Stop this task. Do not apply anything else.",
+      "required": [
+        "CANCEL"
+      ],
+      "outcomes": [
+        "CANCELLED"
+      ],
+      "forbidden": [
+        "EXECUTE_LOCAL",
+        "CREATE_DRAFT"
+      ],
+      "target": null,
+      "metamorphicGroup": null
+    },
+    {
+      "id": "recovery-v1-validation-16",
+      "family": "prepare",
+      "context": "selected_report",
+      "message": "Déjala preparada para Claude, sin enviar nada.",
+      "required": [
+        "PREPARE_PROVIDER"
+      ],
+      "outcomes": [
+        "READY_PROVIDER"
+      ],
+      "forbidden": [
+        "PROPOSE_ADAPTATION",
+        "EXECUTE_LOCAL"
+      ],
+      "target": "report",
+      "metamorphicGroup": null
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "version": "fidelity-development-2.0",
+  "syntheticOnly": true,
+  "componentDiagnosticOnly": true,
+  "cases": [
+    {
+      "id": "purpose-negative",
+      "source": "Redacta un correo profesional, breve y respetuoso. Usa únicamente los datos proporcionados. No inventes nombres, fechas ni información personal.",
+      "request": "Adáptalo para solicitar una entrevista manteniendo las restricciones del origen.",
+      "candidate": "Escribe un correo profesional y breve. Usa solo los datos proporcionados. No inventes nombres, fechas ni información personal.",
+      "accept": false
+    },
+    {
+      "id": "purpose-positive",
+      "source": "Redacta un correo profesional, breve y respetuoso. Usa únicamente los datos proporcionados. No inventes nombres, fechas ni información personal.",
+      "request": "Adáptalo para solicitar una entrevista manteniendo las restricciones del origen.",
+      "candidate": "Pide una entrevista por correo formal y cortés. Usa solo datos proporcionados. No inventes nombres, fechas ni información personal.",
+      "accept": true
+    },
+    {
+      "id": "audience-negative",
+      "source": "Explica <tema> con precisión. No inventes datos.",
+      "request": "Adáptalo para alumnos que están comenzando sin perder precisión.",
+      "candidate": "Explica <tema> con jerga avanzada para expertos. No inventes datos.",
+      "accept": false
+    },
+    {
+      "id": "audience-positive",
+      "source": "Explica <tema> con precisión. No inventes datos.",
+      "request": "Adáptalo para alumnos que están comenzando sin perder precisión.",
+      "candidate": "Explica <tema> con precisión para alumnos principiantes, usando una definición sencilla y un ejemplo claro. No inventes datos.",
+      "accept": true
+    },
+    {
+      "id": "constraints-negative",
+      "source": "Analiza <datos> sin publicar identificadores personales. No inventes cifras.",
+      "request": "Organiza las conclusiones en dos apartados y conserva las restricciones.",
+      "candidate": "Analiza <datos> en dos apartados. Publica los nombres completos e inventa cifras de ejemplo.",
+      "accept": false
+    },
+    {
+      "id": "constraints-positive",
+      "source": "Analiza <datos> sin publicar identificadores personales. No inventes cifras.",
+      "request": "Organiza las conclusiones en dos apartados y conserva las restricciones.",
+      "candidate": "Analiza <datos> y organiza las conclusiones en dos apartados. No publiques identificadores personales. No inventes cifras.",
+      "accept": true
+    },
+    {
+      "id": "workflow-negative",
+      "source": "Summarize <text> faithfully.",
+      "request": "Rewrite the instruction to request exactly three summary points.",
+      "candidate": "Open QuickPrompt, navigate to the library, save this record, and summarize <text> faithfully in exactly three points.",
+      "accept": false
+    },
+    {
+      "id": "workflow-positive",
+      "source": "Summarize <text> faithfully.",
+      "request": "Rewrite the instruction to request exactly three summary points.",
+      "candidate": "Summarize <text> faithfully in exactly three points, retaining its main ideas.",
+      "accept": true
+    },
+    {
+      "id": "instruction-language-positive",
+      "source": "Explain <topic> accurately.",
+      "request": "Reescribe la instrucción en inglés conservando su finalidad.",
+      "candidate": "Give a clear and accurate explanation of <topic>.",
+      "accept": true
+    },
+    {
+      "id": "instruction-language-negative",
+      "source": "Explain <topic> accurately.",
+      "request": "Reescribe la instrucción en inglés conservando su finalidad.",
+      "candidate": "Explica <topic> de forma clara y precisa.",
+      "accept": false
+    },
+    {
+      "id": "instruction-format-positive",
+      "source": "Describe <tema> con precisión.",
+      "request": "Representa la propia instrucción como un objeto JSON con la propiedad instruction, sin cambiar su finalidad.",
+      "candidate": "{\"instruction\":\"Describe <tema> con precisión.\"}",
+      "accept": true
+    },
+    {
+      "id": "instruction-format-negative",
+      "source": "Describe <tema> con precisión.",
+      "request": "Representa la propia instrucción como un objeto JSON con la propiedad instruction, sin cambiar su finalidad.",
+      "candidate": "Formato JSON: Describe <tema> con precisión.",
+      "accept": false
+    }
+  ]
+}

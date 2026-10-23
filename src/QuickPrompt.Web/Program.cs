@@ -1,6 +1,7 @@
 using System.Net;
 using QuickPrompt.Web.Components;
 using QuickPrompt.Web.Infrastructure;
+using QuickPrompt.Nova.Application;
 
 var builder=WebApplication.CreateBuilder(args);
 if(builder.Configuration.GetSection("Kestrel:Endpoints").Exists())
@@ -14,8 +15,39 @@ builder.Services.AddSignalR(o=>o.MaximumReceiveMessageSize=6*1024*1024);
 var path=builder.Configuration["QuickPrompt:DataPath"] ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"QuickPromptWeb","quickprompt.sqlite");
 var aiTimeout=builder.Configuration.GetValue("QuickPrompt:AiTimeoutSeconds",180);
 if(aiTimeout is <5 or >180)throw new InvalidOperationException("AI timeout must be between 5 and 180 seconds.");
-builder.Services.AddSingleton(new LocalStore(path));
-builder.Services.AddSingleton<ILocalLlmClient>(_=>new OllamaClient(new HttpClient(new SocketsHttpHandler { AllowAutoRedirect=false, UseProxy=false }){Timeout=Timeout.InfiniteTimeSpan},builder.Configuration["QuickPrompt:Ollama"]??"http://127.0.0.1:11434",TimeSpan.FromSeconds(aiTimeout)));
+builder.Services.AddSingleton(new LocalPromptLibrary(path));
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Store);
+builder.Services.AddSingleton<ILibraryArchiveReader>(sp=>sp.GetRequiredService<LocalPromptLibrary>().Archives);
+builder.Services.AddSingleton<ILibraryArchiveWriter>(sp=>sp.GetRequiredService<LocalPromptLibrary>().Archives);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Sharing);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().LegacyConverter);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Templates);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().TemplateWriter);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Authoring);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Compiled);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Compilation);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Settings);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Proposals);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().CollectionReader);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().CollectionWriter);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().GroupAuthoring);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Memberships);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Instructions);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().InstructionWriter);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Combinations);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Assist);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().TransferHistory);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().TransferAudit);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Diagnostics);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().Panel);
+builder.Services.AddSingleton(sp=>sp.GetRequiredService<LocalPromptLibrary>().StorageFailures);
+builder.Services.AddSingleton(new AdaptiveCoreOptions(builder.Configuration["QuickPrompt:AdaptiveCore:Python"] ?? "",
+    Path.GetFullPath(builder.Configuration["QuickPrompt:AdaptiveCore:Worker"] ?? "agents/nova-core/nova_worker.py"),
+    Path.GetFullPath(builder.Configuration["QuickPrompt:AdaptiveCore:SdkRoot"] ?? "../Adaptive-AI-Core"),
+    builder.Configuration["QuickPrompt:Ollama"] ?? "http://127.0.0.1:11434"));
+builder.Services.AddSingleton<AdaptiveCoreModelTransport>();
+builder.Services.AddSingleton<ILocalLlmClient>(sp=>OllamaClient.CreateOwned(builder.Configuration["QuickPrompt:Ollama"]??"http://127.0.0.1:11434",TimeSpan.FromSeconds(aiTimeout),
+    modelTransport: sp.GetRequiredService<AdaptiveCoreModelTransport>()));
 var app=builder.Build();
 app.Use(async(ctx,next)=>
 {

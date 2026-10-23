@@ -1,3 +1,4 @@
+using LocalModelPolicy = QuickPrompt.Web.Infrastructure.LocalModelPolicy;
 using System.Text;
 using System.Text.RegularExpressions;
 using QuickPrompt.Domain.Entities;
@@ -71,6 +72,6 @@ public sealed record CompiledPrompt(Guid Id, Guid TemplateId, int Revision, stri
 }
 public record LlmExecution(Guid Id, Guid CompiledId, string Model, string Response, double ElapsedMs, DateTime CreatedAt);
 public record AiProposal(Guid Id, Guid? TemplateId, int BaseRevision, string Text, string[] Reasons, string[] Changes, string[] Warnings, string[] VariablesPreserved, string Model, string Status = "pending");
-public record Preferences(string Language = "es", string Theme = "light", string Model = "qwen3:8b", bool RememberValues = false, string GeneralInstructions = "");
+public record Preferences(string Language = "es", string Theme = "light", string Model = LocalModelPolicy.DefaultModelName, bool RememberValues = false, string GeneralInstructions = "");
 public record Archive(int SchemaVersion, Template[] Templates, TemplateVersion[] Versions, CompiledPrompt[] History, LlmExecution[] Executions, AiProposal[] Proposals, Preferences Preferences,
     PromptGroup[]? Groups = null, GroupMembership[]? Memberships = null, InstructionProfile[]? Instructions = null, InstructionVersion[]? InstructionVersions = null, PromptCombination[]? Combinations = null, WebTransferActivity[]? WebTransfers = null);

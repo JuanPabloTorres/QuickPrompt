@@ -6,6 +6,18 @@ Abre **http://127.0.0.1:5190**. Si ya tenías la aplicación abierta, guarda lo 
 
 Si aparece **ERR_CONNECTION_REFUSED**, el servidor local está detenido. Desde la terminal del proyecto ejecuta `.\scripts\Start-Nova.ps1 -NoBrowser -Background` y recarga tu misma pestaña. Si ya se ejecuta una versión antigua, detén ese servidor antes de volver a iniciarlo. Si lo inicias sin `-Background`, debes mantener abierta la terminal.
 
+## Guardar, encontrar, mejorar, aplicar y eliminar
+
+Abre el círculo **NOVA**. Puedes completar este ciclo con sus acciones rápidas:
+
+1. **Crear prompt**: describe la tarea que quieres reutilizar. Revisa el borrador y pulsa **Revisar y guardar copia → Confirmar guardado de esta copia**. Si escribes el prompt manualmente en **Nuevo prompt**, pulsa **Guardar prompt**.
+2. **Buscar y abrir**: escribe una parte del título o del contenido, selecciona el resultado y pulsa **Abrir con NOVA**. Usa **Elegir otro** si ya hay un prompt seleccionado.
+3. **Actualizar prompt**: pide un cambio concreto, por ejemplo «Organiza las tareas en una tabla con Tarea y Responsable; conserva la prohibición de inventar datos». Revisa la propuesta y confirma **Revisar y guardar versión → Confirmar guardado de esta versión**. El original no cambia antes de confirmar.
+4. **Más acciones → Ejecutar con IA local**: completa los datos solicitados y pulsa **Ejecutar ahora**. El resultado es la respuesta de Qwen, además de la instrucción preparada. Por ejemplo, un prompt para extraer tareas puede recibir «Lucía debe enviar el informe. Mateo debe revisar el presupuesto» y devolver ambas tareas con sus responsables.
+5. Cierra el diálogo del resultado con su **X** y elige **Eliminar prompt** en NOVA: revisa el elemento elegido y confirma **Eliminar definitivamente**. **Cancelar** conserva el registro. Para apartarlo sin borrarlo, usa **Archivar** en el prompt abierto.
+
+La acción elegida fija la operación; el campo de detalles conserva lo que escribiste. Si NOVA bloquea una propuesta, revisa el mensaje y el contenido: un estado final del agente no sustituye comprobar que obtuviste el resultado esperado.
+
 ## Tu primera tarea: escribir un correo
 
 1. Baja a **Tu biblioteca**. Si la lista está filtrada, limpia **Buscar en la biblioteca**. La petición que escribes a NOVA es independiente de esta búsqueda.
@@ -19,7 +31,7 @@ No necesitas crear una plantilla para usar la biblioteca. Hay **60 prompts en 20
 
 ## Pedirle una instrucción a NOVA
 
-Puedes empezar con los **botones de acciones rápidas**, sin escribir la instrucción completa:
+Abre el **botón circular NOVA**, con el icono de destellos en la esquina inferior derecha. Allí encontrarás el campo de instrucciones y los **botones de acciones rápidas**, sin escribir la instrucción completa:
 
 - **Crear prompt**: describe qué necesitas; NOVA prepara el borrador.
 - **Actualizar prompt**: elige el prompt y cuenta qué quieres cambiar.
@@ -31,11 +43,19 @@ También están disponibles al abrir un prompt; allí ya conocen el elemento sel
 
 En la entrada principal escribe, por ejemplo: «Necesito un prompt para resumir un documento». Pulsa la flecha. NOVA puede buscar, abrir, completar o preparar una instrucción nueva según lo que pidas. Verás los controles y la escritura en la misma pestaña. Si falta información, te preguntará.
 
-Durante una tarea aparece el botón **NOVA** en la esquina inferior derecha. Ábrelo para ver lo que está haciendo, ajustar la velocidad, pausar, continuar o detener. Cierra el panel con la X, Escape o pulsando fuera: el formulario sigue disponible. Cuando la tarea termina o la cancelas, el indicador desaparece. Una pausa o un borrador que espera revisión conserva los controles necesarios para continuar.
+El botón circular NOVA permanece en la esquina inferior derecha al desplazarte y cambiar de pantalla. Se inicia cerrado; al pulsarlo se abre un panel compacto con las acciones y el campo de instrucciones. Durante una tarea muestra un pequeño indicador de trabajo o pausa. Dentro del panel, **Actividad de NOVA** permite consultar la etapa actual y las acciones en pantalla, con hora, prompt y estado de comprobación. **Campos y valores comprobados** muestra el texto que NOVA escribió realmente, incluido el valor anterior cuando lo cambió. Una acción en curso o pendiente de confirmación todavía no presenta valores como comprobados. Puedes pausar, continuar o detener desde el mismo panel; tocar la pantalla no pausa al agente. La velocidad se ajusta en Configuración.
+
+Cierra el asistente con su X, el mismo círculo o Escape desde el campo de instrucciones: conserva lo escrito y no detiene una tarea. Ctrl+K lo abre y enfoca el campo sin cambiar de pantalla. Al terminar desaparece el indicador de trabajo, pero el círculo permanece disponible. Dentro del panel, el icono **Ver última actividad de NOVA**, junto al nombre NOVA, vuelve a abrir el registro. **Descargar actividad** guarda un informe JSON con los pasos y valores mostrados para revisar un error. Este detalle permanece solo en la memoria de la pestaña, con un máximo de 100 acciones por ejecución; al recargar se pueden recuperar las etapas del servidor, pero no los valores anteriores del registro local.
+
+El envío del progreso no detiene las acciones si tarda o falla. NOVA agrupa las actualizaciones del panel y reutiliza cálculos recientes cuando coinciden todos sus datos y el modelo instalado, sin repetir la inferencia. Una tarea nueva o con datos distintos puede necesitar tiempo de Qwen; las comprobaciones y la confirmación de guardado siguen ejecutándose. [Consulta las mediciones de rendimiento](nova/PERFORMANCE.md).
 
 El borrador no se guarda automáticamente. Revisa el contenido y pulsa **Guardar prompt**, **Guardar versión** o **Actividad de NOVA → Revisar y guardar versión**; confirma el texto que quieras conservar. **Usar en…** permite completar los datos y obtener una respuesta. Rechazar o detener no cambia el original guardado.
 
-Si prefieres ver solo el resultado final, despliega **Opciones de preparación** y elige **Solo mostrar el resultado**. En ese modo el resultado se abre en un diálogo que puedes cerrar y recuperar sin repetir la petición. La vista previa permanece visible.
+NOVA está disponible desde el círculo de la esquina inferior derecha, también al desplazarte o abrir un prompt. Sus iconos permiten crear, actualizar, buscar y revisar una eliminación; **Más acciones** permite completar variables o preparar una IA. El input conserva lo que escribes al cambiar de pantalla. Ctrl+K lo enfoca sin salir del editor.
+
+Si prefieres ver solo el resultado final, abre **Configuración** (engranaje junto al tema del encabezado) y elige **Presentación del resultado → Solo mostrar el resultado**. Allí también puedes ajustar velocidad, apariencia, preferencias y conservación de borradores. En ese modo el resultado se abre en un diálogo que puedes cerrar y recuperar sin repetir la petición. La vista previa permanece visible.
+
+En **Tu biblioteca**, los iconos de cuadrícula y lista alternan **Tarjetas / Filas**. Cada prompt ofrece favorito, editar, duplicar y eliminar; la eliminación siempre muestra una confirmación. Los filtros **Favoritos**, **Recientes** y **Archivo** tienen sus propios iconos.
 
 También puedes escribir acciones sobre tu biblioteca:
 
@@ -74,4 +94,4 @@ El video de preparación muestra el flujo de **Solo mostrar el resultado**, que 
 
 Para añadir los 60 prompts a la biblioteca que estés usando, abre **Guía y videos → Añadir biblioteca práctica**. No reemplaza tus versiones: si detecta conflictos te pide revisarlos. [Descarga el archivo reutilizable](../apps/web/public/library/biblioteca-practica.es.json).
 
-Para conservar una copia de tus cambios personales, utiliza **Datos y respaldos → Exportar respaldo JSON**. Los videos y la biblioteca práctica se sirven desde tu equipo.
+Para conservar una copia de tus cambios personales, utiliza **Configuración → Datos y respaldos → Exportar respaldo JSON**. Los videos y la biblioteca práctica se sirven desde tu equipo.

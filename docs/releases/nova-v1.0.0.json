@@ -1,0 +1,103 @@
+{
+  "schema": "quickprompt-nova-release/1",
+  "version": "1.0.0",
+  "tag": "nova-v1.0.0",
+  "releaseDate": "2026-10-23",
+  "timezone": "America/La_Paz",
+  "status": "CLOSED_BY_USER_ACCEPTANCE",
+  "profile": "EXPLICIT_USER_ACTION_AI_CONTENT_AND_SEARCH",
+  "humanAcceptance": {
+    "requirement": "REL-09",
+    "status": "ACCEPTED",
+    "source": "Direct user confirmation: tested the flow and it worked; requested initial version commit, push and tag.",
+    "taskDetails": "Not supplied; no independent observation claimed."
+  },
+  "checks": {
+    "backend": {
+      "passed": 1160,
+      "failed": 0,
+      "skipped": 0,
+      "execution": "RERUN_FOR_THIS_RELEASE",
+      "evidenceSha256": "0E3453829333912BAC10C88C3825479023BDD096E3C298003E6351381F5347FE"
+    },
+    "frontend": {
+      "passed": 253,
+      "failed": 0,
+      "execution": "RERUN_FOR_THIS_RELEASE",
+      "logSha256": "AF3DB933250906CB72F93993DC0810FE4C452488829923907B088040DE5CA50A"
+    },
+    "webBuild": {
+      "status": "PASS",
+      "logSha256": "27F5BD589F3E75E56567D24A663140F0E8E97426CCBEB2B0AD116980100A0922",
+      "bundleSha256": "7086C907E0E4B78A8445EB1F5D704DC11254052BCDE3165D305CFCE48ECB8677"
+    },
+    "browserVersion": {
+      "status": "PASS",
+      "checks": [
+        "header-shows-package-version",
+        "settings-shows-initial-version",
+        "mobile-brand-inside-viewport",
+        "no-browser-errors"
+      ],
+      "errors": [],
+      "observedUtc": "2026-10-23T04:00:50.382Z"
+    },
+    "priorCompleteRealModelFlow": {
+      "passed": 14,
+      "status": "PASS",
+      "execution": "PRIOR_SAME_BACKEND_AND_SDK_BEFORE_VERSION_LABEL",
+      "evidenceSha256": "0D99EC6D9782CA34884CE3342D44BCB525E0610B26B703A106BF2C8E568E59B2"
+    },
+    "sdk": {
+      "passed": 54,
+      "execution": "PRIOR_EVIDENCE",
+      "note": "Second consumer also passed in the complete real-model flow."
+    },
+    "stagedContentReview": {
+      "checkedStagedFiles": 967,
+      "textFilesScanned": 955,
+      "credentialPatternFlags": [],
+      "privateDataPaths": []
+    },
+    "activationLibrary": {
+      "unchanged": true,
+      "integrity": "ok"
+    }
+  },
+  "runtimeIdentity": {
+    "api": {
+      "QuickPrompt.Api.dll": "274ff35bf118328737fc1c44ce2a8361cb48c6a718e2889898da6755f2de609e",
+      "QuickPrompt.Application.dll": "8fb5a3539a0f79fbeb57bc2173fdba37bc2549642bf0fba747c010046d75ad5c",
+      "QuickPrompt.Infrastructure.dll": "a23d0d64a8436a2e6cf5cfbd55916400a50d6f540257f80b07d8c847cedb9eb0"
+    },
+    "workerAndSdk": {
+      "workerSha256": "A85037C4E5ED931E5B2D1C84DE01710075E2510422193391991C081F9E1C26EC",
+      "sdkHashes": {
+        "__init__.py": "4B379F5D6E76FEF9886C78B791C2D4934B00F4C29FE71E8B0C8D6C33D12F9749",
+        "capabilities.py": "731806F372E4E1563125736EA368C9F6D9B4C9700F025B28B3A518C219217FBC",
+        "host.py": "5EE98174AEA86992E3303A37C6326E19DA5659B034655881FDC586C401E98738",
+        "inference.py": "790BAF67C929B8B943ED5DE466D29A1D879C38D3ACE1AEC1D33FCCF5BAADBE95",
+        "observation.py": "8FFB742267CB754434D5BA0AC7F1434D4F652BFDD17E68D240EDA4C11F57A29E",
+        "ollama_framework.py": "A36B08821268845EF4C225ACF9142A7DF460C9E2BC1643491D97CDE81AB0C54B",
+        "provider.py": "9B22862E2D6D3BEE3A55A12389225C4A61D72E8606F85EC021B6FE010C578112",
+        "runtime.py": "BA0C6059C3A12E639AF5129991D28D9C31EAC570280CDA986AA2B6D0F3247A8A",
+        "store.py": "B562BA5C25E89EC754F5EF2F63281BC1E23DDE55127B96AD5BB35E41581E2143"
+      }
+    },
+    "model": "qwen3:8b",
+    "modelDigest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41"
+  },
+  "historicalExpandedLedger": {
+    "path": "docs/nova/VERSION_CLOSURE_MATRIX.json",
+    "status": "NO_CERRADA",
+    "closed": 34,
+    "open": 54,
+    "relationship": "Original expanded criteria retain their evidence and statuses. This is not universal qualification of the retired free decoder."
+  },
+  "knownLimits": [
+    "Initial local action-based workflow accepted by the user; no universal semantic or generation reliability claim.",
+    "Source release requires separately configured local Adaptive-AI-Core, Python and model dependencies.",
+    "Existing xUnit analyzer and Vite chunk-size warnings remain; builds and tests pass."
+  ],
+  "publication": "Git commit and annotated tag; remote state verified after push."
+}

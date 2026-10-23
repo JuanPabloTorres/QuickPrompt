@@ -2,7 +2,33 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using QuickPrompt.Nova.Application;
+using QuickPrompt.Nova.Evaluation;
 using QuickPrompt.Web.Infrastructure;
+if (args.FirstOrDefault() == "--module-host") { ModuleHostEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--instruction-contracts") {
+    if (args.Length != 2) throw new ArgumentException("Pass a new owned docs/nova/contracts directory.");
+    var target = Path.GetFullPath(args[1]);
+    var allowed = Path.GetFullPath(Path.Combine("docs", "nova", "contracts")) + Path.DirectorySeparatorChar;
+    if (!target.StartsWith(allowed, StringComparison.OrdinalIgnoreCase) || Directory.Exists(target))
+        throw new ArgumentException("Use a new versioned contracts directory; existing artifacts are preserved.");
+    Directory.CreateDirectory(target);
+    foreach (var contract in PreparationInference.InstructionScopeSchemas())
+        File.WriteAllText(Path.Combine(target, contract.Key + ".schema.json"), JsonSerializer.Serialize(contract.Value, new JsonSerializerOptions { WriteIndented = true }));
+    File.WriteAllText(Path.Combine(target, "capabilities.json"), JsonSerializer.Serialize(SemanticCapabilityCatalog.All, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }));
+    Console.WriteLine("Exported actual C# instruction-scope contracts and reflected capabilities."); return;
+}
+if (args.FirstOrDefault() == "--reflected-content") { await ReflectedContentEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--reflected-preparation") { await ReflectedContentEvaluation.RunPreparation(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--reflected-recovery") { await RecoveryEvaluation.RunReflected(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--reflected-tools") { await ReflectedToolsEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--authoring-wire") { await AuthoringWireEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--shared-authoring") { await SharedAuthoringEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--authoring-review") { await AuthoringReviewEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--recovery") { await RecoveryEvaluation.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--generation-diagnostic") { await GenerationDiagnostic.Run(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--planning-diagnostic") { await GenerationDiagnostic.Plan(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--causal-gold") { await RecoveryEvaluation.RunGold(args.Skip(1).ToArray()); return; }
+if (args.FirstOrDefault() == "--fidelity") { await FidelityEvaluation.Run(args.Skip(1).ToArray()); return; }
 if (args.FirstOrDefault() == "--semantic") { await SemanticEvaluation.Run(args.Skip(1).ToArray()); return; }
 
 if (args.FirstOrDefault() == "--agentic") { await AgenticEvaluation.Run(args.Skip(1).ToArray()); return; }

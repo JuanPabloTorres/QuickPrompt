@@ -45,7 +45,7 @@ public class OllamaContractTests
     }
     [Fact] public async Task MeaningfulImprovementKeepsExactNamesAndMetadata()
     {
-        var body=System.Text.Json.JsonSerializer.Serialize(new{done=true,message=new{content="{\"text\":\"Saluda de forma amable a <nombre>\",\"reasons\":[\"claridad\"],\"changes\":[\"tono\"],\"warnings\":[],\"variablesPreserved\":[\"nombre\"]}"}});
+        var body=System.Text.Json.JsonSerializer.Serialize(new{done=true,message=new{content="{\"text\":\"Saluda de forma amable a <nombre>\",\"reasons\":[\"claridad\"],\"changes\":[\"tono\"],\"warnings\":[],\"variablesPreserved\":[\"nombre\"],\"shorteningRequested\":false}"}});
         var p=await Client(body).Propose("improve","",new(){Title="test",Template="Hola <nombre>"},"qwen3:8b",default);Assert.Equal(["nombre"],p.VariablesPreserved);Assert.NotEmpty(p.Changes);Assert.Equal("pending",p.Status);
     }
     [Fact] public async Task UntrustedInputStaysInUserRoleAndNoTools()

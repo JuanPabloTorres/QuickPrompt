@@ -1,5 +1,7 @@
 # NOVA — propuesta de dependencias
 
+Actualización backend 2026-10-20: el usuario autorizó `Microsoft.Extensions.AI.Abstractions 10.11.0` y `System.Text.Json 10.0.13`, incluidas sus transitivas oficiales. Se agregaron únicamente a `QuickPrompt.Infrastructure.csproj` y se ejecutó `dotnet restore` correctamente. La resolución net8 añade `System.IO.Pipelines 10.0.13` y `System.Text.Encodings.Web 10.0.13`; conserva las dependencias SQLite existentes. La biblioteca genera esquemas/invocaciones desde los métodos reales; no instala un proveedor de nube, navegador ni modelo. Véase [sustitución reflejada](REFLECTED_AGENT_REPLACEMENT.md) para alcance, pruebas y pendientes. Las auditorías npm/NuGet históricas de abajo pertenecen a sus fechas y no acreditan esta resolución nueva.
+
 Estado: instalación autorizada explícitamente por el usuario el 2026-10-16 y ejecutada mediante `npm install --ignore-scripts` exclusivamente en `apps/web`. Consulta de metadatos npm realizada antes de solicitar autorización. Lockfile independiente generado; el package/lock raíz se conservaron.
 
 Manifest revisable: `apps/web/package.json`. No se descargaron navegadores, SDK ni modelos mediante esta instalación.

@@ -8,6 +8,7 @@ public interface IPreparationPreferences
 {
     PreparationPreferences Get();
     void Save(PreparationPreferences preferences);
+    PreparationPreferences Confirm(PreferenceApproval input);
     void Forget();
 }
 public static class PreparationPreferenceRules

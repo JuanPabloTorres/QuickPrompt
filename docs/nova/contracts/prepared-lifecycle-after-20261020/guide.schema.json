@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "representations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "UserWorkOrder",
+              "LiteralAuthoringDirective",
+              "ReusableInstruction",
+              "CaseValues",
+              "RenderedInstruction"
+            ]
+          },
+          "member": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "member",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contractVersion",
+    "stage",
+    "goal",
+    "rules",
+    "representations"
+  ],
+  "additionalProperties": false
+}
