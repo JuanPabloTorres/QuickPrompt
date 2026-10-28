@@ -4,9 +4,33 @@ Estado de revisión: **28 de octubre de 2026 · piloto publicado en validación;
 La versión visible sigue siendo **1.0.0**. Este documento no crea una versión,
 un tag ni una nueva aceptación humana. Registra el piloto cuya publicación fue
 autorizada; no certifica una salida comercial. El contrato y los
-incidentes conservan su propietario en [SAAS_DELIVERY.md](SAAS_DELIVERY.md).
+incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
+Las rutas de expedientes locales entre comillas de código no son enlaces ni
+archivos incluidos en este candidato; no son requisitos de instalación.
 
 ### Verificación adicional del 28/10 — puertas que siguen abiertas
+
+El candidato de operaciones `84faba7b024f3739772c98cdbb82664d242cacf3` se publicó
+sólo en la rama de validación. Su CI `40756884417` aprobó el job Windows y el
+restore bloqueado del grafo Cloud; PostgreSQL aprobó 380 pruebas y falló una,
+con 21 casos reales de Qwen no ejecutados. Los dos controles de concurrencia
+pasaron: diez propietarios y dos hosts, máximo dos handlers globales y uno por
+propietario, cuatro trabajos adicionales admitidos y uno rechazado por cuota,
+cero invocaciones duplicadas y diez lecturas NOVA sin inferencia ni escrituras.
+La prueba de agotamiento del pool recibió **500 en `/health` en vez de 503**;
+se conserva como defecto abierto de disponibilidad. El recorrido de recuperación
+posterior no se alcanzó en ese intento. Son mediciones HTTP TestServer con
+PostgreSQL sintético, no carga pública, DOM, capacidad de Qwen o SLA comercial.
+Los recibos de ese corte no se convierten en PASS al corregir un corte posterior.
+
+La reparación posterior sitúa únicamente GET/HEAD de `/health` después del
+control de origen/ingreso y antes de validar cookies. Reutiliza el probe de
+PostgreSQL; no mueve la autenticación de rutas privadas. Once comprobaciones
+locales pasaron: el contraste controlado reproduce el framing anterior
+(cookie: 500; anónimo: 503), el nuevo permite llegar al probe en ambos casos,
+las rutas privadas conservan autenticación y un origen ajeno recibe 403. La
+causa exacta del intento PostgreSQL anterior sigue siendo probable hasta el
+contraste de integración; esas once pruebas no certifican su recuperación real.
 
 La revisión siguiente conserva el candidato público RC8. Los cambios de
 observabilidad, dependencias y capacidad posteriores deben pasar su propia CI
@@ -88,12 +112,12 @@ presupuesto de usuarios autenticados detrás del mismo proxy: el contraste anter
 reprodujo dos bloqueos indebidos y la regresión focal pasó **44/44** pruebas.
 Conserva un límite de ingreso físico y los límites previos de OAuth; no confía en
 cabeceras de identidad o IP suministradas por el cliente. Su contrato y límites están
-en [COMMERCIAL_SECURITY_ACCEPTANCE_20261028.md](COMMERCIAL_SECURITY_ACCEPTANCE_20261028.md).
+en `COMMERCIAL_SECURITY_ACCEPTANCE_20261028.md` (expediente local).
 
 La autoría ahora se detiene ante un contrato editable: tarea, requisitos, variables
 y papel explícito de cada enlace. Confirmarlo compone literalmente la plantilla,
 sin otra redacción del modelo; el permiso final de guardar sigue separado. El
-[diseño de autoría confirmada](../nova/FIDELIDAD_CONTRATO_CONFIRMADO_20261028.md)
+diseño de autoría confirmada del expediente local `../nova/FIDELIDAD_CONTRATO_CONFIRMADO_20261028.md`
 conserva la propuesta de IA frente a la corrección humana. El candidato final pasó
 **1409/1409** pruebas de backend Release, **8/8** de telemetría Debug,
 **27/27** MCP, **16/16** Companion, **168/168** del consumidor legado y **463/463**
@@ -311,8 +335,8 @@ componentes ni trasladando la aceptación del antiguo modo local.
 El usuario eligió web React/Vite en Vercel y backend ASP.NET Core persistente con
 PostgreSQL, cola y companion existentes. Vercel no aloja el agente ni recibe
 credenciales de PostgreSQL, certificados o claves de delegación. La
-[guía híbrida](../../deploy/vercel/README.md) posee build, rutas y proxy; el
-[backend](../../deploy/cloud/README.md) posee ingreso autenticado y claves estables.
+guía híbrida local `../../deploy/vercel/README.md` posee build, rutas y proxy; la
+guía local del backend `../../deploy/cloud/README.md` posee ingreso autenticado y claves estables.
 
 El proyecto `quickprompt-web-jpt`, ID `prj_fHkWBxkbKbx1WUcJ3GFnDACucSaC`, se creó
 en el equipo Hobby verificado. La creación inicial por plugin devolvió 403 y se
@@ -361,7 +385,7 @@ servir para demostrar el recorrido sin ser una oferta comercial operable.
 ## Qué está comprobado
 
 Los recibos locales citados viven en `.playwright/saas-delivery-20261026/` y se
-conservan fuera de Git por la [política de evidencia](../evidence/README.md).
+conservan fuera de Git por la política de evidencia local `../evidence/README.md`.
 Son ejecuciones identificadas; no deben presentarse como un candidato final
 correlacionado retroactivamente.
 
@@ -392,7 +416,7 @@ correlacionado retroactivamente.
 | Dependencias | Consulta de NuGet sobre 14 proyectos sin vulnerabilidades reportadas; npm de producción sin vulnerabilidades reportadas. | `market-dotnet-vulnerabilities.json` y salida de `npm audit --omit=dev --json`; consulta fechada, no auditoría de seguridad completa. |
 | Protocolo MCP y cliente local, corte previo a la adaptación híbrida | **27/27** del MCP local y **16/16** del cliente Windows, cero omitidas. | `tests/draft-proposal-mcp-final.trx` y `tests/draft-proposal-companion-final.trx`; transporte sintético/controlado, sin Qwen ni ChatGPT real. El MCP delegado se prueba en Accounts; el plugin público multiusuario sigue pendiente. |
 
-La autoría vigente se detalla en [FIDELIDAD_R3_DISENO_20261027.md](../nova/FIDELIDAD_R3_DISENO_20261027.md): contexto de aplicación, una propuesta IA completa y revisión humana ligada a cuerpo, metadata, fuentes y diferencias literales. `CONTENT_ONLY` consume revisión para continuar y **no autoriza guardar**. El campo/URI presente no demuestra utilidad; **IA no resuelta**.
+La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISENO_20261027.md`: contexto de aplicación, una propuesta IA completa y revisión humana ligada a cuerpo, metadata, fuentes y diferencias literales. `CONTENT_ONLY` consume revisión para continuar y **no autoriza guardar**. El campo/URI presente no demuestra utilidad; **IA no resuelta**.
 
 ## Puertas de aceptación del producto
 

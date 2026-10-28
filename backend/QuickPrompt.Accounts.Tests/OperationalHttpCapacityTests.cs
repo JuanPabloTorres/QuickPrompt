@@ -165,6 +165,7 @@ public sealed partial class AccountHttpTests
         var log = new OperationalTestLog(); var passed = false;
         await using var host = await Start(delegation: false, configureServices: services => services.AddLogging(logging => logging.AddProvider(log)));
         using var owner = Client(host.App);
+        using var anonymous = Client(host.App);
         await Login(owner, await Register(owner, host.Mail));
         var before = (await owner.GetFromJsonAsync<JsonElement[]>("/api/accounts/v1/libraries/"))!;
         (await owner.GetAsync("/health")).EnsureSuccessStatusCode();
@@ -173,7 +174,17 @@ public sealed partial class AccountHttpTests
         {
             await using (var held = await pool.OpenConnectionAsync())
             {
-                Assert.Equal(HttpStatusCode.ServiceUnavailable, (await owner.GetAsync("/health")).StatusCode);
+                using var forged = new HttpRequestMessage(HttpMethod.Get, "/health");
+                forged.Headers.Add("Origin", "https://synthetic-untrusted.example.invalid");
+                var forgedStatus = (await owner.SendAsync(forged)).StatusCode;
+                var anonymousStatus = (await anonymous.GetAsync("/health")).StatusCode;
+                var authenticatedStatus = (await owner.GetAsync("/health")).StatusCode;
+                measurements.Facts["anonymousHealthDuringPoolStarvation"] = (int)anonymousStatus;
+                measurements.Facts["authenticatedHealthDuringPoolStarvation"] = (int)authenticatedStatus;
+                measurements.Facts["forgedOriginDuringPoolStarvation"] = (int)forgedStatus;
+                Assert.Equal(HttpStatusCode.Forbidden, forgedStatus);
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, anonymousStatus);
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, authenticatedStatus);
                 Assert.Equal(HttpStatusCode.InternalServerError, (await owner.GetAsync("/api/accounts/v1/libraries/")).StatusCode);
                 Assert.Contains(log.Events, item => item.Id == 5330);
             }
@@ -187,7 +198,13 @@ public sealed partial class AccountHttpTests
             measurements.Facts["postgresServerStopped"] = false;
             passed = true;
         }
-        finally { measurements.Save(passed); }
+        finally
+        {
+            measurements.Facts["readinessUnavailableSignals"] = log.Events.Count(item => item.Id == 5330);
+            measurements.Facts["safeBoundaryDiagnostics"] = log.Events.Where(item => item.Id == 5330
+                || item.Message.StartsWith("Account operation failed:", StringComparison.Ordinal)).Select(item => item.Message).ToArray();
+            measurements.Save(passed);
+        }
     }
 
     private sealed record CapacityOwner(HttpClient Client, Guid Actor, Guid Library, AccountPrompt Prompt)

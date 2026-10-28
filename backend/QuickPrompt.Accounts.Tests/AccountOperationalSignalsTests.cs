@@ -15,12 +15,17 @@ public sealed class AccountOperationalSignalsTests
         const string privateMarker = "SYNTHETIC_PRIVATE_PAYLOAD_DO_NOT_LOG";
         var logger = new OperationalTestLog();
         var measurements = new List<(string Name, long Value, KeyValuePair<string, object?>[] Tags)>();
+        var testThread = Environment.CurrentManagedThreadId;
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, source) =>
         {
             if (instrument.Meter.Name == AccountOperations.MeterName) source.EnableMeasurementEvents(instrument);
         };
-        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) => measurements.Add((instrument.Name, value, tags.ToArray())));
+        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
+        {
+            // A prior host can finish disposal on another thread during a full integration run.
+            if (Environment.CurrentManagedThreadId == testThread) measurements.Add((instrument.Name, value, tags.ToArray()));
+        });
         listener.Start();
 
         AccountOperations.ReadinessUnavailable(logger);

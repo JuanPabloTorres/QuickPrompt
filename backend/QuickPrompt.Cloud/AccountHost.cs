@@ -174,6 +174,9 @@ public static class AccountHost
             }
         });
         app.UseAccountIngressLimits();
+        // Public readiness must reach its own dependency check even when validating
+        // an unrelated account cookie would need the same unavailable connection pool.
+        app.UsePublicAccountReadiness(CheckPhysicalHealth);
         if (delegation) app.UseDelegationFence();
         if (delegation && app.Services.GetRequiredService<McpAccountSettings>().Enabled) app.UseAccountMcpChallenge();
         app.UseAuthentication();
@@ -249,6 +252,15 @@ public static class AccountHost
 }
 
 public sealed record AccountOrigin(Uri Value);
+
+/// <summary>Public read-only readiness framing; place after ingress/origin guards and before authentication.</summary>
+public static class AccountReadiness
+{
+    /// <summary>Only GET/HEAD of the public health path bypass cookie validation. All resource routes keep normal authentication.</summary>
+    public static void UsePublicAccountReadiness(this WebApplication app, RequestDelegate probe) =>
+        app.UseWhen(context => context.Request.Path == "/health" && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)),
+            branch => branch.Run(probe));
+}
 
 /// <summary>Account-host admission budgets. These bounds are protective limits, not a capacity guarantee.</summary>
 public static class AccountRateLimiting
