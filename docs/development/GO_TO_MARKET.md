@@ -184,6 +184,43 @@ dominio verificado](https://developers.google.com/identity/protocols/oauth2/prod
 El recibo `commercial-factual-rc10/google-oauth-readonly-20261028.json` conserva
 sólo metadatos públicos, sin secretos.
 
+### CI 7d32760: cuentas aprobadas; comparador de restauración corregido localmente
+
+El hijo `7d32760e7c58d477a6c7d8f0b3b1cc79e7a3c088` terminó **FAIL** en
+[CI 40780752964](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40780752964).
+Windows aprobó backend **1409**, Debug **8**, MCP **27**, Companion **16**,
+recuperación **27**, legado **168**, build e interfaz **478/478**. PostgreSQL
+aprobó **435**, sin fallidas, y omitió **21** pruebas de Qwen. El contraste del
+comparador pasó; el paso independiente de restauración completa falló al comparar
+el contrato factual, antes de escribir un recibo de éxito. La cuota y las guardas
+nuevas no fallaron en ese corte.
+
+La reproducción nativa completa conservó las filas generales y factuales. El
+diff por componente localizó dos representaciones distintas: `factual_review_shape`
+y las condiciones de `factual_expiry_cancel`, por la decompilación de casts de
+arrays tras `pg_dump`/`pg_restore`. Orden y ACL no explicaban el fallo. El ajuste
+reparsea los CHECK en tablas TEMP y las condiciones de políticas en una vista TEMP,
+con rollback; conserva roles, operación, permisividad, nulos, valores y el resto
+del contrato. No elimina casts o términos para obtener igualdad.
+
+El intento nativo 02 ya igualó el catálogo, pero se detuvo por falta de una fixture
+de key ring cifrado; se conserva como incompleto. Después de un único setup
+sintético con el control existente de claves en RAM, el intento **03 aprobó el
+script completo**, incluidas las **22 tablas FORCE RLS**, privilegios, borrado,
+MCP y claves cifradas. El comparador ampliado aprobó **16/16** controles, incluidos
+quitar un CHECK, perder un término del CHECK o de una política y el round-trip
+de arrays varchar con subconsultas. En el intento 04, quitar sólo el CHECK del
+target restaurado produjo el fallo esperado: 44 a 43 restricciones, sin recibo
+de éxito y con diagnóstico por huellas/conteos. Ese diagnóstico se añade al
+artefacto de CI; no contiene filas, claves ni configuración.
+
+Los recibos de `commercial-factual-rc10/full-restore-native-01` a `04` y
+`restore-canonical-review` conservan fallos, causas, fuentes y resultados. No se
+leyó el backup privado ni se alteró producción. La revisión independiente de
+código y recibos no encontró hallazgos bloqueantes y confirmó los hashes; no
+ejecutó las pruebas. La CI completa del nuevo ajuste sigue pendiente;
+**NO GO comercial** permanece.
+
 ### Candidato operativo fe373fc — CI aprobada y backend publicado
 
 El commit `fe373fccc19bee35c421e1f43eb6de750cad52eb` pasó los dos jobs de

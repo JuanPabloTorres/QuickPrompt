@@ -45,6 +45,7 @@ jobs:
           path: |
             backend/QuickPrompt.Accounts.Tests/TestResults/*.trx
             .playwright/postgres-restore/restore-result.json
+            .playwright/postgres-restore/restore-factual-contract-mismatch.json
             .playwright/postgres-restore-contract/result.json
             .playwright/operational-http/http-queue-two-hosts-*.json
             .playwright/operational-http/visible-agent-read-two-hosts-*.json

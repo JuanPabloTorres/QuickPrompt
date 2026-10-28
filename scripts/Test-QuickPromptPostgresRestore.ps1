@@ -62,18 +62,55 @@ SELECT md5(COALESCE(string_agg(row_json,E'\n' ORDER BY row_json),'')) FROM (
 ) rows;
 '@
 $pgFactualContractSql = @'
-SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM (
+BEGIN;
+-- pg_dump reparses expressions. Preserve their complete parsed semantics instead
+-- of comparing first/second-generation deparser spelling (array casts in particular).
+CREATE TEMP TABLE qp_restore_factual_documents (LIKE qp_library.factual_documents);
+CREATE TEMP TABLE qp_restore_factual_reviews (LIKE qp_operations.factual_reviews);
+CREATE TEMP TABLE qp_restore_factual_canonical (kind text NOT NULL, definition text NOT NULL);
+DO $canonical$
+DECLARE item record; target text; parsed text; parsed_using text; parsed_check text;
+BEGIN
+ FOR item IN SELECT c.oid,c.conname,c.convalidated,n.nspname,t.relname,pg_get_constraintdef(c.oid) AS definition
+   FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace
+   WHERE c.contype='c' AND ((n.nspname='qp_library' AND t.relname='factual_documents') OR (n.nspname='qp_operations' AND t.relname='factual_reviews'))
+ LOOP
+   target:='qp_restore_'||item.relname;
+   EXECUTE format('ALTER TABLE pg_temp.%I ADD CONSTRAINT %I %s',target,item.conname,item.definition);
+   SELECT pg_get_constraintdef(c.oid) INTO parsed FROM pg_constraint c
+     WHERE c.conrelid=to_regclass('pg_temp.'||target) AND c.conname=item.conname;
+   INSERT INTO qp_restore_factual_canonical VALUES ('constraint','constraint:'||item.nspname||'.'||item.relname||':'||item.conname||':'||parsed||':'||item.convalidated);
+ END LOOP;
+ FOR item IN SELECT * FROM pg_policies WHERE
+   (schemaname='qp_library' AND tablename='factual_documents') OR (schemaname='qp_operations' AND tablename='factual_reviews')
+   OR (schemaname='qp_operations' AND tablename='executions' AND policyname='factual_expiry_cancel')
+ LOOP
+   parsed_using:=NULL; parsed_check:=NULL;
+   -- Views can parse policy subqueries; CHECK constraints cannot. No SELECT is
+   -- executed and no policy/table is changed. All temporary objects roll back.
+   IF item.qual IS NOT NULL THEN
+     EXECUTE format('CREATE OR REPLACE TEMP VIEW qp_restore_factual_policy AS SELECT 1 FROM %I.%I WHERE (%s)',item.schemaname,item.tablename,item.qual);
+     parsed_using:=pg_get_viewdef('pg_temp.qp_restore_factual_policy'::regclass,false);
+   END IF;
+   IF item.with_check IS NOT NULL THEN
+     EXECUTE format('CREATE OR REPLACE TEMP VIEW qp_restore_factual_policy AS SELECT 1 FROM %I.%I WHERE (%s)',item.schemaname,item.tablename,item.with_check);
+     parsed_check:=pg_get_viewdef('pg_temp.qp_restore_factual_policy'::regclass,false);
+   END IF;
+   INSERT INTO qp_restore_factual_canonical VALUES ('policy','policy:'||json_build_object(
+     'schemaname',item.schemaname,'tablename',item.tablename,'policyname',item.policyname,'permissive',item.permissive,
+     'roles',item.roles,'cmd',item.cmd,'qual',parsed_using,'with_check',parsed_check)::text);
+ END LOOP;
+END $canonical$;
+CREATE TEMP TABLE qp_restore_factual_contract AS SELECT definition FROM (
  SELECT 'table:'||n.nspname||'.'||c.relname||':'||pg_get_userbyid(c.relowner)||':'||c.relrowsecurity||':'||c.relforcerowsecurity AS definition
  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
  WHERE (n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews')
- UNION ALL SELECT 'policy:'||row_to_json(p)::text FROM pg_policies p
- WHERE (schemaname='qp_library' AND tablename='factual_documents') OR (schemaname='qp_operations' AND tablename='factual_reviews')
-   OR (schemaname='qp_operations' AND tablename='executions' AND policyname='factual_expiry_cancel')
+ UNION ALL SELECT definition FROM qp_restore_factual_canonical
  UNION ALL SELECT 'index:'||schemaname||'.'||tablename||':'||indexdef FROM pg_indexes
  WHERE (schemaname='qp_library' AND tablename='factual_documents') OR (schemaname='qp_operations' AND tablename='factual_reviews')
  UNION ALL SELECT 'constraint:'||n.nspname||'.'||t.relname||':'||c.conname||':'||pg_get_constraintdef(c.oid)||':'||c.convalidated
  FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace
- WHERE (n.nspname='qp_library' AND t.relname='factual_documents') OR (n.nspname='qp_operations' AND t.relname='factual_reviews')
+ WHERE c.contype<>'c' AND ((n.nspname='qp_library' AND t.relname='factual_documents') OR (n.nspname='qp_operations' AND t.relname='factual_reviews'))
  UNION ALL SELECT 'column:'||n.nspname||'.'||c.relname||':'||a.attnum||':'||a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull
  FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
  WHERE a.attnum>0 AND NOT a.attisdropped AND ((n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews'))
@@ -93,6 +130,8 @@ SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM (
  UNION ALL SELECT 'trigger:'||pg_get_triggerdef(t.oid)||':'||t.tgenabled::text FROM pg_trigger t
  WHERE NOT t.tgisinternal AND t.tgname IN ('factual_document_from_review','erased_prompt_factual_content')
 ) definitions;
+SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM qp_restore_factual_contract;
+ROLLBACK;
 '@
 $pgFactualSafetySql = @'
 SELECT (SELECT count(*)=2 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -204,7 +243,21 @@ if ($LASTEXITCODE -ne 0) { throw 'La restauración falló; se conserva la base p
 $pgAfter = Invoke-DevelopmentPsql $pgRestore $pgFingerprintSql
 if ($pgBefore -ne $pgAfter) { throw 'La restauración no conserva las filas sintéticas.' }
 if ($pgFactualDataBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgFactualDataSql)) { throw 'La restauración cambió las revisiones o documentos factuales.' }
-if ($pgFactualContractBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgFactualContractSql)) { throw 'La restauración cambió el contrato factual de tablas, funciones, políticas, índices o permisos.' }
+$pgFactualContractAfter = Invoke-DevelopmentPsql $pgRestore $pgFactualContractSql
+if ($pgFactualContractBefore -ne $pgFactualContractAfter) {
+    $pgFactualDiagnostic = [ordered]@{ status='failed'; scope='SYNTHETIC_FACTUAL_CATALOG_HASHES_ONLY'; source=$pgFactualContractBefore; restored=$pgFactualContractAfter; componentsAvailable=$false }
+    try {
+        $pgHashSelect = "SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM qp_restore_factual_contract;"
+        $pgComponentSelect = "SELECT json_object_agg(component,json_build_object('fingerprint',fingerprint,'definitions',definitions) ORDER BY component)::text FROM (SELECT split_part(definition,':',1) AS component,md5(string_agg(definition,E'\n' ORDER BY definition)) AS fingerprint,count(*) AS definitions FROM qp_restore_factual_contract GROUP BY split_part(definition,':',1)) components;"
+        $pgDiagnosticSql = $pgFactualContractSql.Replace($pgHashSelect,$pgComponentSelect)
+        if ($pgDiagnosticSql -eq $pgFactualContractSql) { throw 'The factual diagnostic projection is unavailable.' }
+        $pgFactualDiagnostic.sourceComponents = (Invoke-DevelopmentPsql 'quickprompt_development' $pgDiagnosticSql) | ConvertFrom-Json
+        $pgFactualDiagnostic.restoredComponents = (Invoke-DevelopmentPsql $pgRestore $pgDiagnosticSql) | ConvertFrom-Json
+        $pgFactualDiagnostic.componentsAvailable = $true
+    } catch { }
+    try { $pgFactualDiagnostic | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $pgEvidence 'restore-factual-contract-mismatch.json') } catch { }
+    throw 'La restauración cambió el contrato factual de tablas, funciones, políticas, índices o permisos.'
+}
 if ((Invoke-DevelopmentPsql $pgRestore $pgFactualSafetySql) -ne 't') { throw 'La restauración no conserva los permisos y la erasure factual.' }
 if ($pgErasureContractBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgErasureContractSql)) {
     throw 'La restauración cambió las políticas, funciones, triggers o restricciones del borrado privado.'

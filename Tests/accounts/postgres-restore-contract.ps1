@@ -71,13 +71,22 @@ CREATE SCHEMA qp_operations;
 CREATE TABLE qp_library.prompts (id integer PRIMARY KEY);
 CREATE TABLE qp_library.collections (id integer PRIMARY KEY);
 CREATE TABLE qp_library.factual_documents (id integer PRIMARY KEY, payload text NOT NULL);
-CREATE TABLE qp_operations.factual_reviews (id integer PRIMARY KEY, payload text NOT NULL);
+CREATE TABLE qp_operations.factual_reviews (id integer PRIMARY KEY, payload text NOT NULL,
+ "Status" character varying(32) NOT NULL DEFAULT 'REVIEW', "Version" integer NOT NULL DEFAULT 1,
+ "ChildExecutionId" integer, "ExpiresAt" timestamptz NOT NULL DEFAULT '2099-01-01 00:00:00+00');
+CREATE TABLE qp_operations.executions ("Id" integer PRIMARY KEY, "Status" character varying(32) NOT NULL, "CancelRequested" boolean NOT NULL DEFAULT false);
+ALTER TABLE qp_operations.factual_reviews ADD CONSTRAINT factual_review_shape
+ CHECK ("Version">0 AND "Status" IN ('ADMITTED','PROPOSING','REVIEW','COMPOSED','APPROVED','CANCELLED','INVALIDATED','EXPIRED','FAILED'));
+ALTER TABLE qp_library.factual_documents ADD CONSTRAINT factual_document_shape CHECK (length(payload)>0);
 ALTER TABLE qp_library.factual_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qp_library.factual_documents FORCE ROW LEVEL SECURITY;
 ALTER TABLE qp_operations.factual_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qp_operations.factual_reviews FORCE ROW LEVEL SECURITY;
 CREATE POLICY factual_document_actor ON qp_library.factual_documents TO quickprompt_app USING (true) WITH CHECK (true);
 CREATE POLICY factual_review_actor ON qp_operations.factual_reviews TO quickprompt_app USING (true) WITH CHECK (true);
+CREATE POLICY factual_expiry_cancel ON qp_operations.executions FOR UPDATE TO quickprompt_migrator
+ USING ("Status" IN ('Queued','Running') AND EXISTS(SELECT 1 FROM qp_operations.factual_reviews r WHERE r."ChildExecutionId"=executions."Id" AND r."ExpiresAt"<=clock_timestamp()))
+ WITH CHECK ("Status" IN ('Queued','Running') AND "CancelRequested");
 CREATE FUNCTION qp_operations.expire_factual_reviews() RETURNS integer LANGUAGE sql SECURITY DEFINER
  SET search_path=pg_catalog,pg_temp AS 'SELECT 1';
 ALTER TABLE qp_library.collections ENABLE ROW LEVEL SECURITY;
@@ -85,7 +94,7 @@ ALTER TABLE qp_library.collections FORCE ROW LEVEL SECURITY;
 CREATE POLICY erasure_collection_change ON qp_library.collections FOR UPDATE
   TO quickprompt_migrator USING (false) WITH CHECK (false);
 '@
-    $null = Invoke-FixtureSql $sourceDatabase "INSERT INTO qp_library.factual_documents VALUES (1,'synthetic baseline'); INSERT INTO qp_operations.factual_reviews VALUES (1,'synthetic baseline');"
+    $null = Invoke-FixtureSql $sourceDatabase "INSERT INTO qp_library.factual_documents (id,payload) VALUES (1,'synthetic baseline'); INSERT INTO qp_operations.factual_reviews (id,payload) VALUES (1,'synthetic baseline');"
     $baseline = Invoke-FixtureSql $sourceDatabase $query
     $factualBaseline = Invoke-FixtureSql $sourceDatabase $factualQuery
     $factualDataBaseline = Invoke-FixtureSql $sourceDatabase $factualDataQuery
@@ -123,6 +132,22 @@ CREATE POLICY erasure_collection_change ON qp_library.collections FOR UPDATE
     Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'The factual function did not return to baseline.'
     $checks.factualFunctionDriftDetected = $true
 
+    $shape = Invoke-FixtureSql $sourceDatabase "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='qp_operations.factual_reviews'::regclass AND conname='factual_review_shape';"
+    $null = Invoke-FixtureSql $sourceDatabase 'SET ROLE quickprompt_migrator; ALTER TABLE qp_operations.factual_reviews DROP CONSTRAINT factual_review_shape;'
+    Assert-RestoreContract ($factualBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'A removed factual CHECK escaped the comparator.'
+    $checks.factualConstraintRemovalDetected = $true
+    $null = Invoke-FixtureSql $sourceDatabase 'SET ROLE quickprompt_migrator; ALTER TABLE qp_operations.factual_reviews ADD CONSTRAINT factual_review_shape CHECK ("Status" IN (''ADMITTED'',''PROPOSING'',''REVIEW'',''COMPOSED'',''APPROVED'',''CANCELLED'',''INVALIDATED'',''EXPIRED'',''FAILED''));'
+    Assert-RestoreContract ($factualBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'Dropping a factual CHECK term escaped PostgreSQL canonicalization.'
+    $checks.factualConstraintTermLossDetected = $true
+    $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; ALTER TABLE qp_operations.factual_reviews DROP CONSTRAINT factual_review_shape; ALTER TABLE qp_operations.factual_reviews ADD CONSTRAINT factual_review_shape $shape;"
+    Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'The full factual CHECK did not return to baseline.'
+    $expiry = Invoke-FixtureSql $sourceDatabase "SELECT with_check FROM pg_policies WHERE schemaname='qp_operations' AND tablename='executions' AND policyname='factual_expiry_cancel';"
+    $null = Invoke-FixtureSql $sourceDatabase 'SET ROLE quickprompt_migrator; ALTER POLICY factual_expiry_cancel ON qp_operations.executions WITH CHECK ("Status" IN (''Queued'',''Running''));'
+    Assert-RestoreContract ($factualBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'Dropping the cancellation term from a factual policy escaped canonicalization.'
+    $checks.factualPolicyTermLossDetected = $true
+    $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; ALTER POLICY factual_expiry_cancel ON qp_operations.executions WITH CHECK ($expiry);"
+    Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'The full expiry policy did not return to baseline.'
+
     & docker exec $container pg_dump -U quickprompt_bootstrap -d $sourceDatabase -Fc -f $archive
     if ($LASTEXITCODE -ne 0) { throw 'Could not dump the synthetic catalog fixture.' }
     & docker exec $container pg_restore -U quickprompt_bootstrap --role=quickprompt_migrator -d $targetDatabase --exit-on-error $archive
@@ -132,6 +157,7 @@ CREATE POLICY erasure_collection_change ON qp_library.collections FOR UPDATE
     Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $targetDatabase $factualQuery)) 'The factual catalog changed during pg_dump/restore.'
     Assert-RestoreContract ($factualDataBaseline -eq (Invoke-FixtureSql $targetDatabase $factualDataQuery)) 'The factual rows changed during pg_dump/restore.'
     $checks.factualDumpRestorePreservedContractAndRows = $true
+    $checks.varcharArrayCheckAndPolicyReparsePreserved = $true
 
     $null = Invoke-FixtureSql $targetDatabase 'SET ROLE quickprompt_migrator; ALTER POLICY erasure_collection_change ON qp_library.collections WITH CHECK (true);'
     Assert-RestoreContract ($baseline -ne (Invoke-FixtureSql $targetDatabase $query)) 'A policy change after restoration escaped the owner comparator.'
