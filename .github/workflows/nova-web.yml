@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Verify locked production Cloud dependency graph
+        run: dotnet restore backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj --locked-mode
       - name: Start isolated PostgreSQL and limited roles
         shell: pwsh
         run: |
@@ -44,6 +46,9 @@ jobs:
             backend/QuickPrompt.Accounts.Tests/TestResults/*.trx
             .playwright/postgres-restore/restore-result.json
             .playwright/postgres-restore-contract/result.json
+            .playwright/operational-http/http-queue-two-hosts-*.json
+            .playwright/operational-http/visible-agent-read-two-hosts-*.json
+            .playwright/operational-http/account-pool-starvation-recovery-*.json
   web:
     runs-on: windows-latest
     steps:

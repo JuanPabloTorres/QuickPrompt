@@ -149,6 +149,7 @@ public static class AccountHost
             try { await next(); }
             catch (Exception error) when (!context.Response.HasStarted && error is not OperationCanceledException)
             {
+                if (error is ExecutionQuotaException rejected) AccountOperations.QuotaRejected(app.Logger, rejected.Code);
                 var status = error switch
                 {
                     LibraryUnavailableException => 404,
@@ -199,7 +200,8 @@ public static class AccountHost
 
     private static async Task CheckPhysicalHealth(HttpContext context)
     {
-        var result = await CheckHealth(context.RequestServices.GetRequiredService<NpgsqlDataSource>(), context.RequestAborted);
+        var result = await CheckHealth(context.RequestServices.GetRequiredService<NpgsqlDataSource>(),
+            context.RequestServices.GetRequiredService<ILoggerFactory>(), context.RequestAborted);
         if (HttpMethods.IsHead(context.Request.Method))
         {
             context.Response.StatusCode = (result as IStatusCodeHttpResult)?.StatusCode ?? 200;
@@ -208,7 +210,7 @@ public static class AccountHost
         await result.ExecuteAsync(context);
     }
 
-    private static async Task<IResult> CheckHealth(NpgsqlDataSource source, CancellationToken cancellation)
+    private static async Task<IResult> CheckHealth(NpgsqlDataSource source, ILoggerFactory logging, CancellationToken cancellation)
     {
         try
         {
@@ -218,7 +220,10 @@ public static class AccountHost
             return Results.Ok(new { status = "ok", mode = "accounts-candidate" });
         }
         catch (Exception error) when (error is NpgsqlException or TimeoutException)
-        { return Results.Problem(statusCode: 503, title: "La base de cuentas no está disponible."); }
+        {
+            AccountOperations.ReadinessUnavailable(logging.CreateLogger("QuickPrompt.Cloud.Operations"));
+            return Results.Problem(statusCode: 503, title: "La base de cuentas no está disponible.");
+        }
     }
 
     private static void MapAccountPage(WebApplication app, IConfiguration configuration)

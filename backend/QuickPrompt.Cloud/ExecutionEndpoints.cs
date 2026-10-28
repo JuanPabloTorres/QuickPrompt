@@ -13,7 +13,11 @@ public static class ExecutionEndpoints
             access.Preview(LibraryActor.FromPrincipal(context.User), libraryId, promptId, input)).AddEndpointFilter<AccountCsrf>();
         library.MapPost("/prompts/{promptId:guid}/compile", async (HttpContext context, Guid libraryId, Guid promptId, CompileSubmission input,
             AccountExecutionAccess access, CancellationToken cancellation) =>
-            Results.Accepted(value: await access.Compile(LibraryActor.FromPrincipal(context.User), libraryId, promptId, input, cancellation))).AddEndpointFilter<AccountCsrf>();
+        {
+            var submitted = await access.Compile(LibraryActor.FromPrincipal(context.User), libraryId, promptId, input, cancellation);
+            AccountOperations.SubmissionAccepted(context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("QuickPrompt.Cloud.Operations"), submitted.Kind, submitted.Status);
+            return Results.Accepted(value: submitted);
+        }).AddEndpointFilter<AccountCsrf>();
         library.MapGet("/executions", (HttpContext context, Guid libraryId, AccountExecutionAccess access) => access.List(LibraryActor.FromPrincipal(context.User), libraryId));
         library.MapGet("/executions/events", AccountExecutionFeed.Open).RequireRateLimiting("credentials");
         library.MapGet("/executions/{id:guid}", (HttpContext context, Guid libraryId, Guid id, AccountExecutionAccess access) => access.Read(LibraryActor.FromPrincipal(context.User), libraryId, id));

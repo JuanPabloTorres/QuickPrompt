@@ -19,7 +19,7 @@ public sealed class ExecutionWorker(ExecutionQueue queue, IAccountExecutionHandl
                     ExecutionLease? lease = null;
                     try { lease = await queue.Claim(stopping); }
                     catch (Exception error) when (error is NpgsqlException or TimeoutException)
-                    { logger.LogWarning("Execution dispatch unavailable: {Type}", error.GetType().Name); }
+                    { AccountOperations.WorkerFailed(logger, "dispatch", error); }
                     if (lease is not null) { active.Add(Process(lease, stopping)); continue; }
                 }
                 await Task.Delay(500, stopping);
@@ -49,7 +49,8 @@ public sealed class ExecutionWorker(ExecutionQueue queue, IAccountExecutionHandl
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             var result = await pending.WaitAsync(work.Token);
             work.Token.ThrowIfCancellationRequested();
-            if (Volatile.Read(ref lost) == 0) await queue.Finish(lease, result, cancellation: CancellationToken.None);
+            if (Volatile.Read(ref lost) == 0)
+                AccountOperations.ExecutionFinished(logger, "COMPLETED", await queue.Finish(lease, result, cancellation: CancellationToken.None));
         }
         catch (OperationCanceledException)
         {
@@ -57,7 +58,7 @@ public sealed class ExecutionWorker(ExecutionQueue queue, IAccountExecutionHandl
         }
         catch (Exception error)
         {
-            logger.LogWarning("Execution {ExecutionId} failed: {Type}", lease.Id, error.GetType().Name);
+            AccountOperations.WorkerFailed(logger, "processing", error);
             if (Volatile.Read(ref lost) == 0) await RecordFailure("PROCESSING_FAILED", false);
         }
         finally
@@ -68,8 +69,8 @@ public sealed class ExecutionWorker(ExecutionQueue queue, IAccountExecutionHandl
 
         async Task RecordFailure(string code, bool interrupted)
         {
-            try { await queue.Finish(lease, null, code, interrupted, CancellationToken.None); }
-            catch (Exception error) { logger.LogWarning("Execution receipt {ExecutionId} unconfirmed: {Type}", lease.Id, error.GetType().Name); }
+            try { AccountOperations.ExecutionFinished(logger, code, await queue.Finish(lease, null, code, interrupted, CancellationToken.None)); }
+            catch (Exception error) { AccountOperations.WorkerFailed(logger, "receipt", error); }
         }
         async Task Monitor()
         {
@@ -86,7 +87,7 @@ public sealed class ExecutionWorker(ExecutionQueue queue, IAccountExecutionHandl
             catch (OperationCanceledException) when (monitor.IsCancellationRequested) { }
             catch (Exception error)
             {
-                logger.LogWarning("Execution lease {ExecutionId} lost: {Type}", lease.Id, error.GetType().Name);
+                AccountOperations.WorkerFailed(logger, "lease", error);
                 Interlocked.Exchange(ref lost, 1); work.Cancel();
             }
         }
