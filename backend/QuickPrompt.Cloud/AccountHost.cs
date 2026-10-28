@@ -150,7 +150,7 @@ public static class AccountHost
             // (Fetch: append-a-request-origin-header), conflicting with the exact-origin guard.
             // strict-origin preserves that guard without disclosing paths or OAuth query values.
             context.Response.Headers["Referrer-Policy"] = "strict-origin";
-            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com";
+            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com https://chatgpt.com/connector_platform_oauth_redirect";
             try { await next(); }
             catch (Exception error) when (!context.Response.HasStarted && error is not OperationCanceledException)
             {
