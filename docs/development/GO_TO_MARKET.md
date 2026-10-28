@@ -221,6 +221,46 @@ código y recibos no encontró hallazgos bloqueantes y confirmó los hashes; no
 ejecutó las pruebas. La CI completa del nuevo ajuste sigue pendiente;
 **NO GO comercial** permanece.
 
+### CI b5b2540: disponibilidad y presupuesto físico del arnés
+
+El hijo `b5b25403a044d1e0688d508e5ab2d4401627173c` terminó **FAIL** en
+[CI 40784350897](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40784350897).
+Windows aprobó; PostgreSQL aprobó **434**, falló **una** y omitió **21** pruebas
+de Qwen. El contraste ocupado recibió HTTP 500 en una admisión inicial, con
+cola y admisiones en cero. Su excepción original no se conservó: sigue
+**UNKNOWN**. Los pasos posteriores de restore no se ejecutaron en este corte.
+
+Retener sólo el pool de cuentas en un control reproducible produjo el mismo
+cuerpo público 500 y conservó la cadena de tipos: EF InvalidOperationException →
+NpgsqlException transitoria → TimeoutException. Esto demuestra una carencia de
+clasificación en ese control, sin atribuir retrospectivamente el origen del CI.
+Dos contrastes de CPU acotados aprobaron y no confirmaron la hipótesis de presión
+de threadpool; no se repiten para buscar un resultado favorable.
+
+El ajuste de producto conserva primero los estados de dominio y clasifica como
+**503** los fallos Npgsql transitorios encontrados en una cadena interna máxima
+de ocho niveles. Mantiene el 500 no transitorio, cuotas, autenticación y
+cancelaciones. El título público conserva incertidumbre sobre el resultado; no
+afirma que una escritura no ocurrió, no añade Retry-After ni reintenta operaciones.
+El control retenido verifica cero admisiones automáticas y una sola admisión
+explícita, con el mismo OperationId, después de liberar el pool.
+
+Los positivos de HTTP ahora se acotan a **una petición por datasource físico**,
+sin aumentar sus pools de una conexión. Los dos hosts tienen datasources distintos;
+conservan diez propietarios lógicos, dos handlers de ejecución concurrentes y
+las cuotas originales. No prueban diez admisiones HTTP simultáneas ni un SLA.
+La saturación queda separada del control positivo y exige 503/recuperación. El
+diagnóstico sólo serializa tipos, IsTransient y SQLSTATE acotado; no mensajes,
+SQL, correlaciones o payloads.
+
+La regresión local aprobó **23/23**: siete controles operacionales, seis del
+clasificador, seis de rate/auth y cuatro de readiness, sin omisiones. El
+clasificador también aprobó su corte separado de seis. La revisión independiente
+de los cuatro archivos no encontró bloqueos y confirmó sus hashes; no repitió
+la ejecución. Los recibos y el baseline 500 se conservan en
+`operational-commercial-20261028/capacity-ci-b5b2540`. CI del ajuste sigue pendiente.
+La recuperación real, correo y aceptación SaaS continúan abiertos.
+
 ### Candidato operativo fe373fc — CI aprobada y backend publicado
 
 El commit `fe373fccc19bee35c421e1f43eb6de750cad52eb` pasó los dos jobs de

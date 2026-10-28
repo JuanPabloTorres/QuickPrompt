@@ -152,21 +152,10 @@ public static class AccountHost
             catch (Exception error) when (!context.Response.HasStarted && error is not OperationCanceledException)
             {
                 if (error is ExecutionQuotaException rejected) AccountOperations.QuotaRejected(app.Logger, rejected.Code);
-                var status = error switch
-                {
-                    LibraryUnavailableException => 404,
-                    LibraryRevisionException => 409,
-                    ShareConflictException => 409,
-                    CaptureConflictException => 409,
-                    ExecutionQuotaException => 429,
-                    QuickPrompt.Nova.Application.MissingPromptException => 404,
-                    QuickPrompt.Local.ConflictException => 409,
-                    QuickPrompt.Local.ValidationException or ArgumentException or BadHttpRequestException => 400,
-                    UnauthorizedAccessException => 401,
-                    _ => 500
-                };
+                var status = AccountFailureStatus.Classify(error);
                 if (status == 500) app.Logger.LogError("Account operation failed: {Type}; correlation {Correlation}", error.GetType().Name, context.TraceIdentifier);
-                var title = error is ExecutionQuotaException quota ? quota.Code switch
+                var title = status == 503 ? "El servicio de datos no está disponible temporalmente. No se pudo confirmar el resultado; consulta su estado antes de repetir la operación."
+                    : error is ExecutionQuotaException quota ? quota.Code switch
                 {
                     "DAILY_LIMIT" => "Alcanzaste el límite diario de preparaciones. Tus datos se conservan en el formulario.",
                     "OWNER_QUEUE_FULL" => "Tu cola está llena. Espera o detén una preparación antes de reintentar.",

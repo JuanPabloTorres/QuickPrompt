@@ -42,6 +42,7 @@ public sealed partial class AccountHttpTests
         await using var second = await Start(configureServices: Services);
         try
         {
+            measurements.AccountPools(first, second);
             var compileEndpoint = ((IEndpointRouteBuilder)first.App).DataSources.SelectMany(source => source.Endpoints)
                 .OfType<RouteEndpoint>().Single(endpoint => endpoint.RoutePattern.RawText!.EndsWith("/prompts/{promptId:guid}/compile", StringComparison.Ordinal));
             measurements.Facts["compileRateLimitPolicy"] = compileEndpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName ?? "none";
@@ -54,14 +55,17 @@ public sealed partial class AccountHttpTests
             for (var wave = 0; wave < 3; wave++)
                 await Task.WhenAll(owners.Select((owner, index) => measurements.Measure("private-five-request-sequence", async () =>
                 {
-                    var foreign = owners[(index + 1) % owners.Count];
-                    var visible = (await owner.Client.GetFromJsonAsync<JsonElement[]>("/api/accounts/v1/libraries/", timeout.Token))!;
-                    Assert.Contains(visible, item => item.GetProperty("id").GetGuid() == owner.Library);
-                    Assert.DoesNotContain(visible, item => item.GetProperty("id").GetGuid() == foreign.Library);
-                    Assert.Equal(owner.Prompt, Assert.Single((await owner.Client.GetFromJsonAsync<AccountPrompt[]>(owner.Path + "/prompts", timeout.Token))!));
-                    Assert.Equal(owner.Prompt.Id, (await owner.Client.GetFromJsonAsync<AccountPrompt>(owner.Path + $"/prompts/{owner.Prompt.Id}", timeout.Token))!.Id);
-                    Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(foreign.Path + "/prompts", timeout.Token)).StatusCode);
-                    Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(owner.Path + $"/prompts/{foreign.Prompt.Id}", timeout.Token)).StatusCode);
+                    await measurements.WithPool(owner, async () =>
+                    {
+                        var foreign = owners[(index + 1) % owners.Count];
+                        var visible = (await owner.Client.GetFromJsonAsync<JsonElement[]>("/api/accounts/v1/libraries/", timeout.Token))!;
+                        Assert.Contains(visible, item => item.GetProperty("id").GetGuid() == owner.Library);
+                        Assert.DoesNotContain(visible, item => item.GetProperty("id").GetGuid() == foreign.Library);
+                        Assert.Equal(owner.Prompt, Assert.Single((await owner.Client.GetFromJsonAsync<AccountPrompt[]>(owner.Path + "/prompts", timeout.Token))!));
+                        Assert.Equal(owner.Prompt.Id, (await owner.Client.GetFromJsonAsync<AccountPrompt>(owner.Path + $"/prompts/{owner.Prompt.Id}", timeout.Token))!.Id);
+                        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(foreign.Path + "/prompts", timeout.Token)).StatusCode);
+                        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(owner.Path + $"/prompts/{foreign.Prompt.Id}", timeout.Token)).StatusCode);
+                    });
                 })));
 
             var submissions = owners.ToDictionary(owner => owner.Actor, _ => new CompileSubmission(Guid.NewGuid(), 1, new() { ["tema"] = "HTTP sintético" }));
@@ -73,7 +77,8 @@ public sealed partial class AccountHttpTests
             measurements.Facts["failureOwnerSelection"] = failureOwnerIsBusy switch { true => "fixed-busy", false => "fixed-other", null => "observed-owner-zero" };
             measurements.Facts["failureRecoveryOwnerWasQueueBoundaryOwner"] = busy == faultOwner;
             var quotaRequests = Enumerable.Range(0, 5).Select(_ => new CompileSubmission(Guid.NewGuid(), 1, new() { ["tema"] = "Cuota sintética" })).ToArray();
-            var quotaResponses = await Task.WhenAll(quotaRequests.Select(input => busy.Client.PostAsJsonAsync(busy.Path + $"/prompts/{busy.Prompt.Id}/compile", input, timeout.Token)));
+            var quotaResponses = await Task.WhenAll(quotaRequests.Select(input => measurements.WithPool(busy,
+                () => busy.Client.PostAsJsonAsync(busy.Path + $"/prompts/{busy.Prompt.Id}/compile", input, timeout.Token))));
             var acceptedQuota = quotaResponses.Count(response => response.StatusCode == HttpStatusCode.Accepted);
             var rejectedQuota = quotaResponses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
             var quotaJobs = new List<ExecutionView>();
@@ -94,20 +99,24 @@ public sealed partial class AccountHttpTests
 
             await Task.WhenAll(owners.Select((owner, index) => measurements.Measure("execution-terminal-observation", async () =>
             {
-                var completed = await CapacityTerminal(owner, initial[index].Id, timeout.Token);
-                if (owner == cancelled)
+                await measurements.WithPool(owner, async () =>
                 {
-                    Assert.Equal(ExecutionStatus.Cancelled, completed.Status);
-                    Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(owner.Path + $"/executions/{completed.Id}/result", timeout.Token)).StatusCode);
-                }
-                else
-                {
-                    Assert.Equal(ExecutionStatus.Completed, completed.Status);
-                    var result = (await owner.Client.GetFromJsonAsync<ExecutionResultView>(owner.Path + $"/executions/{completed.Id}/result", timeout.Token))!;
-                    Assert.Equal(owner.Prompt.Template.Replace("<tema>", "HTTP sintético", StringComparison.Ordinal), result.Text);
-                }
+                    var completed = await CapacityTerminal(owner, initial[index].Id, timeout.Token);
+                    if (owner == cancelled)
+                    {
+                        Assert.Equal(ExecutionStatus.Cancelled, completed.Status);
+                        Assert.Equal(HttpStatusCode.NotFound, (await owner.Client.GetAsync(owner.Path + $"/executions/{completed.Id}/result", timeout.Token)).StatusCode);
+                    }
+                    else
+                    {
+                        Assert.Equal(ExecutionStatus.Completed, completed.Status);
+                        var result = (await owner.Client.GetFromJsonAsync<ExecutionResultView>(owner.Path + $"/executions/{completed.Id}/result", timeout.Token))!;
+                        Assert.Equal(owner.Prompt.Template.Replace("<tema>", "HTTP sintético", StringComparison.Ordinal), result.Text);
+                    }
+                });
                 var foreign = owners[(index + 1) % owners.Count];
-                Assert.Equal(HttpStatusCode.NotFound, (await foreign.Client.GetAsync(owner.Path + $"/executions/{completed.Id}/result", timeout.Token)).StatusCode);
+                await measurements.WithPool(foreign, async () => Assert.Equal(HttpStatusCode.NotFound,
+                    (await foreign.Client.GetAsync(owner.Path + $"/executions/{initial[index].Id}/result", timeout.Token)).StatusCode));
             })));
             // The first ten receipts do not imply that this owner's four quota-wave
             // receipts have finished. Hold that wave to prove the phase barrier waits.
@@ -172,6 +181,7 @@ public sealed partial class AccountHttpTests
         await using var second = await Start(configureServices: Services);
         try
         {
+            measurements.AccountPools(first, second);
             // Sixteen owners provide the unchanged 64 queued slots (4 each); the seventeenth probes an empty personal queue.
             for (var index = 0; index < 17; index++)
             {
@@ -243,6 +253,7 @@ public sealed partial class AccountHttpTests
         await using var first = await Start(); await using var second = await Start();
         try
         {
+            measurements.AccountPools(first, second);
             var grants = new List<Guid>();
             for (var index = 0; index < 10; index++)
             {
@@ -256,15 +267,19 @@ public sealed partial class AccountHttpTests
             await Task.WhenAll(owners.Select((owner, index) => measurements.Measure("visible-agent-read", async () =>
             {
                 var request = OpenVisible(grants[index], owner.Prompt);
-                (await owner.Client.PostAsJsonAsync(VisiblePath(owner.Library) + "/live", request)).EnsureSuccessStatusCode();
-                var result = await DriveVisibleRead(owner.Client, owner.Library, request.Request.RunId, owner.Prompt);
-                Assert.Equal(LiveStatus.COMPLETED, result.Run.Status);
-                Assert.False(result.Run.EffectCommitted); Assert.False(result.Run.BrowserOpen);
-                Assert.Equal(owner.Prompt.Template, result.Observation!.TemplateText);
+                await measurements.WithPool(owner, async () =>
+                {
+                    (await owner.Client.PostAsJsonAsync(VisiblePath(owner.Library) + "/live", request)).EnsureSuccessStatusCode();
+                    var result = await DriveVisibleRead(owner.Client, owner.Library, request.Request.RunId, owner.Prompt);
+                    Assert.Equal(LiveStatus.COMPLETED, result.Run.Status);
+                    Assert.False(result.Run.EffectCommitted); Assert.False(result.Run.BrowserOpen);
+                    Assert.Equal(owner.Prompt.Template, result.Observation!.TemplateText);
+                    Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(devices[index])).StatusCode);
+                    Assert.Equal(owner.Prompt, Assert.Single((await owner.Client.GetFromJsonAsync<AccountPrompt[]>(owner.Path + "/prompts"))!));
+                });
                 var foreign = owners[(index + 1) % owners.Count];
-                Assert.Equal(HttpStatusCode.NotFound, (await foreign.Client.GetAsync(VisiblePath(owner.Library) + $"/live/{request.Request.RunId}")).StatusCode);
-                Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(devices[index])).StatusCode);
-                Assert.Equal(owner.Prompt, Assert.Single((await owner.Client.GetFromJsonAsync<AccountPrompt[]>(owner.Path + "/prompts"))!));
+                await measurements.WithPool(foreign, async () => Assert.Equal(HttpStatusCode.NotFound,
+                    (await foreign.Client.GetAsync(VisiblePath(owner.Library) + $"/live/{request.Request.RunId}")).StatusCode));
             })));
             measurements.Facts["visibleReadsCompleted"] = owners.Count;
             measurements.Facts["modelProposalQueueClaims"] = 0;
@@ -276,6 +291,48 @@ public sealed partial class AccountHttpTests
         {
             foreach (var owner in owners) owner.Client.Dispose(); foreach (var device in devices) device.Dispose();
             measurements.Save(passed);
+        }
+    }
+
+    [Fact, Trait("Category", "SyntheticOperationalFault")]
+    public async Task HoldingOnlyTheHostsAccountPoolCapturesCompileAvailabilityFailureAndExplicitRecovery()
+    {
+        var measurements = new CapacityMeasurements("account-pool-starvation-recovery") { Owners = 1 };
+        measurements.Facts["boundary"] = "private-compile-admission";
+        var log = new OperationalTestLog(); var passed = false;
+        await using var host = await Start(delegation: false, configureServices: services => services.AddLogging(logging => logging.AddProvider(log)));
+        var owner = await CapacityAccount(host, 0);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var request = new CompileSubmission(Guid.NewGuid(), 1, new() { ["tema"] = "Datos sintéticos de disponibilidad" });
+        var pool = host.App.Services.GetRequiredService<NpgsqlDataSource>();
+        try
+        {
+            await using (var held = await pool.OpenConnectionAsync(timeout.Token))
+            {
+                using var rejected = await owner.Client.PostAsJsonAsync(owner.Path + $"/prompts/{owner.Prompt.Id}/compile", request, timeout.Token);
+                measurements.Rejections.Enqueue(await CapacityRejectionDetails(owner, rejected, log, "controlled-account-pool-held", timeout.Token));
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, rejected.StatusCode);
+                Assert.Contains("No se pudo confirmar el resultado", await rejected.Content.ReadAsStringAsync(timeout.Token));
+                var signals = CapacitySafeFailures(log);
+                Assert.Contains(signals, signal => signal.DatabaseTransient);
+                var queue = await CapacityQueueSnapshot(owner, timeout.Token);
+                Assert.Equal(0, queue.OwnerAdmissionsToday);
+                measurements.Facts["unavailablePoolDidNotAdmitWork"] = true;
+                Assert.DoesNotContain(log.Events, item => item.Id == 5332);
+            }
+            var recovered = await SubmitCapacity(owner, request, timeout.Token, measurements, log, "explicit-admission-after-pool-release");
+            Assert.Equal(ExecutionStatus.Completed, (await CapacityTerminal(owner, recovered.Id, timeout.Token)).Status);
+            Assert.Single(log.Events, item => item.Id == 5332);
+            Assert.Equal(1, (await CapacityQueueSnapshot(owner, timeout.Token)).OwnerAdmissionsToday);
+            measurements.Facts["privateCompileRecoveredAfterRelease"] = true;
+            measurements.Facts["automaticAdmissionRetries"] = 0;
+            passed = true;
+        }
+        finally
+        {
+            var cleaned = await CleanupCapacityJobs(measurements);
+            owner.Client.Dispose(); measurements.Save(passed && cleaned);
+            Assert.True(!passed || cleaned, "Only the controlled availability probe's own work must be cleaned.");
         }
     }
 
@@ -306,7 +363,7 @@ public sealed partial class AccountHttpTests
                 Assert.Equal(HttpStatusCode.Forbidden, forgedStatus);
                 Assert.Equal(HttpStatusCode.ServiceUnavailable, anonymousStatus);
                 Assert.Equal(HttpStatusCode.ServiceUnavailable, authenticatedStatus);
-                Assert.Equal(HttpStatusCode.InternalServerError, (await owner.GetAsync("/api/accounts/v1/libraries/")).StatusCode);
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, (await owner.GetAsync("/api/accounts/v1/libraries/")).StatusCode);
                 Assert.Contains(log.Events, item => item.Id == 5330);
             }
             (await owner.GetAsync("/health")).EnsureSuccessStatusCode();
@@ -314,7 +371,7 @@ public sealed partial class AccountHttpTests
             Assert.Equal(before.Select(item => item.GetProperty("id").GetGuid()), after.Select(item => item.GetProperty("id").GetGuid()));
             Assert.All(log.Events, item => Assert.DoesNotContain(Password, item.Message));
             measurements.Facts["healthBefore"] = 200; measurements.Facts["healthDuringPoolStarvation"] = 503;
-            measurements.Facts["authenticatedReadWhilePoolUnavailable"] = 500;
+            measurements.Facts["authenticatedReadWhilePoolUnavailable"] = 503;
             measurements.Facts["healthAfterRelease"] = 200; measurements.Facts["privateReadRecovered"] = true;
             measurements.Facts["postgresServerStopped"] = false;
             passed = true;
@@ -328,7 +385,7 @@ public sealed partial class AccountHttpTests
         }
     }
 
-    private sealed record CapacityOwner(HttpClient Client, Guid Actor, Guid Library, AccountPrompt Prompt)
+    private sealed record CapacityOwner(HttpClient Client, Guid Actor, Guid Library, AccountPrompt Prompt, NpgsqlDataSource Pool)
     { public string Path => $"/api/accounts/v1/libraries/{Library}"; }
 
     private static async Task<CapacityOwner> CapacityAccount(RunningHost host, int index)
@@ -341,14 +398,14 @@ public sealed partial class AccountHttpTests
             var library = await CreateLibrary(client);
             using var response = await client.PostAsJsonAsync($"/api/accounts/v1/libraries/{library}/prompts", new PromptContent("Mismo título QA", $"Propietario sintético {index}: explica <tema>.", 0));
             response.EnsureSuccessStatusCode();
-            return new(client, actor, library, (await response.Content.ReadFromJsonAsync<AccountPrompt>())!);
+            return new(client, actor, library, (await response.Content.ReadFromJsonAsync<AccountPrompt>())!, host.App.Services.GetRequiredService<NpgsqlDataSource>());
         }
         catch { client.Dispose(); throw; }
     }
 
     private async Task<ExecutionView> SubmitCapacity(CapacityOwner owner, CompileSubmission input, CancellationToken cancellation,
         CapacityMeasurements measurements, OperationalTestLog log, string phase)
-    {
+        => await measurements.WithPool(owner, async () => {
         using var response = await owner.Client.PostAsJsonAsync(owner.Path + $"/prompts/{owner.Prompt.Id}/compile", input, cancellation);
         if (response.StatusCode != HttpStatusCode.Accepted)
         {
@@ -358,7 +415,7 @@ public sealed partial class AccountHttpTests
         }
         var accepted = (await response.Content.ReadFromJsonAsync<ExecutionView>(cancellation))!;
         measurements.Track(owner, accepted); return accepted;
-    }
+    });
 
     /// <summary>Only typed, bounded public problem fields and aggregate synthetic queue counts; never raw bodies, actor IDs or secrets.</summary>
     private async Task<object> CapacityRejectionDetails(CapacityOwner owner, HttpResponseMessage response, OperationalTestLog log, string phase, CancellationToken cancellation)
@@ -385,7 +442,36 @@ public sealed partial class AccountHttpTests
             retryAfterSeconds = response.Headers.RetryAfter?.Delta?.TotalSeconds,
             body = new { status = problemStatus, titleCode = title, bytes = body.Length, sha256 = Convert.ToHexString(SHA256.HashData(body)) },
             layer = problemStatus == 429 ? "domain-quota-problem" : response.StatusCode == HttpStatusCode.TooManyRequests && body.Length == 0 ? "http-limiter-empty-body" : "unclassified",
-            queue, queueErrorType, quotaSignals = log.Events.Where(item => item.Id == 5331).Select(item => item.Message).Distinct().ToArray() };
+            queue, queueErrorType, safeFailures = CapacitySafeFailures(log),
+            quotaSignals = log.Events.Where(item => item.Id == 5331).Select(item => item.Message).Distinct().ToArray() };
+    }
+
+    private sealed record CapacityFailureSignal(int EventId, string[] ExceptionTypes, string? SqlState, bool DatabaseTransient);
+
+    /// <summary>Project only bounded types and SQLSTATE; never serialize exception messages, SQL, parameters or request correlation.</summary>
+    private static CapacityFailureSignal[] CapacitySafeFailures(OperationalTestLog log)
+    {
+        const string prefix = "Account operation failed: ";
+        static bool SafeName(string value) => value.Length is > 0 and <= 128 && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '_' or '.');
+        var signals = new List<CapacityFailureSignal>();
+        foreach (var item in log.Events)
+        {
+            var types = new List<string>(); string? sqlState = null; var databaseTransient = false;
+            var error = item.Exception;
+            for (var depth = 0; error is not null && depth < 4; depth++, error = error.InnerException)
+            {
+                var name = error.GetType().Name; types.Add(SafeName(name) ? name : "OtherException");
+                if (error is NpgsqlException databaseError) databaseTransient |= databaseError.IsTransient;
+                if (error is PostgresException postgres && postgres.SqlState.Length == 5 && postgres.SqlState.All(char.IsAsciiLetterOrDigit)) sqlState = postgres.SqlState;
+            }
+            if (item.Message.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                var name = item.Message[prefix.Length..].Split(';', 2)[0];
+                types.Add(SafeName(name) ? name : "OtherException");
+            }
+            if (types.Count > 0) signals.Add(new(item.Id, types.Distinct().ToArray(), sqlState, databaseTransient));
+        }
+        return signals.DistinctBy(signal => (signal.EventId, string.Join(',', signal.ExceptionTypes), signal.SqlState, signal.DatabaseTransient)).Take(32).ToArray();
     }
 
     private sealed record CapacityQueueState(long Queued, long Running, long OwnerQueued, long OwnerRunning, long OwnerAdmissionsToday, long QueuedModelProposals);
@@ -501,6 +587,26 @@ public sealed partial class AccountHttpTests
     private sealed class CapacityMeasurements(string scenario)
     {
         private readonly ConcurrentQueue<(string Phase, double Milliseconds)> samples = new();
+        private readonly ConcurrentDictionary<NpgsqlDataSource, SemaphoreSlim> poolBudgets = new();
+        public void AccountPools(RunningHost first, RunningHost second)
+        {
+            var a = first.App.Services.GetRequiredService<NpgsqlDataSource>();
+            var b = second.App.Services.GetRequiredService<NpgsqlDataSource>();
+            Assert.NotSame(a, b);
+            Assert.Equal(1, new NpgsqlConnectionStringBuilder(a.ConnectionString).MaxPoolSize);
+            Assert.Equal(1, new NpgsqlConnectionStringBuilder(b.ConnectionString).MaxPoolSize);
+            Facts["accountPoolsShared"] = false;
+            Facts["physicalAccountPoolSizePerHost"] = 1;
+            Facts["positiveHttpBudgetPerPool"] = 1;
+        }
+        public async Task<T> WithPool<T>(CapacityOwner owner, Func<Task<T>> operation)
+        {
+            var budget = poolBudgets.GetOrAdd(owner.Pool, _ => new SemaphoreSlim(1, 1));
+            await budget.WaitAsync();
+            try { return await operation(); }
+            finally { budget.Release(); }
+        }
+        public Task WithPool(CapacityOwner owner, Func<Task> operation) => WithPool(owner, async () => { await operation(); return true; });
         public ConcurrentQueue<object> Rejections { get; } = new();
         public ConcurrentDictionary<Guid, (CapacityOwner Owner, ExecutionView Job)> TrackedJobs { get; } = new();
         public void Track(CapacityOwner owner, ExecutionView job) => TrackedJobs.TryAdd(job.Id, (owner, job));
@@ -521,9 +627,9 @@ public sealed partial class AccountHttpTests
                 return new { phase = group.Key, samples = ordered.Length, p50Ms = ordered[(int)Math.Ceiling(ordered.Length * .50) - 1], p95Ms = ordered[(int)Math.Ceiling(ordered.Length * .95) - 1], maximumMs = ordered[^1] };
             });
             var receipt = new { kind = "SYNTHETIC_TESTSERVER_HTTP_CAPACITY", scenario, status = passed ? "passed" : "failed", owners = Owners,
-                accountHosts = scenario == "account-pool-starvation-recovery" ? 1 : 2, observedAtUtc = DateTimeOffset.UtcNow,
+                accountHosts = scenario == "account-pool-starvation-recovery" ? 1 : 2, observedAtUtc = DateTimeOffset.UtcNow, processorCount = Environment.ProcessorCount,
                 phases, facts = Facts, rejections = Rejections.ToArray(), productionRequests = 0, realModelCalls = 0, privateDataUsed = false,
-                limitations = new[] { "TestServer HTTP and real synthetic PostgreSQL, not public-network or browser DOM load.", "Controlled compilation handler and explicit agent reads do not measure Qwen capacity or semantic fidelity.", "No commercial SLA, deployment readiness or external alert delivery is certified." } };
+                limitations = new[] { "TestServer HTTP and real synthetic PostgreSQL, not public-network or browser DOM load.", "Positive HTTP phases are bounded to one request per physical one-connection pool; this does not measure ten simultaneous HTTP admissions.", "Ten logical owners and two concurrent execution handlers remain distinct from the HTTP connection budget.", "Controlled compilation handler and explicit agent reads do not measure Qwen capacity or semantic fidelity.", "No commercial SLA, deployment readiness or external alert delivery is certified." } };
             File.WriteAllText(System.IO.Path.Combine(folder, scenario + "-" + Guid.NewGuid().ToString("N") + ".json"), JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
         }
     }
