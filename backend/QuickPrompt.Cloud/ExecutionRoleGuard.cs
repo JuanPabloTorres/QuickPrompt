@@ -32,6 +32,28 @@ public sealed class ExecutionRoleGuard(ExecutionDataSource data) : IHostedServic
               AND NOT has_table_privilege(current_user,'qp_operations.execution_results','UPDATE')
               AND NOT has_table_privilege(current_user,'qp_operations.execution_results','DELETE')
               AND has_column_privilege(current_user,'qp_operations.executions','Status','UPDATE')
+              AND (SELECT count(*)=2 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE (n.nspname,c.relname) IN (('qp_operations','factual_reviews'),('qp_library','factual_documents'))
+                     AND c.relrowsecurity AND c.relforcerowsecurity AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))
+              -- Catalog OIDs avoid requiring library schema access just to inspect its ACL.
+              AND NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE (n.nspname,c.relname) IN (('qp_operations','factual_reviews'),('qp_library','factual_documents'))
+                     AND (has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+                       OR has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')))
+              AND CASE WHEN current_setting('server_version_num')::int>=170000
+                    THEN NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                         WHERE (n.nspname,c.relname) IN (('qp_operations','factual_reviews'),('qp_library','factual_documents'))
+                           AND has_table_privilege(current_user,c.oid,'MAINTAIN'))
+                    ELSE true END
+              AND has_function_privilege(current_user,to_regprocedure('qp_operations.expire_factual_reviews()')::oid,'EXECUTE')
+              AND NOT has_function_privilege(current_user,to_regprocedure('qp_operations.forget_factual_child(uuid,uuid)')::oid,'EXECUTE')
+              AND (SELECT count(*)=2 FROM (VALUES
+                     ('qp_operations.expire_factual_reviews()'),('qp_operations.forget_factual_child(uuid,uuid)')) expected(identity)
+                   JOIN pg_proc p ON p.oid=to_regprocedure(expected.identity)::oid
+                   WHERE pg_get_userbyid(p.proowner)='quickprompt_migrator' AND p.prosecdef
+                     AND EXISTS (SELECT 1 FROM unnest(p.proconfig) setting WHERE replace(setting,' ','')='search_path=pg_catalog,pg_temp')
+                     AND NOT EXISTS (SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) permission
+                                     WHERE permission.grantee=0 AND permission.privilege_type='EXECUTE'))
             FROM pg_roles WHERE rolname=current_user;
             """, connection);
         if (await command.ExecuteScalarAsync(cancellation) is not true)

@@ -76,10 +76,14 @@ public sealed partial class AccountHttpTests
             var quotaResponses = await Task.WhenAll(quotaRequests.Select(input => busy.Client.PostAsJsonAsync(busy.Path + $"/prompts/{busy.Prompt.Id}/compile", input, timeout.Token)));
             var acceptedQuota = quotaResponses.Count(response => response.StatusCode == HttpStatusCode.Accepted);
             var rejectedQuota = quotaResponses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests);
+            var quotaJobs = new List<ExecutionView>();
             foreach (var response in quotaResponses.Where(response => response.StatusCode == HttpStatusCode.TooManyRequests))
                 measurements.Rejections.Enqueue(await CapacityRejectionDetails(busy, response, log, "expected-owner-queue-boundary", timeout.Token));
             foreach (var response in quotaResponses.Where(response => response.StatusCode == HttpStatusCode.Accepted))
-                measurements.Track(busy, (await response.Content.ReadFromJsonAsync<ExecutionView>(timeout.Token))!);
+            {
+                var accepted = (await response.Content.ReadFromJsonAsync<ExecutionView>(timeout.Token))!;
+                measurements.Track(busy, accepted); quotaJobs.Add(accepted); handler.BoundaryJobs.TryAdd(accepted.Id, 0);
+            }
             foreach (var response in quotaResponses) response.Dispose();
             Assert.Equal(4, acceptedQuota); Assert.Equal(1, rejectedQuota);
             Assert.Equal(initial[owners.IndexOf(busy)].Id, (await SubmitCapacity(busy, submissions[busy.Actor], timeout.Token, measurements, log, "initial-replay")).Id);
@@ -105,6 +109,19 @@ public sealed partial class AccountHttpTests
                 var foreign = owners[(index + 1) % owners.Count];
                 Assert.Equal(HttpStatusCode.NotFound, (await foreign.Client.GetAsync(owner.Path + $"/executions/{completed.Id}/result", timeout.Token)).StatusCode);
             })));
+            // The first ten receipts do not imply that this owner's four quota-wave
+            // receipts have finished. Hold that wave to prove the phase barrier waits.
+            var quotaDrained = CapacityBoundaryCompleted(busy, quotaJobs, timeout.Token);
+            await handler.BoundaryStarted.Task.WaitAsync(timeout.Token);
+            if (quotaDrained.IsCompleted) await quotaDrained; // Preserve an observation failure rather than replacing it with the barrier assertion.
+            Assert.False(quotaDrained.IsCompleted, "The next phase must wait while an accepted quota-wave job is held.");
+            measurements.Facts["quotaWaveHeldBeforePhaseBarrier"] = true;
+            handler.BoundaryRelease.TrySetResult();
+            await quotaDrained;
+            var afterBoundary = await CapacityQueueSnapshot(busy, timeout.Token);
+            Assert.Equal(0, afterBoundary.OwnerQueued); Assert.Equal(0, afterBoundary.OwnerRunning);
+            measurements.Facts["quotaWaveTerminalBeforeHandlerFailure"] = quotaJobs.Count;
+            measurements.Facts["queueAfterQuotaPhaseBarrier"] = afterBoundary;
             var fault = new CompileSubmission(Guid.NewGuid(), 1, new() { ["tema"] = CapacityHandler.PrivateFailure });
             measurements.Facts["queueBeforeHandlerFailure"] = await CapacityQueueSnapshot(faultOwner, timeout.Token);
             var failed = await SubmitCapacity(faultOwner, fault, timeout.Token, measurements, log, "controlled-handler-failure");
@@ -131,6 +148,7 @@ public sealed partial class AccountHttpTests
         finally
         {
             handler.Release.TrySetResult();
+            handler.BoundaryRelease.TrySetResult();
             var cleaned = await CleanupCapacityJobs(measurements);
             foreach (var owner in owners) owner.Client.Dispose();
             measurements.Save(passed && cleaned);
@@ -418,6 +436,12 @@ public sealed partial class AccountHttpTests
     private static async Task CapacityAwait(Func<bool> condition, CancellationToken cancellation)
     { while (!condition()) await Task.Delay(30, cancellation); }
 
+    private static async Task CapacityBoundaryCompleted(CapacityOwner owner, IEnumerable<ExecutionView> jobs, CancellationToken cancellation)
+    {
+        foreach (var job in jobs)
+            Assert.Equal(ExecutionStatus.Completed, (await CapacityTerminal(owner, job.Id, cancellation)).Status);
+    }
+
     private static async Task<ExecutionView> CapacityTerminal(CapacityOwner owner, Guid id, CancellationToken cancellation)
     {
         while (true)
@@ -434,6 +458,9 @@ public sealed partial class AccountHttpTests
         public ConcurrentDictionary<Guid, byte> Owners { get; } = new();
         public ConcurrentDictionary<Guid, byte> ActiveOwners { get; } = new();
         public ConcurrentDictionary<Guid, int> Attempts { get; } = new();
+        public ConcurrentDictionary<Guid, byte> BoundaryJobs { get; } = new();
+        public TaskCompletionSource BoundaryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource BoundaryRelease { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int active; private int peak; private int peakPerOwner;
         public int Active => Volatile.Read(ref active);
@@ -449,6 +476,11 @@ public sealed partial class AccountHttpTests
             try
             {
                 await Release.Task.WaitAsync(cancellation);
+                if (BoundaryJobs.ContainsKey(lease.Id))
+                {
+                    BoundaryStarted.TrySetResult();
+                    await BoundaryRelease.Task.WaitAsync(cancellation);
+                }
                 if (lease.Payload.Contains(PrivateFailure, StringComparison.Ordinal)) throw new InvalidOperationException(PrivateFailure);
                 return await new CompileExecutionHandler().Execute(lease, cancellation);
             }

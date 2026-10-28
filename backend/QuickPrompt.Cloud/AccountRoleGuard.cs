@@ -81,6 +81,44 @@ public sealed class AccountRoleGuard(NpgsqlDataSource data) : IHostedService
                                      WHERE grant_entry.grantee=0 AND grant_entry.privilege_type='EXECUTE'))
               AND NOT has_table_privilege(current_user,'qp_operations.execution_results','INSERT')
               AND has_column_privilege(current_user,'qp_operations.executions','CancelRequested','UPDATE')
+              -- Reviewed factual documents have their own immutable history and private review state.
+              AND (SELECT count(*)=2 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE (n.nspname,c.relname) IN (('qp_operations','factual_reviews'),('qp_library','factual_documents'))
+                     AND c.relrowsecurity AND c.relforcerowsecurity AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))
+              -- Each required privilege is checked separately: a comma list tests ANY, not ALL.
+              AND has_table_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'SELECT')
+              AND has_table_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'INSERT')
+              AND has_table_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'UPDATE')
+              AND NOT has_table_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'DELETE,TRUNCATE,REFERENCES,TRIGGER')
+              AND NOT has_any_column_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'REFERENCES')
+              AND has_table_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'SELECT')
+              AND has_table_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'INSERT')
+              AND has_table_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'DELETE')
+              AND NOT has_table_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'UPDATE,TRUNCATE,REFERENCES,TRIGGER')
+              AND NOT has_any_column_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'UPDATE,REFERENCES')
+              -- MAINTAIN does not exist before PostgreSQL 17; do not evaluate it on supported older servers.
+              AND CASE WHEN current_setting('server_version_num')::int>=170000
+                    THEN NOT has_table_privilege(current_user,to_regclass('qp_operations.factual_reviews')::oid,'MAINTAIN')
+                     AND NOT has_table_privilege(current_user,to_regclass('qp_library.factual_documents')::oid,'MAINTAIN')
+                    ELSE true END
+              AND has_function_privilege(current_user,to_regprocedure('qp_operations.forget_factual_child(uuid,uuid)')::oid,'EXECUTE')
+              AND NOT has_function_privilege(current_user,to_regprocedure('qp_operations.expire_factual_reviews()')::oid,'EXECUTE')
+              AND NOT has_function_privilege(current_user,to_regprocedure('qp_library.validate_factual_document()')::oid,'EXECUTE')
+              AND NOT has_function_privilege(current_user,to_regprocedure('qp_library.erase_factual_derivatives()')::oid,'EXECUTE')
+              AND (SELECT count(*)=4 FROM (VALUES
+                     ('qp_operations.forget_factual_child(uuid,uuid)',true),('qp_operations.expire_factual_reviews()',true),
+                     ('qp_library.validate_factual_document()',false),('qp_library.erase_factual_derivatives()',true)) expected(identity,definer)
+                   JOIN pg_proc p ON p.oid=to_regprocedure(expected.identity)::oid
+                   WHERE pg_get_userbyid(p.proowner)='quickprompt_migrator' AND p.prosecdef=expected.definer
+                     AND EXISTS (SELECT 1 FROM unnest(p.proconfig) setting WHERE replace(setting,' ','')='search_path=pg_catalog,pg_temp')
+                     AND NOT EXISTS (SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) permission
+                                     WHERE permission.grantee=0 AND permission.privilege_type='EXECUTE'))
+              AND (SELECT count(*)=2 FROM (VALUES
+                     ('qp_library.factual_documents','factual_document_from_review','qp_library.validate_factual_document()'),
+                     ('qp_library.prompts','erased_prompt_factual_content','qp_library.erase_factual_derivatives()')) expected(relation,name,procedure)
+                   JOIN pg_trigger t ON t.tgrelid=to_regclass(expected.relation)::oid AND t.tgname=expected.name
+                     AND t.tgfoid=to_regprocedure(expected.procedure)::oid
+                   WHERE NOT t.tgisinternal AND t.tgenabled IN ('O','A'))
             FROM pg_roles WHERE rolname=current_user;
             """, connection);
         if (await command.ExecuteScalarAsync(cancellation) is not true)

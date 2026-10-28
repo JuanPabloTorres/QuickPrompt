@@ -16,7 +16,7 @@ explícita de hechos, composición literal sin otro escritor y aprobación final
 separada. Añade dos tablas privadas con FORCE RLS; no reutiliza el permiso de
 guardar una plantilla para autorizar un documento.
 
-La suite final de interfaz aprobó **477/477**, sin omisiones, y los builds general
+La suite local inicial de interfaz aprobó **477/477**, sin omisiones, y los builds general
 y de cuentas aprobaron. La integración focal inicial aprobó **18/18** con
 PostgreSQL 18.6. Son comprobaciones locales; la regresión completa, el restore con
 el esquema final y la publicación del nuevo candidato siguen pendientes.
@@ -27,7 +27,8 @@ respuesta grabada del caso A y demuestra que su cita incorrecta llega intacta a
 revisión, se rechaza al confirmar y puede corregirse antes de componer. El replay
 no consume otra inferencia ni convierte el primer intento fallido en PASS.
 La regresión posterior de interfaz aprobó **23/23** focales y TypeScript; el nuevo
-test de cita no formaba parte de las 477 anteriores. CI completa aún pendiente.
+test de cita no formaba parte de las 477 anteriores. La CI posterior aprobó
+**478/478** de interfaz; su job PostgreSQL falló, como se detalla abajo.
 
 La revisión adicional confirmó tres defectos del mecanismo inicial y sus
 correcciones: los privilegios CRUD por defecto sobrevivían a un GRANT más
@@ -43,8 +44,9 @@ antes/después del ajuste de permisos.
 La restauración sintética ahora compara también filas, RLS, permisos, índices,
 constraints, funciones y triggers factuales. Su contraste nativo aprobó once
 comprobaciones en dos bases nuevas desechables; conservó un fallo intermedio de
-conversión SQL. La prueba de dump cifrado, key ring y restore completo queda
-reservada a CI. No se ha restaurado una biblioteca privada en QA.
+conversión SQL. La prueba de dump sintético cifrado y key ring aprobó en CI;
+los pasos independientes del comparador y restore completo no se ejecutaron tras
+fallar otra prueba. No se ha restaurado una biblioteca privada en QA.
 
 La campaña `factual-durable-20261028` se declaró antes de inferir: máximo tres
 llamadas a Qwen3:8b, sin reintentos para mejorar el resultado semántico. El primer
@@ -105,6 +107,53 @@ aprobó **6/6**, sin modelos; el primer observador paralelo del control global
 agotó el pool de una conexión y su fallo separado quedó conservado. La observación
 de limpieza se acotó y pasó. Este ajuste de prueba aún requiere CI completa.
 
+La CI del hijo `df3e9bab2928278f5a7c34aa3fdbe779a738f277` terminó con
+**409 PostgreSQL aprobadas, una fallida y 21 de Qwen omitidas** en
+[40777060862](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40777060862).
+El job Windows aprobó, incluidos build e interfaz. El nuevo contraste que fija
+al propietario ocupado recibió `OWNER_QUEUE_FULL` al preparar el fallo
+controlado: cuatro trabajos propios seguían en cola, sin ninguno ejecutándose.
+El arnés esperaba sólo los diez recibos iniciales, aunque había admitido cuatro
+adicionales. La limpieza al salir no sincronizaba ese cambio de fase. Es una
+carrera confirmada de la prueba; la cuota del producto actuó correctamente.
+La barrera terminal explícita ya se agregó, con un control que retiene esos
+cuatro trabajos para demostrar que la fase siguiente espera. Sus **4/4 controles
+PostgreSQL** aprobaron: original, dueño ocupado, otro dueño y cola global. No se
+modifica la cuota. Este diagnóstico no atribuye retrospectivamente el primer 429 sin body.
+Ambos intentos fallidos y sus TRX se conservan; los pasos independientes de
+restauración tampoco se ejecutaron en este hijo.
+
+La revisión de arranque detectó otra omisión: las guardas existentes no
+inspeccionaban las dos tablas ni las funciones factuales. El contraste previo
+aceptó 19 derivas que debía rechazar. Se agregaron predicados en las guardas
+actuales, sin otra migración: FORCE RLS, propietario, privilegios de tabla y
+columna, firmas/seguridad de funciones y triggers requeridos. El contraste
+corregido aprobó **20/20**, y la regresión HTTP focal con las guardas nuevas,
+**23/23**. Los negativos alteraron sólo una transacción sintética y verificaron
+rollback por fingerprint; no debilitaron permanentemente ninguna política.
+Los TRX de `factual-role-guards` conservan tanto el fallo previo como el resultado
+posterior. Esto comprueba esas derivas declaradas, no cualquier alteración posible
+del catálogo.
+
+La revisión independiente encontró dos huecos adicionales: REFERENCES por
+columna en revisiones y MAINTAIN en PostgreSQL 17+. Los cinco negativos nuevos
+reprodujeron la aceptación indebida antes de corregir; ese segundo baseline y
+el freeze inicial se conservaron. El corte posterior aprobó **25/25** controles
+(24 negativos y el positivo) en PostgreSQL 18.6, comprobando rollback. MAINTAIN
+se consulta sólo desde la versión 17 para conservar la rama compatible con
+PostgreSQL 16; esa versión anterior no se ejecutó en esta campaña. La revisión
+independiente posterior confirmó por lectura que ambos hallazgos están atendidos;
+no ejecutó esas pruebas.
+
+El host QA de navegador se reinició con el artefacto `866DD980…972976`, mantuvo
+health 200 y volvió a abrir ambos documentos. El contraste HTTP comparó texto,
+hechos, propuesta original y fuentes exactamente contra los recibos aprobados.
+La sesión web sintética volvió a entrar y mostró ambos textos en el historial,
+sin otra inferencia. Recibos: `factual-role-guards/runtime-final-02.json`,
+`history-continuity-final.json` e `history-browser-final.json`. No se cambiaron
+producción ni las fuentes de la campaña de tres llamadas. La CI completa del
+nuevo corte sigue pendiente; la continuidad QA no es aceptación humana del SaaS.
+
 La campaña factual declarada terminó con **tres llamadas reales de Qwen y cero
 reintentos semánticos**, cada una con un ID de ejecución y Core propio. El
 inventario de otro ámbito también incluyó una cita incorrecta. En el snapshot
@@ -123,6 +172,17 @@ lecturas/compilaciones mediante Codex, sin escrituras ni nuevo consentimiento.
 ChatGPT web siguió sin mostrar su respuesta anterior incluso sin herramientas;
 la inspección de red no estuvo disponible. M02/M03 continúan abiertos. Recibo:
 `rc10-mcp-read-compile-20261028.json`.
+
+La revisión de Google Cloud confirmó el callback final de Vercel y el retorno
+local en el mismo cliente «QuickPrompt Web · Local», dentro de `quickprompt-web`.
+La audiencia figura **External / Testing**, con un usuario de prueba; **Publish
+app** está deshabilitado y solicita completar Branding. Página principal,
+privacidad y condiciones están vacías. No se cambió esa configuración ni se
+comprobó un login nuevo de otra cuenta en esta revisión. P06 sigue abierto:
+[Google exige separar pruebas y producción y disponer de una página pública en
+dominio verificado](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance).
+El recibo `commercial-factual-rc10/google-oauth-readonly-20261028.json` conserva
+sólo metadatos públicos, sin secretos.
 
 ### Candidato operativo fe373fc — CI aprobada y backend publicado
 
@@ -193,7 +253,7 @@ por completar únicamente uno de sus controles.
 |---|---|---|
 | Correo, U03/P05 | Brevo autenticado todavía exige verificar el teléfono. El ticket 5641363 muestra `Awaiting your reply`; sólo aparecen la solicitud original y la respuesta del agente de Brevo que pide ambos formatos del móvil. El envío comunicado por el usuario no está visible en ese ticket. No se generó ni leyó una clave. | Verificación del proveedor, remitente y clave limitada; recepción y uso reales de confirmación y recuperación. No reenviar información privada ni habilitar registro sin esta evidencia. |
 | Recuperación, D02/A02/P04/O01/O04 | Se cotejaron los recibos del SHA `4236c3b` y siete pruebas críticas: restauración/descifrado con proveedor nuevo, certificado/aplicación incorrectos, rotación, borrado, retención acotada, concurrencia y protección del key ring. PostgreSQL conserva 20 tablas FORCE RLS y el contraste de deriva de políticas. | Restauración operativa, destino externo autorizado, cifrado/retención, RPO/RTO y rollback. El aislamiento de cookies de AccountHost depende de origen y nombre de base: cambiar la base requiere reautenticación o conservar esa identidad lógica. Reconciliar borrados y revocaciones posteriores al backup antes de admitir tráfico. |
-| Fidelidad, N01–N03 | Dos inferencias nuevas con Qwen3:8b, sin reintentos: A reproduce exactamente la respuesta histórica de 980 caracteres y añade participantes no confirmados; B conserva asistentes explícitos pero transforma una tarea sin fecha en bloqueo. Ambos controles semánticos **FAIL**, aunque compilación/transporte pasan. | Reemplazar el mecanismo que asigna roles factuales sin autoridad si se pretende certificar esa transformación. El contrato factual confirmado propuesto no está implementado; la generación general revisable no acredita fidelidad autónoma. No cambiar el oráculo para obtener PASS. |
+| Fidelidad, N01–N03 | Las inferencias históricas A/B fallan aunque el transporte pase. El reemplazo factual ya está implementado localmente y en la rama de validación: 22 pruebas focales PostgreSQL, 478 de interfaz y dos documentos corregidos por Codex QA guardados y reabiertos con Qwen real. La campaña de tres llamadas conserva los errores crudos; no acredita fidelidad autónoma. | Cerrar CI completa, migración/publicación y aceptación humana del nuevo recorrido SaaS. La generación general y la autoría/actualización de plantillas conservan sus incidentes; no se cierran por la capacidad factual nueva ni se cambia su oráculo. |
 | ChatGPT web, M02/M03 | Plugin multiusuario instalado, OAuth y permiso `Allow low-risk` visibles en la cuenta principal. La lectura limitada de `QA RC8 · Variables y revisión` termina con `This response couldn’t load`; recargar no recupera el texto. La traza visible dice que buscó y recuperó el recurso. | Presentación completa al usuario, segunda cuenta real, renovación y revocación del cliente. La causa del fallo de presentación sigue sin confirmar; no se atribuye a serialización MCP sin evidencia. |
 
 Recibos locales: `brevo-mail-gate-20261028-02.json`,
@@ -602,7 +662,7 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 | P03 | [ ] Base PostgreSQL externa configurada con TLS y roles separados; sólo fixtures autorizados en las pruebas públicas. | Base nueva Render migrada: tres roles limitados, cinco schemas, 20 tablas FORCE RLS, VerifyFull y 27 migraciones cotejadas con fuente. Recibos `render-postgres-final-readonly-boundary.json` y `render-postgres-migrations-readonly.json`. Host publicado; faltan recorridos A/B y restore del destino final. La base estaba vacía en el alta; después se migraron sólo las 84 definiciones autorizadas, sin valores ni historiales locales. |
 | P04 | [ ] Llaves de delegación y Data Protection persisten, se cifran y rotan con procedimiento probado; reiniciar no cambia autoridad ni permite replay. | Key ring y restore local comprobados. Rotación: fallo inicial conservado y prueba con proveedor reiniciado PASS en `tests/hosting-rotation-restart.trx`. Repetir continuidad/restore en el backend persistente final; no sustituirlo por disco efímero o claves en Vercel. |
 | P05 | [ ] Correo de confirmación/recuperación recibido y utilizado; envío fallido tiene diagnóstico y recuperación sin enumerar cuentas. | **Bloqueado**: Brevo sin clave transaccional; el usuario reportó fallo real de SMS. Ticket autorizado **5641363**, enviado y abierto. Mailjet sólo en investigación: cuenta no creada, formulario sin SMS observado pero con CAPTCHA/advertencia de conexión y contraseña manual pendiente. No hay proveedor alternativo operativo ni entrega comprobada. |
-| P06 | [ ] Google utiliza un proyecto/cliente de producción separado y callbacks del origen final. | Callback final guardado y login público observado por raíz. Eso no verifica separación de proyecto/cliente de producción ni todos los requisitos de publicación de Google; siguen pendientes. El cliente/HTTPS local anteriores son historia. [Política oficial de Google](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance). |
+| P06 | [ ] Google utiliza un proyecto/cliente de producción separado y callbacks del origen final. | Consola real: callback Vercel correcto, compartido con localhost en el cliente Local; audiencia External / Testing, un usuario de prueba, publicación deshabilitada por Branding incompleto. Página principal, privacidad y condiciones vacías. No se publicó ni amplió acceso. El login público anterior no cierra estos pendientes. [Política oficial de Google](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance). |
 | O01 | [ ] Backups externos automáticos, cifrado, retención y restauración se verifican con objetivos de pérdida de datos y tiempo de recuperación acordados. | Obligatorio para comercial. Una restauración QA no prueba el backup del proveedor. |
 | O02 | [ ] Health/readiness, errores, cola, cuotas, fallos del dispositivo y expiraciones tienen alertas y un responsable de respuesta. Logs sin credenciales ni razonamiento privado. | fe373fc verifica health 200→503→200, señales internas tipadas y ausencia de payloads/credenciales en ellas. Faltan collector, entrega de alertas y responsable operativo; no basta el probe ni contar logs como notificación entregada. |
 | O03 | [ ] Carga HTTP y del agente con la capacidad inicial prevista, fallos de almacenamiento y más de una instancia no mezclan usuarios ni exceden cuotas. | CI fe373fc: diez cuentas sintéticas, dos hosts, límites 2 global/1 propietario, cuatro admisiones y un rechazo por cuota, cero invocaciones duplicadas, diez lecturas de agente sin modelo y recuperación de pool. TestServer+PostgreSQL real no son carga pública, DOM o capacidad de Qwen. Declarar capacidad y SLO antes de ofrecerlos. |
