@@ -70,6 +70,8 @@ public static class AccountHost
         builder.Services.AddSingleton<AccountExecutionFeed>();
         if (delegation)
         {
+            builder.Services.AddSingleton<QuickPrompt.Nova.Application.IFactualProposalCodec, QuickPrompt.Web.Infrastructure.FactualProposalGenerator>();
+            builder.Services.AddScoped<AccountFactualReviews>();
             builder.Services.AddSingleton<AccountNovaCoordinator>();
             builder.Services.AddSingleton<AccountNovaFeed>();
             builder.Services.AddHostedService(services => services.GetRequiredService<AccountNovaCoordinator>());
@@ -194,6 +196,7 @@ public static class AccountHost
         app.MapAccountSharing();
         app.MapAccountMemory();
         app.MapAccountExecutions();
+        if (delegation) app.MapFactualReviews();
         if (delegation) app.MapAccountNova();
         if (delegation) app.MapAccountDelegation();
         if (delegation && app.Services.GetRequiredService<McpAccountSettings>().Enabled) app.MapAccountMcp();

@@ -12,7 +12,7 @@ export function AccountPromptDeletion({ prompt, service, onExpired, onDeleted, o
   const [stale, setStale] = useState(false);
   const scope = useMemo(() => ({ service, libraryId: prompt.libraryId, id: prompt.id, revision: prompt.revision }), [service, prompt.libraryId, prompt.id, prompt.revision]);
   const operation = useAccountOperation(scope, onExpired);
-  return <Dialog open onOpenChange={open => { if (!open && !operation.busy) onClose(); }} title="Eliminar prompt privado" description={`Eliminarás «${prompt.title}», versión ${prompt.revision}, de esta biblioteca. Su contenido y sus versiones no se podrán recuperar. Las publicaciones ya compartidas, copias importadas, borradores y ejecuciones se gestionan por separado y se conservan.`}>
+  return <Dialog open onOpenChange={open => { if (!open && !operation.busy) onClose(); }} title="Eliminar prompt privado" description={`Eliminarás «${prompt.title}», versión ${prompt.revision}, de esta biblioteca. Su contenido, sus versiones y los documentos y revisiones factuales derivados no se podrán recuperar. Las publicaciones ya compartidas, copias importadas, borradores y ejecuciones se gestionan por separado y se conservan.`}>
     <label className="account-delete-confirm"><input type="checkbox" checked={confirmed} disabled={operation.busy || stale} onChange={event => setConfirmed(event.target.checked)} />Confirmo eliminar este prompt y sus versiones.</label>
     {operation.error && <p role="alert" className="error">{operation.error} No se ha confirmado la eliminación.</p>}
     {stale && <p>La revisión cambió o existe trabajo activo. Actualiza la biblioteca y revisa el recurso de nuevo antes de eliminarlo.</p>}

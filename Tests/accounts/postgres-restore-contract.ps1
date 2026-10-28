@@ -27,6 +27,13 @@ $ownerSource = Get-Content -LiteralPath $restoreScript -Raw
 $assignment = [regex]::Match($ownerSource, '(?ms)^\$pgErasureContractSql = @''\r?\n(.*?)\r?\n''@')
 if (-not $assignment.Success) { throw 'The restore script no longer exposes its expected catalog query.' }
 $query = $assignment.Groups[1].Value
+function Read-OwnerQuery([string]$Name) {
+    $match = [regex]::Match($ownerSource, '(?ms)^\$' + [regex]::Escape($Name) + ' = @''\r?\n(.*?)\r?\n''@')
+    if (-not $match.Success) { throw 'The owning restore query is missing.' }
+    return $match.Groups[1].Value
+}
+$factualQuery = Read-OwnerQuery 'pgFactualContractSql'
+$factualDataQuery = Read-OwnerQuery 'pgFactualDataSql'
 $oldQuery = $query.Replace("'erasure_collection_change'", "'erasure_collection_update'")
 if ($oldQuery -eq $query) { throw 'The real collection-erasure policy is absent from the restore contract.' }
 
@@ -60,14 +67,28 @@ try {
     $null = Invoke-FixtureSql $sourceDatabase @'
 SET ROLE quickprompt_migrator;
 CREATE SCHEMA qp_library;
+CREATE SCHEMA qp_operations;
 CREATE TABLE qp_library.prompts (id integer PRIMARY KEY);
 CREATE TABLE qp_library.collections (id integer PRIMARY KEY);
+CREATE TABLE qp_library.factual_documents (id integer PRIMARY KEY, payload text NOT NULL);
+CREATE TABLE qp_operations.factual_reviews (id integer PRIMARY KEY, payload text NOT NULL);
+ALTER TABLE qp_library.factual_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qp_library.factual_documents FORCE ROW LEVEL SECURITY;
+ALTER TABLE qp_operations.factual_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qp_operations.factual_reviews FORCE ROW LEVEL SECURITY;
+CREATE POLICY factual_document_actor ON qp_library.factual_documents TO quickprompt_app USING (true) WITH CHECK (true);
+CREATE POLICY factual_review_actor ON qp_operations.factual_reviews TO quickprompt_app USING (true) WITH CHECK (true);
+CREATE FUNCTION qp_operations.expire_factual_reviews() RETURNS integer LANGUAGE sql SECURITY DEFINER
+ SET search_path=pg_catalog,pg_temp AS 'SELECT 1';
 ALTER TABLE qp_library.collections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE qp_library.collections FORCE ROW LEVEL SECURITY;
 CREATE POLICY erasure_collection_change ON qp_library.collections FOR UPDATE
   TO quickprompt_migrator USING (false) WITH CHECK (false);
 '@
+    $null = Invoke-FixtureSql $sourceDatabase "INSERT INTO qp_library.factual_documents VALUES (1,'synthetic baseline'); INSERT INTO qp_operations.factual_reviews VALUES (1,'synthetic baseline');"
     $baseline = Invoke-FixtureSql $sourceDatabase $query
+    $factualBaseline = Invoke-FixtureSql $sourceDatabase $factualQuery
+    $factualDataBaseline = Invoke-FixtureSql $sourceDatabase $factualDataQuery
     $oldBaseline = Invoke-FixtureSql $sourceDatabase $oldQuery
     Assert-RestoreContract ($baseline -match '^[a-f0-9]{32}$') 'The owner comparator did not produce a catalog fingerprint.'
 
@@ -83,16 +104,41 @@ CREATE POLICY erasure_collection_change ON qp_library.collections FOR UPDATE
     Assert-RestoreContract ($baseline -eq (Invoke-FixtureSql $sourceDatabase $query)) 'Restoring the policy did not restore the original contract.'
     $checks.restoredPolicyMatchesBaseline = $true
 
+    foreach ($entry in @(@{ Table='qp_library.factual_documents'; Policy='factual_document_actor'; Key='factualDocument' },
+                         @{ Table='qp_operations.factual_reviews'; Policy='factual_review_actor'; Key='factualReview' })) {
+        $null = Invoke-FixtureSql $sourceDatabase "UPDATE $($entry.Table) SET payload='synthetic changed' WHERE id=1;"
+        Assert-RestoreContract ($factualDataBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualDataQuery)) 'A factual-table row change escaped the owner data fingerprint.'
+        $null = Invoke-FixtureSql $sourceDatabase "UPDATE $($entry.Table) SET payload='synthetic baseline' WHERE id=1;"
+        Assert-RestoreContract ($factualDataBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualDataQuery)) 'The factual data did not return to baseline.'
+        $checks[($entry.Key + 'RowDriftDetected')] = $true
+        $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; ALTER POLICY $($entry.Policy) ON $($entry.Table) USING (false);"
+        Assert-RestoreContract ($factualBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'A factual-table policy change escaped the owner catalog fingerprint.'
+        $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; ALTER POLICY $($entry.Policy) ON $($entry.Table) USING (true);"
+        Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'The factual policy did not return to baseline.'
+        $checks[($entry.Key + 'PolicyDriftDetected')] = $true
+    }
+    $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; CREATE OR REPLACE FUNCTION qp_operations.expire_factual_reviews() RETURNS integer LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS 'SELECT 2';"
+    Assert-RestoreContract ($factualBaseline -ne (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'A factual function change escaped the owner catalog fingerprint.'
+    $null = Invoke-FixtureSql $sourceDatabase "SET ROLE quickprompt_migrator; CREATE OR REPLACE FUNCTION qp_operations.expire_factual_reviews() RETURNS integer LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS 'SELECT 1';"
+    Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $sourceDatabase $factualQuery)) 'The factual function did not return to baseline.'
+    $checks.factualFunctionDriftDetected = $true
+
     & docker exec $container pg_dump -U quickprompt_bootstrap -d $sourceDatabase -Fc -f $archive
     if ($LASTEXITCODE -ne 0) { throw 'Could not dump the synthetic catalog fixture.' }
     & docker exec $container pg_restore -U quickprompt_bootstrap --role=quickprompt_migrator -d $targetDatabase --exit-on-error $archive
     if ($LASTEXITCODE -ne 0) { throw 'Could not restore the synthetic catalog fixture.' }
     Assert-RestoreContract ($baseline -eq (Invoke-FixtureSql $targetDatabase $query)) 'The restored policy differs from the source contract.'
     $checks.pgDumpRestorePreservedContract = $true
+    Assert-RestoreContract ($factualBaseline -eq (Invoke-FixtureSql $targetDatabase $factualQuery)) 'The factual catalog changed during pg_dump/restore.'
+    Assert-RestoreContract ($factualDataBaseline -eq (Invoke-FixtureSql $targetDatabase $factualDataQuery)) 'The factual rows changed during pg_dump/restore.'
+    $checks.factualDumpRestorePreservedContractAndRows = $true
 
     $null = Invoke-FixtureSql $targetDatabase 'SET ROLE quickprompt_migrator; ALTER POLICY erasure_collection_change ON qp_library.collections WITH CHECK (true);'
     Assert-RestoreContract ($baseline -ne (Invoke-FixtureSql $targetDatabase $query)) 'A policy change after restoration escaped the owner comparator.'
     $checks.postRestoreMutationDetected = $true
+    $null = Invoke-FixtureSql $targetDatabase "UPDATE qp_library.factual_documents SET payload='changed after restore' WHERE id=1;"
+    Assert-RestoreContract ($factualDataBaseline -ne (Invoke-FixtureSql $targetDatabase $factualDataQuery)) 'A factual row mutation after restore escaped the owner fingerprint.'
+    $checks.postRestoreFactualMutationDetected = $true
 }
 catch { $failure = $_.Exception.Message }
 finally {

@@ -39,8 +39,8 @@ public sealed partial class ExecutionQueue(ExecutionDataSource source, Execution
         AdmitInside(actor, libraryId, operationId, requestHash, payload, connectionId is null ? "CompilePrompt" : "RunLocalPrompt", connectionId, authorize, cancellation, validateSource);
 
     internal Task<ExecutionView> AdmitProposal(LibraryActor actor, Guid libraryId, Guid operationId, string requestHash, string payload,
-        Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
-        AdmitInside(actor, libraryId, operationId, requestHash, payload, "ModelProposal", connection, authorize, cancellation);
+        Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation, Action<bool, CancellationToken>? validateSource = null) =>
+        AdmitInside(actor, libraryId, operationId, requestHash, payload, "ModelProposal", connection, authorize, cancellation, validateSource);
 
     private Task<ExecutionView> AdmitInside(LibraryActor actor, Guid libraryId, Guid operationId, string requestHash, string payload,
         string kind, Guid? connectionId, Func<CancellationToken, Task<bool>>? authorize, CancellationToken cancellation,
@@ -93,6 +93,7 @@ public sealed partial class ExecutionQueue(ExecutionDataSource source, Execution
         // Fixed server policy: at most 100 terminal payloads per dispatch pass, never active work.
         // The database capability erases content without granting the worker general UPDATE/DELETE.
         await database.Database.ExecuteSqlRawAsync("SELECT qp_operations.expire_execution_content()", cancellation);
+        await database.Database.ExecuteSqlRawAsync("SELECT qp_operations.expire_factual_reviews()", cancellation);
         await database.Executions.Where(x => x.Status == ExecutionStatus.Running && x.LeaseUntil <= now)
             .ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, x => x.CancelRequested ? ExecutionStatus.Cancelled : ExecutionStatus.Interrupted)
                 .SetProperty(x => x.FinishedAt, now).SetProperty(x => x.ErrorCode, x => x.CancelRequested ? null : "LEASE_EXPIRED")

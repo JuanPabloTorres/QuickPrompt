@@ -8,6 +8,110 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
+### Revisión factual durable — implementación local, aún no publicada
+
+El usuario eligió revisar hechos y guardar el documento en el historial. La nueva
+capacidad usa la cola de propuestas existente: fuentes seleccionadas, revisión
+explícita de hechos, composición literal sin otro escritor y aprobación final
+separada. Añade dos tablas privadas con FORCE RLS; no reutiliza el permiso de
+guardar una plantilla para autorizar un documento.
+
+La suite final de interfaz aprobó **477/477**, sin omisiones, y los builds general
+y de cuentas aprobaron. La integración focal inicial aprobó **18/18** con
+PostgreSQL 18.6. Son comprobaciones locales; la regresión completa, el restore con
+el esquema final y la publicación del nuevo candidato siguen pendientes.
+
+El corte focal posterior aprobó **22/22**, sin omisiones, en
+`factual-documents-postgres-20261028/factual-postgres-05.trx`. Reproduce la
+respuesta grabada del caso A y demuestra que su cita incorrecta llega intacta a
+revisión, se rechaza al confirmar y puede corregirse antes de componer. El replay
+no consume otra inferencia ni convierte el primer intento fallido en PASS.
+La regresión posterior de interfaz aprobó **23/23** focales y TypeScript; el nuevo
+test de cita no formaba parte de las 477 anteriores. CI completa aún pendiente.
+
+La revisión adicional confirmó tres defectos del mecanismo inicial y sus
+correcciones: los privilegios CRUD por defecto sobrevivían a un GRANT más
+estrecho; comparar cadenas JSON con JSONB alteraba `edited` y el replay de
+confirmación; un rechazo conocido por cuota dejaba una revisión ADMITTED sin
+hijo. Una migración forward retira los privilegios indebidos sin reescribir la
+migración aplicada; la aplicación compara hechos tipados conservando orden y
+literales, y devuelve un recibo FAILED terminal cuando la cuota rechazó al hijo
+antes de admitirlo. No vuelve a inferir al repetir una operación fallida. Los
+contrastes iniciales se conservan y los registros A/B mantuvieron sus hashes
+antes/después del ajuste de permisos.
+
+La restauración sintética ahora compara también filas, RLS, permisos, índices,
+constraints, funciones y triggers factuales. Su contraste nativo aprobó once
+comprobaciones en dos bases nuevas desechables; conservó un fallo intermedio de
+conversión SQL. La prueba de dump cifrado, key ring y restore completo queda
+reservada a CI. No se ha restaurado una biblioteca privada en QA.
+
+La campaña `factual-durable-20261028` se declaró antes de inferir: máximo tres
+llamadas a Qwen3:8b, sin reintentos para mejorar el resultado semántico. El primer
+caso obtuvo JSON válido pero fue rechazado antes de REVIEW por una cita con
+«revisarán» frente a «revisará». La validación de procedencia se había situado
+antes de la corrección humana. Se conserva el fallo y su respuesta original;
+el ajuste de esa frontera debe volver a validarse sin convertirlo en un PASS
+autónomo de Qwen.
+
+El control con asistentes explícitos llegó a revisión, pero NOVA clasificó dos
+tareas futuras como trabajo terminado: **fidelidad cruda FAIL**. Codex corrigió
+roles y textos en la interfaz, confirmó los hechos y, por separado, aprobó el
+documento. La API registró cero documentos antes de aprobar y uno después; el
+texto y sus fuentes siguieron disponibles al recargar y abrir el historial.
+Este recorrido demuestra la revisión asistida de una fixture sintética; no es
+aceptación humana ni comprensión autónoma. Recibos locales:
+`factual-durable-20261028/control-B-browser-receipt.json` y
+`control-B-approved-document.json`.
+
+ChatGPT web también mostró **This response couldn't load** con una petición
+mínima que prohibía usar herramientas, en una conversación nueva. El fallo no
+queda limitado al MCP. No se observó su causa interna ni errores en la lectura
+acotada de consola; M02/M03 y la presentación web continúan pendientes.
+Recibo: `rc10-chatgpt-no-tool-control-20261028.json`.
+
+La utilidad de recuperación nueva usa AES-GCM y un destinatario RSA dedicado;
+sus **27/27 pruebas propias y 27/27 independientes** aprobaron. No ejecuta el
+ensayo CMS rechazado anteriormente. No se leyó ni transmitió el respaldo real:
+faltan destinatario, custodia, destino externo y objetivos operativos acordados.
+El cifrado de una fixture no cierra O01 ni la recuperación productiva.
+
+### Candidato operativo fe373fc — CI aprobada y backend publicado
+
+El commit `fe373fccc19bee35c421e1f43eb6de750cad52eb` pasó los dos jobs de
+[CI 40759073433](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40759073433):
+backend Release **1409/1409**, telemetría Debug **8/8**, MCP **27/27**,
+Companion **16/16**, consumidor legado **168/168** y PostgreSQL **385 aprobadas,
+cero fallidas y 21 de Qwen omitidas**. El build y la suite de interfaz aprobaron.
+Los TRX, los tres recibos de operaciones y los dos de restauración quedaron
+descargados y cotejados con ese SHA en `commercial-ops-rc9/attempt-02` del
+expediente privado de entrega. No hubo nuevas llamadas al modelo en esa CI.
+
+El contraste PostgreSQL ahora observa `/health` 200 antes, 503 durante el
+agotamiento con y sin cookie, 403 para origen ajeno y 200 después de liberar la
+conexión. La lectura privada se recupera y conserva su resultado anterior.
+Los controles de diez propietarios y dos hosts vuelven a pasar con cero
+duplicados y los límites intactos. Se añadieron señales operativas de
+cardinalidad acotada y cinco lockfiles del grafo Cloud, sin cambios de versiones;
+el restore bloqueado pasó. Esto cierra esos controles sintéticos, no el SLA,
+la capacidad de inferencia, las alertas externas ni la recuperación productiva.
+
+La rama del piloto avanzó normalmente a ese commit. Las fuentes de `apps/web`
+son idénticas a RC8; no se reconstruyó la web de Vercel. Render confirmó el commit
+exacto y **Deploy succeeded | Live**, deploy `dep-dbh5dno8v5cc73bvqkm0`. El clic
+inicial agotó el tiempo de respuesta; se leyó el resultado posterior sin repetir
+el despliegue. GET/HEAD de salud canónica y salud directa devolvieron 200;
+biblioteca anónima 401, origen ajeno y API directa del backend 403. La conexión
+OAuth MCP existente leyó después la fixture RC8 de la cuenta principal, revisión
+2 y sus tres variables exactas, sin pedir otro consentimiento. No demuestra que
+se haya renovado un token ni repara la presentación de ChatGPT web.
+
+Recibos: `rc9-public-http-20261028.json` y `rc9-mcp-post-deploy-20261028.json`.
+La captura gráfica adicional y la continuidad de la cookie del navegador no se
+confirmaron: el control se desconectó después de observar Live. No se fabricó una
+captura ni se sustituyó esa comprobación por la lectura MCP. No cambiaron esquemas,
+secretos, proveedor/modelo ni la versión visible y no se creó un tag estable.
+
 ### Verificación adicional del 28/10 — puertas que siguen abiertas
 
 El candidato de operaciones `84faba7b024f3739772c98cdbb82664d242cacf3` se publicó
@@ -452,11 +556,11 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 | P05 | [ ] Correo de confirmación/recuperación recibido y utilizado; envío fallido tiene diagnóstico y recuperación sin enumerar cuentas. | **Bloqueado**: Brevo sin clave transaccional; el usuario reportó fallo real de SMS. Ticket autorizado **5641363**, enviado y abierto. Mailjet sólo en investigación: cuenta no creada, formulario sin SMS observado pero con CAPTCHA/advertencia de conexión y contraseña manual pendiente. No hay proveedor alternativo operativo ni entrega comprobada. |
 | P06 | [ ] Google utiliza un proyecto/cliente de producción separado y callbacks del origen final. | Callback final guardado y login público observado por raíz. Eso no verifica separación de proyecto/cliente de producción ni todos los requisitos de publicación de Google; siguen pendientes. El cliente/HTTPS local anteriores son historia. [Política oficial de Google](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance). |
 | O01 | [ ] Backups externos automáticos, cifrado, retención y restauración se verifican con objetivos de pérdida de datos y tiempo de recuperación acordados. | Obligatorio para comercial. Una restauración QA no prueba el backup del proveedor. |
-| O02 | [ ] Health/readiness, errores, cola, cuotas, fallos del dispositivo y expiraciones tienen alertas y un responsable de respuesta. Logs sin credenciales ni razonamiento privado. | Obligatorio para operación; no basta un endpoint `/health` que devuelve 200. |
-| O03 | [ ] Carga HTTP y del agente con la capacidad inicial prevista, fallos de almacenamiento y más de una instancia no mezclan usuarios ni exceden cuotas. | El probe local de 16 propietarios no fija capacidad de venta. Declarar límite y SLO antes de ofrecerlos. |
+| O02 | [ ] Health/readiness, errores, cola, cuotas, fallos del dispositivo y expiraciones tienen alertas y un responsable de respuesta. Logs sin credenciales ni razonamiento privado. | fe373fc verifica health 200→503→200, señales internas tipadas y ausencia de payloads/credenciales en ellas. Faltan collector, entrega de alertas y responsable operativo; no basta el probe ni contar logs como notificación entregada. |
+| O03 | [ ] Carga HTTP y del agente con la capacidad inicial prevista, fallos de almacenamiento y más de una instancia no mezclan usuarios ni exceden cuotas. | CI fe373fc: diez cuentas sintéticas, dos hosts, límites 2 global/1 propietario, cuatro admisiones y un rechazo por cuota, cero invocaciones duplicadas, diez lecturas de agente sin modelo y recuperación de pool. TestServer+PostgreSQL real no son carga pública, DOM o capacidad de Qwen. Declarar capacidad y SLO antes de ofrecerlos. |
 | O04 | [ ] Despliegue y rollback del artefacto identificado comprobados; las migraciones tienen una recuperación compatible con el backup y los datos reales. | Piloto desplegado, pero rollback no ejecutado. No revertir ejecutables ignorando el estado del esquema. |
-| B03 | [ ] Fuente revisada/snapshot privado recuperable, build, dependencias, artefactos y pruebas del candidato se correlacionan con hashes. | La utilidad de inventario siguiente ayuda a identificar; no cierra sola esta puerta. |
-| CI01 | [x] CI remoto ejecuta los gates del candidato y conserva artefactos y fallos. | Run 40736397613, SHA 4236c3b: jobs Windows y PostgreSQL aprobados; TRX y ambos recibos JSON de restauración descargados y comprobados. Las pruebas nativas Qwen permanecen locales y no se atribuyen a esta CI. |
+| B03 | [ ] Fuente revisada/snapshot privado recuperable, build, dependencias, artefactos y pruebas del candidato se correlacionan con hashes. | Captura de bytes, commits 84faba7/fe373fc, índice normal intacto, cinco locks sin cambiar versiones y recibos CI con hashes comprobados. Falta correlación final con el artefacto desplegado/recuperable; pinning y un restore no prueban reproducibilidad binaria completa. |
+| CI01 | [x] CI remoto ejecuta los gates del candidato y conserva artefactos y fallos. | Run 40759073433, SHA fe373fc: jobs Windows y PostgreSQL aprobados, TRX y cinco recibos JSON descargados. El fallo health de 84faba7/run40756884417 se conserva. La CI no ejecuta Qwen; sus 21 omisiones son explícitas. RC8/run40736397613 permanece como evidencia histórica. |
 | H01 | [ ] Una persona completa y acepta el flujo SaaS definido, incluyendo el dispositivo y ChatGPT, en el candidato publicado. | La aceptación humana de NOVA local 1.0.0 se conserva; no se traslada automáticamente al SaaS. |
 | GTM01 | [ ] Alcance ofrecido, límites gratuitos, soporte, privacidad, retención y recuperación se comunican de acuerdo con lo que realmente funciona. | No anunciar venta/escala/disponibilidad que el piloto no ha probado. La venta de prompts no forma parte de este incremento. |
 

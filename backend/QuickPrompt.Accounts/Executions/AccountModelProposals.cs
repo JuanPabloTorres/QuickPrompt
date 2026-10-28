@@ -23,7 +23,8 @@ public sealed class AccountModelProposals(AccountAgentMemory memory, ExecutionQu
     public IValidatedAgentModelTransport ForConnection(LibraryActor actor, Guid libraryId, Guid connectionId) =>
         new PairedModelTransport(this, new AccountExecutionAccess(memory, queue), connections, queue, actor, libraryId, connectionId);
 
-    public Task<ExecutionView> Submit(LibraryActor actor, Guid libraryId, Guid connectionId, Guid operationId, JsonElement packet, CancellationToken cancellation = default)
+    public Task<ExecutionView> Submit(LibraryActor actor, Guid libraryId, Guid connectionId, Guid operationId, JsonElement packet, CancellationToken cancellation = default,
+        Action<bool, CancellationToken>? validateSource = null)
     {
         if (connectionId == Guid.Empty || operationId == Guid.Empty) throw new ValidationException("Conexión y operación requeridas.");
         LocalProposalProtocol.ValidateRequest(packet);
@@ -31,7 +32,7 @@ public sealed class AccountModelProposals(AccountAgentMemory memory, ExecutionQu
         var payload = packet.GetRawText();
         var fingerprint = JsonSerializer.Serialize(new { libraryId, connectionId, kind = "ModelProposal", packet });
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint)));
-        return queue.AdmitProposal(actor, libraryId, operationId, hash, payload, connectionId, token => connections.ProposalOwned(actor, connectionId, token), cancellation);
+        return queue.AdmitProposal(actor, libraryId, operationId, hash, payload, connectionId, token => connections.ProposalOwned(actor, connectionId, token), cancellation, validateSource);
     }
 
     public JsonElement Result(LibraryActor actor, Guid libraryId, Guid id) => memory.InScope(actor, libraryId, database =>

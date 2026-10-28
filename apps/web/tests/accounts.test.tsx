@@ -230,6 +230,7 @@ const options = { email: true, google: true, delegation: false, mailDelivery: 'd
 afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); });
 function service(): AccountService {
   return {
+    factual: vi.fn(() => { throw new Error('Esta prueba no abre revisiones factuales.'); }),
     async catalog(libraryId, query, signal) {
       const items = await this.prompts(libraryId, signal, query.collectionId ? { collectionId: query.collectionId } : query.ungrouped ? { ungrouped: true } : undefined);
       return { items, total: items.length, page: query.page, size: query.size };

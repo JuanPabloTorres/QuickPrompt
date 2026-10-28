@@ -6,6 +6,7 @@ import { PromptVariableFields } from '../prompts/PromptVariableFields';
 import { SavedText, historyDate } from '../prompts/HistoryResult';
 import { useAccountOperation } from './useAccountOperation';
 import { useAccountPreparedCopy } from './useAccountPreparedCopy';
+import { AccountFactualReviewDialog } from './AccountFactualReview';
 
 const labels: Record<AccountExecution['status'], string> = { Queued: 'En cola', Running: 'Preparando', Completed: 'Resultado guardado', Failed: 'No se pudo preparar', Cancelled: 'Cancelada', Interrupted: 'Interrumpida; no se repetirá sola' };
 const active = (job: AccountExecution) => job.status === 'Queued' || job.status === 'Running';
@@ -23,6 +24,7 @@ export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted
   const [connections, setConnections] = useState<AccountConnection[]>();
   const [target, setTarget] = useState('');
   const [localError, setLocalError] = useState('');
+  const [factual, setFactual] = useState(false);
   const receipt = useRef<{ fingerprint: string; id: string } | null>(null);
   const scope = useMemo(() => ({ prompt, service }), [prompt, service]);
   const operation = useAccountOperation(scope, onExpired);
@@ -51,6 +53,7 @@ export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted
       onSubmitted(job);
     });
   }
+  if (factual && names !== undefined) return <AccountFactualReviewDialog key={`${prompt.libraryId}:${prompt.id}:${prompt.revision}`} prompt={prompt} names={names} initialValues={values} service={service} onExpired={onExpired} onClose={onClose} />;
   return <Dialog open onOpenChange={open => { if (!open) { operation.cancel(); onClose(); } }} title={`Usar ${prompt.title}`} description={target ? `Versión ${prompt.revision}. Enviará sólo esta instrucción al equipo elegido para ejecutarla con Qwen3:8b. El equipo debe estar abierto y conectado.` : `Versión ${prompt.revision}. Completa los datos y conserva una instrucción lista para copiar. Esta preparación no llama a un modelo.`}>
     <form className="account-prompt-form" onSubmit={event => { event.preventDefault(); submit(); }}>
       <fieldset disabled={operation.busy}><legend className="eyebrow">Datos de esta preparación</legend>
@@ -62,6 +65,7 @@ export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted
       </fieldset>
       {operation.error && <p role="alert" className="error">{operation.error} Tus datos permanecen aquí; puedes reintentar la misma solicitud.</p>}
       {names === undefined && operation.error && <button type="button" className="secondary" onClick={() => { operation.clear(); setInspectRefresh(value => value + 1); }}>Volver a consultar variables</button>}
+      <button className="secondary" type="button" disabled={operation.busy || names === undefined} onClick={() => setFactual(true)}>Transformación factual con revisión</button>
       <div className="dialog-actions"><button className="secondary" type="button" onClick={onClose}>Cerrar</button><button className="primary" disabled={operation.busy || names === undefined || names.some(name => !values[name]?.trim())}>{target ? 'Ejecutar en mi equipo' : 'Preparar resultado'}</button></div>
     </form>
   </Dialog>;

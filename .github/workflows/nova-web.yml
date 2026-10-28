@@ -69,6 +69,8 @@ jobs:
       - run: dotnet test backend/QuickPrompt.Mcp.Tests/QuickPrompt.Mcp.Tests.csproj --configuration Release --logger trx
       - name: Verify Windows companion private profiles
         run: dotnet test backend/QuickPrompt.Companion.Tests/QuickPrompt.Companion.Tests.csproj --configuration Release --logger trx
+      - name: Verify private recovery archive boundaries
+        run: dotnet test Tests/recovery/QuickPrompt.Recovery.Tests.csproj --configuration Release --logger trx
       - run: dotnet test src/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
       - run: npm run build --prefix apps/web
       - run: npm run test:release --prefix apps/web

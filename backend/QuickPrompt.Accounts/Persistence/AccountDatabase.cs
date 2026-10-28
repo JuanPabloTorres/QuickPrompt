@@ -78,6 +78,8 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
     public DbSet<ActiveAgentSession> ActiveSessions => Set<ActiveAgentSession>();
     public DbSet<AccountLiveRun> LiveRuns => Set<AccountLiveRun>();
     public DbSet<AccountLiveEvent> LiveEvents => Set<AccountLiveEvent>();
+    public DbSet<FactualReview> FactualReviews => Set<FactualReview>();
+    public DbSet<FactualDocument> FactualDocuments => Set<FactualDocument>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseOpenIddict<Guid>();
 
@@ -146,6 +148,7 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
         LiveRunModel.Configure(model);
         ExecutionModel.Configure(model);
         ProposalModel.Configure(model);
+        FactualModel.Configure(model);
         CollectionModel.Configure(model);
         PromptUseModel.Configure(model);
         DelegationModel.Configure(model);

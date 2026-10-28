@@ -20,8 +20,8 @@ function Invoke-DevelopmentPsql([string]$Database, [string]$Sql) {
     return ($pgOutput -join "`n").Trim()
 }
 
-# A deterministic content fingerprint covers identity, library ownership, prompt IDs,
-# revisions and bodies. Only the hash is retained; no contents enter console/report.
+# Core rows and factual records have separate deterministic fingerprints. Both
+# must match after restore; only hashes, never source contents, enter the receipt.
 $pgFingerprintSql = @'
 SELECT md5(COALESCE(string_agg(row_json, E'\n' ORDER BY row_json), ''))
 FROM (
@@ -55,6 +55,88 @@ FROM (
 ) rows;
 '@
 $pgBefore = Invoke-DevelopmentPsql 'quickprompt_development' $pgFingerprintSql
+$pgFactualDataSql = @'
+SELECT md5(COALESCE(string_agg(row_json,E'\n' ORDER BY row_json),'')) FROM (
+ SELECT 'factual-review:'||row_to_json(r)::text AS row_json FROM qp_operations.factual_reviews r
+ UNION ALL SELECT 'factual-document:'||row_to_json(d)::text FROM qp_library.factual_documents d
+) rows;
+'@
+$pgFactualContractSql = @'
+SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM (
+ SELECT 'table:'||n.nspname||'.'||c.relname||':'||pg_get_userbyid(c.relowner)||':'||c.relrowsecurity||':'||c.relforcerowsecurity AS definition
+ FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE (n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews')
+ UNION ALL SELECT 'policy:'||row_to_json(p)::text FROM pg_policies p
+ WHERE (schemaname='qp_library' AND tablename='factual_documents') OR (schemaname='qp_operations' AND tablename='factual_reviews')
+   OR (schemaname='qp_operations' AND tablename='executions' AND policyname='factual_expiry_cancel')
+ UNION ALL SELECT 'index:'||schemaname||'.'||tablename||':'||indexdef FROM pg_indexes
+ WHERE (schemaname='qp_library' AND tablename='factual_documents') OR (schemaname='qp_operations' AND tablename='factual_reviews')
+ UNION ALL SELECT 'constraint:'||n.nspname||'.'||t.relname||':'||c.conname||':'||pg_get_constraintdef(c.oid)||':'||c.convalidated
+ FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace
+ WHERE (n.nspname='qp_library' AND t.relname='factual_documents') OR (n.nspname='qp_operations' AND t.relname='factual_reviews')
+ UNION ALL SELECT 'column:'||n.nspname||'.'||c.relname||':'||a.attnum||':'||a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE a.attnum>0 AND NOT a.attisdropped AND ((n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews'))
+ UNION ALL SELECT 'table-acl:'||n.nspname||'.'||c.relname||':'||pg_get_userbyid(p.grantor)||':'||CASE WHEN p.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(p.grantee) END||':'||p.privilege_type||':'||p.is_grantable
+ FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace,
+ LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) p
+ WHERE (n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews')
+ UNION ALL SELECT 'function:'||n.nspname||'.'||p.proname||':'||pg_get_functiondef(p.oid)||':'||pg_get_userbyid(p.proowner)
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE (n.nspname='qp_library' AND p.proname IN ('validate_factual_document','erase_factual_derivatives'))
+ OR (n.nspname='qp_operations' AND p.proname IN ('expire_factual_reviews','forget_factual_child'))
+ UNION ALL SELECT 'function-acl:'||n.nspname||'.'||p.proname||':'||pg_get_function_identity_arguments(p.oid)||':'||CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||':'||a.privilege_type||':'||a.is_grantable
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace,
+ LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a
+ WHERE (n.nspname='qp_library' AND p.proname IN ('validate_factual_document','erase_factual_derivatives'))
+ OR (n.nspname='qp_operations' AND p.proname IN ('expire_factual_reviews','forget_factual_child'))
+ UNION ALL SELECT 'trigger:'||pg_get_triggerdef(t.oid)||':'||t.tgenabled::text FROM pg_trigger t
+ WHERE NOT t.tgisinternal AND t.tgname IN ('factual_document_from_review','erased_prompt_factual_content')
+) definitions;
+'@
+$pgFactualSafetySql = @'
+SELECT (SELECT count(*)=2 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE ((n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews'))
+ AND c.relrowsecurity AND c.relforcerowsecurity AND pg_get_userbyid(c.relowner)='quickprompt_migrator')
+ AND (SELECT count(*)=4 FROM pg_policies WHERE
+   (schemaname='qp_library' AND tablename='factual_documents' AND policyname IN ('factual_document_actor','factual_document_maintenance'))
+   OR (schemaname='qp_operations' AND tablename='factual_reviews' AND policyname IN ('factual_review_actor','factual_review_maintenance')))
+ AND has_table_privilege('quickprompt_app','qp_operations.factual_reviews','SELECT')
+ AND has_table_privilege('quickprompt_app','qp_operations.factual_reviews','INSERT')
+ AND has_table_privilege('quickprompt_app','qp_operations.factual_reviews','UPDATE')
+ AND NOT has_table_privilege('quickprompt_app','qp_operations.factual_reviews','DELETE')
+ AND has_table_privilege('quickprompt_app','qp_library.factual_documents','SELECT')
+ AND has_table_privilege('quickprompt_app','qp_library.factual_documents','INSERT')
+ AND has_table_privilege('quickprompt_app','qp_library.factual_documents','DELETE')
+ AND NOT has_table_privilege('quickprompt_app','qp_library.factual_documents','UPDATE')
+ AND NOT has_table_privilege('quickprompt_execution','qp_operations.factual_reviews','SELECT,INSERT,UPDATE,DELETE')
+ AND NOT has_table_privilege('quickprompt_execution','qp_library.factual_documents','SELECT,INSERT,UPDATE,DELETE')
+ AND has_function_privilege('quickprompt_execution','qp_operations.expire_factual_reviews()','EXECUTE')
+ AND NOT has_function_privilege('quickprompt_app','qp_operations.expire_factual_reviews()','EXECUTE')
+ AND has_function_privilege('quickprompt_app','qp_operations.forget_factual_child(uuid,uuid)','EXECUTE')
+ AND NOT has_function_privilege('quickprompt_execution','qp_operations.forget_factual_child(uuid,uuid)','EXECUTE')
+ AND (SELECT count(*)=4 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE pg_get_userbyid(p.proowner)='quickprompt_migrator'
+ AND ((n.nspname='qp_library' AND p.proname IN ('validate_factual_document','erase_factual_derivatives'))
+ OR (n.nspname='qp_operations' AND p.proname IN ('expire_factual_reviews','forget_factual_child'))))
+ AND (SELECT count(*)=2 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE NOT t.tgisinternal AND t.tgenabled='O' AND n.nspname='qp_library'
+ AND ((c.relname='factual_documents' AND t.tgname='factual_document_from_review') OR (c.relname='prompts' AND t.tgname='erased_prompt_factual_content')))
+ AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace,
+ LATERAL aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'
+ AND ((n.nspname='qp_library' AND p.proname IN ('validate_factual_document','erase_factual_derivatives'))
+ OR (n.nspname='qp_operations' AND p.proname IN ('expire_factual_reviews','forget_factual_child'))))
+ AND EXISTS (SELECT 1 FROM qp_library.factual_documents)
+ AND EXISTS (SELECT 1 FROM qp_operations.factual_reviews)
+ AND NOT EXISTS (SELECT 1 FROM qp_library.factual_documents d JOIN qp_library.prompts p ON p."LibraryId"=d."LibraryId" AND p."Id"=d."PromptId" WHERE p."DeletedAt" IS NOT NULL)
+ AND NOT EXISTS (SELECT 1 FROM qp_operations.factual_reviews r JOIN qp_library.prompts p ON p."LibraryId"=r."LibraryId" AND p."Id"=r."PromptId"
+ WHERE p."DeletedAt" IS NOT NULL AND (r."Status"<>'INVALIDATED' OR r."Source"<>'null'::jsonb OR r."Title"<>'' OR r."ProposalFacts"<>'[]'::jsonb
+ OR r."ConfirmedFacts"<>'[]'::jsonb OR r."Preview" IS NOT NULL OR r."DocumentId" IS NOT NULL));
+'@
+$pgFactualDataBefore = Invoke-DevelopmentPsql 'quickprompt_development' $pgFactualDataSql
+$pgFactualContractBefore = Invoke-DevelopmentPsql 'quickprompt_development' $pgFactualContractSql
+if ((Invoke-DevelopmentPsql 'quickprompt_development' $pgFactualSafetySql) -ne 't') {
+    throw 'Faltan datos factuales sintéticos o no cumplen sus protecciones antes del restore.'
+}
 $pgErasureContractSql = @'
 SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM (
  SELECT 'policy:'||row_to_json(p)::text AS definition FROM pg_policies p
@@ -121,6 +203,9 @@ if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear una base de restauración nue
 if ($LASTEXITCODE -ne 0) { throw 'La restauración falló; se conserva la base para diagnóstico.' }
 $pgAfter = Invoke-DevelopmentPsql $pgRestore $pgFingerprintSql
 if ($pgBefore -ne $pgAfter) { throw 'La restauración no conserva las filas sintéticas.' }
+if ($pgFactualDataBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgFactualDataSql)) { throw 'La restauración cambió las revisiones o documentos factuales.' }
+if ($pgFactualContractBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgFactualContractSql)) { throw 'La restauración cambió el contrato factual de tablas, funciones, políticas, índices o permisos.' }
+if ((Invoke-DevelopmentPsql $pgRestore $pgFactualSafetySql) -ne 't') { throw 'La restauración no conserva los permisos y la erasure factual.' }
 if ($pgErasureContractBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgErasureContractSql)) {
     throw 'La restauración cambió las políticas, funciones, triggers o restricciones del borrado privado.'
 }
@@ -141,11 +226,11 @@ SELECT has_function_privilege('quickprompt_app','qp_library.search_text_latin(te
 if ($pgSearchPrivileges -ne 't') { throw 'La restauración no conserva los límites de la función de búsqueda.' }
 $pgPolicies = Invoke-DevelopmentPsql $pgRestore @'
 SELECT count(*) FROM pg_class c JOIN pg_namespace n ON c.relnamespace=n.oid
-WHERE ((n.nspname='qp_library' AND c.relname IN ('libraries','prompts','prompt_versions','publications','invitations','imports','agent_contexts','agent_preferences','captures','collections','collection_members','collection_imports','prompt_uses','agent_sessions'))
- OR (n.nspname='qp_operations' AND c.relname IN ('executions','execution_results','proposal_results','connections','agent_runs','agent_run_events')))
+WHERE ((n.nspname='qp_library' AND c.relname IN ('libraries','prompts','prompt_versions','publications','invitations','imports','agent_contexts','agent_preferences','captures','collections','collection_members','collection_imports','prompt_uses','agent_sessions','factual_documents'))
+ OR (n.nspname='qp_operations' AND c.relname IN ('executions','execution_results','proposal_results','connections','agent_runs','agent_run_events','factual_reviews')))
 AND c.relrowsecurity AND c.relforcerowsecurity AND pg_get_userbyid(c.relowner)='quickprompt_migrator';
 '@
-if ($pgPolicies -ne '20') { throw 'La restauración no conserva RLS y propiedad limitada.' }
+if ($pgPolicies -ne '22') { throw 'La restauración no conserva RLS y propiedad limitada.' }
 $pgImmutable = Invoke-DevelopmentPsql $pgRestore @'
 SELECT NOT has_column_privilege('quickprompt_app','qp_library.publications','Template','UPDATE')
  AND NOT has_column_privilege('quickprompt_app','qp_library.invitations','RecipientId','UPDATE')
@@ -271,6 +356,6 @@ $pgRlsRead = Invoke-DevelopmentPsql $pgRestore 'SET ROLE quickprompt_app; SELECT
 if ($pgRlsRead -ne '0') { throw 'La base restaurada revela filas sin contexto de actor.' }
 @{ status='passed'; source='quickprompt_development'; restoredDatabase=$pgRestore; fingerprint=$pgAfter;
    archiveSha256=(Get-FileHash -LiteralPath (Join-Path $pgEvidence 'synthetic-accounts.dump') -Algorithm SHA256).Hash;
-   forcedRlsTables=20; privateErasureContractSameAsSource=$true; erasedContentAndVisibility=$true; immutableHostKeyPrivileges=$true; encryptedHostKeys=$true; immutableCollectionSharing=$true; immutableCollectionIdentity=$true; executionContentRetention=$true; mcpCapabilitiesConstraint=$true; mcpCapabilitiesContractSameAsSource=$true; immutableCaptureReceipts=$true; immutableDelegationPrivileges=$true; immutableSharingPrivileges=$true; immutableMemoryPrivileges=$true; immutableExecutionPrivileges=$true; immutableVisibleRunIdentity=$true; anonymousVisibleLibraries=0; checkedAt=[DateTimeOffset]::UtcNow.ToString('O') } |
+   forcedRlsTables=22; factualRowsSameAsSource=$true; factualContractSameAsSource=$true; factualErasureAndPrivileges=$true; factualFingerprint=$pgFactualDataBefore; privateErasureContractSameAsSource=$true; erasedContentAndVisibility=$true; immutableHostKeyPrivileges=$true; encryptedHostKeys=$true; immutableCollectionSharing=$true; immutableCollectionIdentity=$true; executionContentRetention=$true; mcpCapabilitiesConstraint=$true; mcpCapabilitiesContractSameAsSource=$true; immutableCaptureReceipts=$true; immutableDelegationPrivileges=$true; immutableSharingPrivileges=$true; immutableMemoryPrivileges=$true; immutableExecutionPrivileges=$true; immutableVisibleRunIdentity=$true; anonymousVisibleLibraries=0; checkedAt=[DateTimeOffset]::UtcNow.ToString('O') } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $pgEvidence 'restore-result.json')
 Write-Host 'Restauración comprobada: identidad, bibliotecas, prompts, revisiones, migraciones, propietario y RLS conservados. Base sintética retenida para inspección.'

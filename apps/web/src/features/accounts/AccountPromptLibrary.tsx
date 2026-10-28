@@ -4,6 +4,7 @@ import { useAccountOperation } from './useAccountOperation';
 import { PublishPromptDialog } from './AccountSharing';
 import { AccountRememberedDrafts } from './AccountRememberedDrafts';
 import { AccountExecutions, UseAccountPromptDialog } from './AccountExecutions';
+import { AccountFactualDocuments } from './AccountFactualDocuments';
 import { AccountCollectionDialog } from './AccountCollectionDialog';
 import { PublishCollectionDialog } from './PublishCollectionDialog';
 import type { Group } from '../../services/api';
@@ -119,6 +120,7 @@ function AccountLibraryContent({ library, service, onExpired, agent }: LibraryPr
     </div>
     <AccountExecutions key={library.id} libraryId={library.id} service={service} refresh={executionRefresh} onExpired={onExpired} onCatalogChanged={reload}
       requestedId={editor || using || sharing || organizing || sharingCollection || deleting || agent?.controlled ? undefined : requestedExecution} onRequestedShown={() => setRequestedExecution(undefined)} />
+    <AccountFactualDocuments key={`documents:${library.id}`} libraryId={library.id} service={service} onExpired={onExpired} />
     {deleting && <AccountPromptDeletion key={`${library.id}:${deleting.id}:${deleting.revision}`} prompt={deleting} service={service} onExpired={onExpired} onClose={() => setDeleting(undefined)} onReload={() => { setDeleting(undefined); reload(); }} onDeleted={() => { if (focused?.id === deleting.id) setFocused(undefined); setDeleting(undefined); reload(); }} />}
     {using && <UseAccountPromptDialog key={`${using.prompt.id}:${using.prompt.revision}`} prompt={using.prompt} initialValues={using.values} service={service} onExpired={onExpired} onClose={() => setUsing(undefined)} onSubmitted={job => { setUsing(undefined); setRequestedExecution(job.id); setExecutionRefresh(value => value + 1); }} />}
     {editor && <AccountPromptEditor key={`${editor.restored?.id ?? editor.source?.id ?? 'new'}:${editor.source?.revision ?? 0}`} source={editor.source} restored={editor.restored} libraryId={library.id} service={service} onExpired={onExpired} onRemembered={() => setMemoryRefresh(value => value + 1)} saving={operation.busy} error={operation.error} onSave={save} controlled={agent?.controlled} approvedRunId={approvedRunId} onClose={() => { if (!operation.busy && !agent?.controlled) setEditor(undefined); }} />}

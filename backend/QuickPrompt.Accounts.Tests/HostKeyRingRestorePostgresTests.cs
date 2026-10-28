@@ -8,11 +8,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using QuickPrompt.Accounts.Persistence;
 using QuickPrompt.Cloud;
+using QuickPrompt.Recovery;
 using Xunit;
 
 namespace QuickPrompt.Accounts.Tests;
 
-/// <summary>Real synthetic dump/restore; neither a production backup nor a provider recovery certificate.</summary>
+/// <summary>Real synthetic dump, authenticated archive encryption, recovery and PostgreSQL restore. No production data.</summary>
 public sealed class HostKeyRingRestorePostgresTests(PostgresFixture postgres) : IClassFixture<PostgresFixture>
 {
     private const string Container = "quickprompt-saas-postgres";
@@ -30,6 +31,8 @@ public sealed class HostKeyRingRestorePostgresTests(PostgresFixture postgres) : 
         const string plaintext = "Synthetic session protected before database backup";
         using var certificate = CreateCertificate("QuickPrompt QA restore");
         using var wrongCertificate = CreateCertificate("QuickPrompt QA unrelated certificate");
+        using var backupRecipient = CreateBackupRecipient();
+        byte[]? backupBytes = null, encryptedArchive = null, recoveredBytes = null;
         var created = false;
         try
         {
@@ -47,10 +50,22 @@ public sealed class HostKeyRingRestorePostgresTests(PostgresFixture postgres) : 
             }
 
             await Docker("exec", Container, "pg_dump", "-U", "quickprompt_bootstrap", "-d", SourceDatabase, "-Fc", "-f", archive);
+            // Read the real custom-format dump as binary, never a UTF-8 string. The archive
+            // private key is distinct from the Data Protection key and exists only in memory.
+            backupBytes = await DockerBinary(null, BackupArchive.MaximumPlaintextBytes, "exec", Container, "cat", archive);
+            Assert.True(backupBytes.AsSpan().StartsWith("PGDMP"u8));
+            var sourceHash = BackupArchive.Digest(backupBytes);
+            var recipientPin = BackupRecipient.Fingerprint(backupRecipient);
+            var protectedAt = DateTimeOffset.UtcNow;
+            encryptedArchive = BackupArchive.Protect(backupBytes, sourceHash, backupRecipient, recipientPin, protectedAt, protectedAt.AddDays(1));
+            recoveredBytes = BackupArchive.Recover(encryptedArchive, BackupArchive.Digest(encryptedArchive), sourceHash,
+                backupRecipient, recipientPin, DateTimeOffset.UtcNow);
+            Assert.Equal(backupBytes, recoveredBytes);
             await Docker("exec", Container, "createdb", "-U", "quickprompt_bootstrap", "-O", "quickprompt_migrator", restoredDatabase);
             created = true;
-            await Docker("exec", Container, "pg_restore", "-U", "quickprompt_bootstrap", "--role=quickprompt_migrator",
-                "-d", restoredDatabase, "--exit-on-error", archive);
+            // pg_restore receives only the authenticated recovery result through binary stdin.
+            _ = await DockerBinary(recoveredBytes, 64 * 1024, "exec", "-i", Container, "pg_restore", "-U", "quickprompt_bootstrap",
+                "--role=quickprompt_migrator", "-d", restoredDatabase, "--exit-on-error");
 
             var connection = new NpgsqlConnectionStringBuilder(postgres.ApplicationConnection) { Database = restoredDatabase };
             Assert.NotEqual(SourceDatabase, connection.Database);
@@ -71,6 +86,9 @@ public sealed class HostKeyRingRestorePostgresTests(PostgresFixture postgres) : 
         }
         finally
         {
+            if (backupBytes is not null) CryptographicOperations.ZeroMemory(backupBytes);
+            if (encryptedArchive is not null) CryptographicOperations.ZeroMemory(encryptedArchive);
+            if (recoveredBytes is not null) CryptographicOperations.ZeroMemory(recoveredBytes);
             // Names contain only the fixed fixture prefix and this method's generated UUID.
             // No FORCE, recursive file removal, role changes or production destination is accepted.
             try
@@ -96,6 +114,57 @@ public sealed class HostKeyRingRestorePostgresTests(PostgresFixture postgres) : 
         using var rsa = RSA.Create(3072);
         var request = new CertificateRequest("CN=" + name, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(1));
+    }
+
+    private static X509Certificate2 CreateBackupRecipient()
+    {
+        using var rsa = RSA.Create(3072);
+        var request = new CertificateRequest("CN=QuickPrompt synthetic dedicated backup recipient", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyEncipherment, true));
+        request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new(BackupRecipient.DocumentEncryptionOid) }, true));
+        return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(2));
+    }
+
+    private static async Task<byte[]> DockerBinary(byte[]? input, int maximumOutputBytes, params string[] arguments)
+    {
+        using var process = new Process { StartInfo = new("docker") { UseShellExecute = false, RedirectStandardOutput = true,
+            RedirectStandardError = true, RedirectStandardInput = input is not null, CreateNoWindow = true } };
+        foreach (var argument in arguments) process.StartInfo.ArgumentList.Add(argument);
+        Assert.True(process.Start(), "The isolated binary PostgreSQL command could not start.");
+        var diagnostics = process.StandardError.ReadToEndAsync();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        try
+        {
+            var output = ReadBounded(process.StandardOutput.BaseStream, maximumOutputBytes, deadline.Token);
+            if (input is not null)
+            {
+                await process.StandardInput.BaseStream.WriteAsync(input, deadline.Token);
+                process.StandardInput.Close();
+            }
+            var bytes = await output;
+            await process.WaitForExitAsync(deadline.Token);
+            _ = await diagnostics;
+            Assert.True(process.ExitCode == 0, "The isolated binary PostgreSQL command failed; database diagnostics were not printed.");
+            return bytes;
+        }
+        catch
+        {
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); }
+            throw;
+        }
+    }
+
+    private static async Task<byte[]> ReadBounded(Stream source, int maximumBytes, CancellationToken cancellation)
+    {
+        using var output = new MemoryStream();
+        var buffer = new byte[81920];
+        int count;
+        while ((count = await source.ReadAsync(buffer, cancellation)) != 0)
+        {
+            if (output.Length + count > maximumBytes) throw new InvalidDataException("The synthetic archive exceeds the supported recovery limit.");
+            await output.WriteAsync(buffer.AsMemory(0, count), cancellation);
+        }
+        return output.ToArray();
     }
 
     private static async Task RequireDevelopmentContainer()

@@ -668,6 +668,175 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
                     b.ToTable("agent_runs", "qp_operations");
                 });
 
+            modelBuilder.Entity("QuickPrompt.Accounts.Executions.FactualDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Edited")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Facts")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PromptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PromptRevision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProposalFacts")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceFields")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(64000)
+                        .HasColumnType("character varying(64000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LibraryId", "OwnerId");
+
+                    b.HasIndex("LibraryId", "PromptId");
+
+                    b.HasIndex("OwnerId", "ReviewId")
+                        .IsUnique();
+
+                    b.HasIndex("OwnerId", "LibraryId", "CreatedAt", "Id");
+
+                    b.ToTable("factual_documents", "qp_library");
+                });
+
+            modelBuilder.Entity("QuickPrompt.Accounts.Executions.FactualReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ChildExecutionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChildOperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConfirmedFacts")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Edited")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Preview")
+                        .HasMaxLength(64000)
+                        .HasColumnType("character varying(64000)");
+
+                    b.Property<Guid>("PromptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PromptRevision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProposalFacts")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OwnerId", "LibraryId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("ConnectionId", "OwnerId");
+
+                    b.HasIndex("LibraryId", "OwnerId");
+
+                    b.HasIndex("LibraryId", "PromptId");
+
+                    b.HasIndex("OwnerId", "OperationId")
+                        .IsUnique();
+
+                    b.HasIndex("OwnerId", "LibraryId", "CreatedAt");
+
+                    b.ToTable("factual_reviews", "qp_operations");
+                });
+
             modelBuilder.Entity("QuickPrompt.Accounts.Executions.ModelProposalResult", b =>
                 {
                     b.Property<Guid>("ExecutionId")
@@ -1455,6 +1624,45 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("LibraryId", "OwnerId")
                         .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuickPrompt.Accounts.Executions.FactualDocument", b =>
+                {
+                    b.HasOne("QuickPrompt.Accounts.Persistence.OwnedLibrary", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryId", "OwnerId")
+                        .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuickPrompt.Accounts.Persistence.LibraryPrompt", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryId", "PromptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuickPrompt.Accounts.Executions.FactualReview", b =>
+                {
+                    b.HasOne("QuickPrompt.Accounts.Delegation.DelegatedConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId", "OwnerId")
+                        .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuickPrompt.Accounts.Persistence.OwnedLibrary", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryId", "OwnerId")
+                        .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuickPrompt.Accounts.Persistence.LibraryPrompt", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryId", "PromptId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

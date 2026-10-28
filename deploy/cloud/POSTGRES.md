@@ -39,6 +39,17 @@ se incluye en la suite de cuentas. Su resultado debe proceder de una ejecución 
 no de compilar la prueba. Tampoco implementa el registro de borrados posteriores
 al respaldo ni demuestra recuperación de datos privados del proveedor.
 
+El candidato con `PrivateFactualDocuments` añade `qp_operations.factual_reviews`
+y `qp_library.factual_documents`: el verificador de restauración exige ahora
+**22 tablas FORCE RLS**. Conserva por separado las huellas de filas originales y
+de las dos tablas factuales; compara también sus políticas, índices, restricciones,
+columnas, permisos, funciones y triggers habilitados. Rechaza una fuente factual
+vacía o con permisos amplios, y documentos/revisiones que conserven contenido de
+un prompt eliminado. La regresión del comparador altera filas y políticas de cada
+tabla y una función; exige detectar los cambios y conservar las huellas tras un
+dump/restore sintético. Ese contraste no acredita por sí solo la restauración
+completa de cuentas y keyring del nuevo candidato, que debe volver a pasar en CI.
+
 ## Recuperación operativa y límites del piloto
 
 El candidato `4236c3b69fee2a3e628e1a74c737aae31ef65d7e` pasó CI
@@ -86,6 +97,70 @@ operación y objetivos explícitos de pérdida de datos (RPO) y tiempo de recupe
 (RTO), medidos en un ejercicio real. No hay aquí un cron, una política de retención
 seleccionada, una carga de datos privados ni un cambio de infraestructura implícito.
 La caducidad del PostgreSQL gratuito tampoco se amplía mediante estos controles.
+
+## Archivo cifrado y recuperación del archivo
+
+`tools/QuickPrompt.Recovery` es una consola de operador independiente de Cloud,
+sin paquetes adicionales, red, HTTP, SQL, instalación de certificados o generación
+de credenciales productivas. Usa las primitivas BCL AES-256-GCM (nonce de 12 bytes,
+tag obligatorio de 16 bytes) y RSA-OAEP-SHA256 para envolver una clave efímera por
+archivo. El formato `QPBKUP1` autentica la versión y los metadatos canónicos como AAD;
+rechaza propiedades duplicadas/desconocidas, alteraciones, truncado y datos sobrantes.
+
+**El límite de este piloto es 64 MiB por dump**, procesado en memoria. No promete
+capacidad comercial ilimitada ni fragmenta o trunca archivos grandes. Sólo admite
+un destinatario RSA de al menos 2048 bits (3072 recomendado), con huella SHA-256
+fijada, EKU exclusivo Document Encryption (`1.3.6.1.4.1.311.80.1`) y Key Encipherment.
+El operador debe verificar que el par de claves sea dedicado al respaldo; no
+reutilizar TLS, delegación o Data Protection. El certificado público basta para
+cifrar; no se extraen claves privadas del sistema al proteger un dump.
+
+Después de construir la consola con el SDK del repositorio, consultar la interfaz:
+
+```powershell
+dotnet run --project tools/QuickPrompt.Recovery -c Release --no-build -- --help
+```
+
+Las entradas obligatorias de `protect` son el directorio real del repositorio,
+dump privado en formato PostgreSQL custom, su SHA-256 esperado, archivo de salida
+nuevo, certificado público dedicado, su SHA-256 y una fecha UTC explícita de
+conservación. `recover` exige el hash del archivo cifrado y el del plaintext
+esperado, la huella del destinatario y su **PFX existente**. Pide su contraseña
+interactivamente sin eco y usa `EphemeralKeySet`; no acepta contraseña por argumento,
+variable de entorno ni archivo y no genera PFX temporales. Este recorrido
+interactivo debe ejecutarlo el operador con el destinatario aprobado; las pruebas
+automáticas no crean ni abren archivos PFX o contraseñas.
+
+Los archivos quedan en rutas locales físicas fuera del repositorio. La escritura
+usa `CreateNew` y ACL privada de usuario/SYSTEM en Windows o modo 0600 en Unix,
+establecidos antes de escribir bytes. Nunca sobrescribe. La recuperación autentica
+y verifica los hashes antes de crear la salida. Un fallo de E/S puede dejar una
+salida privada incompleta; conservar el error y revisarla, sin sobrescribirla ni
+atribuirle el recibo de éxito. El recibo de consola sólo contiene hashes y estado,
+no datos, contraseñas ni rutas. La fecha de conservación bloquea la recuperación
+fuera de la ventana declarada; **no elimina archivos ni programa su eliminación**.
+
+La suite `Tests/recovery/QuickPrompt.Recovery.Tests.csproj` usa claves y contenido
+sintéticos en memoria. Su prueba de permisos crea sólo un archivo temporal de
+texto ficticio sin secretos. El recorrido de PostgreSQL en
+`HostKeyRingRestorePostgresTests` cifra el dump sintético real en memoria, recupera
+los bytes exactos y envía sólo esos bytes a `pg_restore`; conserva además las
+comprobaciones del keyring y sus negativos. No usa el respaldo privado real.
+
+Antes de procesar ese respaldo real falta aprobar **el par dedicado y su huella,
+la custodia privada del PFX y su contraseña y la ruta exacta de salida**. Antes de
+copiarlo fuera de Windows falta aprobar proveedor/cuenta/carpeta exactos, permisos
+y custodia de la clave en un destino separado, frecuencia, conservación y
+eliminación de copias, RPO y RTO. Una carpeta sincronizada también es un destino
+externo; no elegirla sin esa aprobación. Esta herramienta recupera un archivo:
+no restaura una base ni acredita el registro de borrados/revocaciones pendiente,
+la copia externa automática, sus objetivos operativos o la apertura del tráfico.
+
+Referencias primarias: [AES-GCM en .NET](https://learn.microsoft.com/dotnet/standard/security/cross-platform-cryptography#authenticated-encryption),
+[tamaño explícito del tag](https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib0053),
+[carga explícita de certificados](https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib0057)
+y [propósito Document Encryption](https://learn.microsoft.com/powershell/module/microsoft.powershell.security/protect-cmsmessage).
+La última referencia define el propósito del certificado; la herramienta no usa CMS.
 
 La admisión de compilación/ejecución local revalida con el propietario de aplicación la identidad, biblioteca, revisión y texto capturados bajo el mismo bloqueo 5283 que usa el borrado. Una lectura anterior al borrado no permite encolar después su contenido. Si la admisión gana, el trabajo activo bloquea el borrado; si gana el borrado, se rechaza la admisión. Los recibos existentes siguen disponibles tras edición/archivo ordinarios, pero no autorizan reutilizar un origen eliminado. El trabajador no recibe acceso SQL a bibliotecas.
 

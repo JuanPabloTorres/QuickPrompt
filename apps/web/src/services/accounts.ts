@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createAccountNovaServices } from './accountNova';
+import { createAccountFactualService } from './accountFactual';
 import { ApiError, createApiClient, emptySchema, groupsSchema, post, type ApiClient } from './api';
 import { packageSchema, type CollectionClient } from './library';
 import { createExecutionWatcher } from './accountExecutionStream';
@@ -75,6 +76,7 @@ export function createAccountService(client: ApiClient = createApiClient(undefin
       headers: { 'X-QP-CSRF': await csrf(signal), 'Content-Type': 'application/x-www-form-urlencoded' } };
   }
   return {
+    factual: (libraryId: string) => createAccountFactualService(client, mutate, libraryId),
     preferences: {
       get: signal => client.request('/account/preferences/', preferencesSchema, { signal }),
       save: (preferences, confirmed, signal) => mutate('/account/preferences/', preferencesSchema, { preferences, confirmed }, signal),

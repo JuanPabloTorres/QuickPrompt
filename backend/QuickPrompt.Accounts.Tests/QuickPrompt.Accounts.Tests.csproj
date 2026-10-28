@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.14" />
     <ProjectReference Include="../QuickPrompt.Accounts/QuickPrompt.Accounts.csproj" />
     <ProjectReference Include="../QuickPrompt.Cloud/QuickPrompt.Cloud.csproj" />
+    <ProjectReference Include="../../tools/QuickPrompt.Recovery/QuickPrompt.Recovery.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
