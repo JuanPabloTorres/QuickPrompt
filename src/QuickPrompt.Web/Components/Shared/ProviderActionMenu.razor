@@ -1,0 +1,96 @@
+@using QuickPrompt.Local
+@using QuickPrompt.Web.Infrastructure
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
+@inject IWebPromptTransfer Transfer
+@inject IJSRuntime JS
+@inject ITransferActivityWriter Audit
+@implements IDisposable
+<section class="provider-panel" aria-labelledby="provider-title" data-testid="provider-actions">
+<h3 id="provider-title">@T("Usar el texto en otra web","Use the text on another website")</h3>
+@foreach(var provider in new[]{ProviderId.ChatGptWeb,ProviderId.ClaudeWeb}.Where(p=>OnlyProvider is null || p==OnlyProvider)){
+var name=provider==ProviderId.ChatGptWeb?"ChatGPT":"Claude";
+<div class="provider-row"><strong>@name</strong><p class="hint">@UnavailableReason(provider)</p>
+@if(!busy&&!Disabled){<a class="fallback-link" href="@(provider==ProviderId.ChatGptWeb?"https://chatgpt.com/":"https://claude.ai/new")" target="_blank" rel="noopener noreferrer" data-qp-fallback="@provider" data-qp-scope="@Prompt.Id" @onclick="()=>Fallback(provider)">@T("Copiar y abrir ","Copy and open ")@name <AppIcon Name="arrow-up-right" /></a>}
+<p class="hint">@T("Pega el texto manualmente y decide allí si quieres enviarlo. Copiar y abrir no inserta ni envía.","Paste the text manually and decide there whether to send it. Copy and open never inserts or sends.")</p>
+<details class="direct-transfer"><summary>@T("Inserción directa (opcional)","Direct insertion (optional)")</summary><p class="hint">@T("Preparar rellena el editor sin enviar. El proveedor puede guardar ese borrador. Enviar requiere otra acción explícita.","Prepare fills the editor without sending. The provider may save the draft. Sending requires another explicit action.")</p>
+<label class="check"><input type="checkbox" @bind="privacyAccepted" disabled="@(busy||Disabled)" />@T("Autorizo transferir este texto al proveedor elegido. Revisé que no incluya datos sensibles sin permiso.","I authorize this text transfer to the selected provider. I checked for sensitive data requiring permission.")</label>
+<label class="check"><input type="checkbox" @bind="allowSend" disabled="@(busy||Disabled||extensionState!=TransferState.Ready)" />@T("Habilitar Enviar para esta operación (volverá a Preparar).","Enable Send for this operation (returns to Prepare afterwards).")</label>
+<div class="action-row"><button data-qp-transfer="PrepareOnly" data-provider="@provider" disabled="@(!CanPrepare(provider))" @onclick="()=>Run(provider,TransferAction.PrepareOnly)">@T("Preparar en ","Prepare in ")@name</button><button data-qp-transfer="PrepareAndSend" data-provider="@provider" disabled="@(!CanPrepare(provider)||!allowSend)" @onclick="()=>Run(provider,TransferAction.PrepareAndSend)">@T("Enviar a ","Send to ")@name</button></div></details></div>}
+<div role="status" aria-live="polite" class="transfer-status" data-testid="transfer-status" data-phase="@(session?.Phase.ToString()??TransferPhase.CREATED.ToString())"><strong>@StateLabel(result?.State??extensionState)</strong> @CodeLabel(result?.Code)</div>
+@if(auditWarning!=""){<p role="alert" class="hint">@auditWarning</p>}
+@if(busy){<button @onclick="Cancel">@T("Cancelar transferencia","Cancel transfer")</button>}
+</section>
+@code {
+    [Parameter]public ProviderId? OnlyProvider{get;set;}
+    [Parameter,EditorRequired] public CompiledPrompt Prompt {get;set;}=null!;
+    [Parameter] public string Language {get;set;}="es";
+    [Parameter] public bool Disabled {get;set;}
+    [Parameter] public EventCallback<(Guid RequestId,bool Busy)> BusyChanged {get;set;}
+    private Guid source;
+    private bool privacyAccepted,allowSend,busy,checking,disposed;
+    private string auditWarning="";
+    private WebTransferSession? session;
+    private TransferState extensionState=TransferState.ExtensionMissing;
+    private PromptTransferResult? result;
+    private PromptTransferRequest? active;
+    private string T(string es,string en)=>Language=="es"?es:en;
+    protected override void OnInitialized()=>Transfer.Progress+=Progress;
+    protected override void OnParametersSet(){if(source!=Prompt.Id){source=Prompt.Id;privacyAccepted=false;allowSend=false;result=null;}}
+    protected override async Task OnAfterRenderAsync(bool first){if(first){await Detect();await InvokeAsync(StateHasChanged);}}
+    private async Task Detect(){if(checking)return;checking=true;try{extensionState=(await Transfer.Detect()).State;}catch(JSException){extensionState=TransferState.ExtensionMissing;}finally{checking=false;}}
+    private bool CanPrepare(ProviderId provider)=>provider==ProviderId.ChatGptWeb && extensionState==TransferState.Ready && !busy && !Disabled && privacyAccepted && !string.IsNullOrWhiteSpace(Prompt.Text) && Prompt.Text.Length<=PromptTransferRequest.MaxCharacters;
+    private string UnavailableReason(ProviderId provider)=>provider==ProviderId.ClaudeWeb?T("Integración externa bloqueada. Usa copiar y abrir; deberás pegar manualmente.","External integration blocked. Use copy and open; paste manually."):Disabled?T("Hay una consulta local en curso. Detén o espera antes de transferir.","A local query is running. Stop or wait before transferring."):extensionState!=TransferState.Ready?T("Extensión no detectada. Usa copiar y abrir o carga la extensión local y compruébala.","Extension not detected. Use copy and open, or load and check the local extension."):Prompt.Text.Length>PromptTransferRequest.MaxCharacters?T("Texto mayor de 20 000 caracteres: solo copia manual.","Text exceeds 20,000 characters: manual copy only."):!privacyAccepted?T("Autoriza la inserción para preparar. Copiar y abrir está disponible sin insertar texto.","Authorize insertion to prepare. Copy and open is available without inserting text."):T("Puente detectado; sesión y editor se comprobarán al preparar. No se garantiza disponibilidad del sitio.","Bridge detected; session and editor are checked when preparing. Site availability is not guaranteed.");
+    private void Observe(PromptTransferResult value){try{session?.Observe(value);result=value;}catch(ValidationException){result=new(value.RequestId,TransferState.NeedsManualPaste,"state-unconfirmed");if(session?.Phase is TransferPhase.PREPARED or TransferPhase.TRANSFERRING or TransferPhase.INSERTED or TransferPhase.SUBMISSION_REQUESTED)session.Advance(TransferPhase.UNKNOWN);}}
+    private void Progress(PromptTransferResult value){if(value.RequestId==active?.RequestId){Observe(value);_ = InvokeAsync(StateHasChanged);}}
+    private async Task Run(ProviderId provider,TransferAction action){
+        if(!CanPrepare(provider) || (action==TransferAction.PrepareAndSend && !allowSend))return;
+        var now=DateTimeOffset.UtcNow;
+        active=new(1,Guid.NewGuid(),provider,Prompt.Text,action,now,now.AddMinutes(1),true);
+        session=new(active.RequestId,action);session.Advance(TransferPhase.PREPARED);auditWarning="";
+        busy=true;result=new(active.RequestId,TransferState.ProviderTabOpening,"opening-provider");
+        try {await BusyChanged.InvokeAsync((active.RequestId,true));session.Advance(TransferPhase.TRANSFERRING);Observe(await Transfer.Transfer(active));}
+        catch(ValidationException){result=new(active.RequestId,TransferState.Failed,active.ValidationCode(DateTimeOffset.UtcNow)??"invalid-request");}
+        catch(ConflictException){result=new(active.RequestId,TransferState.BlockedByProvider,"local-operation-busy");}
+        catch(JSException){result=new(active.RequestId,TransferState.Failed,"bridge-failed");}
+        finally{if(result!=null){if(session.Phase is not(TransferPhase.UNKNOWN or TransferPhase.SUBMITTED_UI or TransferPhase.BLOCKED or TransferPhase.FAILED or TransferPhase.CANCELLED))Observe(result);Record(provider,action,result);}allowSend=false;privacyAccepted=false;busy=false;var completedId=active.RequestId;active=null;await BusyChanged.InvokeAsync((completedId,false));}
+    }
+    private async Task Cancel(){if(active!=null)await Transfer.Cancel(active.RequestId);}
+    private async Task Fallback(ProviderId provider){
+        if(busy||Disabled)return;
+        // Browser click initiates clipboard first, then opens the fixed URL; Blazor only records metadata.
+        var id=Guid.NewGuid();session=new(id,TransferAction.PrepareOnly);session.Advance(TransferPhase.PREPARED);auditWarning="";
+        try{var outcome=await JS.InvokeAsync<FallbackOutcome>("qp.finishFallback",Prompt.Id.ToString());Observe(new(id,TransferState.NeedsManualPaste,!outcome.Copied?"clipboard-blocked":outcome.Opened?"copied-manual-paste":"popup-blocked"));}
+        catch(JSException){Observe(new(id,TransferState.NeedsManualPaste,"clipboard-blocked"));}
+        Record(provider,TransferAction.PrepareOnly,result!);allowSend=false;privacyAccepted=false;
+    }
+    private void Record(ProviderId provider,TransferAction action,PromptTransferResult value){if(disposed)return;try{Audit.RecordTransfer(new(value.RequestId,Prompt.TemplateId==Guid.Empty?null:Prompt.TemplateId,Prompt.Revision,provider,action,value.State,WebTransferSession.PhaseFor(value),value.Code,value.DurationMs,value.AdapterVersion,DateTime.UtcNow));}catch(Exception e)when((e is ValidationException) || StorageFailures.IsFailure(e)){auditWarning=T("El resultado mostrado se conserva, pero no se pudo guardar su registro local. Revisa la web antes de repetir una acción.","The displayed outcome is preserved, but its local audit could not be saved. Check the website before repeating an action.");}}
+    private sealed record FallbackOutcome(bool Copied,bool Opened);
+    private string StateLabel(TransferState state)=>state switch {
+        TransferState.Ready=>T("Extensión lista", "Extension ready"),TransferState.ExtensionMissing=>T("Extensión no detectada", "Extension not detected"),
+        TransferState.ProviderTabOpening=>T("Abriendo proveedor…", "Opening provider…"),TransferState.WaitingForEditor=>T("Esperando editor…", "Waiting for editor…"),
+        TransferState.Prepared=>T("Preparado sin enviar", "Prepared without sending"),TransferState.SubmissionRequested=>T("Solicitado un envío UI", "One UI submission requested"),
+        TransferState.SubmittedUI=>T("Interacción UI confirmada; no garantiza respuesta", "UI interaction confirmed; no response guarantee"),
+        TransferState.NeedsManualPaste=>T("Requiere pegado o envío manual", "Manual paste or send required"),TransferState.LoginRequired=>T("Inicia sesión manualmente", "Sign in manually"),
+        TransferState.BlockedByProvider=>T("Bloqueado por proveedor", "Blocked by provider"),TransferState.Timeout=>T("Tiempo agotado", "Timed out"),
+        TransferState.Cancelled=>T("Cancelada antes de enviar", "Cancelled before submission"),_=>T("No se completó la transferencia", "Transfer did not complete")};
+    private string CodeLabel(string? code)=>code switch {
+        "editor-not-empty"=>T("El editor contiene otro texto; no se sobrescribió.","Editor contains other text; it was preserved."),
+        "provider-busy"=>T("El proveedor tiene una consulta en curso. Espera a que termine; no se envió otra.","The provider has a request in progress. Wait until it finishes; no new request was sent."),
+        "editor-replaced"=>T("El editor cambió durante la preparación. Revisa la pestaña y prepara de nuevo.","The editor changed during preparation. Check the tab and prepare again."),
+        "provider-blocked-after-ui-attempt"=>T("El sitio bloqueó el intento UI o pidió iniciar sesión. Revisa la pestaña antes de reintentar.","The site blocked the UI attempt or requested sign-in. Check the tab before retrying."),
+        "cancel-outcome-unknown"=>T("Se pidió cancelar, pero se perdió la confirmación. Revisa la web: no se puede garantizar deshacer un clic.","Cancellation was requested but confirmation was lost. Check the website: a click cannot be guaranteed undone."),
+        "audit-write-failed"=>T("No se pudo guardar el registro local. Revisa el estado en la otra web; no repitas un envío sin comprobarlo.","The local audit record could not be saved. Check the other website; do not repeat a send without verifying it."),
+        "provider-terms-restriction"=>T("Restricción de automatización de Claude; usa el fallback manual.","Claude automation restriction; use manual fallback."),
+        "extension-disconnected" or "state-unconfirmed" or "bridge-failed"=>T("Se perdió la confirmación del puente. Revisa el editor del proveedor antes de reintentar; el resultado es incierto.","Bridge confirmation was lost. Check the provider editor before retrying; the outcome is unknown."),
+        "expired-request"=>T("La transferencia caducó. Revisa el editor antes de iniciar otra acción.","The transfer expired. Check the editor before starting another action."),
+        "invalid-request" or "invalid-metadata"=>T("La solicitud no cumple el contrato del puente. Conserva el texto y usa copiar y abrir.","The request does not match the bridge contract. Keep the text and use copy and open."),
+        "local-operation-busy"=>T("Detén o espera la consulta local antes de transferir.","Stop or wait for the local query before transferring."),
+        "copied-manual-paste"=>T("Texto copiado. Pégalo y decide el envío en la otra web.","Copied. Paste and decide whether to submit on the other website."),
+        "clipboard-blocked"=>T("Portapapeles bloqueado: selecciona el texto y usa Ctrl+C.","Clipboard blocked: select the text and use Ctrl+C."),
+        "popup-blocked"=>T("Texto copiado; el navegador bloqueó la pestaña. Abre la web manualmente.","Copied; browser blocked the tab. Open the website manually."),
+        "submission-unconfirmed" or "cancelled-after-ui-attempt"=>T("Hubo un intento UI; revisa la web antes de volver a enviar. Cancelar no puede deshacerlo.","A UI attempt occurred; inspect the website before sending again. Cancellation cannot undo it."),
+        "invalid-prompt"=>T("Texto vacío o mayor de 20 000 caracteres; usa copiar manualmente.","Empty text or over 20,000 characters; use manual copy."),
+        null=>"",_=>T("Consulta el estado; puedes usar copiar y abrir.","Check the status; copy and open remains available.")};
+    public void Dispose(){Transfer.Progress-=Progress;if(active!=null){Record(active.Provider,active.Action,new(active.RequestId,TransferState.NeedsManualPaste,"cancel-outcome-unknown"));_=Transfer.Cancel(active.RequestId);_=BusyChanged.InvokeAsync((active.RequestId,false));}disposed=true;}
+}

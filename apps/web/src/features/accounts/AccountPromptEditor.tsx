@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog } from '../../components/ui/Dialog';
 import { InlineSpinner } from '../../components/ui/Feedback';
 import type { AccountPrompt, AccountPromptDraft, AccountService, SavedEditorContext } from '../../services/accounts';
@@ -9,6 +9,8 @@ import { useAccountEditorInspection } from './useAccountEditorInspection';
 export function AccountPromptEditor({ source, restored, libraryId, service, onExpired, onRemembered, saving, error, onSave, onClose, controlled = false, approvedRunId }: { source: AccountPrompt | null; restored?: SavedEditorContext; libraryId: string; service: AccountService; onExpired: () => void; onRemembered: () => void; saving: boolean; error: string; onSave: (draft: AccountPromptDraft, asNew?: boolean) => void; onClose: () => void; controlled?: boolean; approvedRunId?: string }) {
   const [title, setTitle] = useState(restored?.title ?? source?.title ?? '');
   const [template, setTemplate] = useState(restored?.templateText ?? source?.template ?? '');
+  const [description, setDescription] = useState(source?.description ?? '');
+  useEffect(() => { if (!controlled) setDescription(source?.description ?? ''); }, [controlled, source?.description]);
   const [memory, setMemory] = useState(restored);
   const [sessionId] = useState(() => restored?.id ?? crypto.randomUUID());
   const [values, setValues] = useState<Record<string, string>>(restored?.values ?? {});
@@ -30,6 +32,10 @@ export function AccountPromptEditor({ source, restored, libraryId, service, onEx
     <form className="account-prompt-form" data-testid="prompt-editor" data-prompt-id={source?.id ?? ''} data-revision={source?.revision ?? ''} onSubmit={event => { event.preventDefault(); if (!controlled || approvedRunId) onSave({ title, template }); }}>
       <fieldset disabled={busy}><label htmlFor="prompt-title">Título</label><input id="prompt-title" required maxLength={160} autoFocus value={title} onChange={event => setTitle(event.target.value)} />
         <label htmlFor="prompt-content">Contenido</label><textarea id="prompt-content" required rows={10} maxLength={32000} value={template} onChange={event => { setTemplate(event.target.value); setValues({}); }} aria-describedby="account-prompt-help" />
+        {controlled && <details><summary data-nova-control="editor.metadata">Descripción de la propuesta de NOVA</summary>
+          <label htmlFor="prompt-description">Descripción</label><textarea id="prompt-description" rows={2} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} />
+          <p className="muted">Esta descripción forma parte de la propuesta revisada y del guardado aprobado.</p>
+        </details>}
         <p id="account-prompt-help" className="muted">Escribe {'<nombre_de_variable>'} donde quieras completar un dato al usar el prompt.</p>
         {inspection.pending && <p role="status">Comprobando variables y vista previa…</p>}
         {names.length > 0 && <div className="account-memory-values"><h3>Datos de este borrador</h3><PromptVariableFields names={names} values={values} idPrefix="account-memory-value" workspace maxLength={8000} onValueChange={(name, value) => setValues(previous => ({ ...previous, [name]: value }))} /></div>}

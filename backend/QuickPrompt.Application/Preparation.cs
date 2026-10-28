@@ -24,6 +24,7 @@ public record PrepareInput(Guid OperationId, string Message, string Model = Loca
     [JsonIgnore] public UserInputScope? InputScope { get; init; }
     [JsonIgnore] public VerbatimBodyBinding? VerbatimBody { get; init; }
     [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
+    [JsonIgnore] public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
     [JsonIgnore] public string TaskRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : System.Text.Json.JsonSerializer.Serialize(new {
         authorizedEarlierUserRequest = AuthorizedPendingRequest, currentUserReply = Message }, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 }
@@ -32,7 +33,10 @@ public record RetrievalFilter(Guid? GroupId = null, int? CategoryId = null, bool
 public record RetrievalCandidate(PromptDocument Prompt, double Score, string Reason);
 public record GroundedValue(string Name, string Value, string Evidence);
 public record PromptProposal(PreparationDecision Decision, Guid? SourceId, string Title, string Description,
-    string TemplateText, GroundedValue[] Values, string Clarification, string Reason, string[]? RequiredInputs = null);
+    string TemplateText, GroundedValue[] Values, string Clarification, string Reason, string[]? RequiredInputs = null)
+{
+    public AuthoringBriefReview? Brief { get; init; }
+}
 public record VariableDefinition(string Name, bool Required);
 public record VariableValue(string Name, string Value, string ValueSource, string ValidationStatus);
 public record PreparedDraft(Guid Id, PreparationState State, PreparationIntent Intent, PreparationDecision Decision,

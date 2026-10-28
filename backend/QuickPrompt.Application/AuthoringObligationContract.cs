@@ -34,6 +34,7 @@ public record AuthoringContentReview(string Status, string ContractHash, string 
 {
     public LiteralChanges LiteralChanges { get; init; } = new([]);
     public AuthoringClarification[] UserClarifications { get; init; } = [];
+    public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
 }
 
 /// <summary>

@@ -1,0 +1,45 @@
+@using QuickPrompt.Local
+@using QuickPrompt.Domain.Enums
+@using QuickPrompt.Nova.Application
+@inject IStorageFailureClassifier StorageFailures
+@inject ICollectionReader Collections
+@inject IInstructionCatalog Instructions
+@inject IInstructionWriter InstructionWriter
+@inject IJSRuntime JS
+@{ var form = draft; }
+<div class="workspace organization-workspace">
+<section class="library" aria-label="@T("Biblioteca de instrucciones", "Instruction library")">
+<button class="primary" @onclick="New">@T("Nueva instrucción", "New instruction")</button>
+<label for="instruction-library-search">@T("Buscar instrucciones", "Search instructions")</label><input id="instruction-library-search" type="search" @bind="search" @bind:event="oninput" @bind:after="Filter" maxlength="200" />
+<div class="filters"><div><label for="instruction-filter-category">@T("Categoría de instrucción", "Instruction category")</label><select id="instruction-filter-category" @bind="category" @bind:after="Filter"><option value="">@T("Todas", "All")</option>@foreach(var c in Enum.GetNames<PromptCategory>()){<option>@c</option>}</select></div><div><label for="instruction-filter-group">@T("Grupo de instrucciones", "Instruction group")</label><select id="instruction-filter-group" @bind="group" @bind:after="Filter"><option value="">@T("Todos", "All")</option><option value="ungrouped">@T("Sin grupo", "Ungrouped")</option>@foreach(var g in groups){<option value="@g.Group.Id">@g.Group.Name</option>}</select></div></div>
+<label class="check"><input type="checkbox" @bind="favorites" @bind:after="Filter" />@T("Solo instrucciones favoritas", "Favorite instructions only")</label>
+<p class="section-caption">@catalog.Total @T("instrucciones", "instructions")</p>
+@foreach(var p in catalog.Items){<article class="organization-card instruction-card"><button class="card-open" @onclick="()=>Edit(p)"><span class="category-tag">@p.Category · v@(p.Revision)</span><h2>@p.Name</h2><p>@(p.Text.Length>150?p.Text[..150]+"…":p.Text)</p></button></article>}
+@if(catalog.Total==0){<p class="empty">@T("Guarda un rol, estilo o restricción para reutilizarlo en tus prompts.","Save a role, style or constraint to reuse with your prompts.")</p>}
+<div class="pagination"><button disabled="@(page==0)" @onclick="()=>Move(-1)">@T("Anterior", "Previous")</button><span>@(page+1)</span><button disabled="@((page+1)*12>=catalog.Total)" @onclick="()=>Move(1)">@T("Siguiente", "Next")</button></div>
+</section>
+<section class="detail" @key="form.Id" aria-label="@T("Editor de instrucción", "Instruction editor")"><h2>@(persisted?T("Editar instrucción","Edit instruction"):T("Crear instrucción","Create instruction"))</h2><Toast Message="@message" Error="error" />
+<label for="instruction-name">@T("Nombre de la instrucción", "Instruction name")</label><input id="instruction-name" @bind="form.Name" maxlength="160" />
+<label for="instruction-text">@T("Texto de la instrucción", "Instruction text")</label><textarea id="instruction-text" @bind="form.Text" rows="8" maxlength="8000"></textarea><p class="hint">@T("Rol, estilo y restricciones. Se aplican solo al seleccionarla; las variables pertenecen a la plantilla.","Role, style and constraints. Applied only when selected; variables belong to the template.")</p>
+<label for="instruction-category">@T("Categoría", "Category")</label><select id="instruction-category" @bind="form.Category">@foreach(var c in Enum.GetValues<PromptCategory>()){<option value="@c">@c</option>}</select>
+<label class="check"><input type="checkbox" @bind="form.IsFavorite" />@T("Instrucción favorita", "Favorite instruction")</label>
+<div class="action-row"><button class="primary" @onclick="()=>Save(form.Id)">@T("Guardar instrucción", "Save instruction")</button>@if(persisted){<button @onclick="()=>Duplicate(form.Id)">@T("Duplicar instrucción", "Duplicate instruction")</button><button class="danger-text" @onclick="()=>Delete(form.Id)">@T("Eliminar instrucción", "Delete instruction")</button>}</div>
+@if(persisted){<button class="primary wide" @onclick="()=>Use(form.Id)">@T("Usar esta instrucción", "Use this instruction")</button><GroupMembershipPicker @key="draft.Id" EntityId="draft.Id" Kind="instruction" Groups="groups" Language="@Language" Changed="MembershipChanged" /><details><summary>@T("Versiones de instrucción", "Instruction versions") (@versions.Count)</summary>@foreach(var v in versions){<article class="instruction-version"><strong>v@(v.Revision)</strong><small>@v.CreatedAt.ToLocalTime().ToString("g")</small><pre>@v.Snapshot.Text</pre></article>}</details>}
+</section></div>
+@code {
+    [Parameter]public string Language{get;set;}="es";[Parameter]public EventCallback Changed{get;set;}[Parameter]public EventCallback<Guid> UseInstruction{get;set;}
+    private InstructionProfile draft=new();private bool persisted,error,favorites,focus;private string search="",category="",group="",message="";private int page;private CatalogPage<InstructionProfile> catalog=new([],0);private List<GroupSummary> groups=[];private List<InstructionVersion> versions=[];
+    private string T(string es,string en)=>Language=="es"?es:en;
+    protected override void OnInitialized()=>Reload();
+    protected override async Task OnAfterRenderAsync(bool first){if(focus){focus=false;await JS.InvokeVoidAsync("qp.focus","#instruction-name");}}
+    private void Reload(){groups=Collections.Groups().ToList();catalog=Instructions.QueryInstructions(new(Search:search,Category:category,Favorites:favorites,GroupId:Guid.TryParse(group,out var id)?id:null,Ungrouped:group=="ungrouped",Page:page));if(persisted)versions=Instructions.InstructionVersions(draft.Id);}
+    private void Filter(){page=0;Reload();}private void Move(int delta){page+=delta;Reload();}
+    private static InstructionProfile Clone(InstructionProfile p)=>WorkspaceSnapshots.Copy(p);
+    private void New(){draft=new();persisted=false;versions=[];message="";focus=true;}
+    private void Edit(InstructionProfile p){if(persisted&&draft.Id==p.Id&&draft.Revision==p.Revision){focus=true;return;}draft=Clone(p);persisted=true;message="";versions=Instructions.InstructionVersions(p.Id);focus=true;}
+    private void Duplicate(Guid id){if(draft.Id!=id)return;draft=Clone(draft);draft.Id=Guid.NewGuid();draft.Revision=1;draft.Name+=" · "+T("copia","copy");persisted=false;versions=[];focus=true;message="";}
+    private async Task Save(Guid id){if(draft.Id!=id)return;try{draft.Name=draft.Name.Trim();InstructionWriter.SaveInstruction(draft);persisted=true;Reload();error=false;message=T("Instrucción guardada como nueva versión.","Instruction saved as a new version.");await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo guardar la instrucción.","Could not save instruction."):e.Message;}}
+    private async Task Delete(Guid id){if(draft.Id!=id)return;if(!await JS.InvokeAsync<bool>("confirm",T("¿Eliminar la instrucción y sus versiones? El historial compilado permanece.","Delete instruction and versions? Compiled history remains.")))return;if(draft.Id!=id)return;try{InstructionWriter.DeleteInstruction(id,new(draft.Revision,true));New();Reload();message=T("Instrucción eliminada. Historial conservado.","Instruction deleted. History kept.");error=false;await Changed.InvokeAsync();}catch(Exception e)when((e is ValidationException or ConflictException) || StorageFailures.IsFailure(e)){error=true;message=StorageFailures.IsFailure(e)?T("No se pudo eliminar la instrucción.","Could not delete instruction."):e.Message;}}
+    private Task Use(Guid id)=>draft.Id==id?UseInstruction.InvokeAsync(id):Task.CompletedTask;
+    private async Task MembershipChanged(){groups=Collections.Groups().ToList();await Changed.InvokeAsync();}
+}

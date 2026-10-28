@@ -12,10 +12,11 @@ import '../../design/runtime.css';
 import { getActivity, operationLabels, stageLabels, subscribeActivity } from './activity';
 import { Dialog } from '../../components/ui/Dialog';
 import { errorMessage } from '../../services/api';
-import { liveEventSchema, terminalLive, type LiveEvent, type LiveView, type LiveEvents } from '../../services/live';
+import { liveEventSchema, terminalLive, type LiveEvent, type LiveView, type LiveEvents, type AuthoringBriefReply } from '../../services/live';
 import { PromptInputQuestion } from '../prompts/PromptInputNames';
 import { PromptContentQuestion } from '../prompts/PromptContentQuestion';
 import { ContentReview } from './ContentReview';
+import { PromptAuthoringBrief } from '../prompts/PromptAuthoringBrief';
 
 const noActivitySubscription = () => () => {};
 type Proposal = NonNullable<LiveView['proposal']>;
@@ -55,7 +56,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   centralControl?: boolean;
   notice?: string;
   inputDefinition?: { updating: boolean; confirm: (names: string[]) => Promise<void> };
-  contentClarification?: { identity: object; confirm: (answer: string, sequence: number) => Promise<void> };
+  contentClarification?: { identity: object; confirm: (answer: string, sequence: number, brief?: AuthoringBriefReply) => Promise<void> };
 }) {
   const { live, visibleSession } = useAgentRuntimeServices();
   const { surfaceCapability } = visibleSession;
@@ -238,11 +239,16 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   const startToast = startNotice && (!view || !terminalLive(view.run.status)) && host ? createPortal(<aside className="nova-start-toast" data-testid="nova-start-toast" role="status" aria-live="polite" aria-atomic="true"><NovaLogo state="thinking" /><div><strong>NOVA en marcha</strong><p>Estoy preparando tu solicitud.</p></div><button type="button" className="icon-button" aria-label="Cerrar aviso de NOVA" onClick={() => setStartNotice(false)}><AppIcon glyph={X} size={20} aria-hidden="true"  /></button></aside>, host.hasAttribute('data-nova-dock-live-host') ? document.body : host) : null;
   if (!runId || !view || view.run.runId !== runId) return <>{startToast}{error && <p role="alert" className="error">No se pudo consultar la actividad de NOVA. Vuelve a intentarlo.</p>}</>;
   const run = view.run, active = !terminalLive(run.status);
+  // Continuations create a new run. Their workspace owner must adopt that ID
+  // and mount its driver; this presentation cannot start a detached run.
+  const continuation = contentClarification;
   const fieldQuestion = run.status === 'BLOCKED' && run.errorCode === 'INPUT_FIELDS_NEED_CONFIRMATION' && !run.browserOpen && inputDefinition && view.question
     ? <PromptInputQuestion key={run.runId} question={view.question} updating={inputDefinition.updating} onConfirm={inputDefinition.confirm} /> : null;
   const contentQuestion = run.status === 'BLOCKED' && run.errorCode === 'NEEDS_CLARIFICATION' && !run.browserOpen && run.approval === 'NONE'
-    && !run.effectCommitted && contentClarification && visibleSession.clarificationCapability?.(run.runId) && view.question
-    ? <PromptContentQuestion key={run.runId} runId={run.runId} sequence={run.sequence} question={view.question} identity={contentClarification.identity} onConfirm={contentClarification.confirm} /> : null;
+    && !run.effectCommitted && continuation && visibleSession.clarificationCapability?.(run.runId) && view.question
+    ? view.brief ? <PromptAuthoringBrief key={run.runId} runId={run.runId} sequence={run.sequence} review={view.brief} identity={continuation.identity}
+      onConfirm={brief => continuation.confirm('', run.sequence, brief)} onClarify={answer => continuation.confirm(answer, run.sequence)} />
+      : <PromptContentQuestion key={run.runId} runId={run.runId} sequence={run.sequence} question={view.question} identity={continuation.identity} onConfirm={continuation.confirm} /> : null;
   const providerFailure = run.status === 'FAILED' && host?.querySelector('[data-testid="prepared-provider-dialog"]')
     ? createPortal(<p className="error" role="alert">NOVA no pudo completar la tarea. El texto preparado se conserva; revisa el destino o abre la última actividad para ver el error.</p>, host) : null;
   if (!active && !expanded) return <>{startToast}{providerFailure}{fieldQuestion}{contentQuestion}</>;

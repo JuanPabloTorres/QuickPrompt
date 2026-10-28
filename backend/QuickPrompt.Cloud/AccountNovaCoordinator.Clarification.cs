@@ -4,7 +4,10 @@ using QuickPrompt.Nova.Application;
 
 namespace QuickPrompt.Cloud;
 
-public sealed record AccountLiveClarification(Guid RunId, Guid ConnectionId, long QuestionSequence, string Answer, string NextSurface);
+public sealed record AccountLiveClarification(Guid RunId, Guid ConnectionId, long QuestionSequence, string Answer, string NextSurface)
+{
+    public AuthoringBriefReply? Brief { get; init; }
+}
 
 public sealed partial class AccountNovaCoordinator
 {
@@ -12,7 +15,8 @@ public sealed partial class AccountNovaCoordinator
     public LiveRecord Clarify(LibraryActor actor, Guid libraryId, Guid previousRunId, AccountLiveClarification reply, string surface)
     {
         if (reply is null || reply.RunId == Guid.Empty || reply.ConnectionId == Guid.Empty || reply.QuestionSequence < 0
-            || string.IsNullOrWhiteSpace(reply.Answer) || reply.Answer.Length > AuthoringClarifications.MaximumAnswerLength
+            || reply.Brief is null && (string.IsNullOrWhiteSpace(reply.Answer) || reply.Answer.Length > AuthoringClarifications.MaximumAnswerLength)
+            || reply.Brief is not null && !string.IsNullOrEmpty(reply.Answer)
             || reply.NextSurface is not { Length: >= 32 and <= 128 } || reply.NextSurface.Any(char.IsWhiteSpace))
             throw new ValidationException("Escribe una aclaración de hasta 2000 caracteres para esta pregunta.");
         lock (admissions)
@@ -31,7 +35,10 @@ public sealed partial class AccountNovaCoordinator
             var control = previous.Live.Active(previousRunId);
             if (control.Cancellation.IsCancellationRequested) throw new ConflictException("La continuación de este encargo se detuvo.");
             var original = control.Input;
-            var next = AuthoringClarifications.Continue(original, view.Run, view.Question ?? "", reply.RunId, reply.QuestionSequence, reply.Answer);
+            var next = reply.Brief is { } brief
+                ? AuthoringBriefs.Continue(original, view.Run, view.Brief ?? throw new ConflictException("No hay un contrato pendiente para confirmar."),
+                    reply.RunId, reply.QuestionSequence, brief)
+                : AuthoringClarifications.Continue(original, view.Run, view.Question ?? "", reply.RunId, reply.QuestionSequence, reply.Answer);
             // Start retains source/revision, account admission, connection revocation,
             // model selection and quota guards. It cannot inherit an approval.
             var started = Start(actor, libraryId, new(reply.ConnectionId, next), reply.NextSurface);

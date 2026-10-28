@@ -167,7 +167,9 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
       {running && (!hasSurface || current?.uncertain) && <div data-nova-user-control="true"><p>{current?.uncertain ? 'El inicio sigue sin confirmarse. Se conserva la misma ejecución para no repetirla.' : 'Esta pestaña no recupera el control anterior ni sus aprobaciones.'}</p>
         {pendingReply && pendingDefinition && <section hidden={portal?.active === false} aria-label="Aclaración pendiente de confirmación">
           <p>El servidor aún no confirmó esta aclaración. Puedes reenviar exactamente la misma solicitud, sin editarla ni crear otra ejecución.</p>
-          <details><summary>Revisar el encargo y tu respuesta</summary><p>Encargo original</p><pre className="account-memory-preview">{pendingDefinition.message}</pre><p>Tu respuesta</p><pre className="account-memory-preview">{pendingReply.answer}</pre></details>
+          <details><summary>Revisar el encargo y tu respuesta</summary><p>Encargo original</p><pre className="account-memory-preview">{pendingDefinition.message}</pre>
+            <p>{pendingReply.brief ? 'Tu contrato confirmado, pendiente de recepción' : 'Tu respuesta'}</p>
+            <pre className="account-memory-preview">{pendingReply.brief ? JSON.stringify(pendingReply.brief.content, null, 2) : pendingReply.answer}</pre></details>
           <button type="button" className="secondary" disabled={operation.busy} onClick={retryContentClarification}>Reenviar esta misma aclaración</button>
         </section>}
         {runtime?.view.proposal && <details><summary>Ver borrador pendiente, sin permisos de guardado</summary><pre className="account-memory-preview">{runtime.view.proposal.draft.templateText}</pre></details>}
@@ -176,11 +178,11 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
       <SameTabAgent key={`driver:${connectionId}`} runId={executionId} onActive={activeChanged} />
       <NovaLive key={`activity:${connectionId}`} runId={runId} worker={!!runId && !!services.visibleSession.surfaceCapability(runId)} centralControl onReview={() => {}} onRuntimeChange={changed}
         contentClarification={definition && !!services.visibleSession.clarificationCapability?.(definition.id) && (definition.command.operation === 'CREATE_DRAFT' || definition.command.operation === 'PROPOSE_ADAPTATION') ? {
-          identity: services, confirm: async (answer, sequence) => {
+          identity: services, confirm: async (answer, sequence, brief) => {
             if (currentServices.current !== services || !services.visibleSession.clarifyVisible || definition.id !== runId || running || restoring)
               throw new Error('Esta pestaña ya no conserva el encargo de esa pregunta.');
             let accepted = false;
-            await operation.run(() => services.visibleSession.clarifyVisible!(definition.id, sequence, answer), run => {
+            await operation.run(() => services.visibleSession.clarifyVisible!(definition.id, sequence, answer, brief), run => {
               accepted = true; remember(services, run.runId); setSnapshot(undefined); setTask({ services, id: run.runId });
               setInputRequest({ ...definition, id: run.runId });
             });

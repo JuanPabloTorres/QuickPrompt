@@ -58,17 +58,20 @@ public sealed partial class PromptDraftGenerator
             source is null ? null : LiveRuns.Hash(source.TemplateText), working?.Id,
             working is null ? null : LiveRuns.Hash(working.TemplateText), source?.TemplateText);
         var context = new DraftProposalContract(request, snapshot, fields, caseRanges, literals, input.UserClarifications);
+        if (input.ConfirmedBrief is { } confirmed) context.BindConfirmedBrief(confirmed);
         if (goal.AuthoringContract is { } previous && previous.Fingerprint != context.Fingerprint)
             throw new ValidationException("El contexto, origen o campos cambiaron durante la misma tarea.");
         var contract = goal.AuthoringContract ?? context;
-        goal.BindAuthoringContract(contract);
+        if (contract.ConfirmedBrief is not null) goal.BindAuthoringContract(contract);
         var literalIds = contract.Literals.Select(item => item.Id).ToArray();
-        var schema = DefinitionSchema(literalIds);
-        var packet = JsonSerializer.Serialize(ContentMaterial(input, contract, HasContentCorrection(input.ValidationFeedback)), Json);
-        if (Encoding.UTF8.GetByteCount(packet) > 26000)
-            throw new ValidationException("La petición y la fuente no caben completas en el presupuesto; no se truncarán.");
         DraftProduction production;
-        try {
+        if (contract.ConfirmedBrief is { } brief)
+            production = new(brief.Content.Title, brief.Content.Description, brief.Render(), null);
+        else try {
+            var schema = DefinitionSchema(literalIds);
+            var packet = JsonSerializer.Serialize(ContentMaterial(input, contract, HasContentCorrection(input.ValidationFeedback)), Json);
+            if (Encoding.UTF8.GetByteCount(packet) > 26000)
+                throw new ValidationException("La petición y la fuente no caben completas en el presupuesto; no se truncarán.");
             using var response = await Chat(new { model = input.Model, stream = false, think = false, decoding = "native", format = schema,
                 messages = new[] {
                     new { role = "system", content = FutureInstructionSystem },
@@ -81,11 +84,21 @@ public sealed partial class PromptDraftGenerator
                     throw new ValidationException("Una aclaración debe contener sólo una pregunta y ningún cuerpo o referencia literal.");
                 return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [], definition.Question, "FUTURE_TASK_NEEDS_CLARIFICATION");
             }
-            production = CompileDefinition(definition, literalIds);
+            var candidate = CompileDefinition(definition, literalIds);
+            var suggestion = definition.Instruction is { } instruction
+                ? new AuthoringBriefContent(definition.Title, definition.Description, instruction.Task, instruction.Steps.Select(UnmarkedInstruction).ToArray(),
+                    instruction.Constraints.Select(UnmarkedInstruction).ToArray(), instruction.OutputRequirements.Select(UnmarkedInstruction).ToArray(), [])
+                : new AuthoringBriefContent(definition.Title, definition.Description,
+                    contract.Literals.Single(item => item.Id == candidate.LiteralReference).Text, [], [], [], []);
+            suggestion = suggestion with { Title = goal.RequestedTitle ?? (plan.Adapts ? snapshot?.Title : null) ?? suggestion.Title,
+                Description = plan.Adapts ? snapshot?.Description ?? suggestion.Description : suggestion.Description };
+            return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [],
+                "Revisa y confirma qué deberá hacer el futuro asistente. Puedes corregir la propuesta de NOVA; todavía no se guardará ni ejecutará nada.",
+                "AUTHORING_BRIEF_REQUIRES_CONFIRMATION") { Brief = AuthoringBriefs.Propose(contract, suggestion) };
         } catch (LlmUnavailableException failure) { throw InferenceFailures.ToPreparation(failure, nameof(GenerateDraftProposal)); }
         ct.ThrowIfCancellationRequested();
-        var description = plan.Adapts ? snapshot?.Description ?? production.Description : production.Description;
-        var title = goal.RequestedTitle ?? (plan.Adapts ? snapshot?.Title : null) ?? production.Title;
+        var description = production.Description;
+        var title = production.Title;
         PromptInput proposed;
         try { proposed = contract.RegisterProposal(new(title, production.TemplateText, description, snapshot?.CategoryId ?? 0), production.LiteralReference, goal.ReferenceCoverage); }
         catch (ValidationException failure) {
@@ -105,7 +118,7 @@ public sealed partial class PromptDraftGenerator
         ct.ThrowIfCancellationRequested();
         if (!string.IsNullOrWhiteSpace(extraction.Question))
             return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [], extraction.Question, "INPUT_VALUES_NEED_CONFIRMATION");
-        diagnostic?.Invoke(193, JsonSerializer.Serialize(new { contract = "future-instruction/1", contractHash = contract.Fingerprint,
+        diagnostic?.Invoke(193, JsonSerializer.Serialize(new { contract = "confirmed-future-task/1", contractHash = contract.Fingerprint,
             bodyHash = LiveRuns.Hash(body), status = "HUMAN_CONTENT_REVIEW_REQUIRED" }, Json), null);
         return new(plan.Adapts && source is not null ? PreparationDecision.ADAPT_EXISTING : PreparationDecision.CREATE_NEW,
             plan.Adapts ? source?.Id : null, proposed.Title, proposed.Description, body, extraction.Values, "",

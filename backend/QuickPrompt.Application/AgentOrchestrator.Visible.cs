@@ -426,8 +426,9 @@ public sealed partial class AgentOrchestrator
                     var basisText = workingBasis?.TemplateText ?? basis?.TemplateText;
                     var creation = new PrepareInput(input.RunId, input.Message, SourcePromptId: decision.ToolName == "ui_prepare_update" ? basis?.Id : null, SourceRevision: decision.ToolName == "ui_prepare_update" ? basis?.Revision : null, Values: input.Values, Model: input.Model, SessionId: input.SessionId) { Interpretation = semantic,
                         WorkingDraft = workingBasis, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope,
-                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications) };
-                    live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, "Qwen está generando el contenido del nuevo borrador.", "Generation");
+                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications), ConfirmedBrief = input.ConfirmedBrief };
+                    live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION,
+                        input.ConfirmedBrief is null ? "Qwen está proponiendo la tarea del futuro asistente para tu revisión." : "Componiendo literalmente el contrato que confirmaste, sin otra redacción de IA.", "Generation");
                     PreparedDraft? generated = null;
                     for (var attempt = 0; attempt < 2; attempt++) {
                         try {
@@ -435,9 +436,10 @@ public sealed partial class AgentOrchestrator
                             var proposal = await pipeline.DraftGeneration(creation, understanding, creationCandidates, ct);
                             if (proposal.Decision == PreparationDecision.ASK_CLARIFICATION) {
                                 RememberPending(); control.Question = proposal.Clarification;
+                                control.Brief = proposal.Brief;
                                 var inputDefinition=proposal.Reason=="INPUT_FIELDS_NEED_CONFIRMATION";
                                 live.Emit(input.RunId, LiveStatus.BLOCKED, inputDefinition?LiveActor.USER_SELECTED:LiveActor.MODEL_SELECTED,
-                                    inputDefinition?"Define los campos de la plantilla para continuar; todavía no se piden sus valores.":"Necesito concretar el propósito del nuevo prompt.",
+                                    inputDefinition?"Define los campos de la plantilla para continuar; todavía no se piden sus valores.":proposal.Brief is not null?"Revisa y confirma la tarea del futuro asistente antes de componer el prompt.":"Necesito concretar el propósito del nuevo prompt.",
                                     "Generation",error:inputDefinition?"INPUT_FIELDS_NEED_CONFIRMATION":"NEEDS_CLARIFICATION"); return;
                             }
                             // The app-bound proposal owns the source snapshot. Literal
@@ -450,7 +452,7 @@ public sealed partial class AgentOrchestrator
                             generated = pipeline.PromptCompilation(creation, understanding, proposal, creationCandidates);
                             control.GeneratedDraft = PromptPreparationPipeline.FinalPreparation(generated, creationRequirements,semantic.Goal);
                             break;
-                        } catch (ValidationException failure) when (attempt == 0 && !failure.Data.Contains("NovaStageRepairExhausted")) {
+                        } catch (ValidationException failure) when (attempt == 0 && creation.ConfirmedBrief is null && !failure.Data.Contains("NovaStageRepairExhausted")) {
                             live.Emit(input.RunId, LiveStatus.VERIFYING, LiveActor.SYSTEM_VALIDATION, "El dominio rechazó la propuesta; solicitando una única corrección estructurada a Qwen.", "GenerationRetry");
                             creation = creation with { ValidationFeedback = JsonSerializer.Serialize(new { failure = failure.Message,
                                 rejectedCandidate=failure.Data["NovaRejectedProposal"],
@@ -464,9 +466,12 @@ public sealed partial class AgentOrchestrator
                     if (semantic.Goal is not null) input = input with { Values = (input.Values ?? []).Concat(generated.Values.Select(value => new KeyValuePair<string, string>(value.Name, value.Value)))
                         .GroupBy(value => value.Key).ToDictionary(group => group.Key, group => group.Last().Value) };
                     await live.Boundary(input.RunId, ct);
-                    state = await browser.Execute(decision.ToolName, JsonSerializer.SerializeToElement(new { promptId = decision.ToolName == "ui_prepare_update" ? basis?.Id : null, title = generated.Title, templateText = generated.TemplateText }), ct);
+                    state = await browser.Execute(decision.ToolName, JsonSerializer.SerializeToElement(new { promptId = decision.ToolName == "ui_prepare_update" ? basis?.Id : null,
+                        title = generated.Title, description = generated.Description, templateText = generated.TemplateText }), ct);
                     if (state.Mode != "create" || state.PromptId != (decision.ToolName == "ui_prepare_update" ? basis?.Id : null) || state.Title != generated.Title || state.TemplateText != generated.TemplateText || !state.VariableNames.SequenceEqual(TemplateCompiler.Names(generated.TemplateText)))
                         throw new ValidationException("El formulario no coincide exactamente con el contenido generado.");
+                    if (semantic.Goal?.AuthoringContract?.ConfirmedBrief is not null && state.Description != generated.Description)
+                        throw new ValidationException("El formulario no conserva la descripción confirmada de la plantilla.");
                 } else state = await browser.Execute(decision.ToolName, decision.Arguments, ct);
                 if (decision.ToolName == "ui_prepare_update" && (!state.DraftChanged || string.IsNullOrWhiteSpace(state.TemplateText)
                     || state.TemplateText.Replace("\r\n", "\n").Trim() == priorTemplate?.Replace("\r\n", "\n").Trim()))

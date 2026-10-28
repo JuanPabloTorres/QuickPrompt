@@ -1,0 +1,16 @@
+@using QuickPrompt.Local
+<article class="prompt-card @(Selected ? "selected" : "") @(SelectionEnabled?"with-selection":"") transition-shadow motion-reduce:transition-none">
+    <div class="card-top">@if(SelectionEnabled){<label class="card-select"><input type="checkbox" checked="@Checked" @onchange="()=>OnCheck.InvokeAsync(Item.Id)" aria-label="@(T("Seleccionar: ","Select: ")+Item.Title)" /></label>}<button class="star" aria-label="@(T("Favorito: ","Favorite: ")+Item.Title)" aria-pressed="@(Item.IsFavorite?"true":"false")" @onclick="()=>OnFavorite.InvokeAsync(Item)"><AppIcon Name="star" /></button></div>
+    <button class="card-open" @onclick="()=>OnSelect.InvokeAsync(Item)"><h2>@Item.Title</h2>@if(!string.IsNullOrWhiteSpace(Item.Description)){<p>@Item.Description</p>}@{var count=TemplateCompiler.Names(Item.Template).Length;}<span class="card-meta">@(count==0?T("Listo para copiar","Ready to copy"):$"{count} "+(count==1?"variable":"variables"))</span></button>
+</article>
+@code {
+    [Parameter,EditorRequired] public Template Item{get;set;}=null!;
+    [Parameter] public bool Selected{get;set;}
+    [Parameter] public string Language{get;set;}="es";
+    [Parameter] public EventCallback<Template> OnSelect{get;set;}
+    [Parameter] public EventCallback<Template> OnFavorite{get;set;}
+    [Parameter] public bool SelectionEnabled{get;set;}
+    [Parameter] public bool Checked{get;set;}
+    [Parameter] public EventCallback<Guid> OnCheck{get;set;}
+    private string T(string es,string en)=>Language=="es"?es:en;
+}

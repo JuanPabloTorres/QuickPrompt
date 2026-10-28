@@ -3,6 +3,9 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Npgsql;
@@ -112,17 +115,7 @@ public static class AccountHost
         builder.Services.AddHostedService<ExecutionRoleGuard>();
         builder.Services.AddHostedService<ExecutionWorker>();
         builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(2));
-        builder.Services.AddRateLimiter(options =>
-        {
-            options.RejectionStatusCode = 429;
-            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                context.Request.Path.StartsWithSegments("/connect") ? RateLimitPartition.GetFixedWindowLimiter(
-                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-                    { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }) : RateLimitPartition.GetNoLimiter("non-protocol"));
-            options.AddPolicy("credentials", context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-                { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
-        });
+        builder.Services.AddAccountRateLimiting();
         configureServices?.Invoke(builder.Services);
         var keyRingCertificate = hosting.ConfigureKeyRing(protection);
         if (keyRingCertificate is not null) builder.Services.AddSingleton(_ => keyRingCertificate);
@@ -179,11 +172,14 @@ public static class AccountHost
                 await Results.Problem(statusCode: status, title: title).ExecuteAsync(context);
             }
         });
-        app.UseRateLimiter();
+        app.UseAccountIngressLimits();
         if (delegation) app.UseDelegationFence();
         if (delegation && app.Services.GetRequiredService<McpAccountSettings>().Enabled) app.UseAccountMcpChallenge();
         app.UseAuthentication();
         app.UseAuthorization();
+        // Endpoint-selected schemes and authorization decide the actor before its quota.
+        // The independent ingress budget above still bounds rejected authentication requests.
+        app.UseRateLimiter();
         MapAccountPage(app, builder.Configuration);
         app.MapAccountEndpoints();
         app.MapAccountLibraries();
@@ -248,6 +244,72 @@ public static class AccountHost
 }
 
 public sealed record AccountOrigin(Uri Value);
+
+/// <summary>Account-host admission budgets. These bounds are protective limits, not a capacity guarantee.</summary>
+public static class AccountRateLimiting
+{
+    /// <summary>Registers the shared ingress and endpoint budgets without choosing authentication schemes.</summary>
+    public static void AddAccountRateLimiting(this IServiceCollection services)
+    {
+        services.AddSingleton<IngressBudget>();
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = 429;
+            options.AddPolicy("credentials", context => RateLimitPartition.GetFixedWindowLimiter(
+                CredentialPartition(context), _ => Window(60)));
+        });
+    }
+
+    /// <summary>Run after routing and before authentication: OAuth handlers can complete without reaching endpoints.</summary>
+    public static void UseAccountIngressLimits(this WebApplication app)
+    {
+        var budget = app.Services.GetRequiredService<IngressBudget>();
+        app.Use(async (context, next) =>
+        {
+            using var lease = budget.Limiter.AttemptAcquire(context);
+            if (!lease.IsAcquired) { context.Response.StatusCode = 429; return; }
+            await next();
+        });
+    }
+
+    private static string CredentialPartition(HttpContext context)
+    {
+        var endpoint = context.GetEndpoint();
+        // Called only after AuthorizationMiddleware. Its endpoint-selected cookie or
+        // bearer scheme is authoritative; an unrelated cookie cannot select the actor.
+        // Public login/recovery/consent endpoints keep their shared IP budget even
+        // when a valid cookie accompanies the request.
+        var authorized = endpoint?.Metadata.GetMetadata<IAllowAnonymous>() is null
+            && (endpoint?.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0
+                || endpoint?.Metadata.GetOrderedMetadata<AuthorizationPolicy>().Count > 0);
+        if (authorized && context.User.Identity?.IsAuthenticated == true
+            && Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var owner) && owner != Guid.Empty)
+            return "actor:" + owner.ToString("N");
+        return "anonymous:" + PhysicalAddress(context);
+    }
+
+    private static string PhysicalAddress(HttpContext context) => context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    private static bool UsesCredentials(HttpContext context) => context.GetEndpoint()?.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName == "credentials";
+    private static FixedWindowRateLimiterOptions Window(int permits) => new()
+    { PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true };
+
+    private sealed class IngressBudget : IDisposable
+    {
+        public PartitionedRateLimiter<HttpContext> Limiter { get; } = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        {
+            // Never trust X-Forwarded-For/Host or client actor headers as a partition.
+            // Keep the previous protocol budget before the delegation fence. The
+            // separate 600/min envelope bounds authentication work for other limited
+            // endpoints while allowing independent authorized owners their own quota.
+            if (context.Request.Path.StartsWithSegments("/connect"))
+                return RateLimitPartition.GetFixedWindowLimiter("protocol:" + PhysicalAddress(context), _ => Window(60));
+            return UsesCredentials(context)
+                ? RateLimitPartition.GetFixedWindowLimiter("ingress:" + PhysicalAddress(context), _ => Window(600))
+                : RateLimitPartition.GetNoLimiter("unlimited");
+        });
+        public void Dispose() => Limiter.Dispose();
+    }
+}
 
 /// <summary>Cookie-backed mutations require the framework's per-client antiforgery token.</summary>
 public sealed class AccountCsrf : IEndpointFilter

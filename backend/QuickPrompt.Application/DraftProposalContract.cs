@@ -20,6 +20,7 @@ public sealed class DraftProposalContract
     private readonly AuthoringLiteralCandidate[] literals;
     private readonly AuthoringClarification[] clarifications;
     private PromptInput? registered;
+    public ConfirmedAuthoringBrief? ConfirmedBrief { get; private set; }
     public string OriginalRequest { get; }
     public DraftSourceSnapshot? Source { get; }
     public DraftSourceSnapshot? SourceSnapshot => Source;
@@ -33,7 +34,8 @@ public sealed class DraftProposalContract
     public string? WorkingBodyHash => Source?.WorkingBodyHash;
     public AuthoringLiteralCandidate[] Literals => [.. literals];
     public AuthoringClarification[] UserClarifications => [.. clarifications];
-    public string Fingerprint => clarifications.Length == 0 ? BaseFingerprint : LiveRuns.Hash(new { original = BaseFingerprint, userClarifications = clarifications });
+    public string Fingerprint => ConfirmedBrief is null ? ContextFingerprint : LiveRuns.Hash(new { context = ContextFingerprint, confirmedBrief = ConfirmedBrief });
+    private string ContextFingerprint => clarifications.Length == 0 ? BaseFingerprint : LiveRuns.Hash(new { original = BaseFingerprint, userClarifications = clarifications });
     private string BaseFingerprint => LiveRuns.Hash(new { OriginalRequest, Source, FieldContract, caseRanges, literals });
     public string AuthoringRequest => ProjectRequest();
 
@@ -76,6 +78,12 @@ public sealed class DraftProposalContract
     }
 
     /// <summary>Bind generated text and metadata only after technical validation; no semantic approval is recorded.</summary>
+    public void BindConfirmedBrief(ConfirmedAuthoringBrief brief)
+    {
+        if (ConfirmedBrief is not null || registered is not null) throw new ConflictException("El contrato de autoría ya está fijado.");
+        brief.ValidateBasis(this); ConfirmedBrief = brief;
+    }
+
     public PromptInput RegisterProposal(PromptInput proposal, int? literalReference = null, AuthoringReferenceCoverage? references = null)
     {
         if (string.IsNullOrWhiteSpace(proposal.Title) || proposal.Title.Length > 160 || proposal.Title.Contains('\r') || proposal.Title.Contains('\n'))
@@ -90,8 +98,17 @@ public sealed class DraftProposalContract
         new Template { Title = proposal.Title, Description = proposal.Description, Template = body }.Validate();
         if (body.Length > 32000) throw new ValidationException("La propuesta excede el límite completo; no se truncará.");
         references?.ValidateBody(body);
+        ValidateConfirmedProposal(proposal with { TemplateText = body });
         registered = proposal with { TemplateText = body };
         return registered;
+    }
+
+    /// <summary>Technical equality to the human contract includes metadata, before any approval refresh or effect.</summary>
+    public void ValidateConfirmedProposal(PromptInput proposal)
+    {
+        if (ConfirmedBrief is { } brief && (proposal.TemplateText != brief.Render()
+            || proposal.Title != brief.Content.Title || proposal.Description != brief.Content.Description))
+            throw new ValidationException("El título, la descripción y el contenido deben conservar el contrato confirmado. Revisa un nuevo contrato para cambiarlos.");
     }
 
     public bool MatchesProposal(string body) => registered is not null && registered.TemplateText == body;
@@ -101,7 +118,7 @@ public sealed class DraftProposalContract
             SourceTitle = Source?.Title, SourceDescription = Source?.Description, SourceCategoryId = Source?.CategoryId,
             SavedBodyHash = SourceSavedBodyHash, SavedOriginalText = SavedSourceText,
             WorkingDraftId = WorkingDraftId, WorkingBodyHash = WorkingBodyHash
-        }, BuildLedger()) { LiteralChanges = Changes(body), UserClarifications = UserClarifications };
+        }, BuildLedger()) { LiteralChanges = Changes(body), UserClarifications = UserClarifications, ConfirmedBrief = ConfirmedBrief };
 
     private LiteralChanges Changes(string body)
     {

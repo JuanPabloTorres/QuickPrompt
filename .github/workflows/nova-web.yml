@@ -1,0 +1,73 @@
+name: NOVA web contracts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QUICKPROMPT_TEST_REAL_QWEN: '0'
+
+jobs:
+  postgres-accounts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Start isolated PostgreSQL and limited roles
+        shell: pwsh
+        run: |
+          $ciSecrets = Join-Path $env:RUNNER_TEMP 'quickprompt-postgres-secrets'
+          "QUICKPROMPT_TEST_POSTGRES_SECRETS=$ciSecrets" >> $env:GITHUB_ENV
+          ./scripts/Start-QuickPromptPostgres.ps1 -SecretDirectory $ciSecrets
+      - name: Verify real PostgreSQL isolation and migrations
+        env:
+          QUICKPROMPT_TEST_POSTGRES: '1'
+        run: dotnet test backend/QuickPrompt.Accounts.Tests --configuration Release --logger trx
+      - name: Verify restore comparator detects catalog policy drift
+        shell: pwsh
+        run: ./Tests/accounts/postgres-restore-contract.ps1
+      - name: Verify restoration and forced RLS
+        shell: pwsh
+        run: ./scripts/Test-QuickPromptPostgresRestore.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: postgres-account-results
+          path: |
+            **/TestResults/*.trx
+            .playwright/postgres-restore/restore-result.json
+            .playwright/postgres-restore-contract/result.json
+  web:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts --prefix apps/web
+      - run: node scripts/Check-RepositoryLayout.cjs
+      - run: node scripts/Check-ModuleBoundaries.cjs
+      - run: dotnet test backend/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
+      - name: Verify Debug-only diagnostic capture
+        run: dotnet test backend/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Debug --filter FullyQualifiedName~NovaTelemetryTests --logger "trx;LogFileName=telemetry-debug.trx"
+      - run: dotnet test backend/QuickPrompt.Mcp.Tests/QuickPrompt.Mcp.Tests.csproj --configuration Release --logger trx
+      - name: Verify Windows companion private profiles
+        run: dotnet test backend/QuickPrompt.Companion.Tests/QuickPrompt.Companion.Tests.csproj --configuration Release --logger trx
+      - run: dotnet test src/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
+      - run: npm run build --prefix apps/web
+      - run: npm run test:release --prefix apps/web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nova-contract-results
+          path: '**/TestResults/*.trx'

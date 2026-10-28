@@ -23,6 +23,7 @@ public record LiveStartInput(Guid RunId, Guid SessionId, string Message, string 
     [JsonIgnore] public string? AuthorizedPendingRequest { get; init; }
     [JsonIgnore] public UserInputScope? InputScope { get; init; }
     [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
+    [JsonIgnore] public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
     [JsonIgnore] public string DisplayRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : AuthorizedPendingRequest + "\n\nTu aclaración: " + Message;
     [JsonIgnore] public string TaskRequest => new PrepareInput(RunId, Message) { AuthorizedPendingRequest = AuthorizedPendingRequest }.TaskRequest;
 }
@@ -49,6 +50,7 @@ public record LiveDeletion(Guid Id, string Hash, Guid PromptId, int Revision, st
 public record LiveView(LiveRecord Run, string? Request, string? Question, UiVisibleState? Observation, LiveApproval? Proposal, UiDecision[] Decisions, SemanticInterpretation? Semantic = null, LiveDeletion? Deletion = null, LiveRuntime? Runtime = null)
 {
     public UiPrompt[] SourceChoices { get; init; } = [];
+    public AuthoringBriefReview? Brief { get; init; }
 }
 public interface ILiveRunStore
 {
@@ -75,6 +77,7 @@ public record UiVisibleState(string Mode, UiPrompt[] Candidates, Guid? PromptId,
     [property: AgentRepresentation(AgentRepresentation.RenderedInstruction, "Deterministic result of substituting authorized case values into the reusable definition. It still addresses the future instruction reader. Compiling, previewing or copying it does not request rewriting the definition or executing its task.")] string? CompiledText, string? Response, bool ResponseComplete, bool ProviderOpen, string? Error = null, string? ProviderId = null,
     Guid? DeletionPromptId = null, int? DeletionRevision = null, Guid? DeletionRunId = null, bool DeletionConfirmationReady = false)
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Description { get; init; }
     public UiClipboardReceipt? Clipboard { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? TemplatePreviewText { get; init; }
 }
@@ -109,6 +112,8 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         public SemanticInterpretation? Semantic;
         public PreparedDraft? WorkingDraft;
         public PreparedDraft? GeneratedDraft;
+        public AuthoringBriefReview? Brief;
+        public (Guid RunId, string Fingerprint)? Continuation;
         public string? AuthorizedTaskRequest;
         public string? VisibleTaskRequest;
         public LiveApproval? Proposal;
@@ -145,7 +150,8 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         var clarifications = AuthoringClarifications.Copy(input.UserClarifications);
         if (!LocalModelPolicy.Production.Allows(input.Model) || input.Mode is "BROWSER" or "SAME_TAB" && !LocalModelPolicy.Production.AllowsAgentControl(input.Model)) throw new ValidationException("Modelo no permitido para este modo.");
         var normalized = input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) };
-        var fingerprint = clarifications.Length == 0 ? Hash(normalized) : Hash(new { input = normalized, userClarifications = clarifications });
+        var fingerprint = clarifications.Length == 0 && input.ConfirmedBrief is null ? Hash(normalized)
+            : Hash(new { input = normalized, userClarifications = clarifications, confirmedBrief = input.ConfirmedBrief });
         var prior = store.Get(input.RunId);
         if (prior is not null) { if (prior.Fingerprint != fingerprint) throw new ConflictException("RunId ya utilizado."); return prior; }
         foreach (var removed in controls.Where(c => store.Get(c.Key) is null).ToArray()) controls.TryRemove(removed.Key, out _);
@@ -166,7 +172,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         if (Terminal(record.Status) && control.Touched < DateTime.UtcNow.AddHours(-2)) { controls.TryRemove(id, out _); return new(record, null, null, null, null, [], Runtime: RuntimeView(record, null)); }
         lock (control.Gate) {
             record = Get(id);
-            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control)) { SourceChoices = control.SourceChoices };
+            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control)) { SourceChoices = control.SourceChoices, Brief = control.Brief };
         }
     }
     public LiveEvent Emit(Guid id, LiveStatus status, LiveActor actor, string message, string stage = "Execution", string? tool = null,
@@ -263,9 +269,11 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
                 Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION, "Borrador nuevo preparado. Revisa antes de guardarlo.", "Approval", update: r => r with { Approval = "PENDING" }); return;
             }
             var source = library.Get(state.PromptId.Value);
+            var authoredDescription = control.Semantic?.Goal?.AuthoringContract?.ConfirmedBrief is not null
+                ? control.GeneratedDraft?.Description ?? source.Description : source.Description;
             if (source.Revision != state.Revision || !state.DraftChanged || string.IsNullOrWhiteSpace(state.TemplateText)) throw new ConflictException("Revisa la propuesta y su origen vigente.");
             if (control.Semantic?.RequestsApprovalFor(SemanticOperation.REQUEST_SAVE_COPY) == true) {
-                var copy = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, source.Description, source.CategoryId);
+                var copy = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, authoredDescription, source.CategoryId);
                 if (copy.Revision != 0 || copy.Defaults is not null) throw new ValidationException("La copia requiere una revisión nueva y valores revisados.");
                 new Template { Title = copy.Title, Template = copy.TemplateText, Description = copy.Description }.Validate();
                 var copyId = Guid.NewGuid();
@@ -275,7 +283,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
                 Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION, "Copia preparada. El original se conserva; revisa antes de guardarla.", "Approval", update: r => r with { Approval = "PENDING" }); return;
             }
             if (control.Semantic?.Goal is { Constraints.PreserveOriginal: true }) throw new ValidationException("El original está protegido; no se propone sobrescribirlo.");
-            var draft = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, source.Description, source.CategoryId, source.Revision);
+            var draft = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, authoredDescription, source.CategoryId, source.Revision);
             if (draft.Revision != source.Revision || draft.Defaults is not null) throw new ValidationException("La propuesta no puede cambiar valores por defecto ni otra revisión.");
             new Template { Title = draft.Title, Template = draft.TemplateText, Description = draft.Description }.Validate();
             var proposalId = Guid.NewGuid(); var hash = Hash(new { runId = id, proposalId, source.Id, source.Revision, draft });
@@ -321,7 +329,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             if (run.Status != LiveStatus.AWAITING_APPROVAL || run.Approval != "PENDING" || control.ApprovalConsumed
                 || old.Purpose != LiveApprovalPurpose.SAVE || draft.Revision != (old.Revision ?? 0)) throw new ConflictException("Esta propuesta ya no admite cambios. Cancela e inicia una nueva revisión.");
             var state = control.Observation ?? throw new ConflictException("No hay un editor verificado.");
-            state = state with { Title = draft.Title, TemplateText = draft.TemplateText, DraftChanged = true, CompiledReady = false, CompiledText = null };
+            state = state with { Title = draft.Title, Description = draft.Description, TemplateText = draft.TemplateText, DraftChanged = true, CompiledReady = false, CompiledText = null };
             ProposeSave(id, state, draft); control.Observation = state;
             Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.USER_SELECTED, "Propuesta actualizada con tus cambios. La confirmación anterior ya no es válida.", "Approval");
         }
@@ -400,6 +408,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         if (control.Semantic?.Goal is not { AuthoringContract: { } contract } goal) return proposal;
         if (!goal.HasCurrentAuthoringContract || goal.InputContract is { } fields && !fields.Matches(proposal.Draft.TemplateText))
             throw new ValidationException("El contexto o los campos del borrador ya no corresponden al encargo fijado.");
+        contract.ValidateConfirmedProposal(proposal.Draft);
         var review = contract.GetContentReview(proposal.Draft.TemplateText);
         var authority = goal.ContentApprovalFingerprint(proposal.Draft);
         return proposal with { Hash = Hash(new { proposal.Hash, authority, review }), ContentReview = review, ContentAuthorityHash = authority };

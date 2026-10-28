@@ -15,6 +15,12 @@ export function ContentReview({ review, purpose = 'SAVE', approvedLiteralChangeI
     <p className="notice"><strong>El contenido necesita tu revisión.</strong> NOVA preparó una propuesta. Revisa que incluya lo que pediste y conserve lo necesario del original {purpose === 'CONTENT_ONLY' ? 'antes de continuar.' : 'antes de guardarla.'}</p>
     <h3>Tu petición para la plantilla</h3>
     <pre className="content-review-text">{review.originalRequest}</pre>
+    {review.confirmedBrief && <details><summary>Contrato confirmado de la tarea{review.confirmedBrief.edited ? ' · corregiste la propuesta de NOVA' : ''}</summary>
+      <p className="muted">El contenido se compuso conservando el contrato que confirmaste. Esta confirmación no autorizó guardado ni ejecución.</p>
+      <pre className="content-review-text">{[review.confirmedBrief.content.task, ...review.confirmedBrief.content.steps, ...review.confirmedBrief.content.constraints,
+        ...review.confirmedBrief.content.outputRequirements].join('\n\n')}</pre>
+      {review.confirmedBrief.edited && <details><summary>Propuesta inicial de NOVA para comparar</summary><pre className="content-review-text">{JSON.stringify(review.confirmedBrief.review.proposed, null, 2)}</pre></details>}
+    </details>}
     {!!review.userClarifications?.length && <section aria-label="Tus aclaraciones del encargo"><h3>Tus aclaraciones</h3>{review.userClarifications.map((item, index) => <div key={index}>
       <p className="muted">{item.question}</p><pre className="content-review-text">{item.answer}</pre>
     </div>)}</section>}

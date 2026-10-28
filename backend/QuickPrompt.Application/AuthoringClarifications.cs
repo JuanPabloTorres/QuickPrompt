@@ -22,15 +22,20 @@ public static class AuthoringClarifications
     public static LiveStartInput Continue(LiveStartInput original, LiveRecord blocked, string question,
         Guid nextRunId, long questionSequence, string answer)
     {
+        ValidateContinuation(original, blocked, nextRunId, questionSequence);
+        var replies = Copy([.. original.UserClarifications, new(question, answer)]);
+        return original with { RunId = nextRunId, UserClarifications = replies,
+            Values = original.Values?.ToDictionary(item => item.Key, item => item.Value),
+            Command = original.Command! with { InputNames = original.Command.InputNames?.ToArray(), RequestedOutcomes = original.Command.RequestedOutcomes?.ToArray() } };
+    }
+
+    internal static void ValidateContinuation(LiveStartInput original, LiveRecord blocked, Guid nextRunId, long questionSequence)
+    {
         if (nextRunId == Guid.Empty || nextRunId == original.RunId || blocked.RunId != original.RunId
             || blocked.SessionId != original.SessionId || blocked.Mode != "SAME_TAB" || original.Mode != "SAME_TAB"
             || blocked.Status != LiveStatus.BLOCKED || blocked.ErrorCode != "NEEDS_CLARIFICATION" || blocked.BrowserOpen
             || blocked.EffectCommitted || blocked.Approval != "NONE" || questionSequence != blocked.Sequence
             || original.Command?.Operation is not (SemanticOperation.CREATE_DRAFT or SemanticOperation.PROPOSE_ADAPTATION))
             throw new ConflictException("La pregunta ya no permite continuar este encargo. Revisa la actividad y el origen antes de solicitar otra acción.");
-        var replies = Copy([.. original.UserClarifications, new(question, answer)]);
-        return original with { RunId = nextRunId, UserClarifications = replies,
-            Values = original.Values?.ToDictionary(item => item.Key, item => item.Value),
-            Command = original.Command with { InputNames = original.Command.InputNames?.ToArray(), RequestedOutcomes = original.Command.RequestedOutcomes?.ToArray() } };
     }
 }

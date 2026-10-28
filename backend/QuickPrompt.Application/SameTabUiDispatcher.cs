@@ -97,7 +97,7 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
     {
         if (state.Mode is not ("discover" or "focus" or "create") || state.Candidates is null || state.Values is null || state.VariableNames is null
             || state.Candidates.Length > 24 || state.Values.Count > 60 || state.VariableNames.Length > 60 || state.TemplateText?.Length > 32000
-            || state.Title?.Length > 160 || state.CompiledText?.Length > 512000 || state.Response?.Length > 512000
+            || state.Title?.Length > 160 || state.Description?.Length > 2000 || state.CompiledText?.Length > 512000 || state.Response?.Length > 512000
             || (state.PromptId is null) != (state.Revision is null) || state.Revision is < 1
             || state.Values.Any(value => value.Key.Length > 80 || value.Value is null || value.Value.Length > 8000)) throw new ValidationException("Observación fuera de contrato.");
         if (action.Tool is "ui_review_deletion" or "ui_enable_deletion_confirmation") {
@@ -115,6 +115,8 @@ public sealed class SameTabUiDispatcher(LiveRuns live) : IAsyncDisposable
             || action.Tool == "ui_open_create_prompt" && (state.Mode != "create" || state.PromptId is not null)) throw new ValidationException("No se observó la navegación solicitada.");
         if ((action.Tool == "ui_prepare_creation" || action.Tool == "ui_prepare_update" && action.Arguments.TryGetProperty("templateText", out _))
             && (state.Title != action.Arguments.GetProperty("title").GetString() || state.TemplateText != action.Arguments.GetProperty("templateText").GetString())) throw new ValidationException("El formulario no coincide con el contenido enviado.");
+        if (action.Tool is "ui_prepare_creation" or "ui_prepare_update" && action.Arguments.TryGetProperty("description", out var description)
+            && state.Description != description.GetString()) throw new ValidationException("El formulario no conserva la descripción enviada.");
         if (action.Tool == "ui_fill_variable" && !UiToolCatalog.FieldValueMatches(state, action.Arguments)) throw new ValidationException("El campo no contiene el valor autorizado.");
     }
     private JsonElement StartContext(Guid id, bool localExecutionAllowed, string editRequest) => JsonSerializer.SerializeToElement(new { localExecutionAllowed, editRequest, providerId = live.Active(id).Semantic?.ProviderId });

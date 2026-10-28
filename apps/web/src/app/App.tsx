@@ -31,7 +31,7 @@ import { useInterfaceTheme } from '../hooks/useInterfaceTheme';
 import { EditorPreparation } from '../features/prompts/EditorPreparation';
 import { type PromptAction } from '../services/library';
 import { type PreparedDraft } from '../services/preparation';
-import { terminalLive, type LiveView, type LiveCommand } from '../services/live';
+import { terminalLive, type LiveView, type LiveCommand, type AuthoringBriefReply } from '../services/live';
 
 import { errorMessage, type Group, type Prompt, type PromptDraft } from '../services/api';
 
@@ -198,6 +198,19 @@ function ApplicationView() {
       setLiveRunId(run.runId);
     } finally { quickLaunching.current = false; }
   }
+  async function continueAuthoring(answer: string, sequence: number, brief?: AuthoringBriefReply) {
+    const original = inputRequest;
+    if (!original || original.runId !== liveRunId || !visibleSession.clarifyVisible || quickLaunching.current)
+      throw new Error('Esta pestaña ya no conserva el encargo de esa pregunta.');
+    quickLaunching.current = true;
+    try {
+      const run = await visibleSession.clarifyVisible(original.runId, sequence, answer, brief);
+      // The workspace owns both the activity and SameTab driver. A transport
+      // acknowledgement alone must not leave the new run without its UI worker.
+      setInputRequest({ ...original, runId: run.runId });
+      setLiveRunId(run.runId);
+    } finally { quickLaunching.current = false; }
+  }
   async function useWorkingDraft() {
     const source = mode === 'create' ? editingId === selected?.id ? selected : null : selected;
     if (!source && mode !== 'create') return;
@@ -255,6 +268,7 @@ function ApplicationView() {
     <main id="main" tabIndex={-1}>
       <SameTabAgent runId={workerRunId ? null : liveRunId} onActive={setSameTabActive} speed={agentSpeed} onNotice={setAgentNotice} />
       <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} centralControl={controlling} onRuntimeChange={setRuntimeSnapshot} onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }}
+        contentClarification={inputRequest?.runId === liveRunId ? { identity: visibleSession, confirm: continueAuthoring } : undefined}
         inputDefinition={inputRequest?.runId === liveRunId ? { updating: inputRequest.command.operation === 'PROPOSE_ADAPTATION', confirm: names => quickRequest(inputRequest.message, inputRequest.source, undefined, { ...inputRequest.command, inputNames: names }) } : undefined} />
       <AgentControl runId={controlling ? liveRunId : null} runtime={runtime} />
       {mode === 'discover' && <NovaWelcome runtime={runtime} home controlling={controlling} onOpen={() => window.dispatchEvent(new Event('nova-open-assistant'))} onHelp={() => setHelpOpen(true)} />}

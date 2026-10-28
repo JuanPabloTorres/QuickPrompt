@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NOVA: iniciar con Adaptive Core y Qwen local",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-File", "${workspaceFolder}/agents/nova-core/start-nova.ps1"],
+      "dependsOn": ["NOVA: preparar depuración sintética"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Adaptive Core: leer un prompt de QuickPrompt",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": ["-NoProfile", "-File", "${workspaceFolder}/agents/nova-core/run.ps1", "-Goal", "${input:adaptiveReadGoal}"],
+      "problemMatcher": []
+    },
+    {
+      "label": "NOVA: build API de depuración",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "backend/QuickPrompt.Api/QuickPrompt.Api.csproj", "--no-restore", "-c", "Debug", "-o", ".playwright/nova-debug/api"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "NOVA: build web de depuración",
+      "type": "process",
+      "command": "node",
+      "args": ["node_modules/vite/bin/vite.js", "build", "--outDir", "../../.playwright/nova-debug/web"],
+      "options": { "cwd": "${workspaceFolder}/apps/web" },
+      "problemMatcher": []
+    },
+    {
+      "label": "NOVA: preparar depuración sintética",
+      "dependsOrder": "sequence",
+      "dependsOn": ["NOVA: build API de depuración", "NOVA: build web de depuración"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [{ "id": "adaptiveReadGoal", "type": "promptString", "description": "Título o tema del prompt que quieres leer", "default": "Busca Un correo que conecta y muéstrame su texto y sus campos." }]
+}

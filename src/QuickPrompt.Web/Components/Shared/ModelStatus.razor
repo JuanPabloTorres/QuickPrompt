@@ -1,0 +1,10 @@
+@using QuickPrompt.Local
+<div class="model-status" data-testid="local-ai-status" role="status" aria-live="polite">
+<strong>@Model</strong><span>@Status</span>
+<button disabled="@(Busy||Checking)" @onclick="Check">@(Checking?T("Comprobando…","Checking…"):T("Comprobar conexión","Check connection"))</button>
+</div>
+@code {
+    [Parameter]public string Model{get;set;}="qwen3:8b";[Parameter]public string Status{get;set;}="";[Parameter]public string Language{get;set;}="es";
+    [Parameter]public bool Busy{get;set;}[Parameter]public bool Checking{get;set;}[Parameter]public EventCallback Check{get;set;}
+    private string T(string es,string en)=>Language=="es"?es:en;
+}

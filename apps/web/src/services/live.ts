@@ -18,7 +18,16 @@ export const liveRuntimeSchema = z.object({
 export type LiveRuntime = z.infer<typeof liveRuntimeSchema>;
 export const deletionSchema = z.object({ id: z.string().uuid(), hash: z.string(), promptId: z.string().uuid(), revision: z.number().int().positive(), title: z.string() });
 const reviewSpanSchema = z.object({ start: z.number().int().nonnegative(), length: z.number().int().nonnegative(), text: z.string() });
+export const authoringBriefContentSchema = z.object({ title: z.string(), description: z.string(), task: z.string(), steps: z.array(z.string()),
+  constraints: z.array(z.string()), outputRequirements: z.array(z.string()), references: z.array(z.object({ uri: z.string(), role: z.enum(['FUTURE_TASK', 'CURRENT_SESSION', 'BOTH']).nullable() })) });
+export const authoringBriefReviewSchema = z.object({ basisHash: z.string(), originalRequest: z.string(), source: z.object({
+  promptId: z.string().uuid().nullable(), revision: z.number().nullable(), templateText: z.string(), title: z.string(), description: z.string() }).nullable(),
+  inputs: z.array(z.string()), proposed: authoringBriefContentSchema });
+export type AuthoringBriefReview = z.infer<typeof authoringBriefReviewSchema>;
+export type AuthoringBriefContent = z.infer<typeof authoringBriefContentSchema>;
+export type AuthoringBriefReply = { basisHash: string; content: AuthoringBriefContent; confirmed: true };
 export const contentReviewSchema = z.object({
+  confirmedBrief: z.object({ review: authoringBriefReviewSchema, content: authoringBriefContentSchema, edited: z.boolean() }).nullable().optional(),
   userClarifications: z.array(z.object({ question: z.string().min(1).max(500), answer: z.string().min(1).max(2000) })).max(4).optional(),
   status: z.literal('REQUIRES_HUMAN_CONTENT_REVIEW'), contractHash: z.string(), bodyHash: z.string(), originalRequest: z.string(),
   source: z.object({ promptId: z.string().uuid().nullable(), revision: z.number().int().positive().nullable(), bodyHash: z.string().nullable(), originalText: z.string().nullable(),
@@ -30,11 +39,12 @@ export const contentReviewSchema = z.object({
     originalText: z.string().nullable(), proposedText: z.string().nullable() })).refine(entries => new Set(entries.map(entry => entry.id)).size === entries.length, 'Los cambios deben tener identidades únicas.') }),
 });
 export type ContentReview = z.infer<typeof contentReviewSchema>;
-export const liveViewSchema = z.object({ sourceChoices: z.array(z.object({ id: z.string().uuid(), title: z.string(), revision: z.number().int().positive() })).optional(), runtime: liveRuntimeSchema.nullable().optional(), deletion: deletionSchema.nullable().optional(), semantic: semanticSchema.nullable().optional(), run: liveRecordSchema, request: z.string().nullable(), question: z.string().nullable(), observation: z.object({ promptId: z.string().uuid().nullable(), title: z.string().nullable(), revision: z.number().nullable(), templateText: z.string().nullable(), draftChanged: z.boolean(), values: z.record(z.string(), z.string()), response: z.string().nullable(), responseComplete: z.boolean() }).nullable(), proposal: z.object({ id: z.string().uuid(), hash: z.string(), promptId: z.string().uuid().nullable(), revision: z.number().nullable(), draft: draftSchema, originalText: z.string(), purpose: z.enum(['SAVE', 'CONTENT_ONLY']).default('SAVE'), contentReview: contentReviewSchema.nullable().optional() }).nullable() });
+export const liveViewSchema = z.object({ brief: authoringBriefReviewSchema.nullable().optional(), sourceChoices: z.array(z.object({ id: z.string().uuid(), title: z.string(), revision: z.number().int().positive() })).optional(), runtime: liveRuntimeSchema.nullable().optional(), deletion: deletionSchema.nullable().optional(), semantic: semanticSchema.nullable().optional(), run: liveRecordSchema, request: z.string().nullable(), question: z.string().nullable(), observation: z.object({ promptId: z.string().uuid().nullable(), title: z.string().nullable(), description: z.string().nullable().optional(), revision: z.number().nullable(), templateText: z.string().nullable(), draftChanged: z.boolean(), values: z.record(z.string(), z.string()), response: z.string().nullable(), responseComplete: z.boolean() }).nullable(), proposal: z.object({ id: z.string().uuid(), hash: z.string(), promptId: z.string().uuid().nullable(), revision: z.number().nullable(), draft: draftSchema, originalText: z.string(), purpose: z.enum(['SAVE', 'CONTENT_ONLY']).default('SAVE'), contentReview: contentReviewSchema.nullable().optional() }).nullable() });
 export type LiveView = z.infer<typeof liveViewSchema>;
 export interface UiObservation {
   mode: string; candidates: { id: string; title: string; revision: number }[];
   promptId: string | null; revision: number | null; title: string | null; templateText: string | null;
+  description?: string | null;
   values: Record<string, string>; variableNames: string[]; draftChanged: boolean;
   compiledReady: boolean; compiledText: string | null; response: string | null;
   responseComplete: boolean; providerOpen: boolean; providerId: string | null; error: string | null;
@@ -112,17 +122,17 @@ export interface VisibleSessionClient {
   observeOperation(message: string, sessionId: string, source?: { id: string; revision: number }, signal?: AbortSignal, model?: string): Promise<LiveRecord>;
   surfaceCapability(id: string): string | undefined;
   releaseSurface(id: string): boolean;
-  clarifyVisible?: (previousId: string, questionSequence: number, answer: string) => Promise<LiveRecord>;
+  clarifyVisible?: (previousId: string, questionSequence: number, answer: string, brief?: AuthoringBriefReply) => Promise<LiveRecord>;
   clarificationCapability?: (id: string) => string | undefined;
   finishSurface?: (id: string, allowClarification: boolean) => void;
-  pendingClarification?: (id: string) => Readonly<{ runId: string; previousId: string; questionSequence: number; answer: string }> | undefined;
+  pendingClarification?: (id: string) => Readonly<{ runId: string; previousId: string; questionSequence: number; answer: string; brief?: AuthoringBriefReply }> | undefined;
   retryClarification?: (id: string) => Promise<LiveRecord>;
 }
-export type VisibleClarificationRequest = (previousId: string, input: { runId: string; questionSequence: number; answer: string; nextSurface: string }, signal: AbortSignal) => Promise<LiveRecord>;
+export type VisibleClarificationRequest = (previousId: string, input: { runId: string; questionSequence: number; answer: string; nextSurface: string; brief?: AuthoringBriefReply }, signal: AbortSignal) => Promise<LiveRecord>;
 export function createVisibleSessionClient(client: Pick<LiveClient, 'bindContext' | 'start' | 'record' | 'observe'> = live, storageKey = 'nova-live-run', clarificationRequest?: VisibleClarificationRequest): VisibleSessionClient {
   const surfaces = new Map<string, string>();
   const questionSurfaces = new Map<string, string>();
-  type PendingClarification = Readonly<{ previousId: string; runId: string; questionSequence: number; answer: string; nextSurface: string }>;
+  type PendingClarification = Readonly<{ previousId: string; runId: string; questionSequence: number; answer: string; nextSurface: string; brief?: AuthoringBriefReply }>;
   const pendingClarifications = new Map<string, PendingClarification>();
   const clarificationFlights = new Map<string, Promise<LiveRecord>>();
   function retainSurface(id: string, capability: string, previousId?: string) {
@@ -163,16 +173,16 @@ export function createVisibleSessionClient(client: Pick<LiveClient, 'bindContext
       throw new Error('La conexión no confirmó el inicio. NOVA conservará esta identidad para revisar o detener la ejecución sin repetirla.');
     }
   }
-  async function clarifyVisible(previousId: string, questionSequence: number, answer: string) {
+  async function clarifyVisible(previousId: string, questionSequence: number, answer: string, brief?: AuthoringBriefReply) {
     if (!clarificationRequest || !(questionSurfaces.has(previousId) || surfaces.has(previousId))) throw new Error('Esta pestaña no conserva permiso para responder a esa pregunta.');
     const pending = [...pendingClarifications.values()].find(item => item.previousId === previousId);
     if (pending) {
-      if (pending.questionSequence !== questionSequence || pending.answer !== answer) throw new Error('La aclaración pendiente no puede editarse ni enviarse con otra identidad. Revisa o detén su ejecución.');
+      if (pending.questionSequence !== questionSequence || pending.answer !== answer || JSON.stringify(pending.brief) !== JSON.stringify(brief)) throw new Error('La aclaración pendiente no puede editarse ni enviarse con otra identidad. Revisa o detén su ejecución.');
       return retryClarification(pending.runId);
     }
     const runId = crypto.randomUUID(), nextSurface = crypto.randomUUID() + crypto.randomUUID();
     retainSurface(runId, nextSurface, previousId);
-    const envelope = Object.freeze({ previousId, runId, questionSequence, answer, nextSurface });
+    const envelope = Object.freeze({ previousId, runId, questionSequence, answer, nextSurface, ...(brief ? { brief: structuredClone(brief) } : {}) });
     pendingClarifications.set(runId, envelope);
     try { return await sendClarification(envelope, false); }
     catch (error) { if (!surfaces.has(runId)) pendingClarifications.delete(runId); throw error; }
@@ -206,14 +216,21 @@ export function createVisibleSessionClient(client: Pick<LiveClient, 'bindContext
     const control = surfaces.delete(id), question = questionSurfaces.delete(id); return control || question;
   }, ...(clarificationRequest ? { clarifyVisible, retryClarification, pendingClarification: (id: string) => {
     const value = pendingClarifications.get(id);
-    return value ? Object.freeze({ runId: value.runId, previousId: value.previousId, questionSequence: value.questionSequence, answer: value.answer }) : undefined;
+    return value ? Object.freeze({ runId: value.runId, previousId: value.previousId, questionSequence: value.questionSequence, answer: value.answer,
+      ...(value.brief ? { brief: structuredClone(value.brief) } : {}) }) : undefined;
   }, clarificationCapability: (id: string) => questionSurfaces.get(id) ?? surfaces.get(id),
     finishSurface: (id: string, allowClarification: boolean) => {
       const capability = surfaces.get(id); surfaces.delete(id);
       if (capability && allowClarification) questionSurfaces.set(id, capability); else questionSurfaces.delete(id);
     } } : {}) };
 }
-const visibleSession = createVisibleSessionClient();
+export function createLocalVisibleSessionClient(client: Pick<ApiClient, 'request'>, liveClient: LiveClient) {
+  const session: VisibleSessionClient = createVisibleSessionClient(liveClient, 'nova-live-run', (previousId, input, signal) =>
+    client.request(`/nova/live/${previousId}/clarification`, liveRecordSchema, { ...post(input, signal),
+      headers: { 'X-Nova-Surface': session.clarificationCapability?.(previousId) ?? '' } }));
+  return session;
+}
+export const visibleSession = createLocalVisibleSessionClient(api, live);
 // Compatibility exports delegate to the same owner as standalone callers.
 export const startVisible: VisibleSessionClient['startVisible'] = (...args) => visibleSession.startVisible(...args);
 export const observeOperation: VisibleSessionClient['observeOperation'] = (...args) => visibleSession.observeOperation(...args);
