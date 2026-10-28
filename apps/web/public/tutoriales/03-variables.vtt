@@ -1,0 +1,25 @@
+WEBVTT
+
+1
+00:00:00.258 --> 00:00:02.359
+3. Crear y quitar variables con el mismo botón · Datos de ejemplo, biblioteca de prueba.
+
+2
+00:00:02.359 --> 00:00:04.885
+Selecciona la parte que cambiarás cada vez: inteligencia artificial.
+
+3
+00:00:04.885 --> 00:00:06.535
+Pulsa Crear / quitar variable. El texto seleccionado queda entre signos de variable.
+
+4
+00:00:06.535 --> 00:00:08.199
+Vuelve a pulsar el MISMO botón: recuperas el texto normal, sin perderlo.
+
+5
+00:00:08.199 --> 00:00:10.267
+Créala otra vez y guarda. Así tendrás un campo para usar otro tema.
+
+6
+00:00:10.267 --> 00:00:14.395
+Al usar el prompt, el campo recibe tus datos. La plantilla original se conserva.

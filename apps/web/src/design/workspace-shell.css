@@ -1,0 +1,47 @@
+/* Application chrome: navigation stays left; the workspace owns the center. */
+:root { --sidebar-width: 220px; }
+.app-shell { width: calc(100% - var(--sidebar-width)); max-width: none; margin: 0 0 0 var(--sidebar-width); padding: 32px clamp(20px, 3vw, 48px) 0; }
+.app-shell > main { flex: 1; min-width: 0; width: 100%; }
+.workspace-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; flex-direction: column; width: var(--sidebar-width); padding: 24px 16px; border-right: 1px solid var(--line); background: var(--surface); }
+.workspace-sidebar .brand { flex-direction: column; align-items: center; justify-content: center; gap: 12px; white-space: normal; padding: 4px; margin-bottom: 32px; }
+.workspace-sidebar .brand > .nova-logo { width: 48px; height: 48px; flex-shrink: 0; }
+.workspace-sidebar .brand > span:not(.nova-logo) { display: block; text-align: center; font-size: .9375rem; line-height: 1.5; }
+.workspace-sidebar .brand-nova { margin: 0; display: inline; font-size: .6875rem; }
+.workspace-sidebar .brand-version { display: block; font-size: .6875rem; }
+.sidebar-workspace-label { color: var(--muted); font-size: .75rem; margin: 0 10px 14px; }
+.workspace-sidebar nav, .sidebar-utilities { display: grid; gap: 6px; }
+.workspace-sidebar nav > button, .sidebar-utilities > button { display: flex; align-items: center; gap: 12px; min-height: 46px; width: 100%; padding: 10px 12px; text-align: left; font-size: .8125rem; color: var(--muted); border: 1px solid transparent; border-radius: 10px; }
+.workspace-sidebar button[aria-current='page'] { background: var(--surface-active); color: var(--foreground); border-color: var(--line); }
+.workspace-sidebar nav > button { position: relative; }
+.workspace-sidebar nav > button[aria-current='page']::before { content: ''; position: absolute; left: -7px; top: 13px; bottom: 13px; width: 3px; border-radius: 3px; background: var(--accent); }
+.workspace-sidebar nav > button[aria-current='page'] > .app-icon { color: var(--accent); }
+.workspace-sidebar nav > button:hover, .sidebar-utilities > button:hover { color: var(--foreground); background: var(--surface-active); }
+.sidebar-utilities { margin-top: auto; padding-top: 24px; }
+.sidebar-local { display: flex; align-items: center; gap: 8px; margin: 20px 12px 0; font-size: .75rem; color: var(--muted); }
+.sidebar-local i, .footer-private i { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--success); }
+.workspace-footer { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; margin: 48px auto 0; width: 100%; max-width: 1240px; padding: 24px 84px 8px 0; border-top: 1px solid color-mix(in srgb, var(--line) 55%, var(--background)); color: var(--muted); }
+.workspace-footer strong { font-size: .875rem; font-weight: 600; color: var(--foreground); }
+.workspace-footer strong span { margin-left: 5px; font-weight: 400; color: var(--muted); }
+.workspace-footer p { font-size: .75rem; line-height: 1.6; margin: 8px 0 0; }
+.footer-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; font-size: .75rem; }
+.footer-private, .footer-meta button { display: inline-flex; align-items: center; gap: 8px; }
+.footer-meta button { font-size: .75rem; min-height: 44px; }
+@media (max-width: 1000px) {
+  :root { --sidebar-width: 72px; }
+  .workspace-sidebar { padding: 24px 10px; }
+  .workspace-sidebar .brand { justify-content: center; margin-bottom: 28px; padding: 0; }
+  .workspace-sidebar .brand > .nova-logo { width: 32px; height: 32px; }
+  .workspace-sidebar .brand > span:not(.nova-logo), .sidebar-workspace-label, .workspace-sidebar nav > button > span, .sidebar-utilities > button > span, .sidebar-local > span { display: none; }
+  .workspace-sidebar nav > button, .sidebar-utilities > button { justify-content: center; padding: 10px; }
+  .sidebar-local { justify-content: center; margin-inline: 0; }
+}
+@media (max-width: 700px) {
+  :root { --sidebar-width: 56px; }
+  .app-shell { padding: 18px 12px 0; }
+  .workspace-sidebar { padding: 18px 4px; }
+  .workspace-sidebar .brand > .nova-logo { width: 28px; height: 28px; }
+  .workspace-sidebar nav > button, .sidebar-utilities > button { min-height: 44px; }
+  .workspace-footer { margin-top: 32px; gap: 12px; padding-top: 20px; padding-right: 64px; }
+  .footer-meta { gap: 8px 12px; }
+  .nova-mission { padding: 16px 12px; }
+}

@@ -1,0 +1,75 @@
+.agent-runtime { container-type: inline-size; color: var(--foreground); }
+.runtime-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 16px; font-size: .875rem; }
+.runtime-caption > span:last-child { color: var(--muted); font: .75rem var(--font-code); letter-spacing: .06em; }
+.runtime-map { display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr); grid-template-areas: 'context center tools' 'model center human'; align-items: start; gap: 24px 12px; position: relative; padding: 12px 0; background-image: radial-gradient(var(--line) .65px, transparent .65px); background-size: 18px 18px; }
+.runtime-connections { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.runtime-connections path { fill: none; stroke: var(--intelligence); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: .35; }
+.runtime-card { position: relative; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-small); overflow-wrap: anywhere; }
+.runtime-card-title { display: flex; align-items: center; gap: 8px; color: var(--intelligence); margin-bottom: 8px; }
+.runtime-card-title h3 { margin: 0; font-size: .875rem; font-weight: 600; }
+.runtime-card > strong { display: block; font-size: .8125rem; line-height: 1.5; }
+.runtime-card p, .runtime-memory p { margin: 4px 0; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+.runtime-card small { color: var(--muted); font-size: .75rem; }
+.runtime-context { grid-area: context; }
+.runtime-model { grid-area: model; }
+.runtime-tools { grid-area: tools; }
+.runtime-human { grid-area: human; }
+.runtime-human .runtime-card-title { color: var(--warning); }
+.runtime-tools .runtime-card-title { color: var(--success); }
+.runtime-center { grid-area: center; align-self: center; position: relative; display: grid; justify-items: center; gap: 8px; text-align: center; overflow-wrap: anywhere; }
+.runtime-center > strong { color: var(--intelligence); font-size: .875rem; letter-spacing: .08em; }
+.runtime-center > span, .runtime-center > small { font-size: .75rem; line-height: 1.5; }
+.runtime-center > small { color: var(--muted); }
+.runtime-core { display: grid; place-items: center; width: 88px; height: 88px; border: 1px solid var(--line); border-radius: 50%; background: var(--intelligence-soft); box-shadow: 0 0 0 10px color-mix(in srgb, var(--intelligence) 4%, transparent); }
+.runtime-core { position: relative; }
+.runtime-core::before { content: ''; position: absolute; inset: -6px; border: 2px solid transparent; border-radius: inherit; pointer-events: none; }
+.agent-runtime[data-activity='working'] .runtime-core::before { border-top-color: var(--intelligence); border-right-color: color-mix(in srgb, var(--intelligence) 25%, transparent); animation: runtime-orbit 1.8s linear infinite; }
+.agent-runtime[data-activity='working'] .runtime-connections path { animation: runtime-flow 1.2s linear infinite; opacity: .6; }
+.runtime-card[data-active='true'] { border-color: var(--intelligence); }
+.runtime-card[data-active='true'] .runtime-card-title::after { content: ''; width: 7px; height: 7px; margin-left: auto; flex-shrink: 0; border-radius: 50%; background: currentColor; animation: runtime-signal 1.4s ease-in-out infinite; }
+.agent-runtime[data-activity='reconnecting'] .runtime-core::before { border: 2px dashed var(--warning); animation: runtime-signal 2s ease-in-out infinite; }
+.agent-runtime[data-activity='reconnecting'] .runtime-center > span { color: var(--warning); }
+@keyframes runtime-orbit { to { transform: rotate(360deg); } }
+@keyframes runtime-flow { to { stroke-dashoffset: -18; } }
+@keyframes runtime-signal { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+  .agent-runtime *, .agent-runtime *::before, .agent-runtime *::after { animation: none !important; }
+}
+html[data-motion='reduced'] .agent-runtime *, html[data-motion='reduced'] .agent-runtime *::before, html[data-motion='reduced'] .agent-runtime *::after { animation: none !important; }
+.runtime-tools details { margin-top: 8px; }
+.runtime-tools summary, .runtime-identity summary { cursor: pointer; min-height: 32px; font-size: .75rem; color: var(--intelligence); padding-block: 8px; }
+.runtime-tools ul { list-style: none; padding: 0; margin: 4px 0 0; display: grid; gap: 8px; }
+.runtime-tools li { display: grid; gap: 2px; font-size: .75rem; border-top: 1px solid var(--line); padding-top: 6px; }
+.runtime-tools li[data-state='running'], .runtime-tools li[data-state='selected'] { color: var(--intelligence); }
+.runtime-tools li[data-state='completed'] { color: var(--success); }
+.runtime-tools li[data-state='blocked'] { color: var(--error); }
+.runtime-human .live-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.runtime-human .live-controls button { min-height: 44px; padding: 8px; font-size: .75rem; }
+.runtime-memory { margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.runtime-memory-facts { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .75rem; line-height: 1.6; }
+.runtime-flow { list-style: none; padding: 16px 0 0; margin: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.runtime-flow li { display: grid; align-content: start; justify-items: center; gap: 6px; padding: 8px 2px; text-align: center; color: var(--muted); border-top: 2px solid var(--line); font-size: .75rem; overflow-wrap: anywhere; }
+.runtime-flow li[data-state='completed'] { border-color: var(--success); }
+.runtime-flow li[data-state='active'], .runtime-flow li[data-state='waiting'] { border-color: var(--intelligence); background: var(--intelligence-soft); }
+.runtime-flow li[data-state='stopped'] { border-color: var(--warning); }
+.runtime-flow small { font-size: .75rem; line-height: 1.5; }
+.runtime-identity { margin-top: 12px; color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+.runtime-identity p { margin-top: 8px; }
+.nova-live-popover:has(.agent-runtime), .nova-dock-live .nova-live-popover:has(.agent-runtime) { position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: 100px; width: min(780px, calc(100% - 40px)); margin: 0; max-height: min(700px, calc(100dvh - 132px)); }
+body:has(.agent-runtime) .nova-start-toast { display: none; }
+.nova-runtime-quick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.nova-runtime-quick button { min-height: 44px; font-size: .75rem; }
+@container (max-width: 520px) {
+  .runtime-map { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'center center' 'context model' 'tools human'; gap: 12px; }
+  .runtime-connections { display: none; }
+  .runtime-center { padding: 8px 0 16px; }
+  .runtime-center > span { max-width: 240px; }
+  .runtime-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .runtime-card-title { flex-wrap: wrap; row-gap: 6px; }
+  .runtime-card-title h3 { overflow-wrap: normal; }
+}
+@media (max-width: 600px) {
+  .nova-live:has(.nova-runtime-quick) .nova-live-trigger { width: min(300px, calc(100vw - 40px)); }
+  .nova-live:has(.nova-runtime-quick) .nova-live-trigger > span:not(.nova-logo) { display: grid; }
+  .nova-live-popover:has(.agent-runtime), .nova-dock-live .nova-live-popover:has(.agent-runtime) { right: max(16px, env(safe-area-inset-right)); width: calc(100% - 32px); max-height: calc(100dvh - 132px); }
+}

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../apps/mobile/Domain/Entities/*.cs" Link="Legacy/Entities/%(Filename)%(Extension)" />
+    <Compile Include="../../apps/mobile/Domain/Enums/*.cs" Link="Legacy/Enums/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

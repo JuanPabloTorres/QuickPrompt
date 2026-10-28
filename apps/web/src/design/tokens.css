@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #06141B;
+  --surface: #11212D;
+  --surface-active: #253745;
+  --border: #4A5C6A;
+  --text-secondary: #9BA8AB;
+  --text-primary: #CCD0CF;
+  --surface-raised: var(--surface-active);
+  --surface-hover: var(--surface-active);
+  --foreground: var(--text-primary);
+  --muted: var(--text-secondary);
+  --accent: #5de2d6;
+  --accent-hover: #85eadd;
+  --accent-foreground: #0c2527;
+  --intelligence: #aeaaff;
+  --secondary-accent: #b7edba;
+  --line: var(--border);
+  --input-line: #7893a8;
+  --border-active: var(--accent);
+  --focus-ring: var(--accent);
+  --error: #ffadb8;
+  --error-foreground: #30121b;
+  --success: #99e8b7;
+  --warning: #f3cf88;
+  --disabled: #a4b5c5;
+  --scrim: #050b17b8;
+  --shadow: 0 12px 36px #00000026;
+  --shadow-small: 0 4px 16px #00000024;
+  --state-tint: 12%;
+  --accent-soft: color-mix(in srgb, var(--accent) var(--state-tint), var(--surface));
+  --intelligence-soft: color-mix(in srgb, var(--intelligence) var(--state-tint), var(--surface));
+  --success-soft: color-mix(in srgb, var(--success) var(--state-tint), var(--surface));
+  --error-soft: color-mix(in srgb, var(--error) var(--state-tint), var(--surface));
+  --selection: color-mix(in srgb, var(--accent) 25%, var(--surface));
+  --font-body: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-code: "Cascadia Code", Consolas, monospace;
+  --text-hero: clamp(1.75rem, 2.7vw, 2.5rem);
+  --text-page: clamp(1.75rem, 3vw, 2.75rem);
+  --text-section: 1.125rem;
+  --text-prompt: 1rem;
+  --text-body: 1rem;
+  --text-input: 1rem;
+  --text-meta: .875rem;
+  --text-caption: .75rem;
+  --fast: 140ms;
+  --surface-time: 200ms;
+  --motion-cycle: 1600ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --control-gap: 12px;
+  --control-gap-compact: 8px;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #f6f8f7;
+  --surface: #ffffff;
+  --surface-active: #edf1f5;
+  --border: #d6dfe4;
+  --text-primary: #151f2b;
+  --text-secondary: #58717b;
+  --surface-raised: #edf1f5;
+  --surface-hover: #edf1f5;
+  --foreground: #151f2b;
+  --muted: #58717b;
+  --accent: #3259e8;
+  --accent-hover: #2547c6;
+  --accent-foreground: #ffffff;
+  --intelligence: #6553b8;
+  --state-tint: 6%;
+  --line: #d6dfe4;
+  --input-line: #768995;
+  --error: #b32c48;
+  --error-foreground: #ffffff;
+  --success: #24613e;
+  --warning: #805610;
+  --disabled: #637481;
+  --scrim: #151f2b80;
+  --shadow: 0 12px 36px #15253614;
+  --shadow-small: 0 4px 16px #15253612;
+}
+
+/* Tailwind v4 utilities share the runtime semantic theme. */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-elevated: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--accent);
+  --color-intelligence: var(--intelligence);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --font-sans: var(--font-body);
+}
