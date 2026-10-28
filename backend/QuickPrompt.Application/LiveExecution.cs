@@ -22,6 +22,7 @@ public record LiveStartInput(Guid RunId, Guid SessionId, string Message, string 
 {
     [JsonIgnore] public string? AuthorizedPendingRequest { get; init; }
     [JsonIgnore] public UserInputScope? InputScope { get; init; }
+    [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
     [JsonIgnore] public string DisplayRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : AuthorizedPendingRequest + "\n\nTu aclaración: " + Message;
     [JsonIgnore] public string TaskRequest => new PrepareInput(RunId, Message) { AuthorizedPendingRequest = AuthorizedPendingRequest }.TaskRequest;
 }
@@ -141,8 +142,10 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             throw new ValidationException("Revisa la solicitud de ejecución visible.");
         if ((input.SourceId is null) != (input.SourceRevision is null) || input.SourceRevision is < 1) throw new ValidationException("El contexto requiere un origen y su revisión vigente.");
         input.Command?.Validate(input);
+        var clarifications = AuthoringClarifications.Copy(input.UserClarifications);
         if (!LocalModelPolicy.Production.Allows(input.Model) || input.Mode is "BROWSER" or "SAME_TAB" && !LocalModelPolicy.Production.AllowsAgentControl(input.Model)) throw new ValidationException("Modelo no permitido para este modo.");
-        var fingerprint = Hash(input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) });
+        var normalized = input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) };
+        var fingerprint = clarifications.Length == 0 ? Hash(normalized) : Hash(new { input = normalized, userClarifications = clarifications });
         var prior = store.Get(input.RunId);
         if (prior is not null) { if (prior.Fingerprint != fingerprint) throw new ConflictException("RunId ya utilizado."); return prior; }
         foreach (var removed in controls.Where(c => store.Get(c.Key) is null).ToArray()) controls.TryRemove(removed.Key, out _);

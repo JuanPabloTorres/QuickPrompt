@@ -12,6 +12,8 @@ public static class AccountNovaEndpoints
         { nova.BindSource(Actor(context), libraryId, id, input); return Results.NoContent(); }).AddEndpointFilter<AccountCsrf>();
         api.MapPost("/live", (HttpContext context, Guid libraryId, AccountLiveStart input, AccountNovaCoordinator nova) =>
             nova.Start(Actor(context), libraryId, input, Surface(context))).AddEndpointFilter<AccountCsrf>();
+        api.MapPost("/live/{id:guid}/clarification", (HttpContext context, Guid libraryId, Guid id, AccountLiveClarification input, AccountNovaCoordinator nova) =>
+            nova.Clarify(Actor(context), libraryId, id, input, Surface(context))).AddEndpointFilter<AccountCsrf>();
         api.MapGet("/live/{id:guid}", (HttpContext context, Guid libraryId, Guid id, AccountNovaCoordinator nova) => nova.View(Actor(context), libraryId, id));
         api.MapGet("/live/{id:guid}/activity", (HttpContext context, Guid libraryId, Guid id, long after, AccountNovaCoordinator nova) => nova.Events(Actor(context), libraryId, id, after));
         api.MapGet("/live/{id:guid}/events", AccountNovaFeed.Open).RequireRateLimiting("credentials");

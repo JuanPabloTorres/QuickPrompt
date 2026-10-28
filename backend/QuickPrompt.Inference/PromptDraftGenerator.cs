@@ -37,10 +37,10 @@ public sealed partial class PromptDraftGenerator : IPromptGenerator
     public Task<PromptProposal> Generate(PrepareInput input, Understanding understanding, RetrievalCandidate[] candidates, CancellationToken ct)
         => Generate(input, understanding, candidates, ct, null);
     private Task<JsonDocument> Chat(object body, CancellationToken ct,
-        [System.Runtime.CompilerServices.CallerMemberName] string purpose = "Chat")
+        [System.Runtime.CompilerServices.CallerMemberName] string purpose = "Chat", bool contentOnly = false)
     {
         ct.ThrowIfCancellationRequested();
-        return transport.Send(AgentStagePacket.Encode(body, typeof(PromptDraftGenerator), purpose, includeSystemKnowledge), ct, purpose);
+        return transport.Send(AgentStagePacket.Encode(body, typeof(PromptDraftGenerator), purpose, includeSystemKnowledge && !contentOnly), ct, purpose);
     }
     private static T ParseContent<T>(JsonDocument response, JsonElement schema) => AgentResponseContent.ParseContent<T>(response, schema);
     private Task<InputValueExtraction> ExtractInputs(PrepareInput input, string template, string[] names, CancellationToken ct)

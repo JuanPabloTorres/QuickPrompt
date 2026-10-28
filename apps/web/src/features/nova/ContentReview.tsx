@@ -15,6 +15,9 @@ export function ContentReview({ review, purpose = 'SAVE', approvedLiteralChangeI
     <p className="notice"><strong>El contenido necesita tu revisión.</strong> NOVA preparó una propuesta. Revisa que incluya lo que pediste y conserve lo necesario del original {purpose === 'CONTENT_ONLY' ? 'antes de continuar.' : 'antes de guardarla.'}</p>
     <h3>Tu petición para la plantilla</h3>
     <pre className="content-review-text">{review.originalRequest}</pre>
+    {!!review.userClarifications?.length && <section aria-label="Tus aclaraciones del encargo"><h3>Tus aclaraciones</h3>{review.userClarifications.map((item, index) => <div key={index}>
+      <p className="muted">{item.question}</p><pre className="content-review-text">{item.answer}</pre>
+    </div>)}</section>}
     {review.source.originalText !== null && <details><summary>{review.source.workingDraftId ? 'Borrador de trabajo' : 'Texto de origen'}{!review.source.workingDraftId && review.source.revision ? ` · versión ${review.source.revision}` : ''}</summary><pre className="content-review-text">{review.source.originalText}</pre></details>}
     {review.source.savedOriginalText != null && review.source.savedOriginalText !== review.source.originalText && <details><summary>Versión guardada de origen{review.source.revision ? ` · versión ${review.source.revision}` : ''}</summary><pre className="content-review-text">{review.source.savedOriginalText}</pre></details>}
     <details><summary>Material de referencia</summary>

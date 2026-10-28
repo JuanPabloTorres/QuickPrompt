@@ -10,11 +10,11 @@ export function historyDate(value: string) {
   return new Date(value).toLocaleString('es', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export function SavedText({ text, kind, filename, onCopy, onDownload }: TextActions & { text: string; kind: 'instrucción' | 'respuesta'; filename: string }) {
+export function SavedText({ text, kind, filename, onCopy, onDownload, copyDisabled = false }: TextActions & { text: string; kind: 'instrucción' | 'respuesta'; filename: string; copyDisabled?: boolean }) {
   return <>
     <pre className="history-text">{text}</pre>
     <div className="history-text-actions">
-      <button className="secondary" onClick={() => onCopy(text)}><AppIcon glyph={Copy} size={16} />Copiar {kind} guardada</button>
+      <button className="secondary" disabled={copyDisabled} onClick={() => onCopy(text)}><AppIcon glyph={Copy} size={16} />Copiar {kind} guardada</button>
       <button className="text-button" onClick={() => onDownload(text, filename)}><AppIcon glyph={Download} size={16} />Descargar {kind}</button>
     </div>
   </>;

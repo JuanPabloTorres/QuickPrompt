@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.Server;
@@ -61,11 +62,25 @@ public static class AccountMcpModule
     {
         var origin = app.Services.GetRequiredService<DelegationOrigin>();
         var metadata = new Uri(origin.Value, "/.well-known/oauth-protected-resource/mcp").AbsoluteUri;
+        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("QuickPrompt.McpBoundary");
         app.Use(async (context, next) =>
         {
             if (context.Request.Path == "/mcp")
+            {
+                // Independent of client headers, credentials and the global HTTP trace.
+                var trace = Guid.NewGuid().ToString("N");
+                var started = Stopwatch.GetTimestamp();
+                var method = context.Request.Method is "GET" or "POST" or "DELETE" ? context.Request.Method : "OTHER";
+                context.Response.OnCompleted(() =>
+                {
+                    logger.LogInformation(new EventId(5320, "McpBoundaryCompleted"),
+                        "MCP boundary completed {Method} {StatusCode} {ElapsedMilliseconds} {McpTraceId}",
+                        method, context.Response.StatusCode, (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds, trace);
+                    return Task.CompletedTask;
+                });
                 context.Response.OnStarting(() =>
                 {
+                    context.Response.Headers["X-QP-MCP-Trace"] = trace;
                     // Configured issuer only; never reflect Host or a client-provided URL.
                     if (context.Response.StatusCode == 401)
                     {
@@ -77,6 +92,7 @@ public static class AccountMcpModule
                     }
                     return Task.CompletedTask;
                 });
+            }
             await next(context);
         });
     }

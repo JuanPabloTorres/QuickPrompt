@@ -13,7 +13,7 @@ public sealed record RememberedContextSummary(Guid Id, string Title, DateTimeOff
 /// Creates actor-bound adapters for existing agent ports. Only an explicit save/restore flow
 /// selects persisted context; the local host keeps its default transient sessions.
 /// </summary>
-public sealed class AccountAgentMemory(NpgsqlDataSource data)
+public sealed partial class AccountAgentMemory(NpgsqlDataSource data)
 {
     public AgentSessions RememberedSessions(LibraryActor actor, Guid libraryId, int? expectedMemoryRevision = null) =>
         new(new PostgresAgentSessionStore(this, actor, libraryId, expectedMemoryRevision));

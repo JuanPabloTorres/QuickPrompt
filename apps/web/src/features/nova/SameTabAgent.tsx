@@ -13,7 +13,7 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
   const inheritedSession = useAgentProposalSession();
   const [standaloneSession] = useState(createAgentProposalSession);
   const proposalSession = inheritedSession ?? standaloneSession;
-  const { releaseSurface, surfaceCapability } = visibleSession;
+  const { releaseSurface, surfaceCapability, finishSurface } = visibleSession;
   const [target, setTarget] = useState<CursorTarget | null>(null);
   const [notice, setNotice] = useState('');
   useEffect(() => { onNotice?.(notice); }, [notice, onNotice]);
@@ -116,7 +116,12 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
           if (disposed || !active) break;
           if (connectionLost) { connectionLost = false; if (!driver.intervention) setNotice(''); }
           serverPauseRequested = data.run.pauseRequested; refreshPause(false);
-          if (terminalLive(data.run.status)) { active = false; driver.stop(); releaseSurface(runId!); releaseProposal(); onActiveRef.current(false); break; }
+          if (terminalLive(data.run.status)) {
+            active = false; driver.stop();
+            if (finishSurface) finishSurface(runId!, data.run.status === 'BLOCKED' && data.run.errorCode === 'NEEDS_CLARIFICATION' && data.run.approval === 'NONE' && !data.run.effectCommitted);
+            else releaseSurface(runId!);
+            releaseProposal(); onActiveRef.current(false); break;
+          }
           if (data.action && !driver.paused && !executing) void execute(data.action).catch(() => { driver.intervene(); setNotice('No se pudo confirmar el último paso. Detén NOVA y revisa el borrador.'); });
         } catch { if (disposed || !active) break; connectionLost = true; refreshPause(false); setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
         await waitForState();
@@ -124,6 +129,6 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
     }
     void poll();
     return () => { disposed = true; active = false; wakePoll?.(); lifecycle.abort(); progressRequest?.abort(); driver.stop(); releaseProposal(); if (driverRef.current === driver) driverRef.current = null; if (refreshPauseRef.current === refreshPause) refreshPauseRef.current = null; onActiveRef.current(false); window.removeEventListener('nova-ui-control', control); window.removeEventListener('nova-ui-state-available', stateAvailable); };
-  }, [runId, proposalSession, live, releaseSurface, surfaceCapability]);
+  }, [runId, proposalSession, live, releaseSurface, surfaceCapability, finishSurface]);
   return <NovaAgentCursor target={target} />;
 }

@@ -34,15 +34,17 @@ public sealed partial class ExecutionQueue(ExecutionDataSource source, Execution
     }
 
     public Task<ExecutionView> Admit(LibraryActor actor, Guid libraryId, Guid operationId, string requestHash, string payload,
-        CancellationToken cancellation = default, Guid? connectionId = null, Func<CancellationToken, Task<bool>>? authorize = null) =>
-        AdmitInside(actor, libraryId, operationId, requestHash, payload, connectionId is null ? "CompilePrompt" : "RunLocalPrompt", connectionId, authorize, cancellation);
+        CancellationToken cancellation = default, Guid? connectionId = null, Func<CancellationToken, Task<bool>>? authorize = null,
+        Action<bool, CancellationToken>? validateSource = null) =>
+        AdmitInside(actor, libraryId, operationId, requestHash, payload, connectionId is null ? "CompilePrompt" : "RunLocalPrompt", connectionId, authorize, cancellation, validateSource);
 
     internal Task<ExecutionView> AdmitProposal(LibraryActor actor, Guid libraryId, Guid operationId, string requestHash, string payload,
         Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
         AdmitInside(actor, libraryId, operationId, requestHash, payload, "ModelProposal", connection, authorize, cancellation);
 
     private Task<ExecutionView> AdmitInside(LibraryActor actor, Guid libraryId, Guid operationId, string requestHash, string payload,
-        string kind, Guid? connectionId, Func<CancellationToken, Task<bool>>? authorize, CancellationToken cancellation) => Change(async (database, now) =>
+        string kind, Guid? connectionId, Func<CancellationToken, Task<bool>>? authorize, CancellationToken cancellation,
+        Action<bool, CancellationToken>? validateSource = null) => Change(async (database, now) =>
     {
         await database.Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('quickprompt.actor_id', {actor.Id.ToString()}, true)", cancellation);
         // A replay is still bound to a live grant. Revocation must not be bypassed by an old operation ID.
@@ -51,8 +53,12 @@ public sealed partial class ExecutionQueue(ExecutionDataSource source, Execution
         if (previous is not null)
         {
             if (previous.LibraryId != libraryId || previous.RequestHash != requestHash || previous.Kind != kind || previous.ConnectionId != connectionId) throw new ConflictException("La operación ya pertenece a otra solicitud.");
+            validateSource?.Invoke(true, cancellation);
             return View(previous);
         }
+        // The application owner revalidates its snapshot while this same fence
+        // excludes private erasure. The worker receives no library privileges.
+        validateSource?.Invoke(false, cancellation);
         if (connectionId is not null) now = await Clock(database, cancellation);
         var pending = database.Executions.Where(x => x.Status == ExecutionStatus.Queued);
         if (await pending.CountAsync(x => x.OwnerId == actor.Id, cancellation) >= Limits.OwnerQueued)

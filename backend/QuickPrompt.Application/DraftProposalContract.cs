@@ -18,6 +18,7 @@ public sealed class DraftProposalContract
 {
     private readonly AuthoringCaseRange[] caseRanges;
     private readonly AuthoringLiteralCandidate[] literals;
+    private readonly AuthoringClarification[] clarifications;
     private PromptInput? registered;
     public string OriginalRequest { get; }
     public DraftSourceSnapshot? Source { get; }
@@ -31,11 +32,14 @@ public sealed class DraftProposalContract
     public Guid? WorkingDraftId => Source?.WorkingDraftId;
     public string? WorkingBodyHash => Source?.WorkingBodyHash;
     public AuthoringLiteralCandidate[] Literals => [.. literals];
-    public string Fingerprint => LiveRuns.Hash(new { OriginalRequest, Source, FieldContract, caseRanges, literals });
+    public AuthoringClarification[] UserClarifications => [.. clarifications];
+    public string Fingerprint => clarifications.Length == 0 ? BaseFingerprint : LiveRuns.Hash(new { original = BaseFingerprint, userClarifications = clarifications });
+    private string BaseFingerprint => LiveRuns.Hash(new { OriginalRequest, Source, FieldContract, caseRanges, literals });
     public string AuthoringRequest => ProjectRequest();
 
     public DraftProposalContract(string request, DraftSourceSnapshot? source, PromptInputContract fieldContract,
-        AuthoringCaseRange[]? inputData = null, AuthoringLiteralCandidate[]? literalCandidates = null)
+        AuthoringCaseRange[]? inputData = null, AuthoringLiteralCandidate[]? literalCandidates = null,
+        AuthoringClarification[]? userClarifications = null)
     {
         // A saved-only snapshot has one body. A working snapshot must retain the
         // actual saved baseline explicitly: an unapproved draft is not that baseline.
@@ -53,6 +57,7 @@ public sealed class DraftProposalContract
             || source.WorkingDraftId is null && source.SavedTemplateText != source.TemplateText))
             throw new ValidationException("La identidad, revisión y huellas del origen no están ligadas correctamente.");
         OriginalRequest = request; Source = source; FieldContract = fieldContract ?? throw new ArgumentNullException(nameof(fieldContract));
+        clarifications = AuthoringClarifications.Copy(userClarifications);
         FieldContract.ValidateBasis(request, source?.TemplateText ?? "");
         if (!FieldContract.Enforced) throw new ValidationException("Los campos de la propuesta requieren una selección explícita del usuario.");
         caseRanges = (inputData ?? []).OrderBy(range => range.Start).ToArray();
@@ -96,7 +101,7 @@ public sealed class DraftProposalContract
             SourceTitle = Source?.Title, SourceDescription = Source?.Description, SourceCategoryId = Source?.CategoryId,
             SavedBodyHash = SourceSavedBodyHash, SavedOriginalText = SavedSourceText,
             WorkingDraftId = WorkingDraftId, WorkingBodyHash = WorkingBodyHash
-        }, BuildLedger()) { LiteralChanges = Changes(body) };
+        }, BuildLedger()) { LiteralChanges = Changes(body), UserClarifications = UserClarifications };
 
     private LiteralChanges Changes(string body)
     {

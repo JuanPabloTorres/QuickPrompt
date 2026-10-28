@@ -27,6 +27,7 @@ import { NovaWelcome } from '../features/nova/NovaWelcome';
 import { AgentUiProvider } from '../features/nova/AgentUiContext';
 import { InterfaceSettings } from '../features/settings/InterfaceSettings';
 import { useInterfacePreferences } from '../hooks/useInterfacePreferences';
+import { useInterfaceTheme } from '../hooks/useInterfaceTheme';
 import { EditorPreparation } from '../features/prompts/EditorPreparation';
 import { type PromptAction } from '../services/library';
 import { type PreparedDraft } from '../services/preparation';
@@ -45,7 +46,6 @@ const CompilationHistory = lazy(() => import('../features/prompts/CompilationHis
 
 const blank: PromptDraft = { title: '', templateText: '', description: '', categoryId: 0 };
 const noValues: Record<string, string> = {};
-function initialTheme() { try { return localStorage.getItem('nova-theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; } }
 export default function App() {
   return <AgentUiProvider><ApplicationView /></AgentUiProvider>;
 }
@@ -70,7 +70,7 @@ function ApplicationView() {
   const [agentNotice, setAgentNotice] = useState('');
   const executionRunId = workerRunId ?? (sameTabActive ? liveRunId : null);
   const [editorUse, setEditorUse] = useState<PreparedDraft | null>(null);
-  const [theme, setTheme] = useState(initialTheme);
+  const [theme, setTheme] = useInterfaceTheme();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [groupId, setGroupId] = useState('');
@@ -112,7 +112,6 @@ function ApplicationView() {
     const timer = setTimeout(() => setShowSkeleton(true), 250);
     return () => clearTimeout(timer);
   }, [library.loading]);
-  useEffect(() => { document.documentElement.dataset.theme = theme; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--background').trim()); try { localStorage.setItem('nova-theme', theme); } catch { /* Theme remains usable without storage. */ } }, [theme]);
   useEffect(() => { collections.list().then(setGroups).catch(() => {}); }, [version]);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {

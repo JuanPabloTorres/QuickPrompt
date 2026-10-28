@@ -39,8 +39,10 @@ public interface IExecutionConnectionAuthority
 public sealed record CompileWork(Guid PromptId, int Revision, string Title, string Template, Dictionary<string, string> Values);
 public sealed record ExecutionView(Guid Id, Guid LibraryId, string Kind, ExecutionStatus Status, bool CancelRequested,
     DateTimeOffset CreatedAt, DateTimeOffset? StartedAt, DateTimeOffset? FinishedAt, string? ErrorCode, DateTimeOffset? ForgottenAt = null);
+public sealed record PreparedExecutionUsage(Dictionary<string, string> Values, Guid OperationId);
+public sealed record CompletedExecutionUse(Guid LibraryId, Guid PromptId, UseInput Input);
 public sealed record ExecutionResultView(Guid ExecutionId, Guid PromptId, int PromptRevision, string Title, string Text, DateTimeOffset CreatedAt,
-    string? Response = null, string? Model = null);
+    string? Response = null, string? Model = null, PreparedExecutionUsage? Usage = null);
 // Server-only capability. Lease tokens and raw inputs are deliberately absent from ExecutionView.
 public sealed record ExecutionLease(Guid Id, Guid OwnerId, Guid LibraryId, Guid Token, string Kind, string Payload, Guid? ConnectionId = null);
 public sealed record LeasePulse(bool Owned, bool CancelRequested);

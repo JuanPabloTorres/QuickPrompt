@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AccountPrompt } from '../../services/accounts';
 import { errorMessage } from '../../services/api';
 import type { LiveCommand } from '../../services/live';
@@ -6,16 +6,18 @@ import { PromptInputNames, inputNames } from '../prompts/PromptInputNames';
 import type { AccountAgentBinding } from './AccountNovaBoundary';
 
 /** Explicit choices compose the native command contract; free text never selects permissions. */
-export function AccountNovaActions({ agent, prompts, source, unavailable }: {
-  agent: AccountAgentBinding; prompts: AccountPrompt[]; source?: AccountPrompt; unavailable: boolean;
+export function AccountNovaActions({ agent, prompts, source, unavailable, onSourceChange }: {
+  agent: AccountAgentBinding; prompts: AccountPrompt[]; source?: AccountPrompt; unavailable: boolean; onSourceChange: (prompt: AccountPrompt | undefined) => void;
 }) {
   const [action, setAction] = useState<'CREATE_DRAFT' | 'PROPOSE_ADAPTATION' | 'OPEN_PROMPT'>('CREATE_DRAFT');
   const [selected, setSelected] = useState('');
   const [details, setDetails] = useState('');
   const [names, setNames] = useState('');
+  const [defineInputs, setDefineInputs] = useState(false);
   const [error, setError] = useState('');
+  const target = !agent.services || action === 'CREATE_DRAFT' ? undefined : source ?? prompts.find(prompt => prompt.id === selected);
+  useEffect(() => { onSourceChange(target); }, [target, onSourceChange]);
   if (!agent.services) return null;
-  const target = action === 'CREATE_DRAFT' ? undefined : source ?? prompts.find(prompt => prompt.id === selected);
   const disabled = agent.busy || unavailable;
   function submit() {
     if (disabled) return;
@@ -24,7 +26,7 @@ export function AccountNovaActions({ agent, prompts, source, unavailable }: {
       const message = action === 'OPEN_PROMPT' ? 'Abre el prompt seleccionado para leerlo, sin modificarlo ni ejecutar su tarea.' : details.trim();
       if (!message) throw new Error('Describe el contenido o los cambios que necesitas.');
       const command: LiveCommand = { operation: action, content: message,
-        ...(action === 'OPEN_PROMPT' ? {} : { inputNames: inputNames(names) }) };
+        ...(action !== 'OPEN_PROMPT' && defineInputs ? { inputNames: inputNames(names) } : {}) };
       setError(''); void agent.begin(message, command, target);
     } catch (failure) { setError(errorMessage(failure)); }
   }
@@ -38,7 +40,10 @@ export function AccountNovaActions({ agent, prompts, source, unavailable }: {
           <option value="">Elige un prompt</option>{prompts.map(prompt => <option key={prompt.id} value={prompt.id}>{prompt.title} · versión {prompt.revision}</option>)}
         </select></>)}
         {action !== 'OPEN_PROMPT' && <><label htmlFor="account-nova-request">{action === 'CREATE_DRAFT' ? 'Qué prompt necesitas' : 'Cambios solicitados'}</label><textarea id="account-nova-request" rows={4} maxLength={16000} value={details} onChange={event => setDetails(event.target.value)} />
-          <PromptInputNames value={names} onChange={setNames} updating={action === 'PROPOSE_ADAPTATION'} disabled={disabled} /></>}
+          <fieldset disabled={disabled}><legend>Campos de entrada</legend>
+            <label><input type="checkbox" checked={defineInputs} onChange={event => setDefineInputs(event.target.checked)} />Definir las variables ahora</label>
+            {defineInputs ? <PromptInputNames value={names} onChange={setNames} updating={action === 'PROPOSE_ADAPTATION'} disabled={disabled} /> : <p className="muted">NOVA te pedirá los nombres antes de preparar el contenido. Todavía no se rellenan valores.</p>}
+          </fieldset></>}
       </fieldset>
       {unavailable && <p className="muted">Cierra el diálogo actual antes de iniciar otra acción. Tu borrador se conserva.</p>}
       {error && <p role="alert" className="error">{error}</p>}

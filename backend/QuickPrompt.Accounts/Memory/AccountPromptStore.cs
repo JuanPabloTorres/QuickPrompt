@@ -80,7 +80,9 @@ internal sealed class AccountPromptStore(AccountAgentMemory memory, LibraryActor
     public void RecordUse(Guid id, UseInput input) => memory.WithDatabase(database =>
     { new LibraryAccess(database).RecordUse(actor, libraryId, id, input).GetAwaiter().GetResult(); return true; });
 
-    // Source publications/import receipts retain historical references. Do not fake
-    // permanent deletion through archive or discard those immutable records.
-    public void Delete(Guid id, int revision) => throw new ValidationException("La eliminación definitiva de la biblioteca de cuentas aún no está habilitada.");
+    public void Delete(Guid id, int revision) => InScope(database =>
+    {
+        new LibraryAccess(database).DeletePromptInTransaction(actor, libraryId, id, revision, CancellationToken.None).GetAwaiter().GetResult();
+        return true;
+    });
 }

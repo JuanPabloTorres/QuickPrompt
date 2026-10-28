@@ -150,6 +150,8 @@ public static class AccountHost
             // (Fetch: append-a-request-origin-header), conflicting with the exact-origin guard.
             // strict-origin preserves that guard without disclosing paths or OAuth query values.
             context.Response.Headers["Referrer-Policy"] = "strict-origin";
+            // Chromium also checks redirects after a native consent form POST.
+            // OpenIddict still validates the exact operator-registered callback.
             context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com https://chatgpt.com/connector_platform_oauth_redirect";
             try { await next(); }
             catch (Exception error) when (!context.Response.HasStarted && error is not OperationCanceledException)
@@ -185,6 +187,7 @@ public static class AccountHost
         MapAccountPage(app, builder.Configuration);
         app.MapAccountEndpoints();
         app.MapAccountLibraries();
+        app.MapAccountCatalog();
         app.MapAccountCollections();
         app.MapPost("/api/accounts/v1/libraries/{libraryId:guid}/captures", async (HttpContext context, Guid libraryId, AccountCaptureInput input, LibraryAccess libraries, CancellationToken cancellation) =>
             await libraries.Capture(LibraryActor.FromPrincipal(context.User), libraryId, input, cancellation)).RequireAuthorization().AddEndpointFilter<AccountCsrf>().RequireRateLimiting("credentials");

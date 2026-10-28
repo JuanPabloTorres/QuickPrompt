@@ -32,6 +32,7 @@ public sealed class LibraryPrompt
     public string Defaults { get; set; } = "{}";
     public bool IsFavorite { get; set; }
     public bool IsArchived { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
     public int Uses { get; set; }
     public DateTimeOffset? LastUsedAt { get; set; }
     public int Revision { get; set; }
@@ -100,6 +101,8 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
             prompt.ToTable("prompts", "qp_library", table =>
                 table.HasCheckConstraint("prompt_revision_positive", "\"Revision\" > 0"));
             prompt.HasKey(x => new { x.LibraryId, x.Id });
+            // Technical deletion identities remain for receipts; ordinary readers share this rule.
+            prompt.HasQueryFilter(x => x.DeletedAt == null);
             prompt.Property(x => x.Title).HasMaxLength(160).IsRequired();
             prompt.Property(x => x.Template).HasMaxLength(64000).IsRequired();
             prompt.Property(x => x.Description).HasMaxLength(2000).HasDefaultValue("");
@@ -111,7 +114,7 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
             prompt.HasIndex(x => new { x.LibraryId, x.IsArchived, x.IsFavorite, x.UpdatedAt });
             prompt.HasIndex(x => new { x.LibraryId, x.LastUsedAt });
             prompt.Property(x => x.Revision).IsConcurrencyToken();
-            prompt.HasIndex(x => new { x.LibraryId, x.UpdatedAt });
+            prompt.HasIndex(x => new { x.LibraryId, x.UpdatedAt }).HasFilter("\"DeletedAt\" IS NULL");
             prompt.HasOne<OwnedLibrary>().WithMany().HasForeignKey(x => x.LibraryId).OnDelete(DeleteBehavior.Restrict);
         });
         model.Entity<PromptVersion>(version =>

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ApiClient } from './api';
-import { ApiError } from './api';
-import { createLiveClient, createVisibleSessionClient, type LiveEvents, type VisibleSessionClient } from './live';
+import { ApiError, post } from './api';
+import { createLiveClient, createVisibleSessionClient, liveRecordSchema, type LiveEvents, type VisibleSessionClient } from './live';
 
 export type AccountNovaScope = Readonly<{ accountId: string; libraryId: string; connectionId: string }>;
 
@@ -19,7 +19,7 @@ export function createAccountNovaServices(client: Pick<ApiClient, 'request'>, cs
       const headers = new Headers(options.headers);
       const segments = path.split('?')[0].split('/');
       const id = segments[2] === 'live' ? segments[3] : undefined;
-      const capability = id ? visibleSession.surfaceCapability(uuid.parse(id)) : undefined;
+      const capability = id ? path.endsWith('/clarification') ? visibleSession.clarificationCapability?.(uuid.parse(id)) : visibleSession.surfaceCapability(uuid.parse(id)) : undefined;
       if (capability) headers.set('X-Nova-Surface', capability);
       if ((options.method ?? 'GET').toUpperCase() !== 'GET') headers.set('X-QP-CSRF', await csrf(options.signal ?? undefined));
       const body = path === '/nova/live' ? JSON.stringify({ connectionId: scope.connectionId, request: JSON.parse(String(options.body)) }) : options.body;
@@ -31,6 +31,7 @@ export function createAccountNovaServices(client: Pick<ApiClient, 'request'>, cs
     if (!url.startsWith('/api/v1/nova/live/') || url.includes('..') || url.includes('\\')) throw new Error('Ruta de actividad NOVA inválida.');
     return eventSource(prefix + url.slice('/api/v1'.length));
   });
-  visibleSession = createVisibleSessionClient(live, storageKey);
+  visibleSession = createVisibleSessionClient(live, storageKey, (previousId, input, signal) =>
+    scoped.request(`/nova/live/${uuid.parse(previousId)}/clarification`, liveRecordSchema, post({ ...input, connectionId: scope.connectionId }, signal)));
   return Object.freeze({ live, visibleSession, storageKey, scope });
 }

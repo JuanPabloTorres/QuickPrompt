@@ -1015,6 +1015,9 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'{}'::jsonb");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1061,7 +1064,8 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
 
                     b.HasIndex("LibraryId", "LastUsedAt");
 
-                    b.HasIndex("LibraryId", "UpdatedAt");
+                    b.HasIndex("LibraryId", "UpdatedAt")
+                        .HasFilter("\"DeletedAt\" IS NULL");
 
                     b.HasIndex("LibraryId", "IsArchived", "IsFavorite", "UpdatedAt");
 

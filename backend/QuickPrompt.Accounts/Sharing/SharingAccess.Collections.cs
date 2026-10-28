@@ -75,10 +75,12 @@ public sealed partial class SharingAccess
             if (previous is not null)
             {
                 if (previous.PublicationId != publicationId || previous.LibraryId != libraryId) throw new ShareConflictException();
+                var sources = await database.Prompts.AsNoTracking().Where(x => x.LibraryId == libraryId && previous.PromptIds.Contains(x.Id)).ToArrayAsync(cancellation);
+                if (sources.Length != previous.PromptIds.Length) throw new LibraryUnavailableException();
                 var versions = await database.Versions.AsNoTracking().Where(x => x.LibraryId == libraryId && previous.PromptIds.Contains(x.PromptId) && x.Revision == 1).ToArrayAsync(cancellation);
                 if (versions.Length != previous.PromptIds.Length) throw new InvalidOperationException("Initial import versions are inconsistent.");
                 return new(previous.CollectionId, libraryId, snapshot.Title, previous.Revision, previous.PromptIds.Select(id =>
-                { var version = versions.Single(x => x.PromptId == id); return new AccountPrompt(id, libraryId, version.Title, version.Template, 1); }).ToArray());
+                { var version = versions.Single(x => x.PromptId == id); return AccountPrompt.Initial(sources.Single(x => x.Id == id), version); }).ToArray());
             }
             var group = await libraries.SaveCollectionInTransaction(actor, libraryId, null, new GroupInput(snapshot.Title), cancellation);
             var copies = new List<AccountPrompt>();

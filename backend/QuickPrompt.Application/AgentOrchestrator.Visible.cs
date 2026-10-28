@@ -298,7 +298,8 @@ public sealed partial class AgentOrchestrator
                 else if (plannedAction is not null) decision = plannedAction;
                 else using (var stage = CancellationTokenSource.CreateLinkedTokenSource(ct)) { stage.CancelAfter(TimeSpan.FromSeconds(options.StageTimeoutSeconds)); decision = await model.Decide(new(input.TaskRequest, state, executed.ToArray(), available, input.SourceId, ambiguous ? "Several compatible candidates: ask a concrete clarification; do not choose arbitrarily." : priorLoaded && updateAllowed && !executed.Contains("ui_prepare_update") ? "The previous authorized draft is loaded, but the NEW requested content change has not been applied. Prepare that change with ui_prepare_update before finishing." : state.DraftChanged && executed.Contains("ui_prepare_update") && !localAllowed ? "The requested draft change is observed. Empty placeholders do not block review: finish or request human review without filling them." : null, grounded, lastResult, input.SourceId is { } source ? library.Get(source).Title : null, ModelRetry, localAllowed, updateAllowed, RecordRejectedArguments, semantic,
                     new(input.AuthorizedPendingRequest ?? input.Message,
-                        input.AuthorizedPendingRequest is not null && input.AuthorizedPendingRequest != input.Message ? [input.Message] : [],
+                        [.. input.AuthorizedPendingRequest is not null && input.AuthorizedPendingRequest != input.Message ? new[] { input.Message } : [],
+                            .. input.UserClarifications.Select(item => item.Answer)],
                         receipts.ToArray(), goalCompletion, receiptCount - receipts.Count, live.Get(input.RunId).Approval, live.Get(input.RunId).EffectCommitted)), stage.Token); }
                 lock (control.Gate) control.Decisions.Add(decision);
                 var safeTool = UiToolCatalog.IsRegistered(decision.ToolName) ? decision.ToolName : "UNRECOGNIZED";
@@ -424,7 +425,8 @@ public sealed partial class AgentOrchestrator
                     var creationRequirements = semantic.Requirements;
                     var basisText = workingBasis?.TemplateText ?? basis?.TemplateText;
                     var creation = new PrepareInput(input.RunId, input.Message, SourcePromptId: decision.ToolName == "ui_prepare_update" ? basis?.Id : null, SourceRevision: decision.ToolName == "ui_prepare_update" ? basis?.Revision : null, Values: input.Values, Model: input.Model, SessionId: input.SessionId) { Interpretation = semantic,
-                        WorkingDraft = workingBasis, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope };
+                        WorkingDraft = workingBasis, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope,
+                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications) };
                     live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, "Qwen está generando el contenido del nuevo borrador.", "Generation");
                     PreparedDraft? generated = null;
                     for (var attempt = 0; attempt < 2; attempt++) {

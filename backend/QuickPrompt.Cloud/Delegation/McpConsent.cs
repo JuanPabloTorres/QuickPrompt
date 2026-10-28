@@ -2,11 +2,13 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Accounts.Libraries;
+using QuickPrompt.Cloud.Authentication;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace QuickPrompt.Cloud.Delegation;
@@ -16,20 +18,16 @@ internal static class McpConsent
 {
     private const string Server = OpenIddictServerAspNetCoreDefaults.AuthenticationScheme;
     private static string Html(string value) => HtmlEncoder.Default.Encode(value);
-    private static readonly string[] Fields = ["client_id", "redirect_uri", "response_type", "scope", "resource", "state", "code_challenge", "code_challenge_method"];
 
     internal static async Task<IResult> Handle(HttpContext context, DelegationOrigin origin, DelegationBoundary boundary,
         LibraryAccess libraries, IAntiforgery antiforgery, CancellationToken cancellation)
     {
         var request = context.GetOpenIddictServerRequest()!;
-        if (request.ClientId != McpDelegationPolicy.ClientId || request.ResponseType != ResponseTypes.Code
-            || request.CodeChallengeMethod != CodeChallengeMethods.Sha256 || string.IsNullOrWhiteSpace(request.CodeChallenge)
-            || request.State is not { Length: > 0 and <= 1024 } || request.Prompt == "none"
-            || !request.GetResources().SequenceEqual([origin.McpResource]) || !request.HasScope(McpDelegationPolicy.ReadScope)
-            || request.GetScopes().Any(x => x != McpDelegationPolicy.ReadScope && x != McpDelegationPolicy.ImportScope && x != McpDelegationPolicy.CreateScope && x != McpDelegationPolicy.CollectionsScope && x != Scopes.OfflineAccess))
+        if (!McpLoginContinuation.Eligible(request, origin, context.RequestServices.GetRequiredService<McpAccountSettings>()))
             return Reject(Errors.InvalidRequest);
         var cookie = await context.AuthenticateAsync(IdentityConstants.ApplicationScheme);
-        if (!cookie.Succeeded) return Results.Content("<!doctype html><html lang=es><title>QuickPrompt · Iniciar sesión</title><main><h1>Inicia sesión en QuickPrompt</h1><p>Abre QuickPrompt, inicia sesión y vuelve a esta página para revisar el acceso.</p><a href=\"/\">Abrir QuickPrompt</a></main></html>", "text/html; charset=utf-8", statusCode: 401);
+        if (!cookie.Succeeded)
+            return HttpMethods.IsGet(context.Request.Method) ? LoginPage(context, request, origin, antiforgery) : Results.Unauthorized();
         var actor = LibraryActor.FromPrincipal(cookie.Principal!);
         if (HttpMethods.IsPost(context.Request.Method))
         {
@@ -43,7 +41,7 @@ internal static class McpConsent
         }
         var mine = await libraries.ListLibraries(actor, cancellation);
         var tokens = antiforgery.GetAndStoreTokens(context);
-        var inputs = string.Concat(Fields.Select(key => $"<input type=hidden name=\"{key}\" value=\"{Html((string?)request.GetParameter(key) ?? "")}\">"));
+        var inputs = string.Concat(McpLoginContinuation.Parameters(request).Select(item => $"<input type=hidden name=\"{item.Key}\" value=\"{Html(item.Value ?? "")}\">"));
         var choices = string.Concat(mine.Select(library => $"<option value=\"{library.Id}\">{Html(library.Name)}</option>"));
         var disabled = mine.Length == 0 ? " disabled" : "";
         var page = "<!doctype html><html lang=es><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>QuickPrompt · Autorizar MCP</title>"
@@ -64,6 +62,22 @@ internal static class McpConsent
             + $"<input type=hidden name=\"{Html(tokens.FormFieldName)}\" value=\"{Html(tokens.RequestToken!)}\">"
             + $"<label>Biblioteca <select required name=library_id{disabled}><option value=\"\">Elige una biblioteca</option>{choices}</select></label>"
             + $"<button name=action value=approve{disabled}>Aprobar lectura{(request.HasScope(McpDelegationPolicy.ImportScope) ? ", importación de prompts" : "")}{(request.HasScope(McpDelegationPolicy.CreateScope) ? ", creación" : "")}{(request.HasScope(McpDelegationPolicy.CollectionsScope) ? " y colecciones" : "")} de esta biblioteca</button><button name=action value=deny formnovalidate>Denegar</button></form></main></html>";
+        return Results.Content(page, "text/html; charset=utf-8");
+    }
+
+    private static IResult LoginPage(HttpContext context, OpenIddictRequest request, DelegationOrigin origin, IAntiforgery antiforgery)
+    {
+        if (!context.RequestServices.GetRequiredService<GoogleAvailability>().Enabled)
+            return Results.Content("<!doctype html><html lang=es><title>QuickPrompt · Iniciar sesión</title><main><h1>Inicia sesión en QuickPrompt</h1><p>El acceso con Google no está disponible. Inicia sesión y vuelve a esta autorización.</p><a href=\"/\">Abrir QuickPrompt</a></main></html>", "text/html; charset=utf-8", statusCode: 401);
+        var ticket = McpLoginContinuation.Issue(context.RequestServices.GetRequiredService<IDataProtectionProvider>(), origin,
+            context.RequestServices.GetRequiredService<McpAccountSettings>(), request);
+        var tokens = antiforgery.GetAndStoreTokens(context);
+        var page = "<!doctype html><html lang=es><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>QuickPrompt · Iniciar sesión</title>"
+            + "<main><h1>Inicia sesión para conectar QuickPrompt</h1><p>Después de entrar volverás aquí para elegir una biblioteca y revisar los permisos. Iniciar sesión no autoriza la conexión.</p>"
+            + "<form method=post action=\"/account/google\">"
+            + $"<input type=hidden name=\"{Html(tokens.FormFieldName)}\" value=\"{Html(tokens.RequestToken!)}\">"
+            + $"<input type=hidden name=\"{McpLoginContinuation.FormField}\" value=\"{Html(ticket)}\">"
+            + "<button>Continuar con Google</button></form></main></html>";
         return Results.Content(page, "text/html; charset=utf-8");
     }
 

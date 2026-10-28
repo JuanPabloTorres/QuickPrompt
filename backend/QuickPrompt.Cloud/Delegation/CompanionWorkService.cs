@@ -7,7 +7,8 @@ using QuickPrompt.Nova.Application;
 namespace QuickPrompt.Cloud.Delegation;
 
 /// <summary>Maps a validated delegated principal to its own queue capability. Never accepts owner/destination arguments.</summary>
-public sealed class CompanionWorkService(DelegationBoundary access, DelegationOrigin origin, ExecutionQueue queue)
+public sealed class CompanionWorkService(DelegationBoundary access, DelegationOrigin origin, ExecutionQueue queue,
+    AccountExecutionAccess executions, LibraryAccess libraries, ILogger<CompanionWorkService> logger)
 {
     private async Task<T> Authorized<T>(ClaimsPrincipal principal,
         Func<LibraryActor, Guid, Func<CancellationToken, Task<bool>>, Task<T>> operation, CancellationToken cancellation)
@@ -21,7 +22,25 @@ public sealed class CompanionWorkService(DelegationBoundary access, DelegationOr
     public Task<LeasePulse> Heartbeat(ClaimsPrincipal principal, Guid id, Guid token, CancellationToken cancellation) =>
         Authorized(principal, (actor, connection, check) => queue.HeartbeatLocal(actor, connection, id, token, check, cancellation), cancellation);
     public Task<bool> Finish(ClaimsPrincipal principal, Guid id, LocalWorkReceipt receipt, CancellationToken cancellation) =>
-        Authorized(principal, (actor, connection, check) => queue.FinishLocal(actor, connection, id, receipt, check, cancellation), cancellation);
+        Authorized(principal, async (actor, connection, check) =>
+        {
+            var accepted = await queue.FinishLocal(actor, connection, id, receipt, check, cancellation);
+            if (accepted && receipt.ErrorCode is null)
+            {
+                // Statistics are secondary to the committed execution result. Do not
+                // lose a genuine result or repeat inference because registration failed.
+                try
+                {
+                    var use = executions.CompletedLocalUse(actor, connection, id);
+                    if (use is not null) await libraries.RecordUse(actor, use.LibraryId, use.PromptId, use.Input, cancellation);
+                }
+                catch (Exception failure) when (failure is not OperationCanceledException)
+                {
+                    logger.LogWarning(5310, "Completed local execution usage was not recorded: {FailureType}", failure.GetType().Name);
+                }
+            }
+            return accepted;
+        }, cancellation);
     public async Task<bool> Disconnect(ClaimsPrincipal principal, CancellationToken cancellation)
     {
         var connection = await access.CompanionActive(principal, cancellation) ?? throw new UnauthorizedAccessException();

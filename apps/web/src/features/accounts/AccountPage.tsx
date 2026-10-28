@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, LockKeyhole, LogOut, Plus, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LockKeyhole, Plus, ShieldCheck } from 'lucide-react';
 import { AppBrand } from '../../components/ui/AppBrand';
 import { AppIcon } from '../../components/ui/Icon';
 import { ErrorState, InlineSpinner } from '../../components/ui/Feedback';
@@ -10,12 +10,15 @@ import { AccountPromptLibrary } from './AccountPromptLibrary';
 import { AccountInvitations } from './AccountSharing';
 import { AccountConnections } from './AccountConnections';
 import { useAccountOperation } from './useAccountOperation';
-import { version } from '../../../package.json';
 import { UiPortalScopeProvider } from '../../components/ui/UiPortalScope';
 import { NovaPreferenceEditor } from '../settings/NovaPreferences';
+import { WorkspaceFooter } from '../../components/WorkspaceFooter';
+import { useInterfaceTheme } from '../../hooks/useInterfaceTheme';
+import { AccountWorkspaceSidebar, type AccountWorkspaceView } from './AccountWorkspaceSidebar';
 
 type Boot = { user: AccountUser | null; options: AccountOptions; csrf: string };
 export function AccountPage({ service }: { service: AccountService }) {
+  const [theme, setTheme] = useInterfaceTheme();
   const [boot, setBoot] = useState<Boot>();
   const [failure, setFailure] = useState('');
   const [refresh, setRefresh] = useState(0);
@@ -73,14 +76,15 @@ export function AccountPage({ service }: { service: AccountService }) {
     };
   }, [userId, verifyIdentity]);
   const portalScope = useMemo(() => ({ active: !checking, dialogHost, overlayHost, onRetry: verifyIdentity }), [checking, dialogHost, overlayHost, verifyIdentity]);
-  return <UiPortalScopeProvider value={portalScope}><div className="accounts-page">
-    <header className="accounts-brand"><AppBrand onClick={() => { window.history.replaceState(null, '', '/'); reload(); }} /><span className="accounts-candidate">Prueba de cuentas</span></header>
+  return <UiPortalScopeProvider value={portalScope}><div className={boot?.user ? 'app-shell accounts-page accounts-workspace' : 'accounts-page'}>
+    <a className="skip-link" href="#main">Ir al contenido</a>
+    {!boot?.user && <header className="accounts-brand"><AppBrand onClick={() => { window.history.replaceState(null, '', '/'); reload(); }} /><span className="accounts-candidate">Prueba de cuentas</span></header>}
     <main className="accounts-main" id="main" tabIndex={-1}>
       {!boot ? failure ? <ErrorState title="No pudimos abrir tu espacio" message={failure}><button className="secondary" onClick={reload}>Reintentar</button></ErrorState>
         : <p role="status"><InlineSpinner /> Preparando tu espacio…</p>
         : boot.user ? <>
           {checking && <div role={checkFailed ? 'alert' : 'status'}><p>{checkFailed ? 'No pudimos confirmar tu acceso. El contenido sigue oculto.' : 'Comprobando tu sesión. Tu trabajo está en pausa…'}</p><button type="button" className="secondary" data-nova-user-control="true" onClick={verifyIdentity}>Volver a comprobar acceso</button></div>}
-          <div hidden={checking}><AccountLibraries key={boot.user.id} user={boot.user} options={boot.options} service={service} onExit={reload} /></div>
+          <div hidden={checking}><AccountLibraries key={boot.user.id} user={boot.user} options={boot.options} service={service} onExit={reload} theme={theme} onTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} /></div>
         </>
           : <div className="accounts-entry">
             <section className="accounts-intro"><span className="eyebrow">QUICKPROMPT, CONTIGO</span><h1>Un espacio propio para tus instrucciones.</h1><p>Entra para crear tus bibliotecas privadas y conservar lo que funciona.</p><div className="accounts-assurance"><AppIcon glyph={ShieldCheck} size={24} /><p>Tu cuenta identifica tu espacio.<br />Tú decides qué instrucciones guardar.</p></div></section>
@@ -89,15 +93,17 @@ export function AccountPage({ service }: { service: AccountService }) {
     </main>
     <div ref={setDialogHost} />
     <div ref={setOverlayHost} hidden={checking} />
-    <footer className="accounts-footer"><span>QuickPrompt NOVA <small>v{version}</small></span><span><AppIcon glyph={LockKeyhole} size={16} /> Acceso por cuenta · entorno de prueba</span></footer>
+    <WorkspaceFooter privacyLabel="Bibliotecas privadas de tu cuenta" />
   </div></UiPortalScopeProvider>;
 }
 
-function AccountLibraries({ user, options, service, onExit }: { user: AccountUser; options: AccountOptions; service: AccountService; onExit: () => void }) {
+function AccountLibraries({ user, options, service, onExit, theme, onTheme }: {
+  user: AccountUser; options: AccountOptions; service: AccountService; onExit: () => void; theme: string; onTheme: () => void;
+}) {
   const [libraries, setLibraries] = useState<AccountLibrary[]>();
   const [name, setName] = useState('');
   const [selected, setSelected] = useState('');
-  const [view, setView] = useState<'libraries' | 'invitations' | 'connections' | 'preferences'>(options.delegation && window.location.pathname === '/connect/verify' ? 'connections' : 'libraries');
+  const [view, setView] = useState<AccountWorkspaceView>(options.delegation && window.location.pathname === '/connect/verify' ? 'connections' : 'libraries');
   const snapshot = useMemo(() => ({ id: user.id, service }), [user.id, service]);
   const operation = useAccountOperation(snapshot, onExit);
   useEffect(() => {
@@ -114,8 +120,9 @@ function AccountLibraries({ user, options, service, onExit }: { user: AccountUse
   }
   const active = libraries?.find(item => item.id === selected);
   return <section className="account-libraries">
-    <div className="account-welcome"><div><span className="eyebrow">TU ESPACIO</span><h1>Mis bibliotecas</h1><p>{user.email}</p></div><button className="secondary" disabled={operation.busy} onClick={() => void act('logout')}><AppIcon glyph={LogOut} />Cerrar sesión</button></div>
-    <nav className="account-tabs" aria-label="Espacios de tu cuenta"><button className="secondary" aria-current={view === 'preferences' ? 'page' : undefined} onClick={() => setView('preferences')}>Mis preferencias</button><button className="secondary" aria-current={view === 'libraries' ? 'page' : undefined} onClick={() => setView('libraries')}>Mis bibliotecas</button><button className="secondary" aria-current={view === 'invitations' ? 'page' : undefined} onClick={() => setView('invitations')}>Invitaciones</button>{options.delegation && <button className="secondary" aria-current={view === 'connections' ? 'page' : undefined} onClick={() => setView('connections')}>Conexiones locales</button>}</nav>
+    <AccountWorkspaceSidebar view={view} theme={theme} busy={operation.busy} delegation={options.delegation}
+      onHome={() => { setSelected(''); setView('libraries'); }} onView={setView} onTheme={onTheme} onLogout={() => void act('logout')} />
+    <div className="account-welcome"><div><span className="eyebrow">TU ESPACIO</span><h1>{view === 'preferences' ? 'Mis preferencias' : view === 'invitations' ? 'Invitaciones' : view === 'connections' ? 'Conexiones locales' : 'Mis bibliotecas'}</h1><p>{user.email}</p></div><span className="accounts-candidate">Prueba de cuentas</span></div>
     <p className="accounts-stage-note">Tus prompts son privados hasta que publicas una versión e invitas a otra cuenta. Con un equipo autorizado, NOVA prepara contenido y tú revisas cada guardado.</p>
     {operation.error && <p role="alert" className="error">{operation.error}</p>}{operation.notice && <p role="status">{operation.notice}</p>}
     {view === 'preferences' ? <NovaPreferenceEditor client={service.preferences} savedMessage="Preferencias confirmadas en tu cuenta." onExpired={onExit} /> : view === 'connections' ? <AccountConnections service={service} onExpired={onExit} /> : view === 'invitations' ? <AccountInvitations libraries={libraries ?? []} service={service} onExpired={onExit} onImported={libraryId => { setSelected(libraryId); setView('libraries'); }} /> : active ? <>

@@ -5,6 +5,7 @@ import { downloadPreparedText } from '../../services/textExport';
 import { PromptVariableFields } from '../prompts/PromptVariableFields';
 import { SavedText, historyDate } from '../prompts/HistoryResult';
 import { useAccountOperation } from './useAccountOperation';
+import { useAccountPreparedCopy } from './useAccountPreparedCopy';
 
 const labels: Record<AccountExecution['status'], string> = { Queued: 'En cola', Running: 'Preparando', Completed: 'Resultado guardado', Failed: 'No se pudo preparar', Cancelled: 'Cancelada', Interrupted: 'Interrumpida; no se repetirá sola' };
 const active = (job: AccountExecution) => job.status === 'Queued' || job.status === 'Running';
@@ -15,9 +16,9 @@ const localIssues: Record<string, string> = { MODEL_UNAVAILABLE: 'Ollama no est�
   QUEUE_EXPIRED: 'El equipo no recogió la solicitud a tiempo.', HOST_STOPPED: 'El componente local se detuvo.' };
 
 /** Explicit preparation or local execution. The server owns compilation, destination authority and quota. */
-export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted, onClose }: { prompt: AccountPrompt; service: AccountService; onExpired: () => void; onSubmitted: () => void; onClose: () => void }) {
+export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted, onClose, initialValues }: { prompt: AccountPrompt; service: AccountService; onExpired: () => void; onSubmitted: (job: AccountExecution) => void; onClose: () => void; initialValues?: Record<string, string> }) {
   const [names, setNames] = useState<string[]>();
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }));
   const [inspectRefresh, setInspectRefresh] = useState(0);
   const [connections, setConnections] = useState<AccountConnection[]>();
   const [target, setTarget] = useState('');
@@ -45,7 +46,10 @@ export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted
     const fingerprint = JSON.stringify({ values: Object.entries(values).sort(([a], [b]) => a.localeCompare(b)), target });
     if (receipt.current?.fingerprint !== fingerprint) receipt.current = { fingerprint, id: crypto.randomUUID() };
     const operationId = receipt.current.id;
-    void operation.run(signal => target ? service.runLocalPrompt(prompt, values, operationId, target, signal) : service.compilePrompt(prompt, values, operationId, signal), onSubmitted);
+    void operation.run(signal => target ? service.runLocalPrompt(prompt, values, operationId, target, signal) : service.compilePrompt(prompt, values, operationId, signal), job => {
+      if (job.libraryId !== prompt.libraryId || job.kind !== (target ? 'RunLocalPrompt' : 'CompilePrompt')) throw new Error('La preparación no corresponde a esta biblioteca y destino.');
+      onSubmitted(job);
+    });
   }
   return <Dialog open onOpenChange={open => { if (!open) { operation.cancel(); onClose(); } }} title={`Usar ${prompt.title}`} description={target ? `Versión ${prompt.revision}. Enviará sólo esta instrucción al equipo elegido para ejecutarla con Qwen3:8b. El equipo debe estar abierto y conectado.` : `Versión ${prompt.revision}. Completa los datos y conserva una instrucción lista para copiar. Esta preparación no llama a un modelo.`}>
     <form className="account-prompt-form" onSubmit={event => { event.preventDefault(); submit(); }}>
@@ -64,14 +68,26 @@ export function UseAccountPromptDialog({ prompt, service, onExpired, onSubmitted
 }
 
 /** Observe this library's real queue states; disconnect and scope changes discard the subscription. */
-export function AccountExecutions({ libraryId, service, refresh, onExpired }: { libraryId: string; service: AccountService; refresh: number; onExpired: () => void }) {
+export function AccountExecutions({ libraryId, service, refresh, onExpired, onCatalogChanged, requestedId, onRequestedShown }: { libraryId: string; service: AccountService; refresh: number; onExpired: () => void; onCatalogChanged?: () => void; requestedId?: string; onRequestedShown?: () => void }) {
   const [snapshot, setSnapshot] = useState<{ scope: object; jobs: AccountExecution[] }>();
   const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState<AccountExecution>();
   const [forgetting, setForgetting] = useState<AccountExecution>();
   const scope = useMemo(() => ({ libraryId, service }), [libraryId, service]);
+  const catalogChanged = useRef(onCatalogChanged); catalogChanged.current = onCatalogChanged;
+  const completedModels = useRef<{ scope: object; signature: string } | undefined>(undefined);
+  const requestedShown = useRef<{ scope: object; id: string } | undefined>(undefined);
   const jobs = snapshot?.scope === scope ? snapshot.jobs : undefined;
   const operation = useAccountOperation(scope, onExpired);
+  useEffect(() => {
+    if (!requestedId) { requestedShown.current = undefined; return; }
+    if (requestedShown.current?.scope === scope && requestedShown.current.id === requestedId) return;
+    const requested = requestedId && jobs?.find(job => job.id === requestedId);
+    if (!requested || active(requested)) return;
+    requestedShown.current = { scope, id: requestedId };
+    if (requested.status === 'Completed') setSelected(requested);
+    onRequestedShown?.();
+  }, [scope, jobs, requestedId, onRequestedShown]);
   useEffect(() => {
     const controller = new AbortController();
     operation.clear();
@@ -79,6 +95,11 @@ export function AccountExecutions({ libraryId, service, refresh, onExpired }: { 
       if (controller.signal.aborted) return;
       if (items.some(item => item.libraryId !== libraryId)) throw new Error('La respuesta no corresponde a esta biblioteca.');
       setSnapshot({ scope, jobs: items });
+      const signature = items.filter(item => item.kind === 'RunLocalPrompt' && item.status === 'Completed').map(item => item.id).sort().join(',');
+      if (completedModels.current?.scope !== scope || completedModels.current.signature !== signature) {
+        completedModels.current = { scope, signature };
+        if (signature) catalogChanged.current?.();
+      }
     }, controller.signal).catch(failure => { if (!controller.signal.aborted) operation.fail(failure); });
     return () => controller.abort();
   }, [scope, libraryId, service, refresh, reload, operation.clear, operation.fail]);
@@ -93,7 +114,7 @@ export function AccountExecutions({ libraryId, service, refresh, onExpired }: { 
         : !job.forgottenAt && <div className="account-actions">{job.status === 'Completed' && <button className="secondary" onClick={() => setSelected(job)}>Ver resultado</button>}
           <button className="text-button" disabled={operation.busy} onClick={() => setForgetting(job)} aria-label={`Olvidar contenido de ${historyDate(job.createdAt)}`}>Olvidar contenido</button></div>}
     </li>)}</ul> : <p>Aún no has preparado una instrucción en esta biblioteca.</p>}
-    {selected?.libraryId === libraryId && <AccountExecutionResultDialog key={selected.id} libraryId={libraryId} job={selected} service={service} onExpired={onExpired} onClose={() => setSelected(undefined)} />}
+    {selected?.libraryId === libraryId && <AccountExecutionResultDialog key={`${libraryId}:${selected.id}`} libraryId={libraryId} job={selected} service={service} onExpired={onExpired} onUsed={onCatalogChanged} onClose={() => setSelected(undefined)} />}
     {forgetting?.libraryId === libraryId && <Dialog open onOpenChange={open => { if (!open && !operation.busy) setForgetting(undefined); }} title="Olvidar contenido de la ejecución" description={`Se eliminarán los datos enviados, la instrucción preparada y la respuesta de la ejecución del ${historyDate(forgetting.createdAt)}. No se pueden recuperar desde QuickPrompt. Tus prompts, borradores y copias descargadas se conservan; el recibo evita repetir la ejecución.`}>
       <div className="dialog-actions"><button className="secondary" disabled={operation.busy} onClick={() => setForgetting(undefined)}>Conservar contenido</button>
         <button className="destructive" disabled={operation.busy} onClick={() => {
@@ -107,27 +128,34 @@ export function AccountExecutions({ libraryId, service, refresh, onExpired }: { 
   </section>;
 }
 
-function AccountExecutionResultDialog({ libraryId, job, service, onExpired, onClose }: { libraryId: string; job: AccountExecution; service: AccountService; onExpired: () => void; onClose: () => void }) {
-  const [result, setResult] = useState<AccountExecutionResult>();
+function AccountExecutionResultDialog({ libraryId, job, service, onExpired, onClose, onUsed }: { libraryId: string; job: AccountExecution; service: AccountService; onExpired: () => void; onClose: () => void; onUsed?: () => void }) {
   const scope = useMemo(() => ({ libraryId, id: job.id, service }), [libraryId, job.id, service]);
+  const [loaded, setLoaded] = useState<{ scope: object; result: AccountExecutionResult }>();
+  const result = loaded?.scope === scope ? loaded.result : undefined;
   const operation = useAccountOperation(scope, onExpired);
+  const preparedCopy = useAccountPreparedCopy(libraryId, result, service, onExpired, onUsed);
   useEffect(() => {
     const controller = new AbortController();
     service.executionResult(libraryId, job.id, controller.signal).then(value => {
       if (controller.signal.aborted) return;
       if (value.executionId !== job.id) throw new Error('El resultado no corresponde a esta preparación.');
-      setResult(value);
-    }).catch(failure => { if (!controller.signal.aborted) { setResult(undefined); operation.fail(failure); } });
+      setLoaded({ scope, result: value });
+    }).catch(failure => { if (!controller.signal.aborted) { setLoaded(undefined); operation.fail(failure); } });
     return () => controller.abort();
-  }, [libraryId, job.id, service, operation.fail]);
+  }, [scope, libraryId, job.id, service, operation.fail]);
   return <Dialog open onOpenChange={open => { if (!open) onClose(); }} title={result?.title ?? 'Resultado privado'} description={result ? result.response ? `Respuesta del equipo autorizado con ${result.model}. Instrucción de la versión ${result.promptRevision} conservada por separado.` : `Instrucción compilada de la versión ${result.promptRevision}. No es una respuesta generada por IA.` : 'Recuperando el resultado guardado.'}>
     <div className="account-share-content">
       {operation.error && <p role="alert" className="error">{operation.error}</p>}
       {operation.notice && <p role="status">{operation.notice}</p>}
+      {preparedCopy.notice && <p role="status">{preparedCopy.notice}</p>}
+      {preparedCopy.error && <p role="alert" className="error">{preparedCopy.error}{preparedCopy.pending ? ' La instrucción ya se copió; su uso no está confirmado.' : ' No se registró un uso.'}</p>}
+      {preparedCopy.conflict && <p>La revisión ya no coincide o cambió su disponibilidad. El resultado se conserva; no se fuerza otra revisión ni se repite la copia.</p>}
+      {preparedCopy.pending && !preparedCopy.conflict && <button type="button" className="secondary" disabled={preparedCopy.busy} onClick={preparedCopy.retry}>Reintentar sólo el registro de uso</button>}
       {result && <SavedText text={result.text} kind="instrucción" filename={`quickprompt-${result.executionId}.txt`}
-        onCopy={text => { void operation.run(async () => navigator.clipboard.writeText(text), () => {}, 'Instrucción copiada.'); }}
+        copyDisabled={operation.busy || preparedCopy.busy || preparedCopy.pending} onCopy={preparedCopy.copy}
         onDownload={(text, filename) => downloadPreparedText(text, filename)} />}
       {result?.response && <SavedText text={result.response} kind="respuesta" filename={`quickprompt-respuesta-${result.executionId}.txt`}
+        copyDisabled={operation.busy || preparedCopy.busy}
         onCopy={text => { void operation.run(async () => navigator.clipboard.writeText(text), () => {}, 'Respuesta copiada.'); }}
         onDownload={(text, filename) => downloadPreparedText(text, filename)} />}
     </div>

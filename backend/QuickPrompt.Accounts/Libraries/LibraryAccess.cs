@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using QuickPrompt.Accounts.Persistence;
 using QuickPrompt.Local;
+using QuickPrompt.Nova.Application;
 
 namespace QuickPrompt.Accounts.Libraries;
 
@@ -21,7 +22,18 @@ public sealed record LibraryActor
 
 public sealed class LibraryUnavailableException() : Exception("La biblioteca o el prompt no está disponible.");
 public sealed class LibraryRevisionException() : Exception("El prompt cambió; recupera su revisión actual.");
-public sealed record AccountPrompt(Guid Id, Guid LibraryId, string Title, string Template, int Revision);
+public sealed record AccountPrompt(Guid Id, Guid LibraryId, string Title, string Template, int Revision,
+    string Description = "", int CategoryId = 0, bool IsFavorite = false, bool IsArchived = false,
+    int Uses = 0, DateTimeOffset? LastUsedAt = null, DateTimeOffset? CreatedAt = null, DateTimeOffset? UpdatedAt = null)
+{
+    public string[] VariableNames => TemplateCompiler.Names(Template);
+    internal static AccountPrompt From(LibraryPrompt row) => From(row.LibraryId, PromptLibrary.Document(PromptData.Map(row)));
+    public static AccountPrompt From(Guid library, PromptDocument value) => new(value.Id, library, value.Title, value.TemplateText, value.Revision,
+        value.Description, value.CategoryId, value.IsFavorite, value.IsArchived, value.Uses, value.LastUsedAt, value.CreatedAt, value.UpdatedAt);
+    // Creation receipts return their initial version, not later metadata edits.
+    internal static AccountPrompt Initial(LibraryPrompt source, PromptVersion version) => new(source.Id, source.LibraryId,
+        version.Title, version.Template, version.Revision, version.Description, version.Category, CreatedAt: source.CreatedAt, UpdatedAt: version.CreatedAt);
+}
 public sealed record AccountPromptSummary(Guid Id, string Title, int Revision);
 
 /// <summary>Owner of private library operations. Authorization and RLS context share a bounded transaction.</summary>
@@ -67,18 +79,18 @@ public sealed partial class LibraryAccess(AccountDatabase database)
         InScope(actor, async () =>
         {
             await RequireLibrary(actor, libraryId, cancellation);
-            return await CollectionModel.Filter(database, libraryId, collectionId, ungrouped)
-                .OrderByDescending(x => x.UpdatedAt).Take(200)
-                .Select(x => new AccountPrompt(x.Id, x.LibraryId, x.Title, x.Template, x.Revision)).ToArrayAsync(cancellation);
+            var rows = await CollectionModel.Filter(database, libraryId, collectionId, ungrouped)
+                .OrderByDescending(x => x.UpdatedAt).Take(200).AsNoTracking().ToArrayAsync(cancellation);
+            return rows.Select(AccountPrompt.From).ToArray();
         }, cancellation);
 
     public Task<AccountPrompt> GetPrompt(LibraryActor actor, Guid libraryId, Guid promptId, CancellationToken cancellation = default) =>
         InScope(actor, async () =>
         {
             await RequireLibrary(actor, libraryId, cancellation);
-            return await database.Prompts.AsNoTracking().Where(x => x.LibraryId == libraryId && x.Id == promptId)
-                .Select(x => new AccountPrompt(x.Id, x.LibraryId, x.Title, x.Template, x.Revision)).SingleOrDefaultAsync(cancellation)
+            var row = await database.Prompts.AsNoTracking().SingleOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == promptId, cancellation)
                 ?? throw new LibraryUnavailableException();
+            return AccountPrompt.From(row);
         }, cancellation);
 
     public Task<AccountPrompt> SavePrompt(LibraryActor actor, Guid libraryId, Guid? promptId,
@@ -136,7 +148,9 @@ public sealed partial class LibraryAccess(AccountDatabase database)
         });
         try { await database.SaveChangesAsync(cancellation); }
         catch (DbUpdateConcurrencyException) { throw new LibraryRevisionException(); }
-        return new AccountPrompt(prompt.Id, libraryId, prompt.Title, prompt.Template, prompt.Revision);
+        // The additive date metadata must match PostgreSQL's stored precision on reads/replays.
+        await database.Entry(prompt).ReloadAsync(cancellation);
+        return AccountPrompt.From(prompt);
     }
 
     /// <summary>Portable definition only, through the shared domain allowlist. Never exports defaults, identity, memory or results.</summary>

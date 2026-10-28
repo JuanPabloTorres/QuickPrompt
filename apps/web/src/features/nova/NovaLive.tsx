@@ -14,6 +14,7 @@ import { Dialog } from '../../components/ui/Dialog';
 import { errorMessage } from '../../services/api';
 import { liveEventSchema, terminalLive, type LiveEvent, type LiveView, type LiveEvents } from '../../services/live';
 import { PromptInputQuestion } from '../prompts/PromptInputNames';
+import { PromptContentQuestion } from '../prompts/PromptContentQuestion';
 import { ContentReview } from './ContentReview';
 
 const noActivitySubscription = () => () => {};
@@ -46,7 +47,7 @@ function observedStatus(view: LiveView, recent?: LiveEvent) {
     (recent && stageLabels[recent.stage]) || (recent?.toolName && operationLabels[recent.toolName]) || (run.status === 'INTERPRETING' ? 'Entendiendo tu petición' : 'Preparando tu solicitud');
 }
 
-export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSource, onApprovalChange, onRuntimeChange, centralControl = false, notice = '', inputDefinition }: {
+export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSource, onApprovalChange, onRuntimeChange, centralControl = false, notice = '', inputDefinition, contentClarification }: {
   runId: string | null; worker: boolean; onReview: (view: LiveView) => void;
   onPrepareReview?: () => Promise<void>; onChooseSource?: (source: { id: string; revision: number; title: string }) => Promise<void>;
   onApprovalChange?: (approvedRunId: string | null) => void;
@@ -54,6 +55,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   centralControl?: boolean;
   notice?: string;
   inputDefinition?: { updating: boolean; confirm: (names: string[]) => Promise<void> };
+  contentClarification?: { identity: object; confirm: (answer: string, sequence: number) => Promise<void> };
 }) {
   const { live, visibleSession } = useAgentRuntimeServices();
   const { surfaceCapability } = visibleSession;
@@ -238,9 +240,12 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   const run = view.run, active = !terminalLive(run.status);
   const fieldQuestion = run.status === 'BLOCKED' && run.errorCode === 'INPUT_FIELDS_NEED_CONFIRMATION' && !run.browserOpen && inputDefinition && view.question
     ? <PromptInputQuestion key={run.runId} question={view.question} updating={inputDefinition.updating} onConfirm={inputDefinition.confirm} /> : null;
+  const contentQuestion = run.status === 'BLOCKED' && run.errorCode === 'NEEDS_CLARIFICATION' && !run.browserOpen && run.approval === 'NONE'
+    && !run.effectCommitted && contentClarification && visibleSession.clarificationCapability?.(run.runId) && view.question
+    ? <PromptContentQuestion key={run.runId} runId={run.runId} sequence={run.sequence} question={view.question} identity={contentClarification.identity} onConfirm={contentClarification.confirm} /> : null;
   const providerFailure = run.status === 'FAILED' && host?.querySelector('[data-testid="prepared-provider-dialog"]')
     ? createPortal(<p className="error" role="alert">NOVA no pudo completar la tarea. El texto preparado se conserva; revisa el destino o abre la última actividad para ver el error.</p>, host) : null;
-  if (!active && !expanded) return <>{startToast}{providerFailure}{fieldQuestion}</>;
+  if (!active && !expanded) return <>{startToast}{providerFailure}{fieldQuestion}{contentQuestion}</>;
   const awaitingReview = run.status === 'AWAITING_APPROVAL';
   const canControl = run.mode !== 'SAME_TAB' || !!surfaceCapability(runId);
   const savingCopy = view.proposal?.promptId == null;
@@ -274,6 +279,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
     {startToast}
     {providerFailure}
     {fieldQuestion}
+    {contentQuestion}
     {renderHost && createPortal(<aside className="nova-live" data-nova-user-control="true" ref={floating} data-testid="nova-live" data-run-id={runId} data-status={run.status} data-approval={run.approval} data-worker={worker} onKeyDown={event => {
       if (event.key === 'Escape' && expanded) { event.preventDefault(); event.stopPropagation(); closeActivity(); }
     }}>

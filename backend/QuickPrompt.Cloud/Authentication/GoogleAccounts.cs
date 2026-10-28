@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using QuickPrompt.Accounts.Persistence;
+using QuickPrompt.Cloud.Delegation;
 
 namespace QuickPrompt.Cloud.Authentication;
 
@@ -53,9 +54,7 @@ public static class GoogleAccounts
 
     public static void MapGoogleAccounts(this RouteGroupBuilder account)
     {
-        account.MapPost("/google", (GoogleAvailability available) => available.Enabled
-            ? Results.Challenge(new AuthenticationProperties { RedirectUri = "/account/google/complete" }, [Scheme])
-            : Results.StatusCode(503)).AddEndpointFilter<AccountCsrf>().RequireRateLimiting("credentials");
+        account.MapPost("/google", Begin).AddEndpointFilter<AccountCsrf>().RequireRateLimiting("credentials");
         account.MapPost("/google/link", async (GoogleLink input, HttpContext context, GoogleAvailability available,
             UserManager<AccountUser> users, SignInManager<AccountUser> signIn) =>
         {
@@ -69,6 +68,24 @@ public static class GoogleAccounts
             return Results.Challenge(properties, [Scheme]);
         }).RequireAuthorization().AddEndpointFilter<AccountCsrf>().RequireRateLimiting("credentials");
         account.MapGet("/google/complete", Complete);
+    }
+
+    private static async Task<IResult> Begin(HttpContext context, GoogleAvailability available)
+    {
+        if (!available.Enabled) return Results.StatusCode(503);
+        var properties = new AuthenticationProperties { RedirectUri = "/account/google/complete" };
+        if (context.Request.HasFormContentType)
+        {
+            var form = await context.Request.ReadFormAsync(context.RequestAborted);
+            if (form.TryGetValue(McpLoginContinuation.FormField, out var tickets))
+            {
+                if (tickets.Count != 1 || !McpLoginContinuation.TryRestore(context, tickets[0], out _))
+                    return Results.BadRequest(new { error = "La autorización para conectar QuickPrompt venció o cambió. Iníciala de nuevo." });
+                // The external cookie after OIDC carries this flow, independently of other tabs.
+                properties.Items[McpLoginContinuation.Property] = tickets[0];
+            }
+        }
+        return Results.Challenge(properties, [Scheme]);
     }
 
     private static async Task<IResult> Complete(HttpContext context, GoogleAvailability available,
@@ -86,6 +103,8 @@ public static class GoogleAccounts
                 || email is not { Length: > 0 and <= 256 }
                 || !string.Equals(external.Principal?.FindFirstValue("email_verified"), "true", StringComparison.OrdinalIgnoreCase))
                 return Results.Unauthorized();
+            if (!McpLoginContinuation.TryComplete(context, external.Properties, out var returnPath))
+                return Results.BadRequest(new { error = "La autorización para conectar QuickPrompt venció o cambió. Iníciala de nuevo." });
             if (external.Properties?.Items.TryGetValue("linkUser", out var linkId) == true)
             {
                 var user = await users.GetUserAsync(context.User);
@@ -107,7 +126,7 @@ public static class GoogleAccounts
                 await transaction.CommitAsync(context.RequestAborted);
             }
             var result = await signIn.ExternalLoginSignInAsync(Scheme, subject, isPersistent: false, bypassTwoFactor: false);
-            return result.Succeeded ? Results.Redirect("/") : Results.Unauthorized();
+            return result.Succeeded ? Results.LocalRedirect(returnPath) : Results.Unauthorized();
         }
         finally { await context.SignOutAsync(IdentityConstants.ExternalScheme); }
     }

@@ -34,7 +34,10 @@ public sealed partial class AccountNovaCoordinator(IServiceScopeFactory scopes, 
         public readonly AgentOrchestrator Engine = engine;
         public Task Work = Task.CompletedTask;
         public DateTime? FinishedAt;
+        public ClarificationReceipt? Clarification;
     }
+
+    private sealed record ClarificationReceipt(Guid RunId, string Fingerprint);
 
     public LiveRecord Start(LibraryActor actor, Guid libraryId, AccountLiveStart request, string surface)
     {

@@ -46,17 +46,20 @@ public sealed partial class AccountNovaCoordinator
     { var entry = Surface(actor, library, id, capability); entry.Live.Resume(id); return entry.Live.Get(id); }
     public LiveRecord Cancel(LibraryActor actor, Guid library, Guid id)
     {
-        if (entries.TryGetValue(new(actor.Id, library, id), out var entry))
+        lock (admissions)
         {
-            try { entry.Live.Cancel(id); }
-            finally
+            if (entries.TryGetValue(new(actor.Id, library, id), out var entry))
             {
-                var control = entry.Live.Active(id);
-                control.Cancellation.Cancel(); control.Resumed.TrySetResult(); control.ApprovalDecision.TrySetResult(false); control.DeletionDecision.TrySetResult(false);
+                try { entry.Live.Cancel(id); }
+                finally
+                {
+                    var control = entry.Live.Active(id);
+                    control.Cancellation.Cancel(); control.Resumed.TrySetResult(); control.ApprovalDecision.TrySetResult(false); control.DeletionDecision.TrySetResult(false);
+                }
+                return entry.Live.Get(id);
             }
-            return entry.Live.Get(id);
+            return ReadStored(actor, library, id, store => { store.Cancel(id); return store.Get(id)!; });
         }
-        return ReadStored(actor, library, id, store => { store.Cancel(id); return store.Get(id)!; });
     }
     public LiveView Propose(LibraryActor actor, Guid library, Guid id, string capability, PromptInput draft)
     { var entry = Surface(actor, library, id, capability); entry.Live.RefreshProposal(id, draft); return entry.Live.View(id); }

@@ -30,6 +30,12 @@ public sealed class AccountRoleGuard(NpgsqlDataSource data) : IHostedService
               AND NOT has_column_privilege(current_user,'qp_library.invitations','RecipientId','UPDATE')
               AND NOT has_table_privilege(current_user,'qp_library.prompt_uses','UPDATE,DELETE')
               AND NOT has_table_privilege(current_user,'qp_library.prompt_versions','UPDATE')
+              AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='qp_library' AND table_name='prompts' AND column_name='DeletedAt')
+              AND has_function_privilege(current_user,'qp_library.erase_private_prompt(uuid,uuid,integer)','EXECUTE')
+              AND (SELECT count(*)=3 FROM pg_policies WHERE schemaname='qp_library' AND permissive='RESTRICTIVE'
+                   AND 'quickprompt_app'=ANY(roles) AND (tablename,policyname,cmd) IN
+                     (('prompts','erased_prompt_hidden','SELECT'),('prompt_versions','erased_version_hidden','SELECT'),
+                      ('prompt_versions','erased_version_insert_rejected','INSERT')))
               AND has_table_privilege(current_user,'qp_library.prompt_uses','SELECT,INSERT')
               AND NOT has_table_privilege(current_user,'qp_library.imports','UPDATE')
               AND NOT has_table_privilege(current_user,'qp_library.collection_imports','UPDATE,DELETE')

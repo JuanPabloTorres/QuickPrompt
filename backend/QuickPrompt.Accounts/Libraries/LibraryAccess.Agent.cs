@@ -29,6 +29,8 @@ public sealed partial class LibraryAccess
             await RequireLibrary(actor, libraryId, cancellation);
             var key = actor.Id.ToString("N") + input.OperationId.ToString("N");
             await database.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(5291, hashtext({key}))", cancellation);
+            if (!await database.Prompts.AnyAsync(x => x.LibraryId == libraryId && x.Id == promptId, cancellation))
+                throw new LibraryUnavailableException();
             var receipt = await database.PromptUses.AsNoTracking().SingleOrDefaultAsync(x => x.OwnerId == actor.Id && x.OperationId == input.OperationId, cancellation);
             if (receipt is not null)
             {
@@ -48,7 +50,8 @@ public sealed partial class LibraryAccess
             if (changed != 1) throw new LibraryRevisionException();
             database.PromptUses.Add(new() { OwnerId = actor.Id, OperationId = input.OperationId, LibraryId = libraryId,
                 PromptId = promptId, Revision = input.Revision, RequestHash = hash, CreatedAt = now });
-            await database.SaveChangesAsync(cancellation);
+            try { await database.SaveChangesAsync(cancellation); }
+            catch (DbUpdateConcurrencyException) { throw new LibraryRevisionException(); }
             return true;
         }, cancellation);
     }

@@ -23,7 +23,9 @@ public sealed partial class SharingAccess(AccountDatabase database, LibraryAcces
         {
             if (!await database.Libraries.AnyAsync(x => x.Id == libraryId && x.OwnerId == actor.Id, cancellation))
                 throw new LibraryUnavailableException();
-            if (!await database.Prompts.AnyAsync(x => x.LibraryId == libraryId && x.Id == promptId, cancellation))
+            // Publication metadata remains manageable after erasing its private source.
+            if (!await database.Prompts.AnyAsync(x => x.LibraryId == libraryId && x.Id == promptId, cancellation)
+                && !await database.Publications.AnyAsync(x => x.OwnerId == actor.Id && x.LibraryId == libraryId && x.PromptId == promptId, cancellation))
                 throw new LibraryUnavailableException();
             return await database.Publications.AsNoTracking().Where(x => x.OwnerId == actor.Id && x.LibraryId == libraryId && x.PromptId == promptId)
                 .OrderByDescending(x => x.CreatedAt).Take(200)
@@ -36,7 +38,8 @@ public sealed partial class SharingAccess(AccountDatabase database, LibraryAcces
         {
             if (!await database.Libraries.AnyAsync(x => x.Id == libraryId && x.OwnerId == actor.Id, cancellation))
                 throw new LibraryUnavailableException();
-            var source = await database.Prompts.AsNoTracking().SingleOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == promptId, cancellation)
+            var source = await database.Prompts.FromSqlInterpolated($"SELECT * FROM qp_library.prompts WHERE \"LibraryId\"={libraryId} AND \"Id\"={promptId} FOR SHARE")
+                .AsNoTracking().SingleOrDefaultAsync(cancellation)
                 ?? throw new LibraryUnavailableException();
             if (source.Revision != revision) throw new LibraryRevisionException();
             var publication = new PublishedPrompt
@@ -157,9 +160,11 @@ public sealed partial class SharingAccess(AccountDatabase database, LibraryAcces
             if (previous is not null)
             {
                 if (previous.PublicationId != publicationId || previous.LibraryId != libraryId) throw new ShareConflictException();
+                var source = await database.Prompts.AsNoTracking().SingleOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == previous.PromptId, cancellation)
+                    ?? throw new LibraryUnavailableException();
                 var version = await database.Versions.AsNoTracking().SingleAsync(x => x.LibraryId == libraryId
                     && x.PromptId == previous.PromptId && x.Revision == 1, cancellation);
-                return new AccountPrompt(previous.PromptId, libraryId, version.Title, version.Template, 1);
+                return AccountPrompt.Initial(source, version);
             }
             var imported = await libraries.SavePromptInTransaction(actor, libraryId, null, 0, publication.Title, publication.Template, cancellation);
             database.Imports.Add(new PromptImport

@@ -15,7 +15,12 @@ export type AccountConnection = z.infer<typeof connectionSchema>;
 export type DeviceReview = z.infer<typeof deviceReviewSchema>;
 const librarySchema = z.object({ id: z.string().uuid(), name: z.string(), ownerId: z.string().uuid(), createdAt: z.string() });
 const noticeSchema = z.object({ message: z.string() });
-const accountPromptSchema = z.object({ id: z.string().uuid(), libraryId: z.string().uuid(), title: z.string(), template: z.string(), revision: z.number().int().positive() });
+const accountPromptSchema = z.object({ id: z.string().uuid(), libraryId: z.string().uuid(), title: z.string(), template: z.string(), revision: z.number().int().positive(),
+  description: z.string().optional(), categoryId: z.number().int().optional(), isFavorite: z.boolean().optional(), isArchived: z.boolean().optional(),
+  uses: z.number().int().nonnegative().optional(), lastUsedAt: z.string().nullable().optional(), createdAt: z.string().nullable().optional(), updatedAt: z.string().nullable().optional(), variableNames: z.array(z.string()).optional() });
+const catalogSchema = z.object({ items: z.array(accountPromptSchema), total: z.number().int().nonnegative(), page: z.number().int().nonnegative(), size: z.number().int().positive() });
+export type AccountCatalogQuery = { search: string; filter: 'all' | 'favorites' | 'recent' | 'archived'; collectionId?: string; ungrouped?: boolean; page: number; size: number; sort: 'updated' | 'title' | 'recent' };
+export type AccountPromptAction = 'favorite' | 'archive' | 'restore' | 'duplicate';
 const publicationSchema = z.object({ id: z.string().uuid(), title: z.string(), template: z.string(), sourceRevision: z.number().int().positive(), createdAt: z.string() });
 const ownedPublicationSchema = publicationSchema.omit({ template: true }).extend({ libraryId: z.string().uuid(), promptId: z.string().uuid(), revokedAt: z.string().nullable() });
 const collectionPublicationSchema = publicationSchema.omit({ template: true }).extend({ items: z.array(z.object({ title: z.string(), template: z.string(), sourceRevision: z.number().int().positive() })).min(1).max(200) });
@@ -28,9 +33,11 @@ const renderingSchema = z.object({ promptId: z.string().uuid(), templateRevision
 const executionSchema = z.object({ id: z.string().uuid(), libraryId: z.string().uuid(), kind: z.enum(['CompilePrompt', 'RunLocalPrompt']),
   status: z.enum(['Queued', 'Running', 'Completed', 'Failed', 'Cancelled', 'Interrupted']), cancelRequested: z.boolean(),
   createdAt: z.string(), startedAt: z.string().nullable(), finishedAt: z.string().nullable(), errorCode: z.string().nullable(), forgottenAt: z.string().nullable().optional() });
+const preparedUsageSchema = z.object({ values: z.record(z.string().max(80), z.string().max(8000)).refine(values => Object.keys(values).length <= 60), operationId: z.string().uuid() });
 const executionResultSchema = z.object({ executionId: z.string().uuid(), promptId: z.string().uuid(), promptRevision: z.number().int().positive(), title: z.string(), text: z.string(), createdAt: z.string(),
-  response: z.string().min(1).max(64000).nullable().optional(), model: z.literal('qwen3:8b').nullable().optional() })
-  .refine(value => (value.response == null) === (value.model == null), 'La respuesta y su modelo deben corresponder.');
+  response: z.string().min(1).max(64000).nullable().optional(), model: z.literal('qwen3:8b').nullable().optional(), usage: preparedUsageSchema.nullable().optional() })
+  .refine(value => (value.response == null) === (value.model == null), 'La respuesta y su modelo deben corresponder.')
+  .refine(value => value.usage == null || value.usage.operationId === value.executionId, 'El uso no corresponde a esta preparación.');
 const savedEditorContextSchema = z.object({ id: z.string().uuid(), draftId: z.string().uuid(), draftRevision: z.number().int().positive(), memoryRevision: z.number().int().positive(),
   sourceId: z.string().uuid().nullable(), sourceRevision: z.number().int().nullable(), title: z.string(), templateText: z.string(),
   values: z.record(z.string(), z.string()), variableNames: z.array(z.string()), compiledText: z.string().nullable(), sourceStale: z.boolean() });
@@ -111,6 +118,25 @@ export function createAccountService(client: ApiClient = createApiClient(undefin
         remove: (group, confirmed, signal) => mutate(`${root}/groups/${encodeURIComponent(group.id)}`, emptySchema, { confirmed, revision: group.revision }, signal, 'DELETE'),
       };
     },
+    async catalog(libraryId: string, input: AccountCatalogQuery, signal?: AbortSignal) {
+      const query = new URLSearchParams({ search: input.search, filter: input.filter, page: String(input.page), size: String(input.size), sort: input.sort });
+      if (input.collectionId) query.set('collectionId', input.collectionId);
+      if (input.ungrouped) query.set('ungrouped', 'true');
+      const result = await client.request(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/prompts/catalog?${query}`, catalogSchema, { signal });
+      if (result.items.some(prompt => prompt.libraryId !== libraryId) || new Set(result.items.map(prompt => prompt.id)).size !== result.items.length
+        || result.items.length > input.size || result.page !== input.page || result.size !== input.size)
+        throw new Error('El catálogo no corresponde a esta biblioteca y página.');
+      return result;
+    },
+    async actPrompt(prompt: AccountPrompt, action: AccountPromptAction, signal?: AbortSignal) {
+      const result = await mutate(`/api/accounts/v1/libraries/${encodeURIComponent(prompt.libraryId)}/prompts/${encodeURIComponent(prompt.id)}/${action}`,
+        accountPromptSchema, { revision: prompt.revision }, signal);
+      if (result.libraryId !== prompt.libraryId || (action === 'duplicate' ? result.id === prompt.id : result.id !== prompt.id))
+        throw new Error('La respuesta no corresponde al prompt solicitado.');
+      return result;
+    },
+    deletePrompt: (prompt: AccountPrompt, confirmed: boolean, signal?: AbortSignal) => mutate(`/api/accounts/v1/libraries/${encodeURIComponent(prompt.libraryId)}/prompts/${encodeURIComponent(prompt.id)}`,
+      emptySchema, { revision: prompt.revision, confirmed }, signal, 'DELETE'),
     prompts: (libraryId: string, signal?: AbortSignal, filter?: { collectionId?: string; ungrouped?: boolean }) => {
       const query = new URLSearchParams(); if (filter?.collectionId) query.set('collectionId', filter.collectionId); if (filter?.ungrouped) query.set('ungrouped', 'true');
       return client.request(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/prompts${query.size ? `?${query}` : ''}`, z.array(accountPromptSchema), { signal });
@@ -124,6 +150,12 @@ export function createAccountService(client: ApiClient = createApiClient(undefin
     executions: (libraryId: string, signal?: AbortSignal) => client.request(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/executions`, z.array(executionSchema), { signal }),
     watchExecutions: createExecutionWatcher(client, z.array(executionSchema)),
     executionResult: (libraryId: string, id: string, signal?: AbortSignal) => client.request(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/executions/${encodeURIComponent(id)}/result`, executionResultSchema, { signal }),
+    recordPromptUse(libraryId: string, result: AccountExecutionResult, signal?: AbortSignal) {
+      if (!result.usage || result.usage.operationId !== result.executionId || result.text.length > 64000)
+        throw new Error('Esta preparación no contiene un snapshot de uso verificable.');
+      return mutate(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/prompts/${encodeURIComponent(result.promptId)}/use`, emptySchema,
+        { revision: result.promptRevision, values: result.usage.values, operationId: result.usage.operationId, expectedText: result.text }, signal);
+    },
     cancelExecution: (libraryId: string, id: string, signal?: AbortSignal) => mutate(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/executions/${encodeURIComponent(id)}/cancel`, executionSchema, {}, signal),
     forgetExecution: (libraryId: string, id: string, signal?: AbortSignal) => mutate(`/api/accounts/v1/libraries/${encodeURIComponent(libraryId)}/executions/${encodeURIComponent(id)}/content`, executionSchema, {}, signal, 'DELETE'),
     savePrompt: (libraryId: string, source: AccountPrompt | null, draft: AccountPromptDraft, signal?: AbortSignal) =>

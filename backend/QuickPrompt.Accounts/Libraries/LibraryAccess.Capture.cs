@@ -37,8 +37,10 @@ public sealed partial class LibraryAccess
             if (previous is not null)
             {
                 if (previous.LibraryId != libraryId || previous.ContentHash != hash) throw new CaptureConflictException();
+                var source = await database.Prompts.AsNoTracking().SingleOrDefaultAsync(x => x.LibraryId == libraryId && x.Id == previous.PromptId, cancellation)
+                    ?? throw new LibraryUnavailableException();
                 var initial = await database.Versions.AsNoTracking().SingleAsync(x => x.LibraryId == libraryId && x.PromptId == previous.PromptId && x.Revision == 1, cancellation);
-                return new AccountCaptureReceipt(new(previous.PromptId, libraryId, initial.Title, initial.Template, 1), true);
+                return new AccountCaptureReceipt(AccountPrompt.Initial(source, initial), true);
             }
             var prompt = await SavePromptInTransaction(actor, libraryId, null, 0, input.Title, input.TemplateText, cancellation);
             database.Captures.Add(new() { OwnerId = actor.Id, OperationId = input.OperationId, LibraryId = libraryId, PromptId = prompt.Id, ContentHash = hash });

@@ -40,24 +40,28 @@ public sealed class AccountExecutionAccess(AccountAgentMemory memory, ExecutionQ
         // Preserve the existing compile receipt across this additive migration.
         if (connectionId is not null) request = JsonSerializer.Serialize(new { kind = "RunLocalPrompt", connectionId, request }, CompileExecutionHandler.Json);
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request)));
-        var previous = memory.InScope(actor, libraryId, database => database.Executions.AsNoTracking()
-            .SingleOrDefault(x => x.OwnerId == actor.Id && x.OperationId == input.OperationId));
-        if (previous is not null)
-        {
-            if (previous.LibraryId != libraryId || previous.RequestHash != hash) throw new ConflictException("La operación ya pertenece a otra solicitud.");
-            return Task.FromResult(ExecutionQueue.View(previous));
-        }
+        // Existing receipts survive edits, but a deleted private source cannot be
+        // reused as a new compile/run request through an old operation identity.
         var source = memory.Catalog(actor, libraryId).Get(promptId);
-        if (source.IsArchived) throw new LibraryUnavailableException();
-        if (source.Revision != input.Revision) throw new LibraryRevisionException();
         var work = new CompileWork(source.Id, source.Revision, source.Title, source.TemplateText, new(input.Values));
         var payload = JsonSerializer.Serialize(work, CompileExecutionHandler.Json);
         if (Encoding.UTF8.GetByteCount(payload) > 512000) throw new ValidationException("La solicitud supera el límite permitido.");
-        // Validate missing/unknown variables before consuming quota; processing repeats the owning compiler.
-        var preview = Preview(actor, libraryId, promptId, new(input.Revision, input.Values));
-        if (preview.Text is null) throw new ValidationException("Completa las variables antes de continuar.");
         return queue.Admit(actor, libraryId, input.OperationId, hash, payload, cancellation, connectionId,
-            connectionId is { } target ? token => connections!.Owned(actor, target, token) : null);
+            connectionId is { } target ? token => connections!.Owned(actor, target, token) : null,
+            (replay, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                // Snapshot capture alone is insufficient: erasure can win before
+                // admission. Re-read with the application owner under fence 5283.
+                var current = memory.Catalog(actor, libraryId).Get(promptId);
+                if (replay) return; // Existing receipts survive ordinary edits/archive, never deletion.
+                if (current.IsArchived) throw new LibraryUnavailableException();
+                if (current.Revision != input.Revision || current.Revision != work.Revision
+                    || current.Id != work.PromptId || current.TemplateText != work.Template || current.Title != work.Title)
+                    throw new LibraryRevisionException();
+                if (EditorTools.Compile(work.Template, work.Values).Text is null)
+                    throw new ValidationException("Completa las variables antes de continuar.");
+            });
     }
 
     public ExecutionView[] List(LibraryActor actor, Guid libraryId) => memory.InScope(actor, libraryId, database =>
@@ -96,6 +100,22 @@ public sealed class AccountExecutionAccess(AccountAgentMemory memory, ExecutionQ
         var result = database.ExecutionResults.AsNoTracking().SingleOrDefault(x => x.ExecutionId == id && x.LibraryId == libraryId && x.OwnerId == actor.Id
             && database.Executions.Any(job => job.Id == x.ExecutionId && job.ForgottenAt == null && job.FinishedAt > cutoff))
             ?? throw new LibraryUnavailableException();
-        return new ExecutionResultView(result.ExecutionId, result.PromptId, result.PromptRevision, result.Title, result.Text, result.CreatedAt, result.Response, result.Model);
+        var job = database.Executions.AsNoTracking().Single(x => x.Id == id && x.LibraryId == libraryId && x.OwnerId == actor.Id);
+        return new ExecutionResultView(result.ExecutionId, result.PromptId, result.PromptRevision, result.Title, result.Text, result.CreatedAt,
+            result.Response, result.Model, ExecutionUsage.Verify(job, result));
+    });
+
+    /// <summary>Trusted completion hook; read does not count usage. The caller records it only after a successful local finish.</summary>
+    public CompletedExecutionUse? CompletedLocalUse(LibraryActor actor, Guid connection, Guid id) => memory.InScope(actor, null, database =>
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-7);
+        var job = database.Executions.AsNoTracking().SingleOrDefault(x => x.Id == id && x.OwnerId == actor.Id && x.ConnectionId == connection
+            && x.Kind == "RunLocalPrompt" && x.Status == ExecutionStatus.Completed && x.ForgottenAt == null && x.FinishedAt > cutoff);
+        if (job is null) return null;
+        var result = database.ExecutionResults.AsNoTracking().SingleOrDefault(x => x.ExecutionId == id && x.OwnerId == actor.Id && x.LibraryId == job.LibraryId);
+        if (result?.Response is null || result.Model != QuickPrompt.Accounts.Delegation.DelegationPolicy.Model) return null;
+        var usage = ExecutionUsage.Verify(job, result);
+        return usage is null ? null : new CompletedExecutionUse(job.LibraryId, result.PromptId,
+            new(result.PromptRevision, usage.Values, usage.OperationId, result.Text));
     });
 }

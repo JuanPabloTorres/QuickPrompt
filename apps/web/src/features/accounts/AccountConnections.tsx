@@ -26,12 +26,12 @@ export function AccountConnections({ service, onExpired }: { service: AccountSer
     void operation.run(async signal => { await service.decideDevice(code, action, signal); return service.connections(signal); }, items => {
       setConnections(items); setReview(undefined); setCode('');
       if (window.location.pathname === '/connect/verify') window.history.replaceState(null, '', '/');
-    }, action === 'approve' ? 'Autorización guardada. La ejecución con el modelo local todavía está en integración.' : 'Solicitud rechazada. No se otorgó acceso al equipo.');
+    }, action === 'approve' ? 'Autorización guardada. Abre el componente local del perfil autorizado para procesar tus solicitudes con Qwen3:8b.' : 'Solicitud rechazada. No se otorgó acceso al equipo.');
   }
   return <section aria-labelledby="account-connections-title">
     <h2 id="account-connections-title">Conexiones y permisos</h2>
     <p>Autoriza un equipo mediante el código que muestre el componente de QuickPrompt. Revisa su nombre y permisos antes de aprobar.</p>
-    <p className="accounts-stage-note">La autorización está disponible en este candidato. El componente que ejecutará Qwen3:8b aún está en integración; autorizarlo no significa que el modelo esté conectado.</p>
+    <p className="accounts-stage-note">Mantén abierto el componente local del perfil que vayas a usar y Ollama con Qwen3:8b. Una autorización vigente permite conectar el equipo; no confirma que esté ejecutándose.</p>
     <form className="account-new-library" onSubmit={event => { event.preventDefault(); void operation.run(signal => service.reviewDevice(code.trim(), signal), setReview); }}>
       <div><label htmlFor="device-user-code">Código del equipo</label><input id="device-user-code" value={code} maxLength={80} autoComplete="off" spellCheck={false} required disabled={operation.busy}
         onChange={event => { setCode(event.target.value); setReview(undefined); operation.clear(); }} /></div>

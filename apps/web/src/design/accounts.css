@@ -4,6 +4,8 @@
 .accounts-brand .nova-logo { flex-shrink: 0; }
 .accounts-candidate { color: var(--muted); font-size: var(--text-meta); border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; white-space: nowrap; }
 .accounts-main { width: min(1120px, 100%); margin: auto; padding: clamp(32px, 7vw, 88px) clamp(20px, 4vw, 48px); display: grid; align-content: center; }
+.accounts-workspace .accounts-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0; align-content: start; }
+.accounts-page:not(.accounts-workspace) > .workspace-footer { max-width: none; margin-top: 0; padding: 24px clamp(20px, 5vw, 72px); }
 .accounts-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); align-items: center; gap: clamp(40px, 8vw, 112px); }
 .accounts-intro h1 { margin: 20px 0; font: 600 clamp(2.4rem, 4vw, 3.8rem)/1.1 var(--font-display); letter-spacing: -.045em; max-width: 12ch; text-wrap: balance; }
 .accounts-intro > p { color: var(--muted); max-width: 34ch; font-size: 1.1rem; }
@@ -21,9 +23,6 @@
 .account-links { margin-top: 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .account-links button { min-height: 44px; padding: 6px 0; font-size: var(--text-meta); color: var(--accent); }
 .account-notice { margin-top: 20px; padding: 12px; border-radius: 10px; background: var(--success-soft); }
-.accounts-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: var(--text-meta); padding: 24px clamp(20px, 5vw, 72px); border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent); }
-.accounts-footer > span { display: inline-flex; align-items: center; gap: 12px; }
-.accounts-footer small { font: inherit; }
 .account-welcome { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .account-welcome h1 { margin: 8px 0 0; font-size: var(--text-page); letter-spacing: -.03em; }
 .account-welcome p { margin-top: 8px; color: var(--muted); overflow-wrap: anywhere; }
@@ -37,8 +36,6 @@
 .account-library-list h2 { margin: 0; font-size: 1.1rem; }
 .account-library-list span { color: var(--muted); font-size: var(--text-meta); }
 .account-library-list li > div { min-width: 0; overflow-wrap: anywhere; flex: 1; }
-.account-tabs { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-.account-tabs [aria-current="page"] { background: var(--surface-active); color: var(--foreground); border-color: var(--accent); }
 .account-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .account-section-heading h2 { margin-top: 6px; font-size: 1.6rem; line-height: 1.3; }
 .account-section-heading > div { min-width: 0; overflow-wrap: anywhere; }
@@ -52,6 +49,25 @@
 .account-prompt-list pre, .account-share-content pre { white-space: pre-wrap; overflow-wrap: anywhere; font: .9375rem/1.7 var(--font-body); padding: 18px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; max-height: 320px; overflow: auto; margin-block: 20px; }
 .account-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .account-actions button { overflow-wrap: anywhere; }
+.account-prompt-actions { flex-wrap: wrap; }
+.account-catalog-options { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 24px; }
+.account-catalog-options label { margin: 0; color: var(--muted); font-size: var(--text-meta); }
+.account-catalog-options select { width: auto; max-width: 100%; }
+.account-focus .detail-context > .muted { margin-block: 12px 24px; font-size: var(--text-meta); }
+.account-focus .detail-output > pre { max-height: 300px; overflow: auto; }
+.account-focus .detail-output > h3 { margin-top: 24px; font-size: var(--text-section); }
+.account-focus .action-dock > button { margin-top: 16px; min-height: 48px; }
+.account-focus .detail-storage { max-width: 100%; overflow-wrap: anywhere; }
+.account-delete-confirm { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
+.account-delete-confirm input { width: 20px; height: 20px; flex-shrink: 0; }
+.account-nova-source { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.account-nova-configuration { padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.account-nova-configuration .account-section-heading { align-items: start; flex-wrap: wrap; }
+.account-nova-configuration label { margin-top: 16px; }
+.account-nova-configuration select { width: 100%; }
+.account-nova-configuration .muted { margin-top: 12px; font-size: var(--text-meta); }
+.nova-dock .account-remembered { margin-top: 20px; padding-top: 0; border-top: 0; }
+.nova-dock .account-prompt-form fieldset { margin-block: 16px; }
 .account-prompt-form fieldset { min-width: 0; border: 0; padding: 0; margin: 24px 0; }
 .account-prompt-form label:not(:first-child) { margin-top: 20px; }
 .account-prompt-form textarea { font-family: var(--font-code); }
@@ -69,4 +85,4 @@
 .account-memory-values { margin-top: 24px; display: grid; gap: 12px; }
 .account-memory-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; margin-top: 20px; padding: 16px; background: var(--background); border-radius: 12px; }
 @media (max-width: 600px) { .account-section-heading { align-items: stretch; flex-direction: column; }.account-actions > button { flex: 1 1 100%; }.account-library-list li { flex-wrap: wrap; }.account-library-list li > div { flex-basis: calc(100% - 48px); }.account-library-list li > button { width: 100%; }.account-share-content pre { max-height: 240px; } }
-@media (max-width: 760px) { .accounts-entry { grid-template-columns: 1fr; gap: 32px; }.accounts-intro h1 { max-width: 20ch; font-size: 2.25rem; }.accounts-assurance { display: none; }.accounts-brand { flex-wrap: wrap; gap: 8px 12px; }.accounts-brand .brand-version { display: none; }.accounts-candidate { font-size: var(--text-caption); padding: 6px 10px; }.accounts-footer { font-size: .8rem; }.account-welcome, .account-new-library { align-items: stretch; flex-direction: column; } }
+@media (max-width: 760px) { .accounts-entry { grid-template-columns: 1fr; gap: 32px; }.accounts-intro h1 { max-width: 20ch; font-size: 2.25rem; }.accounts-assurance { display: none; }.accounts-brand { flex-wrap: wrap; gap: 8px 12px; }.accounts-brand .brand-version { display: none; }.accounts-candidate { font-size: var(--text-caption); padding: 6px 10px; }.account-welcome, .account-new-library { align-items: stretch; flex-direction: column; } }

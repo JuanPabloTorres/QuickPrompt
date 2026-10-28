@@ -33,6 +33,7 @@ public record AuthoringContentReview(string Status, string ContractHash, string 
     AuthoringReviewSource Source, AuthoringLedgerEntry[] Ledger)
 {
     public LiteralChanges LiteralChanges { get; init; } = new([]);
+    public AuthoringClarification[] UserClarifications { get; init; } = [];
 }
 
 /// <summary>

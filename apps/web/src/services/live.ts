@@ -19,6 +19,7 @@ export type LiveRuntime = z.infer<typeof liveRuntimeSchema>;
 export const deletionSchema = z.object({ id: z.string().uuid(), hash: z.string(), promptId: z.string().uuid(), revision: z.number().int().positive(), title: z.string() });
 const reviewSpanSchema = z.object({ start: z.number().int().nonnegative(), length: z.number().int().nonnegative(), text: z.string() });
 export const contentReviewSchema = z.object({
+  userClarifications: z.array(z.object({ question: z.string().min(1).max(500), answer: z.string().min(1).max(2000) })).max(4).optional(),
   status: z.literal('REQUIRES_HUMAN_CONTENT_REVIEW'), contractHash: z.string(), bodyHash: z.string(), originalRequest: z.string(),
   source: z.object({ promptId: z.string().uuid().nullable(), revision: z.number().int().positive().nullable(), bodyHash: z.string().nullable(), originalText: z.string().nullable(),
     sourceTitle: z.string().nullable().optional(), sourceDescription: z.string().nullable().optional(), sourceCategoryId: z.number().int().nullable().optional(),
@@ -111,38 +112,106 @@ export interface VisibleSessionClient {
   observeOperation(message: string, sessionId: string, source?: { id: string; revision: number }, signal?: AbortSignal, model?: string): Promise<LiveRecord>;
   surfaceCapability(id: string): string | undefined;
   releaseSurface(id: string): boolean;
+  clarifyVisible?: (previousId: string, questionSequence: number, answer: string) => Promise<LiveRecord>;
+  clarificationCapability?: (id: string) => string | undefined;
+  finishSurface?: (id: string, allowClarification: boolean) => void;
+  pendingClarification?: (id: string) => Readonly<{ runId: string; previousId: string; questionSequence: number; answer: string }> | undefined;
+  retryClarification?: (id: string) => Promise<LiveRecord>;
 }
-export function createVisibleSessionClient(client: Pick<LiveClient, 'bindContext' | 'start' | 'record' | 'observe'> = live, storageKey = 'nova-live-run'): VisibleSessionClient {
+export type VisibleClarificationRequest = (previousId: string, input: { runId: string; questionSequence: number; answer: string; nextSurface: string }, signal: AbortSignal) => Promise<LiveRecord>;
+export function createVisibleSessionClient(client: Pick<LiveClient, 'bindContext' | 'start' | 'record' | 'observe'> = live, storageKey = 'nova-live-run', clarificationRequest?: VisibleClarificationRequest): VisibleSessionClient {
   const surfaces = new Map<string, string>();
-  async function startVisible(message: string, sessionId: string, source?: { id: string; revision: number }, values?: Record<string, string>, options?: { bindSource: boolean; command?: LiveCommand }) {
-  if (source) await client.bindContext(sessionId, { promptId: source.id, revision: source.revision, values, allowStaleContext: true });
-  const runId = crypto.randomUUID();
-  const capability = crypto.randomUUID() + crypto.randomUUID(); surfaces.set(runId, capability);
-  try {
-    const run = await client.start({ runId, sessionId, message, mode: 'SAME_TAB', ...(options?.bindSource && source ? { sourceId: source.id, sourceRevision: source.revision, values } : {}), ...(options?.command ? { command: options.command } : {}) }, capability, AbortSignal.timeout(10000)); announceAgentStart(runId, storageKey); return run;
-  } catch (error) {
-    if (error instanceof ApiError && error.status < 500) { surfaces.delete(runId); throw error; }
-    // An uncertain POST may already have created the run. Recover its receipt, never start another one.
-    try { const recovered = await client.record(runId, AbortSignal.timeout(3000)); if (recovered.run.mode === 'SAME_TAB') { announceAgentStart(runId, storageKey); return recovered.run; } }
-    catch (recoveryError) {
-      // The POST has completed with an HTTP error and the authoritative receipt
-      // confirms no run. Do not publish a phantom identity to UI/SSE polling.
-      // A lost POST response remains uncertain even if an immediate GET is 404:
-      // that request may still be processing, so its identity must be retained.
-      if (error instanceof ApiError && recoveryError instanceof ApiError && recoveryError.status === 404) {
-        surfaces.delete(runId); throw error;
+  const questionSurfaces = new Map<string, string>();
+  type PendingClarification = Readonly<{ previousId: string; runId: string; questionSequence: number; answer: string; nextSurface: string }>;
+  const pendingClarifications = new Map<string, PendingClarification>();
+  const clarificationFlights = new Map<string, Promise<LiveRecord>>();
+  function retainSurface(id: string, capability: string, previousId?: string) {
+    if (clarificationRequest) {
+      while (surfaces.size + questionSurfaces.size >= 3) {
+        const retired = [...questionSurfaces.keys()].find(key => key !== previousId && ![...pendingClarifications.values()].some(item => item.previousId === key));
+        if (!retired) throw new Error('Esta pestaña ya conserva tres controles pendientes. Detén una ejecución antes de iniciar otra.');
+        questionSurfaces.delete(retired);
       }
     }
-    rememberRunId(runId, storageKey); window.dispatchEvent(new CustomEvent('nova-uncertain-start', { detail: runId }));
-    throw new Error('La conexión no confirmó el inicio. NOVA conservará esta identidad para revisar o detener la ejecución sin repetirla.');
+    surfaces.set(id, capability);
   }
-}
+  async function startVisible(message: string, sessionId: string, source?: { id: string; revision: number }, values?: Record<string, string>, options?: { bindSource: boolean; command?: LiveCommand }) {
+    if (source) await client.bindContext(sessionId, { promptId: source.id, revision: source.revision, values, allowStaleContext: true });
+    const runId = crypto.randomUUID();
+    const capability = crypto.randomUUID() + crypto.randomUUID(); retainSurface(runId, capability);
+    return admit(runId, () => client.start({ runId, sessionId, message, mode: 'SAME_TAB', ...(options?.bindSource && source ? { sourceId: source.id, sourceRevision: source.revision, values } : {}), ...(options?.command ? { command: options.command } : {}) }, capability, AbortSignal.timeout(10000)));
+  }
+  async function admit(runId: string, send: () => Promise<LiveRecord>, keepClientError = false) {
+    try {
+      const run = await send();
+      if (run.runId !== runId || run.mode !== 'SAME_TAB') throw new Error('La respuesta no corresponde a esta ejecución visible.');
+      announceAgentStart(runId, storageKey); return run;
+    } catch (error) {
+      if (error instanceof ApiError && error.status < 500) { if (!keepClientError) surfaces.delete(runId); throw error; }
+      // An uncertain POST may already have created the run. Recover its receipt, never start another one.
+      try { const recovered = await client.record(runId, AbortSignal.timeout(3000)); if (recovered.run.runId === runId && recovered.run.mode === 'SAME_TAB') { announceAgentStart(runId, storageKey); return recovered.run; } }
+      catch (recoveryError) {
+        // The POST has completed with an HTTP error and the authoritative receipt
+        // confirms no run. Do not publish a phantom identity to UI/SSE polling.
+        // A lost POST response remains uncertain even if an immediate GET is 404:
+        // that request may still be processing, so its identity must be retained.
+        if (error instanceof ApiError && recoveryError instanceof ApiError && recoveryError.status === 404) {
+          surfaces.delete(runId); throw error;
+        }
+      }
+      rememberRunId(runId, storageKey); window.dispatchEvent(new CustomEvent('nova-uncertain-start', { detail: runId }));
+      throw new Error('La conexión no confirmó el inicio. NOVA conservará esta identidad para revisar o detener la ejecución sin repetirla.');
+    }
+  }
+  async function clarifyVisible(previousId: string, questionSequence: number, answer: string) {
+    if (!clarificationRequest || !(questionSurfaces.has(previousId) || surfaces.has(previousId))) throw new Error('Esta pestaña no conserva permiso para responder a esa pregunta.');
+    const pending = [...pendingClarifications.values()].find(item => item.previousId === previousId);
+    if (pending) {
+      if (pending.questionSequence !== questionSequence || pending.answer !== answer) throw new Error('La aclaración pendiente no puede editarse ni enviarse con otra identidad. Revisa o detén su ejecución.');
+      return retryClarification(pending.runId);
+    }
+    const runId = crypto.randomUUID(), nextSurface = crypto.randomUUID() + crypto.randomUUID();
+    retainSurface(runId, nextSurface, previousId);
+    const envelope = Object.freeze({ previousId, runId, questionSequence, answer, nextSurface });
+    pendingClarifications.set(runId, envelope);
+    try { return await sendClarification(envelope, false); }
+    catch (error) { if (!surfaces.has(runId)) pendingClarifications.delete(runId); throw error; }
+  }
+  async function sendClarification(envelope: PendingClarification, retry: boolean) {
+    const existing = clarificationFlights.get(envelope.runId); if (existing) return existing;
+    const { previousId, ...input } = envelope;
+    const flight = (async () => {
+      const run = await admit(input.runId, () => clarificationRequest!(previousId, input, AbortSignal.timeout(10000)), retry);
+      pendingClarifications.delete(input.runId); return run;
+    })();
+    clarificationFlights.set(input.runId, flight);
+    try { return await flight; }
+    finally { if (clarificationFlights.get(input.runId) === flight) clarificationFlights.delete(input.runId); }
+  }
+  async function retryClarification(id: string) {
+    const envelope = pendingClarifications.get(id);
+    if (!envelope || !clarificationRequest || !(questionSurfaces.has(envelope.previousId) || surfaces.has(envelope.previousId)))
+      throw new Error('Esta pestaña no conserva la aclaración pendiente ni su permiso original.');
+    return sendClarification(envelope, true);
+  }
   async function observeOperation(message: string, sessionId: string, source?: { id: string; revision: number }, signal?: AbortSignal, model = 'qwen3:8b') {
-  const runId = crypto.randomUUID(); rememberRunId(runId, storageKey);
-  return client.observe({ runId, sessionId, message, mode: 'LIVE', sourceId: source?.id, sourceRevision: source?.revision, model }, signal);
-}
+    const runId = crypto.randomUUID(); rememberRunId(runId, storageKey);
+    return client.observe({ runId, sessionId, message, mode: 'LIVE', sourceId: source?.id, sourceRevision: source?.revision, model }, signal);
+  }
 
-  return { startVisible, observeOperation, surfaceCapability: id => surfaces.get(id), releaseSurface: id => surfaces.delete(id) };
+  return { startVisible, observeOperation, surfaceCapability: id => surfaces.get(id), releaseSurface: id => {
+    pendingClarifications.delete(id);
+    for (const [key, value] of pendingClarifications) if (value.previousId === id) pendingClarifications.delete(key);
+    clarificationFlights.delete(id);
+    const control = surfaces.delete(id), question = questionSurfaces.delete(id); return control || question;
+  }, ...(clarificationRequest ? { clarifyVisible, retryClarification, pendingClarification: (id: string) => {
+    const value = pendingClarifications.get(id);
+    return value ? Object.freeze({ runId: value.runId, previousId: value.previousId, questionSequence: value.questionSequence, answer: value.answer }) : undefined;
+  }, clarificationCapability: (id: string) => questionSurfaces.get(id) ?? surfaces.get(id),
+    finishSurface: (id: string, allowClarification: boolean) => {
+      const capability = surfaces.get(id); surfaces.delete(id);
+      if (capability && allowClarification) questionSurfaces.set(id, capability); else questionSurfaces.delete(id);
+    } } : {}) };
 }
 const visibleSession = createVisibleSessionClient();
 // Compatibility exports delegate to the same owner as standalone callers.
