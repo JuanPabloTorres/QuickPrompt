@@ -76,6 +76,54 @@ ensayo CMS rechazado anteriormente. No se leyó ni transmitió el respaldo real:
 faltan destinatario, custodia, destino externo y objetivos operativos acordados.
 El cifrado de una fixture no cierra O01 ni la recuperación productiva.
 
+### CI del candidato 88ecfdd y contraste posterior de carga
+
+El commit `88ecfdd02bf050bf43ef2c4e3f7cc20fce770a00`, publicado únicamente en la
+rama de validación, terminó **FAIL** en
+[CI 40773288419](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40773288419).
+El job Windows aprobó backend **1409**, Debug **8**, MCP **27**, Companion **16**,
+recuperación **27**, consumidor legado **168** e interfaz **478/478**, además del
+build. PostgreSQL aprobó **406**, falló **una** y omitió **21** pruebas reales de
+Qwen. El dump sintético cifrado y su restauración con el key ring aprobaron dentro
+de esa suite; los dos pasos posteriores de comparación/restore no se ejecutaron
+porque `dotnet test` devolvió error. No se desplegó ese candidato.
+
+El fallo fue un HTTP **429** donde el escenario de diez propietarios y dos hosts
+esperaba aceptar la solicitud de recuperación. Los recibos originales no guardaban
+su body tipado; el job log tampoco conserva el motivo. Un intento local y dos
+contrastes fijados de propietario ocupado/no ocupado no reprodujeron ese rechazo:
+su capa original continúa **desconocida**. No se presenta una repetición favorable
+como reparación demostrada del productor.
+
+Se corrigió una carencia comprobable del arnés: ahora sigue los cuatro trabajos
+adicionales aceptados en la fase de cuota y deja todos sus recibos propios en
+estado terminal. Añade diagnóstico acotado de rechazo y conteos de cola, sin
+payloads, tokens, cambios de cuotas o borrado de trabajos ajenos. Un control con
+los límites reales distingue `QUEUE_FULL` global (64 en cola y cero del dueño
+sondeado) de `OWNER_QUEUE_FULL` (cuatro del dueño). La regresión local ampliada
+aprobó **6/6**, sin modelos; el primer observador paralelo del control global
+agotó el pool de una conexión y su fallo separado quedó conservado. La observación
+de limpieza se acotó y pasó. Este ajuste de prueba aún requiere CI completa.
+
+La campaña factual declarada terminó con **tres llamadas reales de Qwen y cero
+reintentos semánticos**, cada una con un ID de ejecución y Core propio. El
+inventario de otro ámbito también incluyó una cita incorrecta. En el snapshot
+corregido llegó a REVIEW, mostró el error y mantuvo bloqueada la confirmación
+incluso al marcar la revisión. Codex corrigió cita, relaciones y textos; aprobó
+por separado cuatro hechos completos y el documento final. La biblioteca pasó
+de un documento a dos y el inventario volvió a abrirse después de recargar. Se
+conservaron fuente y seis propuestas originales, sin otro escritor. Recibos:
+`factual-durable-20261028/campaign-completion.json`, `inventory-browser-receipt.json`
+y `inventory-http-after.json`. Es revisión asistida verificada, **no fidelidad
+autónoma ni aceptación humana del SaaS**.
+
+El MCP público existente leyó de nuevo la fixture RC8, revisión 2, y compiló sus
+tres variables; omitir `proposito` devolvió `missingVariables` y texto nulo. Son
+lecturas/compilaciones mediante Codex, sin escrituras ni nuevo consentimiento.
+ChatGPT web siguió sin mostrar su respuesta anterior incluso sin herramientas;
+la inspección de red no estuvo disponible. M02/M03 continúan abiertos. Recibo:
+`rc10-mcp-read-compile-20261028.json`.
+
 ### Candidato operativo fe373fc — CI aprobada y backend publicado
 
 El commit `fe373fccc19bee35c421e1f43eb6de750cad52eb` pasó los dos jobs de
