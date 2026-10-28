@@ -39,8 +39,9 @@ jobs:
         if: always()
         with:
           name: postgres-account-results
+          include-hidden-files: true
           path: |
-            **/TestResults/*.trx
+            backend/QuickPrompt.Accounts.Tests/TestResults/*.trx
             .playwright/postgres-restore/restore-result.json
             .playwright/postgres-restore-contract/result.json
   web:
