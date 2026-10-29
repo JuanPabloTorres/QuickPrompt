@@ -8,7 +8,41 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
-### Último corte verificado: candidato f21dc31, pendiente de despliegue
+### Corte posterior: candidato 6ccd514 rechazado por CI
+
+[CI 40798665085](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40798665085)
+terminó **failure** para `6ccd514eefa877a3180159e913ce94172b16e262`.
+Sus artefactos TRX verifican 2097 aprobadas y cero fallidas; las 21 de inferencia
+no ejecutadas siguen excluidas. PostgreSQL, sus 16 contrastes del comparador y
+la restauración sintética con 22 tablas FORCE RLS pasaron. El build web pasó;
+la interfaz obtuvo **479/480**, con un fallo al comprobar la máscara de navegación
+durante una consulta de identidad pendiente. El pase local anterior de 480/480
+no sustituye este resultado remoto. No se desplegó este candidato.
+
+La prueba focal aislada no reprodujo el fallo. La revisión localiza una aserción
+síncrona tras el evento de foco, sin barrera del efecto React ni comprobación de
+la segunda consulta de identidad. Se contrasta un arnés con `await act`, respuesta
+retenida y recuento de solicitudes, conservando las aserciones de ocultación y
+los mismos nodos al recuperar el acceso. La causa exacta de la carrera en CI aún
+no está confirmada; no se atribuye un fallo de seguridad al producto sin evidencia.
+
+El arnés corregido aprobó **41/41** contrastes de sesión y **480/480** pruebas de
+interfaz en una suite Release completa. Mantiene todas las aserciones de máscara,
+la identidad de los nodos y la recuperación; añade una comprobación de las dos
+consultas de identidad. Sólo cambia el test de sesión, sin cambios de producto,
+permisos ni configuración. La revisión del propietario y la revisión del diff
+por raíz son distintas; el resultado remoto del siguiente candidato sigue
+pendiente. Recibo local: `commercial-ops-rc9/attempt-09/account-workspace-release.json`.
+
+Se compararon los 138 archivos de entrada de la UI local con ese árbol Git: cero
+derivas y cero archivos extra en `src`/`public`. Esto correlaciona fuentes del QA,
+no certifica reproducción binaria ni despliegue. El navegador volvió a abrir el
+inventario factual aprobado y conservó sus secciones de propiedad, trabajo
+terminado, tareas e información pendiente, sin otra llamada al modelo.
+Recibos: `commercial-ops-rc9/attempt-08/ci-final.json`, `ci-trx-reviewed.json`,
+`ci-artifacts`, `ci-failed.log` y `ui-source-continuity.json`.
+
+### Corte aprobado anterior: candidato f21dc31, pendiente de despliegue
 
 [CI 40791828142](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40791828142)
 terminó **success** para `f21dc3183418abe1ef6019af7f74016c6c38864d`, que añade

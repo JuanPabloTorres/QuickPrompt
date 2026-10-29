@@ -69,11 +69,13 @@ it('uses the shared authenticated shell and account-owned navigation without loc
 
 it('masks private navigation during identity verification and restores the same nodes after confirmation', async () => {
   const fixture = accountFixture();
-  render(<AccountPage service={fixture.service} />);
+  // Finish bootstrap effects before dispatching the foreground interaction.
+  await act(async () => { render(<AccountPage service={fixture.service} />); });
   await screen.findByText(actor.email);
   const sidebar = screen.getByRole('complementary', { name: 'Barra lateral de QuickPrompt' });
   const finish = fixture.holdIdentity();
-  fireEvent.focus(window);
+  await act(async () => { fireEvent.focus(window); });
+  expect(fixture.paths.filter(path => path === '/account/me')).toHaveLength(2);
   expect(screen.queryByRole('complementary', { name: 'Barra lateral de QuickPrompt' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).toBeNull();
   expect(sidebar.isConnected).toBe(true);
