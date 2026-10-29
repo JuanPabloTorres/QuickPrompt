@@ -22,6 +22,7 @@ public sealed class LiveExecutionTests : IDisposable
     [InlineData("MODEL_FAILED")]
     [InlineData("MODEL_TIMEOUT")]
     [InlineData("MODEL_UNAVAILABLE")]
+    [InlineData("LOCAL_DISPATCH_TIMEOUT")]
     public async Task GenerationProviderFailuresKeepTheirDiagnosisAndReleaseControlWithoutSaving(string code)
     {
         const string request = "Crea una instrucción para resumir notas.";

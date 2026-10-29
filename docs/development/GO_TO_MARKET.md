@@ -1,12 +1,477 @@
 # Checklist de salida al mercado de QuickPrompt
 
-Estado de revisión: **28 de octubre de 2026 · piloto publicado en validación; NO GO comercial**.
+Estado de revisión: **29 de octubre de 2026 · piloto publicado en validación; NO GO comercial**.
 La versión visible sigue siendo **1.0.0**. Este documento no crea una versión,
 un tag ni una nueva aceptación humana. Registra el piloto cuya publicación fue
 autorizada; no certifica una salida comercial. El contrato y los
 incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
+
+### Diagnóstico del componente y distinción de plazos del 29/10
+
+Una consulta READ ONLY con el rol limitado de aplicación recuperó el run original
+`522641c7-8a67-4992-b35b-efe8d7d75fb2`: FAILED, `MODEL_TIMEOUT`, secuencia 28,
+sin efecto ni commit de prompt. Su error se registró a las 13:00:00Z. El trabajo
+candidato de esa misma cuenta/biblioteca/conexión y ventana temporal terminó
+Cancelled, con cero intentos y `StartedAt=null`. No existe enlace padre-hijo
+explícito entre ambos registros: es un indicio de falta de recogida, no prueba de
+causalidad ni ejecución de Qwen. No se leyeron paquetes, prompts o respuestas.
+Evidencia: `nova-runtime-diagnosis-20261029/run-metadata.json` (expediente local).
+
+Se corrigió la clasificación del puerto existente: al vencer el plazo con último
+snapshot Queued y sin inicio, devuelve `LOCAL_DISPATCH_TIMEOUT`. Si observó inicio,
+conserva `MODEL_TIMEOUT`. Un claim puede ocurrir entre la lectura y el vencimiento;
+el mensaje dice «no se confirmó», sin afirmar que el equipo esté desconectado.
+El código tipado y su mensaje seguro atraviesan los adaptadores y liberan el
+control sin guardar ni reintentar. No cambian los 180 segundos, permisos o cuotas.
+Es código local validado; no se presenta como comportamiento publicado de f49.
+
+El componente Windows ahora conserva sólo metadatos tipados en `last-run.json`,
+dentro del directorio privado del perfil: fase, tiempos, PID, hash del DLL al
+inicio y causa de salida acotada. No incluye paquetes, credenciales, respuestas
+ni mensajes de excepción. `status` lee el recibo como histórico; nunca certifica
+actividad por su existencia. La revisión independiente detectó un cierre fuera
+del bloqueo y una cancelación mal clasificada en el último trabajo; se corrigieron
+manteniendo el bloqueo hasta publicar el final y comprobando la cancelación al
+regresar de la ejecución. Faltan esos contrastes en un recorrido real del worker.
+
+Validación local: **7/7** casos PostgreSQL de transporte, **52/52** casos de
+propagación/control sin guardado y **27/27** de Companion. PostgreSQL fue la
+instancia sintética existente, separada del respaldo privado. Se preservan el
+baseline fallido (espera en cola etiquetada MODEL_TIMEOUT) y la primera revisión
+fallida: el nuevo código se perdía en una allowlist y el test de respuesta tardía
+esperaba 204 pese al contrato existente 409. Se extendió la allowlist propietaria
+y se conservó el rechazo 409, sin relajar el cerco de resultados. Las compilaciones
+simultáneas chocaron con archivos en uso; la suite general se verificó en salida
+aislada sin detener la API local. No se contó ese fallo de entorno como PASS.
+
+Ambos perfiles públicos pasaron consultas reales de autorización; Ollama respondió
+200 y listó Qwen3:8b. Ninguna comprobación ejecutó inferencia. A las 14:14:54Z
+todavía no existía el nuevo recibo de arranque manual. Edge volvió al inventario,
+pero la lectura de pestañas continuó sin responder. No se reenvió la petición.
+La fidelidad, el navegador final y la certificación comercial continúan abiertos;
+correo, recuperación completa y alojamiento comercial conservan sus puertas.
+
+### Continuación del 29/10: restauración del esquema final y reparación del historial
+
+El plan conjunto `62ba704680b6792e49b9b57449331054f29167380a7ae7de74baeafa0fd66f77`
+fue autorizado y ejecutado **una vez**. El respaldo del piloto f49 y su restauración
+privada comprobaron 35 tablas, 22 FORCE RLS, 31 IDs exactos de migración y tres
+secuencias, con las mismas referencias de filas antes y después de retirar el
+acceso temporal. Se verificaron cleanup de origen, eliminación de pgpass, ACL
+privada para usuario/SYSTEM y apagado sin listener en 55439. El dump tiene 609.086
+bytes, SHA `411e9059596dfe812d4c856710eb65660e882a1518d028207bc2164896546437`.
+Esta aprobación ya está consumida. La copia anterior de 33 tablas se conserva.
+No se probaron equivalencia completa de catálogo, flags globales de roles,
+descifrado de llaves, cookies/revocaciones ni cifrado del dump completo. Tampoco
+se creó respaldo externo automático. El resumen seguro queda en
+`commercial-followthrough-f49-20261029/final-schema-recovery-summary.json`.
+
+Ollama respondió en 127.0.0.1:11434 y su catálogo confirmó Qwen3:8b instalado. Se
+envió una sola petición original de conceptualización, con tres campos explícitos,
+en el run `522641c7-8a67-4992-b35b-efe8d7d75fb2`. Llegó al editor/redacción, pero
+la observación de la pestaña perdió respuesta; al recuperar la misma ejecución
+apareció «No se pudo completar», sin propuesta ni guardado. En esa observación no
+se obtuvo el código terminal; la consulta posterior documentada arriba recuperó
+`MODEL_TIMEOUT`, sin evidencia de inferencia/worker activo. No se atribuye este
+intento a un fallo semántico de Qwen ni se declara fidelidad comprobada.
+
+El historial recuperado mostró un defecto independiente: el observador montado
+después de abrir el dock perdía su señal inicial de visibilidad. Dos regresiones
+reprodujeron el fallo en COMPLETED y FAILED. `NovaLive` ahora lee el estado actual
+del panel y conserva los eventos posteriores. Pasan 48 pruebas de actividad y la
+campaña final **482/482** de frontend, sin controles obsoletos de ejecución/guardado.
+La primera campaña general 481/482 se conserva: su único fallo contaba la petición
+inicial de bibliotecas como tráfico del cambio de tema. Se corrigió la espera de
+bootstrap de esa prueba, sin cambiar el producto ni relajar la aserción de tráfico.
+
+El parche web `f49-history-recovery-20261029` se publicó en Vercel como
+`dpl_4XcgBioKmEAKYu4m9H1L8waCYF9F`, conservando backend f49 y proxy/configuración.
+Los 203 archivos de staging están identificados por el manifiesto
+`b9612a45cebde9d54b17261abdfd73f0ca868b23c8a9e4956341b555f1df8a09`.
+Las fuentes probadas coinciden con staging; sólo cambian el componente, dos tests
+y el ignore de empaquetado respecto de la base Git. Pasaron build de cuentas,
+nueve tests de configuración y **14/14** probes públicos anónimos. El JS publicado
+`index-2sahKoK5.js` coincide byte a byte con el build local, SHA
+`87aa55ae106f4c14933ec4891c9f82e20e1e2beb2090143a1977d2e346ff0e69`.
+El primer recibo del smoke mantenía la etiqueta de base f49; se preserva y el
+recibo identificado posterior usa el nombre completo del parche. La interacción
+del historial en el navegador publicado sigue sin confirmar: el control de esa
+pestaña volvió a quedar desconectado. No se repitió la petición NOVA.
+
+El parche está consolidado en el commit `e446aa55353155de4fda01b7c82e269220bded48`,
+subido sin force-push a la rama del piloto. Se verificaron los 199 blobs web del
+commit contra staging; configuración y tres documentos públicos de discovery son
+los cuatro archivos generados adicionales. HEAD e índice normales se conservaron.
+Tres preparaciones de commit rechazadas antes de crear revisión quedan registradas;
+se retiró ese mecanismo y el commit se compuso desde el árbol inmutable de f49 y
+cuatro blobs revisados, sin usar índices. CI **40881780250** terminó **SUCCESS**
+sobre ese commit: **2.097 pruebas .NET aprobadas, cero fallos, 21 casos de proveedor
+real no ejecutados y 482 pruebas de frontend aprobadas**. Los TRX descargados y
+sus hashes están en `commercial-followthrough-f49-20261029/ci-results-summary.json`.
+Se contaron los resultados individuales: el contador agregado NotExecuted del
+TRX de cuentas indica cero, pero sus 21 resultados individuales y motivos dicen
+que requieren la campaña Qwen/Ollama explícita. No se ocultó esa discrepancia ni
+se sumaron los omitidos como aprobados. La restauración sintética de CI también
+pasó; conserva su separación respecto del respaldo privado real.
+
+Brevo continúa Open, sin respuesta posterior al seguimiento autorizado, y la API
+pública sigue `mailDelivery=unconfigured`. Se mantienen **NO GO comercial** y la
+versión visible 1.0.0; no hay tag estable nuevo. Los recibos nuevos están en
+`commercial-followthrough-f49-20261029` y el smoke identificado en
+`commercial-rollout-f49-20261029/public-smoke-history-identified.json`.
+
+### Revisión operativa del 29/10: permisos reales y restricción del hosting
+
+Las consultas originales de `AccountRoleGuard` y `ExecutionRoleGuard` de f49
+pasaron **2/2** sobre las conexiones limitadas reales del piloto, dentro de
+transacciones READ ONLY. Cubren también permisos por columna, MAINTAIN,
+propietarios/RLS de tablas factuales, funciones con search_path fijado, acceso
+PUBLIC y triggers habilitados. No se ejecutaron las funciones de negocio ni
+mutaciones de catálogo. Esto amplía la comprobación positiva posterior a la
+migración; los negativos de deriva siguen siendo pruebas sintéticas de CI.
+Recibo local: `commercial-operational-f49-20261029/deployed-role-guards.json`.
+
+El usuario indicó que ambas consolas estaban abiertas. La inspección posterior
+encontró los padres PowerShell desde el inicio anterior, pero ningún worker.
+Los accesos apuntan a los slots correctos, con límites 12/1 y `-NoExit`; el código
+termina tras cinco minutos sin trabajo. Eso explica por qué una ventana abierta
+no prueba actividad; no se conserva un código de salida que demuestre la causa
+exacta de la parada anterior. Dos consultas reales `status` confirmaron que las
+autorizaciones de NOVA y prompts siguen vigentes, sin iniciar workers o modelos.
+
+Se aclaró el ciclo de vida en el cliente local: mensaje al esperar trabajos y al
+consumir el lote; el lanzador compartido marca `DETENIDO` después de la salida.
+No se cambiaron límites, scopes, proveedor ni permisos. Las 16 pruebas de
+Companion pasaron y el script pasó sintaxis. De los 128 archivos fuente de su
+cierre, sólo `CompanionRunner.cs` difiere de f49 por esos mensajes; el DLL local
+compilado tiene SHA `58c1e5f99da04ed3c064f5e7d3c6c36626d064632aabdc9540b349aef7a75b46`.
+Su metadata Git conserva el HEAD del checkout normal, por lo que no se presenta
+como el binario CI de f49. El arranque manual nuevo y las pruebas semánticas
+públicas siguen pendientes; no se convirtió `status` en una certificación de IA.
+
+La API autenticada del equipo Vercel confirmó `billing.plan=hobby`, activo.
+Su [documentación vigente](https://vercel.com/docs/plans/hobby) limita Hobby a uso
+personal no comercial. Es una restricción distinta de que la aplicación funcione:
+no corresponde certificar una explotación comercial sobre este plan.
+La [documentación Free de Render](https://render.com/docs/free) tampoco recomienda
+ese nivel para producción, limita el servicio a una instancia y mantiene la
+caducidad de PostgreSQL a 30 días sin respaldo gestionado. No se contrataron
+planes, habilitaron cobros ni cambiaron proveedores.
+
+Comparación dirigida, todavía sin recursos creados:
+
+| Ruta | Compatibilidad y límite comprobado | Decisión pendiente |
+|---|---|---|
+| Vercel Hobby + Render Free actuales | El piloto funciona, pero Hobby restringe uso comercial y la DB Free caduca. | Conservar como evidencia/piloto; no certificar producción comercial. |
+| Azure App Service F1 | Puede ejecutar ASP.NET, pero su [tarifa oficial](https://azure.microsoft.com/en-us/pricing/details/app-service/linux/) no admite cargas de producción en Free. | No trasladar el mismo impedimento a otro proveedor. |
+| OCI Always Free | Una VM Linux podría conservar .NET/PostgreSQL sin reescribir el producto. Su [contrato de recursos](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) incluye cómputo y almacenamiento gratuitos, pero admite falta de capacidad y reclamación de instancias inactivas. | Es una candidata por investigar, no un alojamiento provisionado ni certificado; faltan cuenta, condiciones aplicables, disponibilidad, cuotas, operación/backup y aprobación del destino de datos/credenciales. |
+| Planes productivos de Vercel/Render | Conservan la arquitectura elegida, pero exceden el presupuesto autorizado de $0. | Sólo preparar cotización si el usuario cambia esa restricción; no comprar ni activar pruebas de pago automáticamente. |
+
+La meta conserva su alcance comercial. El presupuesto $0 y la preferencia por
+Vercel/Render no autorizan ignorar estas restricciones ni sustituir certificación
+por una aceptación de piloto. El usuario eligió **evaluar OCI Always Free**,
+conservando .NET/PostgreSQL y sujeto a capacidad y condiciones. Esta elección
+autoriza preparar la alternativa; no crea cuentas, recursos, contratos ni un
+nuevo destino de datos o credenciales.
+
+La [evaluación de OCI](../research/OCI_FREE_REVIEW_20261029.md) registra cuotas
+actuales, términos por confirmar, reclamación de instancias, HTTPS/DNS y un plan
+de respaldo y aceptación. La lectura de los tres manifests fijados en el
+Dockerfile confirmó entradas Linux ARM64 y AMD64; no se compiló ni ejecutó la
+aplicación para ARM64. `AccountHost.MapAccountPage` ya activa el modo de cuentas
+al servir el build compartido, sin necesitar una segunda lógica de frontend.
+Recibo local: `commercial-operational-f49-20261029/oci-image-manifests.json`.
+
+No se declararon disponibilidad de una cuenta/región, permiso contractual para
+este SaaS, un dominio gratuito, capacidad, SLO, RPO/RTO ni aceptación humana.
+Conservar Vercel Hobby mantendría su restricción comercial aunque la base y el
+backend se trasladaran a OCI. El gate I01 y el dictamen **NO GO** siguen abiertos.
+
+### Candidato publicado del 29/10: f49ebd6 y contraste de empaquetado
+
+Después de la restauración privada se aplicaron **sólo** las migraciones
+`20261028203013_PrivateFactualDocuments` y
+`20261028211701_FactualLeastPrivilege`, con el migrador existente y target EF
+explícito. El historial remoto pasó de 29 a 31 IDs exactos; se verificaron TLS,
+35 tablas, 22 FORCE RLS, tres secuencias y los permisos de tabla factuales. No se
+recrearon roles ni credenciales. El primer preflight rechazó un conteo antiguo
+del arnés antes de leer secretos/conectar; se conserva y no es un fallo de datos.
+
+Render publicó `f49ebd6260937b79166d1663efc2477eddd15cd1`, despliegue
+`dep-dbhj5b4s728c73crg870`, observado **Live**. La rama del piloto se adelantó a
+ese commit sin force-push ni cambios al índice normal. Vercel sirve ahora
+`dpl_Gm99hF3932koiT5fiMFZyDJERXFk` en la URL habitual
+`https://project-sxf1z.vercel.app/`. La versión visible sigue siendo 1.0.0.
+
+Se conserva el primer despliegue web `dpl_Bxc4bBGdkoS2rjoe8e95DsxzppXx` y su
+smoke **12/14**: sus 244 archivos subidos coincidían con el stage, pero también
+incluían el `dist` local. Tailwind escaneó tokens de los bundles y generó CSS
+adicional. El contraste controlado añadió únicamente `.vercelignore` para
+excluir artefactos, node_modules y archivos de entorno de la subida. No cambió
+las fuentes de aplicación f49. El árbol del segundo despliegue conserva el
+marcador del directorio dist con **cero archivos**. Sus JS `index-BF3yTpeA.js`
+y CSS `index-Bf39ry_6.css` coinciden byte a byte con los preparados localmente.
+El smoke posterior pasó **14/14**, conservando las expectativas y los fallos
+anteriores. Las 13 pruebas de configuración/metadatos Vercel también pasaron.
+El override de empaquetado tiene SHA-256
+`2d5a098ad39fdf3273ec4c1ecbc31bc9ba800b019c0a76d95426f60cdaa913aa`.
+La explicación es coherente con el [escaneo de Tailwind](https://tailwindcss.com/docs/detecting-classes-in-source-files)
+y la [exclusión de archivos en Vercel](https://vercel.com/docs/deployments/vercel-ignore);
+el contraste ejecutado, no las fuentes por sí solas, acredita la corrección.
+
+En la cuenta principal se comprobó login Google, creación manual con tres
+variables, preparación sin IA, copia literal con un solo uso registrado, edición,
+recuperación de versión, archivo/recuperación y colección creada en biblioteca
+visible/asignada en detalle. La fixture `d8d60294-ef7e-4a1f-adf3-1cc3a083b426`
+queda recuperada en revisión 5 y su colección QA se conserva. El MCP conectado
+leyó/compiló la fixture, rechazó revisión obsoleta y mantuvo la identidad A al
+cambiar el navegador a B. La cuenta B mostró sólo su biblioteca y recibió un
+problema 404 al abrir la ruta exacta de esa fixture de A. No hubo borrado definitivo.
+
+La conversación de ChatGPT `6ae2d361-aba8-83e8-b21e-a1a9f2399404` ya muestra
+tanto el control antiguo como la respuesta antigua antes ilegible. Una solicitud
+nueva mostró correctamente título, revisión 5 y variables de la fixture RC7,
+con actividad «Retrieved exact approved prompt template». Esto verifica lectura
+y presentación observables de una cuenta; no aporta un recibo crudo del servidor
+ni prueba segunda cuenta ChatGPT, renovación/revocación o creación en ese cliente.
+No se atribuye una causa definitiva al fallo de presentación anterior.
+
+Brevo 5641363 sigue Open y no muestra una respuesta posterior al seguimiento
+40247224582418; el proveedor público sigue `mailDelivery=unconfigured`. El proceso
+Companion esperado no está activo y se solicitó inicio manual de los dos perfiles,
+sin repetir el arranque rechazado. No hubo inferencia Qwen nueva. Correo, fidelidad
+pública del agente, carga/capacidad, recuperación operativa completa y aceptación
+SaaS mantienen el estado **NO GO comercial**. Evidencia local segura:
+`commercial-rollout-f49-20261029/`, con recibos de migración, ambos smokes, contraste
+de assets y capturas de Render, resultado preparado y ChatGPT.
+
+### Restauración real del 29/10: contrato portable verificado
+
+El usuario aprobó expresamente el plan conjunto `82882477…3f49f`. Se ejecutaron
+una sola vez el respaldo `e51eafb6…ff105` y la restauración `88d521cd…b90d1`.
+El respaldo terminó `BACKUP_CREATED_RESTORE_PENDING`, con limpieza de permisos
+verificada, snapshot cerrado, secuencias sin cambios y credencial efímera retirada.
+El archivo privado tiene 550442 bytes y SHA-256
+`4a8644c5509406e98dfd960e967ee2990409e0576612c240e6e07a1772d3d28e`.
+
+La restauración terminó `RESTORED_VALIDATED_PRIVATE_NO_TRAFFIC`: coincidieron
+los conteos y huellas de las 33 tablas, el hash del texto original y las tres
+secuencias, tanto antes como después de retirar el rol/políticas temporales de
+la copia. El inventario verificó 20 tablas FORCE RLS. El recibo confirma
+`restoreTested=true` y `stopVerified=true`; raíz comprobó además la ausencia del
+listener 55439 y de `pgpass.ephemeral`, y la ACL protegida sólo para el usuario
+Windows aprobado y SYSTEM. La copia se conserva apagada en el destino autorizado.
+
+Esto acredita recuperación de **ese snapshot privado de 33 tablas**, sin tráfico.
+No certifica el esquema final de 35 tablas, comparación exacta de catálogo fuente,
+descifrado de claves, continuidad de cookies/revocaciones, flags globales de roles,
+rollback público, respaldo externo automático/cifrado, retención ni RPO/RTO.
+El fallo y la copia v1 permanecen conservados; no se recalifican como aprobados.
+No se ejecutaron migraciones, despliegues, modelos ni un tag en este ejercicio.
+La aprobación específica queda consumida. Resumen seguro local:
+`private-restore-portable-v2/execution-summary-root-20261029.json`; los recibos
+completos permanecen únicamente en el directorio privado aprobado, fuera de Git.
+
+El control del navegador volvió a fallar con `native pipe closed before response`.
+No se verificaron nuevos estados de Render, Brevo o presentación en ChatGPT.
+El cierre de recuperación de esta copia supone progreso; la certificación
+comercial continúa NO GO por las puertas restantes.
+
+### Continuación del 29/10: disponibilidad, ingreso y compilación MCP
+
+La URL pública devuelve HTML 200 en modo cuentas y el bundle anterior
+`index-Cwh0RRa1.js`; no sirve todavía `index-BF3yTpeA.js` del candidato preparado.
+Health devuelve 200. Su primera comprobación tardó 46,4 segundos; esa observación
+no acredita capacidad, causa de la espera ni un SLO comercial. El correo sigue
+devolviendo `mailDelivery=unconfigured` y `email=false`.
+
+El primer arnés HTTP obtuvo 13/15 resultados esperados. Se conservan sus dos
+fallos: pidió el documento de recurso en la raíz y esperó 401 de GET `/mcp`.
+La auditoría del owner `AccountMcpModule` mostró el contrato correcto: transporte
+stateless y metadatos en `/.well-known/oauth-protected-resource/mcp`. El contraste
+dirigido posterior pasó 3/3: POST initialize anónimo devuelve 401 con el challenge
+al recurso y scope de lectura, el documento publicado devuelve 200 y GET `/mcp`
+devuelve 405 con `Allow: POST`. No se cambió el producto para obtener ese resultado.
+Los rechazos 401 de cuenta/biblioteca y 403 de origen ajeno, ingreso directo,
+health directo con query y forwarded host falsificado también pasaron. La cabecera
+de ingreso falsificada en la URL pública no permitió acceder a la biblioteca.
+
+La lectura MCP real recuperó la fixture revisión 5. Compilar con el nombre de
+proyecto y la confirmación textual proporcionados por el usuario produjo el texto
+literal esperado y ninguna variable faltante; usar revisión 4 devolvió
+`REVISION_CHANGED`. No se guardaron valores ni se invocó un modelo. Esto acredita
+lectura/compilación desde el cliente conectado; no cierra presentación en ChatGPT,
+segunda cuenta, renovación o revocación.
+
+El conector Vercel devolvió 404 tanto para el dominio como para el despliegue y
+proyecto conocidos. La CLI existente, con el mismo equipo explícito, confirmó
+`dpl_BAjPR2qSSzb6vAvZUd5E6LurxSdF` en READY/production. La discrepancia del
+conector queda sin causa confirmada; no se recrearon recursos ni se cambiaron
+credenciales. La rama del piloto sigue en `fe373fc`.
+
+El control del navegador falló antes de leer páginas, también tras reinicializar
+su enlace. No se comprobó una nueva respuesta de Brevo ni el estado actual de la
+presentación en ChatGPT. Las vistas de Lab/observador figuran abiertas en el
+inventario, pero su contenido actual no se certifica por ese inventario. Ollama
+responde 200 en loopback y lista Qwen3:8b; el listener sigue en `::`:11434 y no
+aparecen workers Companion. No se reinició automáticamente ninguno.
+
+El plan conjunto conserva SHA `82882477…3f49f`, sin aprobación nueva ni ejecución.
+Los dos recibos Execute y el archivo efímero de credencial no existen. Esta
+continuación produjo evidencia independiente y no es una espera de un proceso
+activo. Recibos locales: `commercial-continuation-20261029-01/public-boundaries.json`,
+`mcp-http-targeted.json`, `mcp-compilation.json`, `vercel-cli-inspect.json` y
+`ollama-readonly.json`. No cierra puertas compuestas ni crea un tag.
+
+Referencias consultadas mediante Context7 y documentación oficial el 29/10:
+[diagnóstico por capas de plugins](https://developers.openai.com/plugins/deploy/troubleshooting),
+[transporte stateless del SDK C#](https://github.com/modelcontextprotocol/csharp-sdk/blob/main/docs/concepts/stateless/stateless.md).
+El paquete del proyecto permanece fijado en 2.3.0; la documentación no sustituye
+los tres resultados HTTP ni autoriza actualizar ese paquete.
+
+### Cierre operativo del 29/10: respaldo y comprobación de exportación resueltos
+
+El usuario autorizó el nuevo plan nativo `3566aa4c…63e07` y se ejecutó una sola
+vez. Terminó `BACKUP_CREATED_RESTORE_PENDING`: acceso temporal retirado,
+catálogo/roles verificados y `pgpass.ephemeral` eliminado. El archivo privado
+tiene 520069 bytes y SHA-256
+`2792270106a07e79b40ede261965f66a31e57ffb6f44f459720d3c5ffacc38a4`.
+La lectura offline de su inventario verificó 33 entradas de datos de tablas y
+tres secuencias. No se copiaron datos privados a QA, Git o la nube. El permiso de
+ese respaldo queda consumido; no autoriza otra ejecución.
+
+El usuario autorizó después la restauración privada del plan `57cd0e49…de4`.
+El archivo se cargó en una única base local, autenticada sólo mediante SSPI para
+la identidad de Windows aprobada, en `127.0.0.1:55439`. La ejecución **falló** al
+comparar la huella de las filas; no alcanzó las secuencias ni la limpieza de los
+permisos del respaldo dentro de la copia. El servidor se apagó y la copia quedó
+retenida en el directorio privado autorizado. El resultado original se conserva:
+`restoreTested=false`, `stopVerified=true`. Esto no revierte la limpieza ya
+comprobada en producción al crear el respaldo.
+
+El contraste posterior verificó origen `en_US.UTF8` y copia `C`. Una sola
+transacción de lectura en la misma copia reprodujo la huella fallida. Ordenar
+únicamente los 33 resultados según el orden exacto de origen tampoco recuperó
+la huella original. La hipótesis del **orden exterior como única causa queda
+descartada**; no se atribuye la diferencia restante a corrupción ni al orden
+interior sin evidencia. Las tres secuencias sí coinciden; el inventario tiene
+33 tablas, 20 con FORCE RLS y tres secuencias. El servidor volvió a quedar apagado.
+
+La auditoría estática confirmó que Npgsql entregó el texto directamente al hash
+UTF8, y que el snapshot se mantuvo abierto durante `pg_dump`. El recibo original
+no retuvo las huellas por tabla ni los ajustes originales de sesión. No podemos
+reconstruir esa referencia a partir de datos actuales ni usar la copia como su
+propio oráculo. La recuperación de filas sigue **sin verificar**. El SQL actual
+también hereda collation al ordenar cada fila dentro de `string_agg`.
+
+Se implementó la preparación de un contrato v2 con orden C en ambos niveles,
+UTC/ISO/UTF8 explícitos y manifiesto privado por tabla, conservando el owner,
+snapshot, transporte, permisos y limpieza existentes. El contraste sintético
+ejecutado una sola vez en Render aprobó ocho controles: los dos órdenes cambian
+independientemente, permutar conserva la huella y mutar valor/cantidad la altera.
+No leyó tablas de negocio y sólo probó un host. Las 42 guardas offline aprobaron
+sin invocar el owner ni leer credenciales. Root revisó el delta por separado.
+
+Se eligió extender el agregador existente porque conserva el snapshot y los
+límites ya verificados sin añadir dependencias. La alternativa de reordenar sólo
+los resultados exteriores ya fue insuficiente. Calcular una referencia a partir
+de la copia restaurada no acredita el origen. Un nuevo framework no recuperaría
+la evidencia que el recibo original descartó.
+
+El nuevo ReviewOnly produjo el plan `e51eafb6…ff105`, contrato v2, 15 archivos
+cerrados sin diferencias, 33 tablas/20 tenant/tres secuencias; no abrió conexiones
+ni ejecutó DDL, y no creó archivo de credencial o respaldo. La restauración v2
+pasó 38 controles offline y ReviewOnly sin leer referencias privadas ni iniciar
+procesos. Root detectó y se corrigió antes de ejecutar una diferencia de
+separadores de rutas; se conservaron el plan y los 34 controles iniciales.
+
+El plan conjunto `82882477…3f49f` vincula ese respaldo y la restauración
+`88d521cd…b90d1`, con una sola operación de cada tipo, la misma identidad SSPI y
+puerto 55439, copia privada retenida apagada y cero secretos nuevos. **La nueva
+autorización fue solicitada y está pendiente**. Ningún Execute v2 se ha realizado.
+La referencia original no se convierte en aprobada. Artefactos locales:
+`reviewed-public-backup-portable-v2`,
+`private-restore-portable-v2/COMBINED_REVIEW.md`, `combined-review.json` y
+`private-restore-order-probe-20261029/synthetic-fingerprint-portability-v1-result.json`.
+La documentación oficial de [agregados](https://www.postgresql.org/docs/18/functions-aggregate.html)
+y [collation](https://www.postgresql.org/docs/18/collation.html), consultada el
+29/10/2026, fundamenta el experimento; no demuestra su resultado local.
+Custodia externa, cifrado del archivo y objetivos de recuperación siguen pendientes.
+
+El usuario abrió el JSON exportado y confirmó el título y los tres marcadores
+`nombre_proyecto`, `tipo` y `proposito`. Se cierra esa comprobación por **evidencia
+humana**, sin inspección automatizada del archivo ni hash de su contenido.
+El bloqueo previo del navegador se conserva; no se usó una vía alternativa.
+
+Brevo confirmó el envío del seguimiento autorizado en el ticket **5641363**:
+comentario `40247224582418`, estado **Open** y mensaje «Your reply was successfully
+added». Se compartieron únicamente el correo del proyecto, QuickPrompt y Puerto
+Rico; no teléfono, claves ni adjuntos. El panel aún exigía verificar el teléfono;
+no hay clave transaccional o entrega de confirmación/recuperación comprobadas.
+Enviar un ticket no acredita correo operativo.
+
+La comprobación directa del MCP público encontró y leyó la fixture en revisión 5;
+compilar sin valores devolvió `proyecto` y `evidencia` faltantes. Una conversación
+nueva de control en ChatGPT, sin aplicaciones ni herramientas, volvió a mostrar
+«This response couldn’t load»; copiar la respuesta produjo ese mismo texto.
+La solicitud posterior con el plugin instalado quedó visible al reabrir la
+conversación, pero su respuesta también falló. El resumen público de actividad
+no es un recibo de herramienta; no prueba por sí solo qué devolvió el servidor.
+No se atribuye la causa al MCP y no se repitió el envío ante el timeout del control.
+
+Los dos accesos del escritorio conservaron sus consolas, pero sus procesos worker
+ya no estaban activos. El código establece salida tras cinco minutos sin trabajo
+y límites de 12/1 trabajos; el horario es compatible con esa salida. Sin el
+mensaje o código de salida no se atribuye una causa definitiva ni se cambian
+tokens, modelo o límites. No se reinició automáticamente el companion.
+
+El candidato `f49ebd6` se exportó desde Git y compiló aparte del checkout: backend
+Release sin errores/advertencias y web en modo cuentas con dependencias fijadas.
+El paquete web contiene `index-BF3yTpeA.js`; el DLL declara
+`1.0.0+f49ebd6260937b79166d1663efc2477eddd15cd1`. Son artefactos preparados,
+no pruebas de que Render/Vercel los sirvan. La UI de Render aún muestra `fe373fc`.
+
+Recibos seguros: `commercial-closure-20261029-01/current-evidence-01.json` y
+`current-evidence-02.json`. El primero precede al seguimiento de Brevo y al fallo
+de restauración y se conserva. El Lab conserva los 36 resultados mixtos del corte
+08: 22 PASS y 14 FAIL, incluidos los fallos históricos; no son 36 inferencias ni
+una campaña semántica nueva.
+No se aplicaron migraciones ni se publicó un nuevo candidato en este corte.
+Los siguientes cortes conservan las condiciones y los fallos anteriores.
+
+### Último corte: f49ebd6 aprobado en CI, sin publicar
+
+[CI 40800436479](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40800436479)
+aprobó `f49ebd6260937b79166d1663efc2477eddd15cd1` en ambos jobs. Los siete
+artefactos TRX contienen **2097 ejecutadas y aprobadas, cero fallidas**, con 21
+pruebas de inferencia no ejecutadas. El build web y las **480/480** pruebas de
+interfaz pasaron. PostgreSQL y su restauración sintética con 22 tablas FORCE RLS
+también pasaron. El fallo de interfaz de 6ccd514 se conserva en la sección siguiente;
+el ajuste de sincronización no retiró ninguna aserción ni cambió el producto.
+Los 138 archivos de entrada UI siguen coincidiendo con el candidato final.
+
+El contraste O04 reconstruyó `fe373fc` sin editar sus 267 archivos fuente y
+comprobó arranque y lectura con las dos migraciones factuales presentes en QA:
+health 200, lectura anónima 401, acceso del propietario y rechazo de otra cuenta.
+No generó claves ni usó producción. El worker conservó su registro original,
+pero el arnés retuvo el bloqueo de admisión; no se probaron colas, cookies,
+Google, TLS público, MCP ni rollback del contenedor Render. Se revisó el arnés
+por separado del autor. Esto reduce la incertidumbre de compatibilidad, sin
+cerrar O04 ni sustituir restauración operativa de datos reales.
+
+Producción y la rama del piloto permanecían en `fe373fc` en este corte histórico;
+no se aplicaron las migraciones ni se creó un tag estable. La aprobación del
+respaldo estaba pendiente entonces y se resolvió en el corte del 29/10 anterior. También
+siguen abiertos correo, recuperación operativa, configuración Google de
+producción, ChatGPT web/múltiples cuentas/revocación, carga comercial y aceptación
+humana SaaS. El resultado continúa siendo **NO GO comercial**.
+
+Recibos: `commercial-ops-rc9/attempt-09/ci-final.json`, `ci-trx-reviewed.json`,
+`ci-web.log`, `ci-artifacts` y `o04-fe373f-6ccd514-native-01/handoff-manifest.json`.
+Este corte documental se añadió localmente después del commit identificado;
+no cambia los archivos de producto probados ni crea otro candidato.
 
 ### Corte posterior: candidato 6ccd514 rechazado por CI
 
@@ -471,6 +936,9 @@ observabilidad, dependencias y capacidad posteriores deben pasar su propia CI
 antes de atribuirlos al despliegue. No se marca una puerta compuesta como aprobada
 por completar únicamente uno de sus controles.
 
+Tabla histórica del corte RC8 del 28/10; los avances posteriores de respaldo,
+exportación y seguimiento a Brevo están en el corte del 29/10 al inicio.
+
 | Puerta | Resultado comprobado en esta revisión | Cierre pendiente |
 |---|---|---|
 | Correo, U03/P05 | Brevo autenticado todavía exige verificar el teléfono. El ticket 5641363 muestra `Awaiting your reply`; sólo aparecen la solicitud original y la respuesta del agente de Brevo que pide ambos formatos del móvil. El envío comunicado por el usuario no está visible en ese ticket. No se generó ni leyó una clave. | Verificación del proveedor, remitente y clave limitada; recepción y uso reales de confirmación y recuperación. No reenviar información privada ni habilitar registro sin esta evidencia. |
@@ -860,7 +1328,7 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 | U02 | [x] A y B conservan bibliotecas, prompts, revisiones, colecciones, valores, resultados y memoria independientes. IDs ajenos no cambian actor. | Verificado localmente; repetir recorrido publicado A/B. |
 | U03 | [ ] Registro, confirmación, recuperación, cierre de todas las sesiones y vinculación Google/contraseña funcionan desde la interfaz publicada. No unir cuentas sólo por email coincidente. | Login Google público y callback final comprobados por raíz. Correo/contraseña, confirmación, recuperación y cierre/vinculación completos siguen pendientes; no cerrar esta puerta con un solo login. |
 | D01 | [x] Migraciones y roles limitados, aislamiento en aplicación y defensa RLS comprobados. | Verificado localmente. El rol de migración no debe usarse como fallback del host. |
-| D02 | [ ] Aplicar las migraciones finales y restaurar una copia del destino publicado con roles, políticas, índices y datos sintéticos intactos. | Pendiente de infraestructura y esquema final. |
+| D02 | [ ] Aplicar las migraciones finales y restaurar una copia del destino publicado con roles, políticas, índices y datos sintéticos intactos. | f49: migraciones finales aplicadas y restauración privada real de 35 tablas/22 FORCE RLS/31 migraciones/tres secuencias aprobada. Faltan equivalencia completa de catálogo/índices y flags de roles; la copia privada no se usó como QA sintético. |
 | A01 | [x] Preferencias y contexto conservado están separados por usuario; recuperar no restaura aprobaciones ni repite efectos. | Verificado localmente. |
 | A02 | [ ] Borrar/olvidar datos, retención, exportación y tratamiento de backups tienen un recorrido comprobado y una política operativa comunicada. | Hay olvido y caducidad de datos de ejecuciones/contextos; no equivalen a borrado completo de cuenta/backups. |
 | S01 | [x] A publica una revisión concreta; B sólo lee/importa después de aceptar una invitación. La copia no modifica el original. | API/PostgreSQL/SDK MCP comprobados; faltan todas las superficies del candidato público juntas. |
@@ -873,7 +1341,7 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 | M01 | [x] MCP delegado exige identidad, audiencia, biblioteca y scopes por conexión. Refresh no amplía permisos y revocar invalida acceso futuro. | SDK real/HTTP/PostgreSQL comprobados; no acredita la instalación final en ChatGPT. |
 | M02 | [ ] Dos cuentas de ChatGPT conectan el endpoint público por OAuth; cada una busca, lee, compila y guarda sólo con su scope, y no puede acceder a recursos de la otra. | Una cuenta ChatGPT de la biblioteca principal ya buscó, leyó, creó, compiló y aplicó contenido. El mismo permiso siguió leyendo tras desplegar RC7 y tras cambiar de cuenta web. A/B web e importación/revocación reales comprobados; falta una segunda cuenta real de ChatGPT. |
 | M03 | [ ] Consentimiento, descubrimiento, denegación, scopes opcionales, PKCE, errores, renovación y revocación funcionan con el cliente ChatGPT real. | OAuth y consentimiento reales de la biblioteca principal, lectura/creación y continuidad del permiso tras desplegar comprobados. Challenge anónimo 401 y Origin ajeno 403 en RC7. No se ejecutó revocación/renovación de ese cliente ChatGPT en producción; conservar esa puerta abierta. |
-| W01 | [ ] Biblioteca, editor, variables, uso, colecciones, resultados, versiones, exportación y borradores tienen navegación y errores recuperables en escritorio y móvil. | Producción: preparación sin IA, copia idempotente y reapertura exacta. QA: creación manual con tres variables, colección desde biblioteca visible en detalle, edición, recuperación de versión, archivo/recuperación y persistencia; fallo de inspección archivada corregido en detalle/editor. Borrador recuperado con valores tras recarga y bloqueo de sobrescritura cuando su fuente cambia. Modal móvil/escritorio comprobado. Faltan el recorrido completo del nuevo candidato publicado y el archivo exportado, cuya entrega no pudo verificarse. |
+| W01 | [ ] Biblioteca, editor, variables, uso, colecciones, resultados, versiones, exportación y borradores tienen navegación y errores recuperables en escritorio y móvil. | Producción: preparación sin IA, copia idempotente y reapertura exacta. QA: creación manual con tres variables, colección desde biblioteca visible en detalle, edición, recuperación de versión, archivo/recuperación y persistencia; fallo de inspección archivada corregido en detalle/editor. Borrador recuperado con valores tras recarga y bloqueo de sobrescritura cuando su fuente cambia. Modal móvil/escritorio comprobado. El 29/10 el usuario confirmó título y tres variables del JSON descargado; no se inspeccionó automáticamente el archivo. Falta el recorrido completo del nuevo candidato publicado. |
 
 ## Puertas del piloto público y de operación comercial
 
@@ -881,18 +1349,19 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 |---|---|---|
 | P01 | [x] Web Vercel y backend persistente creados, desplegados y accesibles por sus URLs reales. | **Verificado para el piloto 28/10**: Vercel Ready y Render Live en las identidades/URLs de la tabla. No cierra agente, plugin, aislamiento A/B ni operación comercial. |
 | P02 | [ ] Mismo candidato híbrido arrancado; proxy sobrescribe cabecera privada, usa upstream HTTPS literal y conserva cookies, CSRF, redirects, issuer y SSE. Acceso directo sin secreto se rechaza salvo health terminal limitado. | **Parcial**: proxy/upstream público, rechazo directo/origen ajeno, header falso, issuer/MIME, baseline de HTML y challenge MCP anónimo comprobados. Google login real observado. Faltan SSE a través del proxy, continuidad/recuperación de cookies y sesión, CSRF/redirects negativos y flujo completo del mismo candidato. No marcar esta puerta completa. |
-| P03 | [ ] Base PostgreSQL externa configurada con TLS y roles separados; sólo fixtures autorizados en las pruebas públicas. | Base nueva Render migrada: tres roles limitados, cinco schemas, 20 tablas FORCE RLS, VerifyFull y 27 migraciones cotejadas con fuente. Recibos `render-postgres-final-readonly-boundary.json` y `render-postgres-migrations-readonly.json`. Host publicado; faltan recorridos A/B y restore del destino final. La base estaba vacía en el alta; después se migraron sólo las 84 definiciones autorizadas, sin valores ni historiales locales. |
+| P03 | [ ] Base PostgreSQL externa configurada con TLS y roles separados; sólo fixtures autorizados en las pruebas públicas. | **29/10, f49**: 31 migraciones exactas, 35 tablas/22 FORCE RLS/tres secuencias, roles limitados y restauración privada del esquema final comprobados. Login A/B y rechazo de la fixture A desde B verificados; se conservan las 84 definiciones migradas originalmente. Faltan negativos completos de sus recursos factuales en el destino publicado. |
 | P04 | [ ] Llaves de delegación y Data Protection persisten, se cifran y rotan con procedimiento probado; reiniciar no cambia autoridad ni permite replay. | Key ring y restore local comprobados. Rotación: fallo inicial conservado y prueba con proveedor reiniciado PASS en `tests/hosting-rotation-restart.trx`. Repetir continuidad/restore en el backend persistente final; no sustituirlo por disco efímero o claves en Vercel. |
-| P05 | [ ] Correo de confirmación/recuperación recibido y utilizado; envío fallido tiene diagnóstico y recuperación sin enumerar cuentas. | **Bloqueado**: Brevo sin clave transaccional; el usuario reportó fallo real de SMS. Ticket autorizado **5641363**, enviado y abierto. Mailjet sólo en investigación: cuenta no creada, formulario sin SMS observado pero con CAPTCHA/advertencia de conexión y contraseña manual pendiente. No hay proveedor alternativo operativo ni entrega comprobada. |
+| P05 | [ ] Correo de confirmación/recuperación recibido y utilizado; envío fallido tiene diagnóstico y recuperación sin enumerar cuentas. | **Bloqueado**: la aplicación pública devuelve `mailDelivery=unconfigured`; el panel Brevo exige teléfono y el usuario reportó fallo real de SMS. Seguimiento autorizado del 29/10 enviado en ticket **5641363**, comentario `40247224582418`, estado Open. No hay entrega comprobada. Mailjet permanece sólo en investigación; no se habilitó otro proveedor. |
 | P06 | [ ] Google utiliza un proyecto/cliente de producción separado y callbacks del origen final. | Consola real: callback Vercel correcto, compartido con localhost en el cliente Local; audiencia External / Testing, un usuario de prueba, publicación deshabilitada por Branding incompleto. Página principal, privacidad y condiciones vacías. No se publicó ni amplió acceso. El login público anterior no cierra estos pendientes. [Política oficial de Google](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance). |
-| O01 | [ ] Backups externos automáticos, cifrado, retención y restauración se verifican con objetivos de pérdida de datos y tiempo de recuperación acordados. | Obligatorio para comercial. Una restauración QA no prueba el backup del proveedor. |
+| O01 | [ ] Backups externos automáticos, cifrado, retención y restauración se verifican con objetivos de pérdida de datos y tiempo de recuperación acordados. | **Parcial, 29/10**: respaldo y restauración privada finales de 35 tablas/22 FORCE RLS/31 migraciones/tres secuencias aprobados y ejecutados una vez, referencias intactas antes/después de limpieza, copia apagada y ACL comprobada. Se conservan los recibos anteriores de 33 tablas. Faltan respaldo externo automático/cifrado, retención, RPO/RTO y continuidad de claves/sesiones; no cierra la puerta comercial completa. |
 | O02 | [ ] Health/readiness, errores, cola, cuotas, fallos del dispositivo y expiraciones tienen alertas y un responsable de respuesta. Logs sin credenciales ni razonamiento privado. | fe373fc verifica health 200→503→200, señales internas tipadas y ausencia de payloads/credenciales en ellas. Faltan collector, entrega de alertas y responsable operativo; no basta el probe ni contar logs como notificación entregada. |
 | O03 | [ ] Carga HTTP y del agente con la capacidad inicial prevista, fallos de almacenamiento y más de una instancia no mezclan usuarios ni exceden cuotas. | CI fe373fc: diez cuentas sintéticas, dos hosts, límites 2 global/1 propietario, cuatro admisiones y un rechazo por cuota, cero invocaciones duplicadas, diez lecturas de agente sin modelo y recuperación de pool. TestServer+PostgreSQL real no son carga pública, DOM o capacidad de Qwen. Declarar capacidad y SLO antes de ofrecerlos. |
 | O04 | [ ] Despliegue y rollback del artefacto identificado comprobados; las migraciones tienen una recuperación compatible con el backup y los datos reales. | Piloto desplegado, pero rollback no ejecutado. No revertir ejecutables ignorando el estado del esquema. |
 | B03 | [ ] Fuente revisada/snapshot privado recuperable, build, dependencias, artefactos y pruebas del candidato se correlacionan con hashes. | Captura de bytes, commits 84faba7/fe373fc, índice normal intacto, cinco locks sin cambiar versiones y recibos CI con hashes comprobados. Falta correlación final con el artefacto desplegado/recuperable; pinning y un restore no prueban reproducibilidad binaria completa. |
-| CI01 | [x] CI remoto ejecuta los gates del candidato y conserva artefactos y fallos. | Run 40759073433, SHA fe373fc: jobs Windows y PostgreSQL aprobados, TRX y cinco recibos JSON descargados. El fallo health de 84faba7/run40756884417 se conserva. La CI no ejecuta Qwen; sus 21 omisiones son explícitas. RC8/run40736397613 permanece como evidencia histórica. |
+| CI01 | [x] CI remoto ejecuta los gates del candidato y conserva artefactos y fallos. | **29/10, e446aa5 / run40881780250 SUCCESS**: jobs Windows y PostgreSQL aprobados; 2.097 resultados .NET PASS/0 FAIL/21 NotExecuted y 482 frontend PASS. TRX, recibos sintéticos y hashes descargados. CI no ejecuta Qwen. Se conservan los fallos anteriores y los recibos locales 481/482 antes de corregir el bootstrap del arnés. |
 | H01 | [ ] Una persona completa y acepta el flujo SaaS definido, incluyendo el dispositivo y ChatGPT, en el candidato publicado. | La aceptación humana de NOVA local 1.0.0 se conserva; no se traslada automáticamente al SaaS. |
 | GTM01 | [ ] Alcance ofrecido, límites gratuitos, soporte, privacidad, retención y recuperación se comunican de acuerdo con lo que realmente funciona. | No anunciar venta/escala/disponibilidad que el piloto no ha probado. La venta de prompts no forma parte de este incremento. |
+| I01 | [ ] El alojamiento elegido permite el uso comercial y ofrece persistencia y operación acordes con los criterios de aceptación, dentro del presupuesto aprobado. | **Bloqueante, 29/10**: Vercel Hobby activo restringe uso comercial; Render Free no recomienda producción y su PostgreSQL caduca. La ruta gratuita alternativa no está provisionada/validada y no hay presupuesto de pago autorizado. |
 
 ### Base del piloto conservada — observación del 27/10/2026
 

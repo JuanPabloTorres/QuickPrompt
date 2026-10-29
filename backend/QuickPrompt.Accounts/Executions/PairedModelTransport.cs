@@ -35,6 +35,7 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
         // Queue wait counts towards this bound; the caller may impose an earlier stage deadline.
         deadline.CancelAfter(TimeSpan.FromSeconds(queue.Limits.MaximumSeconds));
         var terminal = false;
+        var lastObserved = job;
         try
         {
             while (true)
@@ -42,6 +43,7 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
                 deadline.Token.ThrowIfCancellationRequested();
                 if (!await connections.ProposalOwned(actor, connectionId, deadline.Token)) throw RevokedConnection();
                 var current = executions.Read(actor, libraryId, job.Id);
+                lastObserved = current;
                 switch (current.Status)
                 {
                     case ExecutionStatus.Completed:
@@ -62,7 +64,13 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
             }
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
-        { throw new LlmUnavailableException("El equipo vinculado no terminó dentro del plazo. No se repetirá la solicitud automáticamente.", "MODEL_TIMEOUT"); }
+        {
+            // A queue observation does not establish that inference started. A claim may
+            // race the deadline, so describe the missing confirmation, not device liveness.
+            if (lastObserved is { Status: ExecutionStatus.Queued, StartedAt: null })
+                throw new LlmUnavailableException("No se confirmó que el componente local recogiera la solicitud dentro del plazo. Comprueba que siga activo; no se repetirá automáticamente.", "LOCAL_DISPATCH_TIMEOUT");
+            throw new LlmUnavailableException("El equipo vinculado no terminó dentro del plazo. No se repetirá la solicitud automáticamente.", "MODEL_TIMEOUT");
+        }
         finally
         {
             // Cancellation remains an owner action even if the device grant has expired.

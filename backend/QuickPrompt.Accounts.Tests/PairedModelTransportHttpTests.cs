@@ -147,9 +147,34 @@ public sealed partial class AccountHttpTests
         var port = proposals.ForConnection(actor, source.Library, grant.Connection.Id);
         var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => port.Send(ProposalPacket(), CancellationToken.None, "absent-device").WaitAsync(TimeSpan.FromSeconds(8)));
         Assert.Contains("plazo", failure.Message);
-        Assert.Equal("MODEL_TIMEOUT", failure.Code);
+        Assert.Equal("LOCAL_DISPATCH_TIMEOUT", failure.Code);
         // No device claimed the request. Dispatch cleanup consumes the pending cancellation,
         // rather than picking up a job whose caller has already stopped waiting.
+        Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(device)).StatusCode);
+    }
+
+    [Fact]
+    public async Task AClaimedDeviceWithoutAResultKeepsTheExecutionTimeoutAndCannotSubmitLate()
+    {
+        await using var host = await Start(configureServices: services => services.AddSingleton(new ExecutionLimits(MaximumSeconds: 3)));
+        using var owner = Client(host.App); using var device = Client(host.App);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
+        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        await using var scope = host.App.Services.CreateAsyncScope();
+        var port = scope.ServiceProvider.GetRequiredService<AccountModelProposals>().ForConnection(actor, source.Library, grant.Connection.Id);
+        var inference = port.Send(ProposalPacket(), CancellationToken.None, "claimed-device");
+        var lease = await AwaitProposal(device, inference);
+        var running = await owner.GetFromJsonAsync<ExecutionView>($"/api/accounts/v1/libraries/{source.Library}/executions/{lease.Id}");
+        Assert.Equal(ExecutionStatus.Running, running!.Status);
+        Assert.NotNull(running.StartedAt);
+        var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => inference.WaitAsync(TimeSpan.FromSeconds(8)));
+        Assert.Equal("MODEL_TIMEOUT", failure.Code);
+        var stopped = await owner.GetFromJsonAsync<ExecutionView>($"/api/accounts/v1/libraries/{source.Library}/executions/{lease.Id}");
+        Assert.True(stopped!.CancelRequested);
+        // The existing endpoint rejects a result after its execution deadline;
+        // cancellation never extends the lease or admits a late proposal.
+        Assert.Equal(HttpStatusCode.Conflict, (await FinishProposal(device, lease, ProposalReply())).StatusCode);
+        Assert.Equal(0L, await ProposalRows(actor.Id, lease.Id));
         Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(device)).StatusCode);
     }
 }

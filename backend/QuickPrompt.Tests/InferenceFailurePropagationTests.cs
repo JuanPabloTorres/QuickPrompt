@@ -10,7 +10,7 @@ public sealed class InferenceFailurePropagationTests
 {
     private const string Raw = "SYNTHETIC_UNTRUSTED_PROVIDER_BODY_TOKEN";
     public static IEnumerable<object[]> Codes() => new[] { "review", "advice", "ui", "legacy" }
-        .SelectMany(owner => new[] { "MODEL_UNAVAILABLE", "MODEL_TIMEOUT", "MODEL_FAILED", "QUEUE_EXPIRED", "CONNECTION_REVOKED",
+        .SelectMany(owner => new[] { "MODEL_UNAVAILABLE", "MODEL_TIMEOUT", "MODEL_FAILED", "QUEUE_EXPIRED", "LOCAL_DISPATCH_TIMEOUT", "CONNECTION_REVOKED",
             "SESSION_REVOKED", "LEASE_EXPIRED", "HOST_STOPPED", "UNTRUSTED_UNKNOWN_CODE" }.Select(code => new object[] { owner, code }));
 
     [Theory, MemberData(nameof(Codes))]
@@ -18,7 +18,8 @@ public sealed class InferenceFailurePropagationTests
     {
         var cause = new LlmUnavailableException(Raw, code); var transport = new FailureTransport(cause);
         var failure = await Assert.ThrowsAsync<PreparationToolException>(() => Invoke(owner, transport, default));
-        Assert.Equal(cause.Code, failure.Code); Assert.Equal(1, transport.Calls);
+        Assert.Equal(code == "UNTRUSTED_UNKNOWN_CODE" ? "MODEL_FAILED" : code, failure.Code); Assert.Equal(1, transport.Calls);
+        if (code == "LOCAL_DISPATCH_TIMEOUT") Assert.Contains("componente local", failure.Message);
         Assert.Equal(owner switch { "review" => "ReadRequestedTitle", "advice" => "ExplainTaskGoal", "ui" => "Decide", _ => "SyntheticLegacyStage" }, failure.Tool);
         Assert.DoesNotContain(Raw, failure.ToString()); Assert.Null(failure.InnerException);
         Assert.Equal(0, transport.Rejections);

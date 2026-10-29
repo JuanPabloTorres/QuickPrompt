@@ -11,6 +11,7 @@ public static class InferenceFailures
         var message = failure.Code switch {
             "MODEL_UNAVAILABLE" => "El modelo local no está disponible. La biblioteca sigue disponible.",
             "MODEL_TIMEOUT" => "El modelo agotó el tiempo permitido. No se repetirán automáticamente sus pasos.",
+            "LOCAL_DISPATCH_TIMEOUT" => "No se confirmó que el componente local recogiera la solicitud dentro del plazo. Comprueba que siga activo; no se repetirá automáticamente.",
             "QUEUE_EXPIRED" => "La solicitud caducó antes de que el equipo la recogiera.",
             "CONNECTION_REVOKED" => "La autorización del equipo fue revocada. No se ejecutarán pasos pendientes.",
             "SESSION_REVOKED" => "La sesión dejó de estar autorizada. No se ejecutarán pasos pendientes.",
