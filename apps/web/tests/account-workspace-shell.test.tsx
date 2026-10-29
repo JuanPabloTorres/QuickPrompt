@@ -43,6 +43,9 @@ it('uses the shared authenticated shell and account-owned navigation without loc
   const fixture = accountFixture();
   render(<AccountPage service={fixture.service} />);
   await screen.findByText(actor.email);
+  // Identity is rendered before the library bootstrap effect finishes. Measure
+  // theme-only traffic after that independent request has settled.
+  await screen.findByRole('heading', { name: 'Tu primera biblioteca empieza aquí.' });
   const sidebar = screen.getByRole('complementary', { name: 'Barra lateral de QuickPrompt' });
   expect(sidebar.closest('.accounts-workspace.app-shell')).toBeTruthy();
   expect(within(sidebar).getByRole('button', { name: 'QuickPrompt NOVA, biblioteca' }).querySelector('img')?.getAttribute('src')).toBe('/branding/quickprompt_official.png');

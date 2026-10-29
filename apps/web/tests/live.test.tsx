@@ -471,6 +471,24 @@ it.each(['COMPLETED', 'FAILED', 'BLOCKED', 'CANCELLED'])('reopens task choices w
   expect(fetcher).toHaveBeenCalledOnce();
 });
 
+it.each(['COMPLETED', 'FAILED'])('opens %s history when the observer mounts after the assistant is already open', async status => {
+  vi.stubGlobal('EventSource', Events);
+  const fetcher = vi.fn(async () => Response.json(view(status, 1))); vi.stubGlobal('fetch', fetcher);
+  const workspace = (observe: boolean) => <LazyMotion features={domAnimation}>
+    <AgentDock context="Biblioteca" hasActivity actions={<button>Crear otra tarea</button>}>{null}</AgentDock>
+    {observe && <NovaLive runId={id} worker={false} centralControl onReview={vi.fn()} />}
+  </LazyMotion>;
+  const page = render(workspace(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
+  page.rerender(workspace(true));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+  fireEvent.click(screen.getByRole('button', { name: 'Ver última actividad de NOVA' }));
+  expect(await screen.findByRole('button', { name: 'Descargar actividad' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Detener NOVA' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Revisar y guardar/ })).toBeNull();
+  expect(fetcher).toHaveBeenCalledOnce();
+});
+
 it('closes with Escape, restores its trigger and stays inside an open dialog focus scope', async () => {
   setup(); await openActivity(); const toggle = screen.getByRole('button', { name: 'Actividad de NOVA' });
   fireEvent.keyDown(screen.getByRole('button', { name: 'Pausar' }), { key: 'Escape' });

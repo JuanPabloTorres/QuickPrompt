@@ -71,6 +71,10 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
   const host = useAgentOverlayHost(true), panelId = useId();
   const detailsVisible = expanded && (!host?.hasAttribute('data-nova-dock-live-host') || assistantVisible);
   useEffect(() => {
+    // Selecting a profile or restoring a run can mount this observer after the
+    // dock opened. Read its current state before listening for later changes.
+    const panel = host?.hasAttribute('data-nova-dock-live-host') ? host.closest<HTMLElement>('.nova-dock-panel') : null;
+    if (panel) setAssistantVisible(!panel.hidden);
     const visibility = (event: Event) => {
       const visible = (event as CustomEvent<boolean>).detail;
       setAssistantVisible(visible);
@@ -81,7 +85,7 @@ export function NovaLive({ runId, worker, onReview, onPrepareReview, onChooseSou
     };
     window.addEventListener('nova-assistant-visibility', visibility);
     return () => window.removeEventListener('nova-assistant-visibility', visibility);
-  }, [view?.run.status]);
+  }, [host, view?.run.status]);
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('nova-agent-status', { detail: view ? view.run.pauseRequested ? 'PAUSED' : view.run.status : '' }));
   }, [view?.run.status, view?.run.pauseRequested]);
