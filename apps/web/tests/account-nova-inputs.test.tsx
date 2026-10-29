@@ -65,7 +65,8 @@ it('composes the real account ASK dialog and restarts only after explicit names,
     targetId: source.id, revision: source.revision, pauseRequested: false, browserOpen: false, approval: 'NONE', effectCommitted: false, errorCode: starts === 1 ? 'INPUT_FIELDS_NEED_CONFIRMATION' : null });
   const service = createAccountService(createApiClient({ send: async (path, options) => {
     if (path === '/account/csrf') return Response.json({ token: 'csrf' });
-    if (path === '/account/connections/') return Response.json([{ id: connectionId, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01' }]);
+    // Field clarification runs only after this synthetic worker has a polling observation.
+    if (path === '/account/connections/') return Response.json([{ id: connectionId, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01', presence: { status: 'POLLING', observedAt: '2026-10-29T12:00:00Z', expiresAt: '2026-10-29T12:00:20Z' } }]);
     if (path.includes('/nova/sessions/')) return new Response(null, { status: 204 });
     if (path.endsWith('/nova/live')) {
       const body = JSON.parse(String(options?.body)); sent.push(body.request); starts++; id = body.request.runId; return Response.json(record());
