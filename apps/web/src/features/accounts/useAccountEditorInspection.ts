@@ -2,17 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { ApiError, errorMessage } from '../../services/api';
 import type { AccountEditorInspection, AccountPrompt, AccountService } from '../../services/accounts';
 
-/** The server owns placeholder syntax. A response may describe only its original editor snapshot. */
-export function useAccountEditorInspection(libraryId: string, source: Pick<AccountPrompt, 'id' | 'revision'> | null,
+/** Server-owned syntax with snapshot isolation. Archived sources abort and pause inspection until recovered. */
+export function useAccountEditorInspection(libraryId: string, source: Pick<AccountPrompt, 'id' | 'revision' | 'isArchived'> | null,
   templateText: string, values: Record<string, string>, service: AccountService, onExpired: () => void) {
-  const definition = useMemo(() => ({ libraryId, service, promptId: source?.id ?? null, revision: source?.revision ?? null, templateText }),
-    [libraryId, source?.id, source?.revision, templateText, service]);
+  const enabled = !source?.isArchived;
+  const definition = useMemo(() => ({ libraryId, service, promptId: source?.id ?? null, revision: source?.revision ?? null, templateText, enabled }),
+    [libraryId, source?.id, source?.revision, templateText, service, enabled]);
   const scope = useMemo(() => ({ definition,
     input: { promptId: definition.promptId, revision: definition.revision, templateText, values } }), [definition, templateText, values]);
   const [snapshot, setSnapshot] = useState<{ scope: typeof scope; result?: AccountEditorInspection; error?: string }>();
   const [fields, setFields] = useState<{ definition: typeof definition; names: string[] }>();
   const [retry, setRetry] = useState(0);
   useEffect(() => {
+    if (!definition.enabled) return;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       void service.inspectEditor(libraryId, scope.input, controller.signal).then(result => {
@@ -25,7 +27,7 @@ export function useAccountEditorInspection(libraryId: string, source: Pick<Accou
     }, 150);
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [scope, definition, libraryId, service, onExpired, retry]);
-  const current = snapshot?.scope === scope ? snapshot : undefined;
-  return { result: current?.result, error: current?.error, variableNames: fields?.definition === definition ? fields.names : [],
-    pending: !current, retry: () => { setSnapshot(undefined); setRetry(value => value + 1); } };
+  const current = definition.enabled && snapshot?.scope === scope ? snapshot : undefined;
+  return { paused: !definition.enabled, result: current?.result, error: current?.error, variableNames: fields?.definition === definition ? fields.names : [],
+    pending: definition.enabled && !current, retry: () => { setSnapshot(undefined); setRetry(value => value + 1); } };
 }

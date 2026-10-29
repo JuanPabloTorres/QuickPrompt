@@ -30,6 +30,7 @@ function fixture() {
     if (path.includes('/prompts/catalog?')) return Response.json({ items: deleted ? [] : [prompt], total: deleted ? 0 : 1, page: 0, size: 12 });
     if (path.endsWith('/groups') || path.endsWith('/groups/memberships') || path.endsWith('/publications')) return Response.json([]);
     if (path.endsWith('/memory/editor/inspect')) {
+      if (prompt.isArchived) return Response.json({ detail: 'Fuente no disponible.' }, { status: 404 });
       const input = body?.values as Record<string, string>;
       return Response.json({ variableNames: ['proyecto'], missingVariables: input.proyecto?.trim() ? [] : ['proyecto'], compiledText: input.proyecto?.trim() ? `Conceptualiza ${input.proyecto}.` : null });
     }
@@ -102,6 +103,10 @@ it('preserves entered values through favorite and archive revisions, using the e
   fireEvent.click(screen.getByRole('button', { name: 'Archivar' }));
   await screen.findByText('Este prompt está archivado. Recupéralo para volver a utilizarlo.');
   expect(screen.getByRole('button', { name: 'Usar prompt' })).toHaveProperty('disabled', true);
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 200)); });
+  expect(fake.calls.filter(call => call.path.endsWith('/memory/editor/inspect') && call.body?.revision === 5)).toHaveLength(0);
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect((field as HTMLTextAreaElement).value).toBe('Árbol\n  proyecto literal');
   fireEvent.click(screen.getByRole('button', { name: 'Recuperar' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Usar prompt' })).toHaveProperty('disabled', false), { timeout: 5000 });
   expect(fake.calls.filter(call => /\/(favorite|archive|restore)$/.test(call.path)).map(call => call.body)).toEqual([{ revision: 3 }, { revision: 4 }, { revision: 5 }]);

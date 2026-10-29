@@ -8,10 +8,11 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
-### Último corte verificado: candidato 92672c2, pendiente de despliegue
+### Último corte verificado: candidato f21dc31, pendiente de despliegue
 
-[CI 40789129846](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40789129846)
-terminó **success** para `92672c201c010f8b1f0978ec95293ee5ba52a4f9`.
+[CI 40791828142](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40791828142)
+terminó **success** para `f21dc3183418abe1ef6019af7f74016c6c38864d`, que añade
+la corrección de capas del modal al candidato base `92672c2`, también aprobado.
 Los artefactos TRX contienen **2097 pruebas ejecutadas y aprobadas, cero fallidas**:
 442 PostgreSQL, 1409 backend, 8 telemetría Debug, 27 MCP, 16 companion,
 27 recuperación y 168 legado. Las 21 pruebas de inferencia PostgreSQL omitidas
@@ -39,9 +40,10 @@ de un solo uso no se reutiliza. Siguen pendientes correo real, recuperación
 operativa, presentación en ChatGPT web y aceptación SaaS. **NO GO comercial**;
 no corresponde crear un tag estable.
 
-Recibos locales: `commercial-ops-rc9/attempt-06/ci-final.json`,
+Recibos locales: `commercial-ops-rc9/attempt-07/ci-final.json`,
 `ci-trx-reviewed.json`, artefactos `ci-postgres`/`ci-web` y
-`factual-role-guards/history-continuity-availability-final.json`.
+`factual-role-guards/history-continuity-availability-final.json` y
+`commercial-ops-rc9/attempt-07/local-ui-evidence.json`.
 Las siguientes secciones conservan la evolución histórica, no sustituyen este corte.
 
 ### Contraste posterior de móvil y MCP
@@ -67,6 +69,55 @@ fecha de uso. Es evidencia del conector existente, no de una segunda cuenta de
 ChatGPT ni de su presentación web. M02/M03 permanecen abiertos. Recibos privados
 en `commercial-ops-rc9/attempt-07`; las capturas del navegador sólo están en las
 salidas de herramienta, sin archivo exportado certificado.
+
+Después se preparó y copió desde la web un resultado sintético de esa misma
+fixture: pasó de uno a dos usos. Una segunda copia del mismo resultado mantuvo
+dos usos y la misma fecha, comprobado mediante MCP. La plantilla permaneció en
+revisión 5; no se ejecutó IA ni se modificaron prompts personales. El resultado
+de auditoría quedó sujeto a la retención normal de siete días. Ocho controles
+HTTP públicos pasaron sin credenciales reales, y una lectura nueva de Render
+confirmó que producción seguía en `fe373fc`; no son controles del nuevo candidato
+desplegado. Las conversaciones históricas de ChatGPT, reabiertas sin generar
+respuestas, conservaron el error de carga. El dashboard de Brevo aún exige
+verificar el teléfono y el ticket leído desde el servidor conserva dos comentarios.
+
+### Recorrido manual posterior: archivo, revisión y colección
+
+La fixture privada «QA comercial f21dc31 · Flujo sin IA», creada sólo en QA,
+conservó sus tres marcadores al crear, editar, consultar la revisión inicial y
+recuperarla como una revisión nueva. La colección creada desde la biblioteca
+apareció en el detalle, permaneció asignada y filtró exactamente esa plantilla.
+Archivo creó la revisión 4 y recuperar produjo la 5; cuerpo, variables y colección
+se conservaron tras recargar. No se solicitó IA ni se borraron datos.
+
+Ese recorrido descubrió una consulta incorrecta de la interfaz: el detalle seguía
+inspeccionando una fuente archivada. Una reproducción HTTP independiente, con el
+mismo actor/ID/revisión/valores sintéticos, confirmó el 404 requerido por el servidor.
+La UI mostraba un error genérico; el uso permanecía bloqueado. La corrección pausa
+la inspección al archivar, cancela trabajo anterior y reanuda con la revisión actual
+al recuperar, conservando los valores. La regla pertenece al hook compartido: el
+detalle y el editor la consumen sin repetirla. El editor explica la pausa y bloquea
+conservar contexto ligado al archivo; mantiene el guardado manual de título/cuerpo.
+No se relajaron controles del backend. Se conservaron el baseline de 10/12 —dos
+fallos— y el corte intermedio 12/12 con 479/479. El owner final aprobó 13/13 focales,
+480/480 de interfaz y el build de cuentas.
+El navegador contrastó la misma revisión archivada 4 antes/después y la recuperación
+5 con vista previa exacta. La CI del nuevo corte debe comprobarse separadamente
+del pase anterior de f21dc31. El contraste final comprobó además detalle/editor
+archivados y recuperación en revisiones 6/7, con cuerpo y valores correctos.
+Recibos: `commercial-ops-rc9/attempt-08`.
+
+Conservar un borrador separado recuperó título, texto y tres valores tras recargar;
+la plantilla guardada permaneció en revisión 5 y no hubo una preparación solicitada.
+Después de cambiar la fuente a revisión 7, recuperar el contexto antiguo mostró el
+aviso de origen cambiado: sobrescribir y conservar contexto quedaron bloqueados;
+guardar como nuevo siguió disponible. Se canceló sin guardar ni ejecutar. Son
+recorridos de Codex con datos sintéticos, no aceptación humana ni prueba A/B pública.
+
+Exportar anunció éxito en la aplicación, pero expiró la captura del evento de
+descarga. La política del navegador rechazó la lista interna de descargas de Edge;
+el archivo permanece sin verificar y se solicitó comprobación manual. No se usó
+otra vía para inspeccionar esa lista ni se cerró W01 por el mensaje de éxito.
 
 ### Revisión factual durable — implementación local, aún no publicada
 
@@ -788,7 +839,7 @@ La autoría vigente se detalla en el expediente local `../nova/FIDELIDAD_R3_DISE
 | M01 | [x] MCP delegado exige identidad, audiencia, biblioteca y scopes por conexión. Refresh no amplía permisos y revocar invalida acceso futuro. | SDK real/HTTP/PostgreSQL comprobados; no acredita la instalación final en ChatGPT. |
 | M02 | [ ] Dos cuentas de ChatGPT conectan el endpoint público por OAuth; cada una busca, lee, compila y guarda sólo con su scope, y no puede acceder a recursos de la otra. | Una cuenta ChatGPT de la biblioteca principal ya buscó, leyó, creó, compiló y aplicó contenido. El mismo permiso siguió leyendo tras desplegar RC7 y tras cambiar de cuenta web. A/B web e importación/revocación reales comprobados; falta una segunda cuenta real de ChatGPT. |
 | M03 | [ ] Consentimiento, descubrimiento, denegación, scopes opcionales, PKCE, errores, renovación y revocación funcionan con el cliente ChatGPT real. | OAuth y consentimiento reales de la biblioteca principal, lectura/creación y continuidad del permiso tras desplegar comprobados. Challenge anónimo 401 y Origin ajeno 403 en RC7. No se ejecutó revocación/renovación de ese cliente ChatGPT en producción; conservar esa puerta abierta. |
-| W01 | [ ] Biblioteca, editor, variables, uso, colecciones, resultados, versiones, exportación y borradores tienen navegación y errores recuperables en escritorio y móvil. | Componentes y recorridos previos probados; raíz creó biblioteca demo/prompt manual con tres variables en el piloto público. Resto del recorrido conjunto, móvil y recuperación pendientes. |
+| W01 | [ ] Biblioteca, editor, variables, uso, colecciones, resultados, versiones, exportación y borradores tienen navegación y errores recuperables en escritorio y móvil. | Producción: preparación sin IA, copia idempotente y reapertura exacta. QA: creación manual con tres variables, colección desde biblioteca visible en detalle, edición, recuperación de versión, archivo/recuperación y persistencia; fallo de inspección archivada corregido en detalle/editor. Borrador recuperado con valores tras recarga y bloqueo de sobrescritura cuando su fuente cambia. Modal móvil/escritorio comprobado. Faltan el recorrido completo del nuevo candidato publicado y el archivo exportado, cuya entrega no pudo verificarse. |
 
 ## Puertas del piloto público y de operación comercial
 
