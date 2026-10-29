@@ -8,6 +8,66 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
+### Último corte verificado: candidato 92672c2, pendiente de despliegue
+
+[CI 40789129846](https://github.com/JuanPabloTorres/QuickPrompt/actions/runs/40789129846)
+terminó **success** para `92672c201c010f8b1f0978ec95293ee5ba52a4f9`.
+Los artefactos TRX contienen **2097 pruebas ejecutadas y aprobadas, cero fallidas**:
+442 PostgreSQL, 1409 backend, 8 telemetría Debug, 27 MCP, 16 companion,
+27 recuperación y 168 legado. Las 21 pruebas de inferencia PostgreSQL omitidas
+no se contabilizan como aprobadas. El job web aprobó además **478/478** pruebas
+de interfaz y su build. No se repitió la campaña de tres inferencias reales.
+
+El comparador pasó sus 16 contrastes y la restauración sintética completa
+confirmó 22 tablas FORCE RLS, filas y contrato factual, permisos, borrado privado
+y key ring cifrado. Esto cierra el fallo del comparador en CI, sin certificar la
+recuperación de los datos reales ni una carga comercial. Los intentos fallidos
+anteriores se conservan más abajo con sus causas conocidas o desconocidas.
+
+La instancia QA nativa reiniciada con Cloud `DFD09C19` conservó ambos documentos
+aprobados: la comparación HTTP verificó texto y trazabilidad exactos; el navegador
+volvió a entrar y abrió el inventario corregido desde el historial. No hubo una
+nueva llamada al modelo. Es una comprobación de Codex con datos sintéticos,
+no aceptación humana del nuevo flujo SaaS.
+
+La producción continúa en **fe373fc**. Antes de aplicar las dos migraciones
+factuales y publicar backend/interfaz faltan ejecutar y verificar un respaldo
+nuevo con autorización específica de su destino temporal de credencial. Su plan
+nativo v4 quedó preparado en modo ReviewOnly: ninguna conexión productiva ni DDL.
+El hash y el destino exacto están en el expediente privado; el permiso antiguo
+de un solo uso no se reutiliza. Siguen pendientes correo real, recuperación
+operativa, presentación en ChatGPT web y aceptación SaaS. **NO GO comercial**;
+no corresponde crear un tag estable.
+
+Recibos locales: `commercial-ops-rc9/attempt-06/ci-final.json`,
+`ci-trx-reviewed.json`, artefactos `ci-postgres`/`ci-web` y
+`factual-role-guards/history-continuity-availability-final.json`.
+Las siguientes secciones conservan la evolución histórica, no sustituyen este corte.
+
+### Contraste posterior de móvil y MCP
+
+En el piloto publicado, una sesión Google nueva de la cuenta principal abrió la
+biblioteca y encontró la colección de la fixture en el detalle del prompt. La
+auditoría a 390 px detectó una superposición visual: la barra lateral usa capa 40,
+pero el modal común y su fondo usaban 11/10. Radix sí impedía eventos de fondo;
+no se observó un fallo de autorización ni se atribuye un bloqueo de clics.
+
+La corrección compartida eleva fondo/contenido a 50/51, conservando el historial
+70/71 y los controles de NOVA 10000/10001. El build de cuentas y las 478 pruebas
+de interfaz pasaron. En QA aislado se comprobó el modal completo a 390 y 1280 px,
+el cierre con retorno del foco y la lectura móvil del documento factual aprobado.
+El reinicio conservó la sesión y los dos documentos; no hubo otra inferencia.
+Esta validación local no convierte en corregida la web pública anterior; la CI y
+el despliegue deben corresponder al commit que incluya esta corrección.
+
+El MCP público volvió a buscar y leer la fixture de auditoría en revisión 5.
+Sin valores devolvió ambas variables faltantes; con valores sintéticos compiló
+el texto literal sin inferencia. Una lectura posterior conservó revisión, usos y
+fecha de uso. Es evidencia del conector existente, no de una segunda cuenta de
+ChatGPT ni de su presentación web. M02/M03 permanecen abiertos. Recibos privados
+en `commercial-ops-rc9/attempt-07`; las capturas del navegador sólo están en las
+salidas de herramienta, sin archivo exportado certificado.
+
 ### Revisión factual durable — implementación local, aún no publicada
 
 El usuario eligió revisar hechos y guardar el documento en el historial. La nueva
