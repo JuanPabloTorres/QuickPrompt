@@ -24,7 +24,7 @@ public sealed partial class AccountHttpTests
     public async Task UnchangedFactualStatementsPreserveUneditedProvenanceAndConfirmationReplay()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(source.Library);
         var posted = await owner.PostAsJsonAsync(root + "/factual-reviews", new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision,
             grant.Connection.Id, new() { ["tema"] = "El sensor pertenece a Marta." }, ["tema"], "Inventario sin cambios"));
@@ -49,7 +49,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(configureServices: services => services.AddSingleton(new ExecutionLimits(OwnerQueued: 1)));
         using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         using var scope = host.App.Services.CreateScope(); var actor = await ProposalActor(owner);
         var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var occupying = await proposals.Submit(actor, source.Library, grant.Connection.Id, Guid.NewGuid(), ProposalPacket()); // Synthetic queued work; never inferred.
@@ -89,7 +89,7 @@ public sealed partial class AccountHttpTests
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App); using var other = Client(host.App); using var otherDevice = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); await Login(other, await Register(other, host.Mail));
         var source = await LocalLibrary(owner); var foreign = await LocalLibrary(other);
-        var grant = await ProposalDevice(owner, device); var foreignGrant = await ProposalDevice(other, otherDevice);
+        var grant = await PollingProposalDevice(owner, device); var foreignGrant = await PollingProposalDevice(other, otherDevice);
         var root = FactualRoot(source.Library);
         var request = new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision, grant.Connection.Id,
             new() { ["tema"] = "Fuente propia", ["extra"] = "No es una variable" }, ["extra"], "Documento");
@@ -119,7 +119,7 @@ public sealed partial class AccountHttpTests
     public async Task RecordedNonliteralModelQuoteIsReviewableButCannotPassConfirmationUntilExplicitlyCorrected()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var library = await CreateLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var library = await CreateLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(library);
         var created = await owner.PostAsJsonAsync(root + "/prompts", new PromptContent("Recorded A source", "Transforma <notas>.", 0)); created.EnsureSuccessStatusCode();
         var source = (await created.Content.ReadFromJsonAsync<AccountPrompt>())!;
@@ -149,7 +149,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App); using var other = Client(host.App);
         var email = await Register(owner, host.Mail); await Login(owner, email); await Login(other, await Register(other, host.Mail));
-        var source = await LocalLibrary(owner); var foreign = await LocalLibrary(other); var grant = await ProposalDevice(owner, device);
+        var source = await LocalLibrary(owner); var foreign = await LocalLibrary(other); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(source.Library);
         const string notes = "Ana terminó el prototipo. Luis revisará pruebas el 30 de octubre.";
         var request = new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision, grant.Connection.Id,
@@ -216,7 +216,7 @@ public sealed partial class AccountHttpTests
     public async Task PendingFactualReviewCannotSaveAfterItsAuthorityOrSourceChanges(string change)
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(source.Library);
         var posted = await owner.PostAsJsonAsync(root + "/factual-reviews", new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision,
             grant.Connection.Id, new() { ["tema"] = "El sensor pertenece a Marta." }, ["tema"], "Inventario revisado"));
@@ -251,7 +251,7 @@ public sealed partial class AccountHttpTests
     public async Task ActiveFactualChildCannotResurrectAReviewAfterCancellationRevocationOrEdit(string change)
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(source.Library);
         var request = new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision,
             grant.Connection.Id, new() { ["tema"] = "Dato fuente explícito." }, ["tema"], "Revisión cancelable");
@@ -290,7 +290,7 @@ public sealed partial class AccountHttpTests
     public async Task ForgettingOneDocumentAlsoForgetsItsReviewAndChildWithoutDeletingThePrompt()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var root = FactualRoot(source.Library);
         var posted = await owner.PostAsJsonAsync(root + "/factual-reviews", new StartFactualReview(Guid.NewGuid(), source.Prompt.Id, source.Prompt.Revision,
             grant.Connection.Id, new() { ["tema"] = "El artículo pertenece a Sara." }, ["tema"], "Propiedad del artículo"));

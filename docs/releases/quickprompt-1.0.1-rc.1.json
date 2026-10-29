@@ -1,0 +1,42 @@
+{
+  "schema": "quickprompt-release-candidate/1",
+  "version": "1.0.1-rc.1",
+  "baselineCommit": "656101ca1b09ea3a091b8c5002b00b4c672b9dfb",
+  "branch": "release/quickprompt-1.0.1-rc.1",
+  "decision": "NO_GO",
+  "commercialReleaseAuthorized": false,
+  "stableTagCreated": false,
+  "sourceIdentity": "Resolve the commit from the branch and the external delivery manifest; this file cannot contain its own commit hash.",
+  "acceptanceDocument": "QUICKPROMPT_1.0.1_RC1.md",
+  "activeChecklist": "../development/GO_TO_MARKET.md",
+  "ciWorkflow": "../../.github/workflows/nova-web.yml",
+  "realProvider": {
+    "model": "qwen3:8b",
+    "cases": 5,
+    "historical": 3,
+    "holdoutDomains": 2,
+    "finalTechnicalPassed": 4,
+    "finalTechnicalFailed": 1,
+    "initialSemanticIndependentReview": { "passed": 1, "failed": 2, "partial": 2 },
+    "syntheticHumanCorrectionIsNotModelAcceptance": true,
+    "inferenceAfterConfirmation": 0,
+    "failedExperimentRetainedOutsideProduct": true
+  },
+  "schemaChange": {
+    "migration": "20261029151628_CompanionOperationalPresence",
+    "purpose": "Operational observation only; no prompt, token or model-output storage",
+    "expectedTables": 36,
+    "expectedForceRlsTables": 23,
+    "appliedToProduction": false,
+    "destructiveDown": "Rejected before SQL"
+  },
+  "blockedCriticalControls": [
+    "Initial model fidelity and the explicitly requested content question",
+    "Verified commercial hosting and definitive HTTPS origin",
+    "Actual confirmation and recovery email delivery",
+    "Recurring encrypted backup and application recovery",
+    "Clean Windows installation and paired real task from final package",
+    "Final public candidate acceptance with two accounts and ChatGPT MCP renewal/revocation"
+  ],
+  "evidencePolicy": "Read exact commit CI and external delivery manifest. Skipped real-provider tests, fixture browser runs and documentary encryption guarantees never become public acceptance PASS."
+}

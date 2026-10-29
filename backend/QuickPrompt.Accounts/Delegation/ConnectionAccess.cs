@@ -41,8 +41,13 @@ public sealed partial class ConnectionAccess(AccountDatabase database, UserManag
                 .Where(x => ids.Contains(x.Id) && x.Status == Statuses.Valid && x.Subject == actor.Id.ToString())
                 .Select(x => x.Id).ToArrayAsync(cancellation);
             var now = DateTimeOffset.UtcNow;
+            var observedAt = await database.Database.SqlQueryRaw<DateTimeOffset>("SELECT clock_timestamp() AS \"Value\"").SingleAsync(cancellation);
+            var connectionIds = rows.Select(x => x.Id).ToArray();
+            var presence = await database.CompanionPresences.AsNoTracking().Where(x => x.OwnerId == actor.Id && connectionIds.Contains(x.ConnectionId))
+                .ToDictionaryAsync(x => x.ConnectionId, cancellation);
             return rows.Select(x => new ConnectionView(x.Id, x.Label, x.ProfileId, x.CreatedAt, x.ExpiresAt,
-                x.RevokedAt != null, x.RevokedAt is null && x.ExpiresAt > now && x.StampHash == stamp && valid.Contains(x.AuthorizationId), x.LibraryId, McpDelegationPolicy.ScopesFor(x.McpCapabilities))).ToArray();
+                x.RevokedAt != null, x.RevokedAt is null && x.ExpiresAt > now && x.StampHash == stamp && valid.Contains(x.AuthorizationId), x.LibraryId, McpDelegationPolicy.ScopesFor(x.McpCapabilities),
+                LocalCompanionProfiles.Known(x.ProfileId) ? CompanionAvailability.View(presence.GetValueOrDefault(x.Id), observedAt) : null)).ToArray();
         }, cancellation);
 
     public async Task<ClaimsPrincipal> Approve(LibraryActor actor, ClaimsPrincipal pending, string resource, CancellationToken cancellation)

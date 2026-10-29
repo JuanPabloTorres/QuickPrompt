@@ -17,10 +17,12 @@ public sealed class CompanionWorkService(DelegationBoundary access, DelegationOr
         var actor = LibraryActor.FromPrincipal(principal);
         return await operation(actor, connection.Id, async token => await access.Active(principal, origin.Resource, token) is not null);
     }
-    public Task<LocalWorkLease?> Claim(ClaimsPrincipal principal, CancellationToken cancellation) =>
-        Authorized(principal, (actor, id, check) => queue.ClaimLocal(actor, id, check, cancellation), cancellation);
-    public Task<LeasePulse> Heartbeat(ClaimsPrincipal principal, Guid id, Guid token, CancellationToken cancellation) =>
-        Authorized(principal, (actor, connection, check) => queue.HeartbeatLocal(actor, connection, id, token, check, cancellation), cancellation);
+    public Task<LocalWorkLease?> Claim(ClaimsPrincipal principal, CancellationToken cancellation, Action<CompanionObservation>? observed = null) =>
+        Authorized(principal, (actor, id, check) => queue.ClaimLocal(actor, id, check, cancellation,
+            async (working, stop) => { var signal = await access.ObserveChecked(actor, id, working, stop); observed?.Invoke(signal); }), cancellation);
+    public Task<LeasePulse> Heartbeat(ClaimsPrincipal principal, Guid id, Guid token, CancellationToken cancellation, Action<CompanionObservation>? observed = null) =>
+        Authorized(principal, (actor, connection, check) => queue.HeartbeatLocal(actor, connection, id, token, check, cancellation,
+            async (working, stop) => { var signal = await access.ObserveChecked(actor, connection, working, stop); observed?.Invoke(signal); }), cancellation);
     public Task<bool> Finish(ClaimsPrincipal principal, Guid id, LocalWorkReceipt receipt, CancellationToken cancellation) =>
         Authorized(principal, async (actor, connection, check) =>
         {

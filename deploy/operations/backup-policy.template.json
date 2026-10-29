@@ -1,0 +1,87 @@
+{
+  "schema": "quickprompt-backup-operation/1",
+  "policyId": "quickprompt-mvp-recurring-backup",
+  "state": "DRAFT_NOT_AUTHORIZED_NOT_SCHEDULED",
+  "owner": "QuickPrompt operator",
+  "authorization": {
+    "approvedPolicySha256": null,
+    "approvedAtUtc": null,
+    "validUntilUtc": null,
+    "evidenceReference": null
+  },
+  "source": {
+    "serviceId": "quickprompt-nova-jpt",
+    "databaseHost": null,
+    "databaseName": null,
+    "tls": "VerifyFull",
+    "pgMajor": 18,
+    "schemaBaseline": "f49-final-before-any-new-migration",
+    "tableCount": 35,
+    "forceRlsCount": 22,
+    "migrationCount": 31,
+    "sequenceCount": 3,
+    "dataFingerprintVersion": 2,
+    "inventorySha256": "1891243615994507ab2992752144f47ea71c5137f2cbd0f726370c2e41ac2d39",
+    "rowsSqlSha256": "4dbec9ad551c2749cc2391033864eeeea6d3a90608f53c1105ddde6e9db27ecd",
+    "readerIdentity": null,
+    "credentialReferenceOutsideGit": null,
+    "dumpExecutorSha256": null,
+    "permissionChangeAllowed": false
+  },
+  "local": {
+    "proposedRoot": "%LOCALAPPDATA%/QuickPromptNova/operations/backups",
+    "approvedPhysicalRoot": null,
+    "identitySid": null,
+    "acl": "current operator and SYSTEM only; protected before bytes",
+    "uniqueRunDirectory": "UTC-date-plus-UUID; CreateNew; no adoption",
+    "maxPlaintextBytes": 67108864,
+    "maxArchiveBytes": 67117056,
+    "plaintextRemoval": "explicit verified post-encryption lifecycle; not implemented by Recovery"
+  },
+  "encryption": {
+    "tool": "tools/QuickPrompt.Recovery",
+    "algorithm": "AES-256-GCM/RSA-OAEP-SHA256",
+    "dedicatedRecipientPublicCertificate": null,
+    "recipientCertificateSha256": null,
+    "privateKeyCustodian": null,
+    "privateKeyRecoveryLocation": null,
+    "reuseTlsDelegationOrKeyringKey": false
+  },
+  "offsite": {
+    "state": "NOT_CONFIGURED_NOT_APPROVED",
+    "provider": null,
+    "accountId": null,
+    "region": null,
+    "bucketId": null,
+    "objectPrefix": "quickprompt-mvp/encrypted/",
+    "uploaderIdentity": null,
+    "writerScope": "create ciphertext only in approved prefix; no IAM, list/read plaintext or retention changes",
+    "restoreIdentity": null,
+    "retentionIdentity": null,
+    "maxStoredBytes": 1073741824,
+    "uploadPlaintext": false
+  },
+  "scheduleProposal": {
+    "enabled": false,
+    "frequency": "daily",
+    "timeUtc": "03:00",
+    "maxConcurrentRuns": 1,
+    "maxUncertainEffectRetries": 0,
+    "authorizationLeaseDays": 30,
+    "retainedDailyCopies": 7,
+    "retainedWeeklyCopies": 4,
+    "maximumRetentionDays": 35,
+    "rpoHoursProposedNotAgreed": 24,
+    "rtoHours": null,
+    "failureNotificationDestination": null
+  },
+  "restore": {
+    "scope": "separate approved private target; never QA or the live database",
+    "requireApprovedTargetAndIdentity": true,
+    "requirePortablePerTableCountsAndHashes": true,
+    "requireSequenceAndCatalogContract": true,
+    "requireErasureAndRevocationReconciliationBeforeReopen": true,
+    "requireApplicationKeysAndAccountRecoveryDrill": true,
+    "stopOwnedServerInFinally": true
+  }
+}

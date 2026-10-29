@@ -5,6 +5,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -185,6 +187,75 @@ public sealed partial class AccountHttpTests(PostgresFixture postgres) : IClassF
         Assert.Equal(HttpStatusCode.Unauthorized, (await second.GetAsync("/account/me")).StatusCode);
     }
 
+    [Theory]
+    [InlineData("register")]
+    [InlineData("recover")]
+    [InlineData("resend")]
+    public async Task ProviderFailureDoesNotRevealWhetherAnAccountExists(string operation)
+    {
+        var deliveryLog = new MailFailureLog();
+        await using var host = await Start(configureServices: services => {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.AddLogging(logging => logging.AddProvider(deliveryLog));
+        });
+        using var client = Client(host.App);
+        var existing = $"qa-{Guid.NewGuid():N}@example.invalid";
+        var missing = $"qa-{Guid.NewGuid():N}@example.invalid";
+        await Csrf(client);
+        Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/account/register", new Registration(existing, Password))).StatusCode);
+        if (operation == "recover")
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/confirm", Parse(host.Mail.Messages.Single()))).StatusCode);
+        host.Mail.DeliveryFailure = new AccountMailDeliveryException("MAIL_UNAVAILABLE");
+        async Task<HttpResponseMessage> Request(string email) => operation == "register"
+            ? await client.PostAsJsonAsync("/account/register", new Registration(email, Password))
+            : await client.PostAsJsonAsync("/account/" + operation, new RecoveryRequest(email));
+        using var existingResponse = await Request(existing);
+        using var missingResponse = await Request(missing);
+        Assert.Equal(HttpStatusCode.Accepted, existingResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, missingResponse.StatusCode);
+        Assert.Equal(await existingResponse.Content.ReadAsStringAsync(), await missingResponse.Content.ReadAsStringAsync());
+        var diagnostic = Assert.Single(deliveryLog.Messages);
+        Assert.Contains("MAIL_UNAVAILABLE", diagnostic);
+        Assert.DoesNotContain(existing, diagnostic); Assert.DoesNotContain(missing, diagnostic);
+        foreach (var message in host.Mail.Messages) Assert.DoesNotContain(message.Link, diagnostic);
+    }
+
+    [Theory]
+    [InlineData("confirm")]
+    [InlineData("reset")]
+    public async Task RealIdentityTokensExpireWithoutConfirmingOrChangingThePassword(string purpose)
+    {
+        await using var host = await Start(configureServices: services => {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromSeconds(1));
+        });
+        using var client = Client(host.App);
+        var email = $"qa-{Guid.NewGuid():N}@example.invalid";
+        await Csrf(client);
+        Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/account/register", new Registration(email, Password))).StatusCode);
+        var confirmation = Parse(host.Mail.Messages.Single());
+        if (purpose == "reset")
+        {
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/confirm", confirmation)).StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/account/recover", new RecoveryRequest(email))).StatusCode);
+        }
+        var expired = Parse(host.Mail.Messages.Single(message => message.Purpose == purpose));
+        // Uses the real Identity provider and a positive fixture lifetime. No clock
+        // rewriting, custom token decoder or production token settings are involved.
+        await Task.Delay(TimeSpan.FromMilliseconds(1100));
+        using var response = purpose == "confirm"
+            ? await client.PostAsJsonAsync("/account/confirm", expired)
+            : await client.PostAsJsonAsync("/account/reset", new PasswordRecovery(expired.UserId, expired.Code, "Changed-Synthetic!81"));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        if (purpose == "confirm")
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/account/login", new Login(email, Password))).StatusCode);
+        else
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/account/login", new Login(email, "Changed-Synthetic!81"))).StatusCode);
+            await Login(client, email);
+        }
+    }
+
     private async Task<RunningHost> Start(string? webRoot = null, string origin = "https://127.0.0.1:5299", bool delegation = true, bool mcp = false,
         Action<IServiceCollection>? configureServices = null)
     {
@@ -252,8 +323,23 @@ public sealed partial class AccountHttpTests(PostgresFixture postgres) : IClassF
     private sealed class CapturedMail : IAccountMail
     {
         public ConcurrentBag<AccountMail> Messages { get; } = [];
+        internal AccountMailDeliveryException? DeliveryFailure { get; set; }
         public bool Available => true;
-        public Task Send(AccountMail message, CancellationToken cancellation) { Messages.Add(message); return Task.CompletedTask; }
+        public Task Send(AccountMail message, CancellationToken cancellation)
+        {
+            Messages.Add(message);
+            return DeliveryFailure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
+        }
+    }
+    private sealed class MailFailureLog : ILoggerProvider, ILogger
+    {
+        internal ConcurrentBag<string> Messages { get; } = [];
+        public ILogger CreateLogger(string categoryName) => this;
+        public bool IsEnabled(LogLevel level) => level >= LogLevel.Warning;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public void Dispose() { }
+        public void Log<TState>(LogLevel level, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        { if (eventId.Name == "AccountMailUnconfirmed") Messages.Add(formatter(state, exception)); }
     }
     private sealed record RunningHost(WebApplication App, CapturedMail Mail, SafeProtocolLog ProtocolLog) : IAsyncDisposable
     {

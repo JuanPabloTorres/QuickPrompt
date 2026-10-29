@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
@@ -30,7 +31,14 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
         var request = JsonSerializer.SerializeToElement(packet, Json);
         // Submit validates the packet and identity before charging quota. A fresh operation
         // is one inference attempt, not an automatic retry of a failed model decision.
-        var job = await proposals.Submit(actor, libraryId, connectionId, Guid.NewGuid(), request, cancellation);
+        ExecutionView job;
+        try { job = await proposals.Submit(actor, libraryId, connectionId, Guid.NewGuid(), request, cancellation); }
+        catch (CompanionUnavailableException)
+        {
+            // A visible run may already have earlier receipts. Only this child was not
+            // admitted; do not reinterpret the whole run as a browser failure or retry it.
+            throw new LlmUnavailableException("No hay una señal reciente del componente local para continuar la inferencia. Ábrelo manualmente y espera a que consulte QuickPrompt. Las acciones ya confirmadas conservan sus recibos y no se repetirán automáticamente.", CompanionUnavailableException.Code);
+        }
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         // Queue wait counts towards this bound; the caller may impose an earlier stage deadline.
         deadline.CancelAfter(TimeSpan.FromSeconds(queue.Limits.MaximumSeconds));

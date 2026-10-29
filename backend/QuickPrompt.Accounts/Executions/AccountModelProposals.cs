@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Memory;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 using QuickPrompt.Web.Infrastructure;
@@ -32,7 +33,12 @@ public sealed class AccountModelProposals(AccountAgentMemory memory, ExecutionQu
         var payload = packet.GetRawText();
         var fingerprint = JsonSerializer.Serialize(new { libraryId, connectionId, kind = "ModelProposal", packet });
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint)));
-        return queue.AdmitProposal(actor, libraryId, operationId, hash, payload, connectionId, token => connections.ProposalOwned(actor, connectionId, token), cancellation, validateSource);
+        return queue.AdmitProposal(actor, libraryId, operationId, hash, payload, connectionId, token => connections.ProposalOwned(actor, connectionId, token), cancellation,
+            (replay, token) =>
+            {
+                if (!replay) memory.InScope(actor, libraryId, database => { CompanionAvailability.Require(database, actor.Id, connectionId); return true; });
+                validateSource?.Invoke(replay, token);
+            });
     }
 
     public JsonElement Result(LibraryActor actor, Guid libraryId, Guid id) => memory.InScope(actor, libraryId, database =>

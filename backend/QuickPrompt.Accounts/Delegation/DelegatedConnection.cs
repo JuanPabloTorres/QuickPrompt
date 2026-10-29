@@ -23,7 +23,7 @@ public sealed class DelegatedConnection
     public DateTimeOffset? RevokedAt { get; set; }
 }
 
-public sealed record ConnectionView(Guid Id, string Label, string ProfileId, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, bool Revoked, bool Active, Guid? LibraryId = null, string[]? Scopes = null);
+public sealed record ConnectionView(Guid Id, string Label, string ProfileId, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, bool Revoked, bool Active, Guid? LibraryId = null, string[]? Scopes = null, CompanionPresenceView? Presence = null);
 
 internal static class DelegationModel
 {

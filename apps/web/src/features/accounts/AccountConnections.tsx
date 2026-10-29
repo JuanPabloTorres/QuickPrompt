@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AccountConnection, AccountService, DeviceReview } from '../../services/accounts';
 import { Dialog } from '../../components/ui/Dialog';
 import { useAccountOperation } from './useAccountOperation';
+import { companionPresenceLabel } from '../../services/companionPresence';
+import { useCompanionPresenceClock } from './useCompanionPresenceClock';
 
 const profileLabels: Record<string, string> = { 'mcp-library-read': 'MCP · lectura y compilación', 'mcp-library-import': 'MCP · lectura e importación',
   'ollama-qwen3-8b': 'Equipo local · ejecutar instrucciones', 'ollama-qwen3-8b-proposals': 'Equipo local · propuestas de NOVA' };
@@ -10,20 +12,28 @@ const scopeLabels: Record<string, string> = { 'prompts:read': 'Leer y completar 
 /** Explicit consent only. Authorization is distinct from a running model or completed job. */
 export function AccountConnections({ service, onExpired }: { service: AccountService; onExpired: () => void }) {
   const [connections, setConnections] = useState<AccountConnection[]>();
+  const presenceClock = useCompanionPresenceClock(connections);
   const [code, setCode] = useState(() => new URLSearchParams(window.location.search).get('user_code') ?? '');
   const [review, setReview] = useState<DeviceReview>();
   const [revoke, setRevoke] = useState<AccountConnection>();
   const scope = useMemo(() => ({ service }), [service]);
   const operation = useAccountOperation(scope, onExpired);
+  const connectionReads = useRef(0);
+  const readConnections = useCallback((signal: AbortSignal) => {
+    connectionReads.current++;
+    return service.connections(signal);
+  }, [service]);
   useEffect(() => {
     const controller = new AbortController();
-    service.connections(controller.signal).then(items => { if (!controller.signal.aborted) setConnections(items); })
-      .catch(error => { if (!controller.signal.aborted) operation.fail(error); });
+    const request = ++connectionReads.current;
+    setConnections(undefined);
+    service.connections(controller.signal).then(items => { if (!controller.signal.aborted && request === connectionReads.current) setConnections(items); })
+      .catch(error => { if (!controller.signal.aborted && request === connectionReads.current) operation.fail(error); });
     return () => controller.abort();
   }, [service, operation.fail]);
   function decide(action: 'approve' | 'deny') {
     if (!review) return;
-    void operation.run(async signal => { await service.decideDevice(code, action, signal); return service.connections(signal); }, items => {
+    void operation.run(async signal => { await service.decideDevice(code, action, signal); return readConnections(signal); }, items => {
       setConnections(items); setReview(undefined); setCode('');
       if (window.location.pathname === '/connect/verify') window.history.replaceState(null, '', '/');
     }, action === 'approve' ? 'Autorización guardada. Abre el componente local del perfil autorizado para procesar tus solicitudes con Qwen3:8b.' : 'Solicitud rechazada. No se otorgó acceso al equipo.');
@@ -46,15 +56,16 @@ export function AccountConnections({ service, onExpired }: { service: AccountSer
       <button className="secondary" disabled={operation.busy} onClick={() => decide('deny')}>Rechazar solicitud</button>
     </div>}
     <h3>Conexiones autorizadas</h3>
-    <button className="text-button" disabled={operation.busy} onClick={() => void operation.run(signal => service.connections(signal), setConnections)}>Actualizar conexiones</button>
+    <button className="text-button" disabled={operation.busy} onClick={() => void operation.run(readConnections, setConnections)}>Actualizar conexiones</button>
     {!connections ? !operation.error && <p role="status">Cargando conexiones…</p> : connections.length === 0 ? <p>No tienes equipos autorizados.</p>
       : <ul className="account-library-list">{connections.map(item => <li key={item.id}><div><h3>{item.label}</h3><p>{item.active ? 'Autorización vigente' : item.revoked ? 'Revocada' : 'Vencida o invalidada'} · {item.scopes?.length ? item.scopes.map(scope => scopeLabels[scope] ?? scope).join(' · ') : profileLabels[item.profileId] ?? item.profileId}</p>{item.libraryId && <p>Biblioteca autorizada: {item.libraryId}</p>}<span>Vence: {new Date(item.expiresAt).toLocaleString()}</span></div>
+        {(item.profileId === 'ollama-qwen3-8b' || item.profileId === 'ollama-qwen3-8b-proposals') && <p>{companionPresenceLabel(item, presenceClock.now, presenceClock.receivedAt)}. La señal no verifica la generación del modelo.</p>}
         {!item.revoked && <button className="secondary" disabled={operation.busy} onClick={() => setRevoke(item)}>Revocar autorización</button>}</li>)}</ul>}
     {revoke && <Dialog open title={`Revocar ${revoke.label}`} description="La conexión perderá acceso y no podrá renovar su credencial. Será necesario volver a autorizarla."
       onOpenChange={open => { if (!open && !operation.busy) setRevoke(undefined); }}>
       {operation.error && <p role="alert" className="error">{operation.error}</p>}
       <button className="secondary" disabled={operation.busy} onClick={() => setRevoke(undefined)}>Conservar autorización</button>{' '}
-      <button className="danger" disabled={operation.busy} onClick={() => void operation.run(async signal => { await service.revokeConnection(revoke.id, signal); return service.connections(signal); }, items => { setConnections(items); setRevoke(undefined); }, 'Autorización revocada.')}>
+      <button className="danger" disabled={operation.busy} onClick={() => void operation.run(async signal => { await service.revokeConnection(revoke.id, signal); return readConnections(signal); }, items => { setConnections(items); setRevoke(undefined); }, 'Autorización revocada.')}>
         Confirmar revocación</button>
     </Dialog>}
   </section>;

@@ -27,7 +27,7 @@ public sealed partial class AccountHttpTests
         using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var ownA = await LocalLibrary(a); var ownB = await LocalLibrary(b);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var actorA = await ProposalActor(a); var actorB = await ProposalActor(b);
         await using var scope = host.App.Services.CreateAsyncScope(); var services = scope.ServiceProvider;
         var firstHost = VisibleStore(services, actorA, ownA.Library, grantA.Connection.Id);
@@ -55,7 +55,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var services = scope.ServiceProvider;
         var store = VisibleStore(services, actor, source.Library, grant.Connection.Id);
         var library = new AccountAgentMemory(postgres.Application).Library(actor, source.Library);
@@ -91,7 +91,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var services = scope.ServiceProvider;
         var store = VisibleStore(services, actor, source.Library, grant.Connection.Id); var record = NewVisibleRecord(); store.TryCreate(record);
         var draft = new PromptInput("Aprobado", "Describe <tema>.");
@@ -112,7 +112,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var services = scope.ServiceProvider;
         var store = VisibleStore(services, actor, source.Library, grant.Connection.Id); var record = NewVisibleRecord(); store.TryCreate(record);
         store.Append(record, VisibleEvent(record));
@@ -140,7 +140,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope();
         var store = VisibleStore(scope.ServiceProvider, actor, source.Library, grant.Connection.Id);
         var record = NewVisibleRecord(); store.TryCreate(record); store.Append(record, VisibleEvent(record));
@@ -174,7 +174,7 @@ public sealed partial class AccountHttpTests
         using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var ownA = await LocalLibrary(a); var ownB = await LocalLibrary(b);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var actorA = await ProposalActor(a); var actorB = await ProposalActor(b);
         var oldA = await SeedVisibleEvent(actorA, ownA.Library, grantA.Connection.Id, DateTimeOffset.UtcNow.AddDays(-8));
         var freshA = await SeedVisibleEvent(actorA, ownA.Library, grantA.Connection.Id, DateTimeOffset.UtcNow);
@@ -215,7 +215,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope();
         var store = VisibleStore(scope.ServiceProvider, actor, source.Library, grant.Connection.Id);
         var library = new AccountAgentMemory(postgres.Application).Library(actor, source.Library);
@@ -238,7 +238,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope();
         var store = VisibleStore(scope.ServiceProvider, actor, source.Library, grant.Connection.Id);
         var live = new LiveRuns(store, new AccountAgentMemory(postgres.Application).Library(actor, source.Library));

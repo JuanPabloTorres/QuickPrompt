@@ -13,7 +13,7 @@ public sealed partial class AccountHttpTests
     public async Task SuccessfulLocalCompletionCountsOnceAndCopyAfterReloadUsesTheSameReceipt()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var path = $"/api/accounts/v1/libraries/{source.Library}/prompts/{source.Prompt.Id}";
         var input = LocalInput(connection.Id) with { Values = new() { ["tema"] = "Unicode ñ <literal>\n二" } };
         var job = (await (await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), input)).Content.ReadFromJsonAsync<ExecutionView>())!;
@@ -39,7 +39,7 @@ public sealed partial class AccountHttpTests
     public async Task FailedOrStoppedLocalWorkNeverCountsUsage(string code)
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var job = (await (await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id))).Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;
         Assert.Equal(HttpStatusCode.NoContent, (await device.PostAsJsonAsync($"/api/companion/v1/work/{job.Id}/finish", new LocalWorkReceipt(lease.Token, null, code))).StatusCode);
@@ -51,7 +51,7 @@ public sealed partial class AccountHttpTests
     public async Task RevisionRaceDoesNotLoseCompletedModelResultOrForceUsageOntoANewerPrompt()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var job = (await (await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id))).Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;
         var path = $"/api/accounts/v1/libraries/{source.Library}/prompts/{source.Prompt.Id}";

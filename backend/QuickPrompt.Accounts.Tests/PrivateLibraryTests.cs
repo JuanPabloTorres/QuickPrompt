@@ -150,6 +150,7 @@ public sealed class PrivateLibraryTests(PostgresFixture postgres) : IClassFixtur
     [Fact]
     public async Task DestructiveRollbackIsRejectedAndLeavesPrivateHistoryUsable()
     {
+        await new AccountRoleGuard(postgres.Application).StartAsync(CancellationToken.None);
         var actor = Actor(await postgres.CreateUser());
         await using var scope = postgres.Services.CreateAsyncScope();
         var library = scope.ServiceProvider.GetRequiredService<LibraryAccess>();
@@ -159,6 +160,8 @@ public sealed class PrivateLibraryTests(PostgresFixture postgres) : IClassFixtur
             .UseNpgsql(postgres.MigrationConnection, options => options.MigrationsHistoryTable("history", "qp_migrations")).Options);
         await Assert.ThrowsAsync<NotSupportedException>(() => migration.GetService<IMigrator>()
             .MigrateAsync("20261026050826_InitialAccounts"));
+        // A rejected downgrade must not have dropped a newer runtime dependency first.
+        await new AccountRoleGuard(postgres.Application).StartAsync(CancellationToken.None);
         Assert.Equal(prompt.Template, Assert.Single(await library.ListVersions(actor, owned.Id, prompt.Id)).Template);
         Assert.Equal(prompt, Assert.Single(await library.ListPrompts(actor, owned.Id)));
     }

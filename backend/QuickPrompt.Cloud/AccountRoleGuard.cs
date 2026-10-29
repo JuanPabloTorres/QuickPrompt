@@ -14,6 +14,33 @@ public sealed class AccountRoleGuard(NpgsqlDataSource data) : IHostedService
                    WHERE n.nspname='qp_operations' AND c.relname='connections' AND c.relrowsecurity AND c.relforcerowsecurity
                    AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))
               AND NOT has_column_privilege(current_user,'qp_operations.connections','OwnerId','UPDATE')
+              AND (SELECT count(*)=1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE n.nspname='qp_operations' AND c.relname='companion_presence' AND c.relrowsecurity AND c.relforcerowsecurity
+                   AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))
+              AND has_table_privilege(current_user,'qp_operations.companion_presence','SELECT')
+              AND has_table_privilege(current_user,'qp_operations.companion_presence','INSERT')
+              AND NOT has_table_privilege(current_user,'qp_operations.companion_presence','UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+              AND NOT has_any_column_privilege(current_user,'qp_operations.companion_presence','REFERENCES')
+              AND NOT has_column_privilege(current_user,'qp_operations.companion_presence','OwnerId','UPDATE')
+              AND NOT has_column_privilege(current_user,'qp_operations.companion_presence','ConnectionId','UPDATE')
+              AND (SELECT bool_and(has_column_privilege(current_user,'qp_operations.companion_presence',name,'UPDATE'))
+                   FROM unnest(ARRAY['ObservationId','Signal','ObservedAt','ExpiresAt']) name)
+              AND CASE WHEN current_setting('server_version_num')::int>=170000
+                   THEN NOT has_table_privilege(current_user,'qp_operations.companion_presence','MAINTAIN') ELSE true END
+              AND (SELECT count(*)=2 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence')
+              AND (SELECT count(*)=2 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence'
+                   AND policyname IN ('companion_presence_actor','companion_presence_maintenance'))
+              AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence'
+                   AND policyname='companion_presence_actor' AND roles=ARRAY['quickprompt_app']::name[] AND cmd='ALL' AND permissive='PERMISSIVE'
+                   AND encode(sha256(convert_to(qual || E'\n' || with_check,'UTF8')),'hex')='373703fd3fa693e6729b6d26c067dccefedec1ddb203d9e49bf9ea10333b74f4')
+              AND EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence'
+                   AND policyname='companion_presence_maintenance' AND roles=ARRAY['quickprompt_migrator']::name[]
+                   AND cmd='ALL' AND permissive='PERMISSIVE' AND qual='true' AND with_check='true')
+              AND EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='qp_operations.companion_presence'::regclass
+                   AND conname='bounded_companion_presence' AND contype='c' AND convalidated)
+              AND EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='qp_operations.companion_presence'::regclass
+                   AND conname='FK_companion_presence_connections_ConnectionId_OwnerId' AND contype='f' AND convalidated
+                   AND confrelid='qp_operations.connections'::regclass AND confdeltype='c')
               AND NOT has_column_privilege(current_user,'qp_operations.connections','AuthorizationId','UPDATE')
               AND NOT has_column_privilege(current_user,'qp_operations.connections','LibraryId','UPDATE')
               AND NOT has_column_privilege(current_user,'qp_operations.connections','McpCapabilities','UPDATE')

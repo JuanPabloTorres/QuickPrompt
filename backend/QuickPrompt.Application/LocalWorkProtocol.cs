@@ -14,3 +14,11 @@ public sealed record LocalWorkReceipt(Guid Token, string? Response, string? Erro
 public sealed record LocalLeaseToken(Guid Token);
 public sealed record LocalCompanionProfile(Guid ConnectionId, string ProfileId, string Model, string WorkProtocol, bool DispatchReady);
 public sealed record LocalLeasePulse(bool Owned, bool CancelRequested);
+
+/// <summary>Operational observation only; neither consent nor a claim of model-generation readiness.</summary>
+public static class CompanionPresenceProtocol
+{
+    public const string Header = "X-QP-Companion-Observation";
+    public const string StopPath = "/api/companion/v1/presence/stop";
+}
+public sealed record LocalPresenceStop(Guid ObservationId);

@@ -5,6 +5,7 @@ import { AgentRuntimeServiceProvider } from '../../components/ServiceContext';
 import { useUiPortalScope } from '../../components/ui/UiPortalScope';
 import type { AccountConnection, AccountPrompt, AccountService } from '../../services/accounts';
 import { ApiError } from '../../services/api';
+import { companionObserved, companionPresenceLabel, companionUnavailable } from '../../services/companionPresence';
 import { terminalLive, type LiveCommand } from '../../services/live';
 import { AgentControl } from '../nova/AgentControl';
 import { AgentUiProvider } from '../nova/AgentUiContext';
@@ -12,6 +13,7 @@ import { clearActivity } from '../nova/activity';
 import { NovaLive, type NovaRuntimeSnapshot } from '../nova/NovaLive';
 import { SameTabAgent } from '../nova/SameTabAgent';
 import { useAccountOperation } from './useAccountOperation';
+import { useCompanionPresenceClock } from './useCompanionPresenceClock';
 
 type Services = ReturnType<AccountService['nova']>;
 export type AccountAgentBinding = {
@@ -32,6 +34,7 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
   const expiration = useRef(onExpired); expiration.current = onExpired;
   const expire = useCallback(() => expiration.current(), []);
   const [connections, setConnections] = useState<AccountConnection[]>();
+  const presenceClock = useCompanionPresenceClock(connections);
   const [connectionId, setConnectionId] = useState('');
   const [reload, setReload] = useState(0);
   const available = !!connections?.some(item => item.id === connectionId);
@@ -120,14 +123,21 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
   const start = useCallback(async (message: string, command: LiveCommand, source?: AccountPrompt) => {
     if (!services || running || restoring) return false;
     let accepted = false;
-    await operation.run(() => services.visibleSession.startVisible(message, crypto.randomUUID(), source, undefined,
-      { bindSource: !!source, command }), run => {
+    await operation.run(async signal => {
+      const latest = await service.connections(signal);
+      signal.throwIfAborted();
+      if (currentServices.current !== services) throw new DOMException('El contexto cambió.', 'AbortError');
+      const selected = latest.find(item => item.id === connectionId && item.profileId === 'ollama-qwen3-8b-proposals');
+      setConnections(latest.filter(item => item.active && item.profileId === 'ollama-qwen3-8b-proposals'));
+      if (!companionObserved(selected)) throw new Error(companionUnavailable);
+      return services.visibleSession.startVisible(message, crypto.randomUUID(), source, undefined, { bindSource: !!source, command });
+    }, run => {
         accepted = true;
         setInputRequest({ services, id: run.runId, message, command: { ...command }, source });
         remember(services, run.runId); setSnapshot(undefined); setTask({ services, id: run.runId });
       });
     return accepted;
-  }, [services, running, restoring, operation.run, remember]);
+  }, [services, service, connectionId, running, restoring, operation.run, remember]);
   const begin = useCallback(async (message: string, command: LiveCommand, source?: AccountPrompt) => { await start(message, command, source); }, [start]);
   // Only this tab's accepted request can continue a field question. Recovery stores
   // a run ID, never its content, original command or permission to restart it.
@@ -154,9 +164,10 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
       <div className="account-section-heading"><div><span className="eyebrow">NOVA PRIVADA</span><h3>Tu agente, en tu biblioteca</h3></div>
         <button type="button" className="secondary" disabled={running || operation.busy} onClick={() => setReload(value => value + 1)}>Actualizar equipos NOVA</button></div>
       <label htmlFor="account-nova-connection">Equipo de NOVA</label><select id="account-nova-connection" value={connectionId} disabled={running || operation.busy || restoring} onChange={event => setConnectionId(event.target.value)}>
-        <option value="">Elige un equipo autorizado</option>{connections?.map(item => <option key={item.id} value={item.id}>{item.label} · Qwen3:8b</option>)}
+        <option value="">Elige un equipo autorizado</option>{connections?.map(item => <option key={item.id} value={item.id}>{item.label} · {companionPresenceLabel(item, presenceClock.now, presenceClock.receivedAt)}</option>)}
       </select>
       <p className="muted">Mantén abierto el componente local de NOVA en el equipo elegido para que pueda procesar el contenido con Qwen3:8b.</p>
+      <p className="muted">La autorización y la señal del proceso son distintas. Una señal reciente no verifica la generación del modelo; NOVA vuelve a comprobarla al enviar.</p>
       {!connections ? <p role="status">Consultando equipos…</p> : connections.length === 0 && <p>Vincula un equipo con la capacidad NOVA desde Conexiones locales. La biblioteca manual sigue disponible.</p>}
       {restoring && <p role="status">Comprobando la última ejecución de este equipo…</p>}
       {operation.error && <p role="alert" className="error">{operation.error}</p>}

@@ -16,6 +16,13 @@ public sealed class ExecutionRoleGuard(ExecutionDataSource data) : IHostedServic
               AND NOT has_schema_privilege(current_user, 'qp_identity', 'USAGE')
               AND NOT has_schema_privilege(current_user, 'qp_library', 'USAGE')
               AND NOT has_table_privilege(current_user,'qp_operations.connections','SELECT,INSERT,UPDATE,DELETE')
+              AND (SELECT count(*)=1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                   WHERE n.nspname='qp_operations' AND c.relname='companion_presence' AND c.relrowsecurity AND c.relforcerowsecurity
+                   AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))
+              AND NOT has_table_privilege(current_user,'qp_operations.companion_presence','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+              AND NOT has_any_column_privilege(current_user,'qp_operations.companion_presence','SELECT,INSERT,UPDATE,REFERENCES')
+              AND CASE WHEN current_setting('server_version_num')::int>=170000
+                   THEN NOT has_table_privilege(current_user,'qp_operations.companion_presence','MAINTAIN') ELSE true END
               AND (SELECT count(*)=3 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
                    WHERE n.nspname='qp_operations' AND c.relname IN ('executions','execution_results','proposal_results')
                    AND c.relrowsecurity AND c.relforcerowsecurity AND c.relowner <> (SELECT oid FROM pg_roles WHERE rolname=current_user))

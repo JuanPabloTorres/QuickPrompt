@@ -9,11 +9,13 @@ namespace QuickPrompt.Accounts.Executions;
 public sealed partial class ExecutionQueue
 {
     /// <summary>Separate capability: a proposal is untrusted inference data, never an executable tool call.</summary>
-    public Task<LocalProposalLease?> ClaimProposal(LibraryActor actor, Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
+    public Task<LocalProposalLease?> ClaimProposal(LibraryActor actor, Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation,
+        Func<bool, CancellationToken, Task>? observe = null) =>
         Change<LocalProposalLease?>(async (database, now) =>
         {
             if (!await authorize(cancellation)) throw new UnauthorizedAccessException();
             var lease = await ClaimInside(database, await Clock(database, cancellation), connection, actor.Id, "ModelProposal", cancellation);
+            if (observe is not null) await observe(lease is not null, cancellation);
             if (lease is null) return null;
             using var document = JsonDocument.Parse(lease.Payload);
             LocalProposalProtocol.ValidateRequest(document.RootElement);
@@ -21,8 +23,8 @@ public sealed partial class ExecutionQueue
         }, cancellation);
 
     public Task<LeasePulse> HeartbeatProposal(LibraryActor actor, Guid connection, Guid id, Guid token,
-        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
-        PulseLocal(actor, connection, id, token, "ModelProposal", authorize, cancellation);
+        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation, Func<bool, CancellationToken, Task>? observe = null) =>
+        PulseLocal(actor, connection, id, token, "ModelProposal", authorize, cancellation, observe);
 
     /// <summary>Commit only while the same owner, connection, lease and deadline remain valid. No automatic retry.</summary>
     public Task<bool> FinishProposal(LibraryActor actor, Guid connection, Guid id, LocalProposalReceipt receipt,

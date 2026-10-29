@@ -25,7 +25,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var other = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); await Login(other, await Register(other, host.Mail));
-        var own = await LocalLibrary(owner); var foreign = await LocalLibrary(other); var grant = await ProposalDevice(owner, device);
+        var own = await LocalLibrary(owner); var foreign = await LocalLibrary(other); var grant = await PollingProposalDevice(owner, device);
         var original = ContentStart(grant.Connection.Id); var oldSurface = ContentSurface(); VisibleSurface(owner, oldSurface);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         var blocked = await AskContent(owner, device, own.Library, original, null, timeout.Token);
@@ -93,7 +93,7 @@ public sealed partial class AccountHttpTests
     public async Task ChangedSourceRejectsContentContinuationAndKeepsTheNewerPrompt()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var original = ContentStart(grant.Connection.Id, own.Prompt); VisibleSurface(owner, ContentSurface());
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var blocked = await AskContent(owner, device, own.Library, original, own.Prompt, timeout.Token);
@@ -110,7 +110,7 @@ public sealed partial class AccountHttpTests
     public async Task ExplicitStopInvalidatesTheQuestionPermissionWithoutRewritingBlockedHistory()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device);
         var original = ContentStart(grant.Connection.Id); VisibleSurface(owner, ContentSurface());
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var blocked = await AskContent(owner, device, own.Library, original, null, timeout.Token);
@@ -132,7 +132,7 @@ public sealed partial class AccountHttpTests
             using var owner = Client(first.App); using var device = Client(first.App);
             email = await Register(owner, first.Mail); await Login(owner, email);
             var own = await LocalLibrary(owner); library = own.Library; promptId = own.Prompt.Id;
-            var grant = await ProposalDevice(owner, device); original = ContentStart(grant.Connection.Id); VisibleSurface(owner, surface);
+            var grant = await PollingProposalDevice(owner, device); original = ContentStart(grant.Connection.Id); VisibleSurface(owner, surface);
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var blocked = await AskContent(owner, device, library, original, null, timeout.Token);
             reply = new(Guid.NewGuid(), grant.Connection.Id, blocked.Run.Sequence, ContentAnswer, ContentSurface());

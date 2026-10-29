@@ -9,6 +9,12 @@ public sealed class CompanionRunner(CompanionConnection connection, IAgentModelT
 {
     public async Task<CompanionRunEnd> Run(int maximumJobs, CancellationToken cancellation)
     {
+        try { return await RunLoop(maximumJobs, cancellation); }
+        finally { await connection.StopPresence(); }
+    }
+
+    private async Task<CompanionRunEnd> RunLoop(int maximumJobs, CancellationToken cancellation)
+    {
         Console.WriteLine("Componente activo. Esperando trabajos de QuickPrompt; Ctrl+C para detener.");
         var idleUntil = DateTimeOffset.UtcNow.AddMinutes(5);
         for (var handled = 0; handled < maximumJobs;)

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Memory;
 using QuickPrompt.Accounts.Persistence;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 
@@ -62,6 +63,7 @@ public sealed partial class AccountLiveRunStore(
             throw new ValidationException("Inicio visible inválido.");
         if (database.LiveRuns.Any(x => x.OwnerId == actor.Id && x.RunId == record.RunId)) return false;
         if (database.LiveRuns.Any(x => x.OwnerId == actor.Id && !x.Terminal)) throw new ConflictException("Esta cuenta ya tiene una ejecución activa.");
+        CompanionAvailability.Require(database, actor.Id, connectionId, now);
         var day = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
         if (database.LiveRuns.Count(x => x.OwnerId == actor.Id && x.CreatedAt >= day) >= DailyAdmissions)
             throw new ExecutionQuotaException("DAILY_AGENT_LIMIT");

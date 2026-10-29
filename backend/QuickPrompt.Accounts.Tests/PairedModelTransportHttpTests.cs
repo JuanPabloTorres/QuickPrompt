@@ -12,6 +12,29 @@ namespace QuickPrompt.Accounts.Tests;
 
 public sealed partial class AccountHttpTests
 {
+    [Fact, Trait("Category", "CompanionPresence")]
+    public async Task AStoppedCompanionBetweenModelStagesPreservesItsTypedFailureWithoutAnotherAdmission()
+    {
+        await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
+        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        using var poll = await ClaimProposal(device); var observation = PresenceObservation(poll);
+        // A run has already been admitted, but this model stage has not admitted a child.
+        VisibleSurface(owner, new string('e', 64));
+        using var started = await owner.PostAsJsonAsync(VisiblePath(source.Library) + "/live", OpenVisible(grant.Connection.Id, source.Prompt));
+        started.EnsureSuccessStatusCode();
+        Assert.True(await WithdrawPresence(device, observation));
+        var before = await PresenceAdmissionCounts(actor.Id);
+        Assert.Equal(1, before.Runs);
+        await using var scope = host.App.Services.CreateAsyncScope();
+        var port = scope.ServiceProvider.GetRequiredService<AccountModelProposals>().ForConnection(actor, source.Library, grant.Connection.Id);
+        var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => port.Send(ProposalPacket(), default, "synthetic-later-stage"));
+        Assert.Equal("COMPANION_NOT_OBSERVED", failure.Code);
+        Assert.DoesNotContain("No se inició trabajo nuevo", failure.Message, StringComparison.Ordinal);
+        Assert.Equal(before, await PresenceAdmissionCounts(actor.Id));
+        Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(device)).StatusCode);
+    }
+
     private static async Task<LocalProposalLease> AwaitProposal(HttpClient device, Task? pending = null)
     {
         for (var attempt = 0; attempt < 100; attempt++)
@@ -38,7 +61,7 @@ public sealed partial class AccountHttpTests
         using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var libraryA = await LocalLibrary(a); var libraryB = await LocalLibrary(b);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var actorA = await ProposalActor(a); var actorB = await ProposalActor(b);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var portA = proposals.ForConnection(actorA, libraryA.Library, grantA.Connection.Id);
@@ -80,7 +103,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var port = scope.ServiceProvider.GetRequiredService<AccountModelProposals>().ForConnection(actor, source.Library, grant.Connection.Id);
         using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var inference = port.Send(ProposalPacket(), stop.Token, "test-cancel");
@@ -100,7 +123,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var port = proposals.ForConnection(actor, source.Library, grant.Connection.Id);
         using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(15));
@@ -137,18 +160,18 @@ public sealed partial class AccountHttpTests
     }
 
     [Fact]
-    public async Task AnAbsentDeviceCannotLeaveTheCallerWaitingWithoutABound()
+    public async Task APollerThatDisappearsAfterAdmissionCannotLeaveTheCallerWaitingWithoutABound()
     {
         await using var host = await Start(configureServices: services => services.AddSingleton(new ExecutionLimits(MaximumSeconds: 1)));
         using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var port = proposals.ForConnection(actor, source.Library, grant.Connection.Id);
         var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => port.Send(ProposalPacket(), CancellationToken.None, "absent-device").WaitAsync(TimeSpan.FromSeconds(8)));
         Assert.Contains("plazo", failure.Message);
         Assert.Equal("LOCAL_DISPATCH_TIMEOUT", failure.Code);
-        // No device claimed the request. Dispatch cleanup consumes the pending cancellation,
+        // The initial empty poll preceded admission; no device claimed the request. Dispatch cleanup consumes the pending cancellation,
         // rather than picking up a job whose caller has already stopped waiting.
         Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(device)).StatusCode);
     }
@@ -159,7 +182,7 @@ public sealed partial class AccountHttpTests
         await using var host = await Start(configureServices: services => services.AddSingleton(new ExecutionLimits(MaximumSeconds: 3)));
         using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope();
         var port = scope.ServiceProvider.GetRequiredService<AccountModelProposals>().ForConnection(actor, source.Library, grant.Connection.Id);
         var inference = port.Send(ProposalPacket(), CancellationToken.None, "claimed-device");

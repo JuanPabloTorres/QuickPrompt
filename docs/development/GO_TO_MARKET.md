@@ -1,12 +1,90 @@
 # Checklist de salida al mercado de QuickPrompt
 
-Estado de revisión: **29 de octubre de 2026 · piloto publicado en validación; NO GO comercial**.
-La versión visible sigue siendo **1.0.0**. Este documento no crea una versión,
-un tag ni una nueva aceptación humana. Registra el piloto cuya publicación fue
+Estado de revisión: **29 de octubre de 2026 · RC 1.0.1-rc.1 en integración; NO GO comercial**.
+El piloto publicado conserva **1.0.0**; el candidato local se identifica como
+**1.0.1-rc.1**. No se crea un tag estable ni una nueva aceptación humana.
+La [matriz del candidato](../releases/QUICKPROMPT_1.0.1_RC1.md) distingue controles
+locales, campaña real y aceptación externa. Este documento registra el piloto cuya publicación fue
 autorizada; no certifica una salida comercial. El contrato y los
 incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
+
+### Registro activo de cierre — aplicación de release-closure
+
+Oferta conservada: biblioteca privada multiusuario, CRUD/variables/colecciones,
+compartir, NOVA y ejecución local Qwen3:8b, revisión factual y MCP/ChatGPT. Presupuesto
+$0; no se añaden pagos, otro modelo o escala empresarial para cerrar este MVP.
+Los estados de abajo corresponden al trabajo local posterior a 656101c; no afirman
+que una preparación ya esté publicada. Este registro es el plan activo, y las
+secciones fechadas inferiores conservan la evidencia histórica.
+
+| ID | Resultado / propietario | Dependencia y estado | Evidencia y criterio pendiente | Próxima acción habilitada |
+|---|---|---|---|---|
+| S0 | Skill global de cierre / coordinación | VERIFICADO para estructura y un escenario de revisión independiente | `release-closure/SKILL.md`; validador oficial PASS, caso Agenda Vecinal revisado sin red/servicios. No prueba automática universal | Aplicarla a estos puntos, sin otro checklist por sesión |
+| P0-A | Origen comercial definitivo / operación y titular OCI | ACCESO Y RECURSOS SIN VERIFICAR | El usuario confirmó verificar el correo de Oracle; no se observó después una consola, capacidad disponible ni recursos. El formulario observado no ofrecía acceso Google | Verificar cuenta/capacidad y fijar HTTPS, persistencia y condiciones del destino antes de migrar datos |
+| P0-B | Alta y recuperación / Identity + IAccountMail | ADAPTADOR IMPLEMENTADO; entrega real PENDIENTE; depende de origen final | SMTP2GO opt-in y Brevo preservado: 83 pruebas HTTP sintéticas. No existe recibo de cuenta/remitente/mensaje entregado para el nuevo proveedor | Revisar adaptador/configuración y resolver un proveedor/remitente usable antes de activar correo |
+| P0-C1 | Cliente distribuible / Companion y empaquetado | ZIP03 RC VERIFICADO EN SU ALCANCE; instalación real PENDIENTE | 21 contratos y 10 contrastes del ZIP reubicado; 63 archivos de payload y 153 inputs congelados. Sin inferencia, Windows limpio o vinculación real. Referencias del paquete corregidas | Integrar el manifiesto y el artefacto del RC; comprobar instalación con prerrequisitos, cuenta propia, tarea, actualización y retirada reales |
+| P0-C2 | Disponibilidad real / delegación, cola, Companion y UI | DOS P2 REPRODUCIDOS Y CORREGIDOS; conjunta PENDIENTE | 37 Companion, 29 presencia, 52 propagación y 47 rollback/guardas PASS. Suite amplia preservada 516 PASS/1 FAIL de rollback luego corregido. UI final 498/498 y navegador aislado 4/4 con fixtures | CI del árbol exacto, restore sintético integral y aceptación del componente publicado; no aplicar migración productiva sin esos controles |
+| P0-D | Resultado útil / autoría, compilación, Qwen y persona revisora | FAIL de fidelidad inicial y aclaración; composición asistida separada | Campaña final 4 PASS/1 FAIL técnico con Qwen real y regresión reforzada de pregunta previa. Revisión independiente inicial: 1 PASS, 2 FAIL, 2 PARCIAL. Experimento de instrucciones rechazado y retirado; ninguna corrección humana certifica al modelo | Mantener el fallo visible y resolver el requisito de aclaración sin reglas por palabras clave; después validar el resultado y persistencia del recorrido público final |
+| P0-E | Protección de datos / Recovery y operador | COMPARADOR VERIFICADO; OPERACIÓN RECURRENTE PENDIENTE | Restore privado puntual de 35 tablas ya cerrado; comparador de presencia 28/28 sintético con limpieza. Restore integral de 36 tablas/23 FORCE RLS pendiente. Política recurrente es borrador sin scheduler/destino/claves configurados | Completar restore sintético integral del candidato; implementar y autorizar una política estable de copia cifrada y recuperación funcional, sin reutilizar permisos privados consumidos |
+| P0-F | Acta SaaS / dos identidades, navegador y cliente ChatGPT | ESPERA DEPENDENCIAS A–E | Matriz finita en `MVP_RELEASE_AUDIT_20261029.md`; no se sustituyen cliente, aceptación humana o proveedor por CI | Fijar candidato final y completar únicamente los recorridos ofrecidos, incluidos negativos y recuperación |
+
+Antes de repetir una prueba se registra qué cambio, señal caducada o experimento
+justifica la repetición. Un punto se reabre por impacto o fallo pertinente; no por
+renombrar la fase, editar un informe o perder una pestaña. La suite de 656101c sigue
+siendo evidencia de ese candidato, no una ejecución de los cambios locales nuevos.
+
+### Áreas de corrección localizadas — revisión posterior del 29/10
+
+Revisión de fuente, recibos y rama remota; no se modificó producto ni se repitieron
+pruebas en esta auditoría. La rama del piloto sigue en `656101c`; los incrementos
+de presencia, distribución y proveedor de correo no deben presentarse como
+publicados. Los siguientes P2/P3 proceden de inspección estática y requieren
+reproducción de regresión; no se afirma que ya ocurrieran en producción.
+Una consulta anónima a `/account/options` del origen Vercel agotó 20 segundos en
+esta revisión. La disponibilidad actual quedó sin confirmar; no se atribuye a
+una caída permanente ni se infiere su causa. No se repitió la campaña pública.
+
+| Prioridad | Primera frontera y consecuencia | Corrección necesaria | Condición de cierre |
+|---|---|---|---|
+| P2 | `AccountModelProposals.Submit` puede emitir `CompanionUnavailableException`; `PairedModelTransport.Send` no la adapta y `AgentOrchestrator.Visible` acaba en `BROWSER_FAILURE` si desaparece la señal entre etapas | Traducirla al contrato tipado de disponibilidad conservando permisos, cancelación y ausencia de nueva admisión | Retirar señal antes de una etapa posterior: error del componente reconocible, sin efecto extra ni reintento automático |
+| P2 | `CompanionRunner.Run` retira presencia en `finally`; `StopPresence` puede renovar/guardar el perfil y no captura fallos esperables de E/S, permisos o criptografía | Asegurar que la retirada acotada no sustituye el resultado o excepción original; no ocultar fallos del bucle principal | Inyectar esos fallos sólo en limpieza y conservar salida original; señal expira por TTL |
+| P3 | `companionPresenceLabel` ignora `expiresAt` y Conexiones refresca al entrar o manualmente | Rotular la observación como fechada o degradar la presentación al vencer; no añadir autoridad ni desmontar una ejecución activa | Una vista abierta más de 20 segundos no presenta una señal antigua como actual. El envío ya hace lectura fresca y guardia de servidor |
+
+El cierre integrado requiere ejecutar las pruebas afectadas con fixtures de
+dispositivo que hagan polling autenticado explícito. Vincular un grant no debe
+crear presencia ni hacer pasar los negativos sin worker. Faltan CI conjunta,
+migración revisada y prueba del paquete con cuenta propia, arranque, tarea,
+cancelación y revocación; el ZIP02 sigue siendo evidencia anterior a los P2.
+
+En operación, el adaptador SMTP2GO no acredita cuenta/remitente ni recepción;
+la plantilla de backup tampoco es un proceso instalado. Cerrar primero el origen
+definitivo y después callbacks Google, cookies y MCP evita repetir la aceptación
+por una mudanza. No se propone reescribir Identity, CRUD o el orquestador entero.
+
+Referencias locales: `companion-package-20261029/presence-independent-readonly-review.json`,
+`companion-package-20261029/review-handoff.json`, `.playwright/companion-presence-20261029/`,
+`mvp-mail-ops-20261029/source-freeze-02.json` y `mvp-fidelity-20261029/component-01/`.
+Los nombres sin prefijo completo pertenecen al expediente local
+`.playwright/saas-delivery-20261026/`; no son dependencias de instalación.
+
+### Corte vigente del MVP — 29/10, posterior al despliegue 656101c
+
+La [auditoría priorizada del MVP](MVP_RELEASE_AUDIT_20261029.md) separa capacidades
+cerradas técnicamente de la aceptación final y organiza el cierre en seis paquetes.
+Backend `656101c` está Live en Render (`dep-dbhlkbmi0phs73enbh10`); la web conserva
+e446aa5. CI `40891464006`: **2.114 .NET PASS / 0 FAIL / 21 NotExecuted y 482
+frontend PASS**. El recibo posterior con artefacto correcto pasó **14/14** probes
+HTTP; el primer recibo 13/14 se conserva como fallo de ruta del arnés.
+
+Siguen abiertos disponibilidad/entrega del componente local, resultado completo
+de NOVA, alta/recuperación, aceptación MCP con dos identidades y operación comercial.
+`Active` de una conexión valida el permiso, no presencia de worker. El candidato
+contiene Companion, pero no los lanzadores/guía locales; falta probar su instalación
+fuera del equipo del desarrollador. No se ha cerrado el MVP ni creado tag estable.
+Los cortes siguientes son evidencia histórica con su propio alcance, no nuevos
+bloqueos para repetir tareas ya verificadas sin un cambio o fallo pertinente.
 
 ### Diagnóstico del componente y distinción de plazos del 29/10
 

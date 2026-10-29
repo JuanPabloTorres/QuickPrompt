@@ -26,6 +26,6 @@ public sealed class LlmUnavailableException : Exception
     public LlmUnavailableException(string message, string code) : base(message)
     {
         Code = code is "MODEL_UNAVAILABLE" or "MODEL_TIMEOUT" or "MODEL_FAILED" or "QUEUE_EXPIRED" or "LOCAL_DISPATCH_TIMEOUT"
-            or "CONNECTION_REVOKED" or "SESSION_REVOKED" or "LEASE_EXPIRED" or "HOST_STOPPED" ? code : "MODEL_FAILED";
+            or "CONNECTION_REVOKED" or "SESSION_REVOKED" or "LEASE_EXPIRED" or "HOST_STOPPED" or "COMPANION_NOT_OBSERVED" ? code : "MODEL_FAILED";
     }
 }

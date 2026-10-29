@@ -2,6 +2,7 @@ using Npgsql;
 using QuickPrompt.Accounts.Executions;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Sharing;
+using QuickPrompt.Accounts.Delegation;
 
 namespace QuickPrompt.Cloud;
 
@@ -15,6 +16,7 @@ public static class AccountFailureStatus
         ExecutionQuotaException => 429,
         QuickPrompt.Local.ValidationException or ArgumentException or BadHttpRequestException => 400,
         UnauthorizedAccessException => 401,
+        CompanionUnavailableException => 503,
         _ when TemporaryDatabase(error) => 503,
         _ => 500
     };

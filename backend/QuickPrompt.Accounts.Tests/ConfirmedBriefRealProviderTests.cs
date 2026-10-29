@@ -48,7 +48,7 @@ public sealed class ConfirmedBriefRealProviderTests
         await Run("decision-question", request, ["propuesta"], new("Evaluar una propuesta", "Ayuda a responder a una propuesta profesional",
             "Analiza la propuesta <propuesta> y redacta una respuesta profesional para rechazarla.", [],
             ["Mantén un tono cordial y no inventes motivos."], ["Entrega un correo de rechazo claro."], []),
-            "Quiero rechazar las propuestas con un tono profesional, sin inventar motivos");
+            "Quiero rechazar las propuestas con un tono profesional, sin inventar motivos", requireInitialQuestion: true);
     }
 
     [RealQwenFact, Trait("Category", "RealQwen")]
@@ -61,9 +61,30 @@ public sealed class ConfirmedBriefRealProviderTests
                 [new(uri, AuthoringReferenceRole.CURRENT_SESSION)]));
     }
 
-    private static async Task Run(string id, string request, string[] names, AuthoringBriefContent oracle, string? clarificationAnswer = null,
-        IValidatedAgentModelTransport? fixtureProvider = null, Action<object>? fixtureEvidence = null)
+    [RealQwenFact, Trait("Category", "RealQwen")]
+    public async Task HoldoutDeliveryComparisonPreservesASyntheticConfirmedConditionalWithoutChoosingProviders()
     {
+        await Run("holdout-delivery-comparison", "Crea un prompt fijo para comparar dos rutas de entrega. No incluyas variables. "
+            + "Exige explicar ventajas, costes y riesgos de ambas rutas; recomienda una sólo si la información basta y, si no basta, indica qué falta. No inventes cifras ni nombres de proveedores.", [],
+            new("Comparar rutas de entrega", "Comparación condicionada a la información disponible",
+                "Compara dos rutas de entrega.", ["Explica las ventajas, los costes y los riesgos de ambas rutas."],
+                ["Recomienda una ruta sólo si la información basta; si no basta, indica qué falta.", "No inventes cifras ni nombres de proveedores."], [], []));
+    }
+
+    [RealQwenFact, Trait("Category", "RealQwen")]
+    public async Task HoldoutResearchReviewComposesOnlyTheSyntheticConfirmedRequirementsAndChosenVariables()
+    {
+        await Run("holdout-research-review", "Crea una plantilla para revisar una propuesta de investigación, con variables propuesta y publico. "
+            + "Describe fortalezas y dudas; si faltan datos, formula preguntas antes de recomendar. No impongas un método de investigación ni un formato de salida.", ["propuesta", "publico"],
+            new("Revisar una propuesta de investigación", "Revisión con dudas explícitas",
+                "Revisa la propuesta de investigación <propuesta> para el público <publico>.", ["Describe sus fortalezas y dudas."],
+                ["Si faltan datos, formula preguntas antes de recomendar.", "No impongas un método de investigación ni un formato de salida."], [], []));
+    }
+
+    private static async Task Run(string id, string request, string[] names, AuthoringBriefContent oracle, string? clarificationAnswer = null,
+        IValidatedAgentModelTransport? fixtureProvider = null, Action<object>? fixtureEvidence = null, bool requireInitialQuestion = false)
+    {
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
         using var lease = fixtureProvider is null ? new FileStream(Path.Combine(Path.GetTempPath(), "QuickPrompt.Nova.SemanticModel.lease"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None) : null;
         var transport = new CountedTransport(fixtureProvider ?? RealProvider());
         var generator = new PromptDraftGenerator(transport, new NoExtraction());
@@ -100,6 +121,9 @@ public sealed class ConfirmedBriefRealProviderTests
                 Assert.Equal(initialSuggestion.Clarification, answer.GetProperty("question").GetString());
                 Assert.Equal(clarificationAnswer, answer.GetProperty("answer").GetString());
             }
+            // An explicit request to ask first must reach a real content question;
+            // a synthetic human correction cannot certify that branch.
+            if (requireInitialQuestion) Assert.NotNull(continuation);
             callsBeforeConfirmation = transport.Calls;
             Assert.Equal(PreparationDecision.ASK_CLARIFICATION, suggestion.Decision); Assert.Empty(suggestion.TemplateText);
             Assert.Null(plan.Goal!.AuthoringContract);
@@ -128,6 +152,7 @@ public sealed class ConfirmedBriefRealProviderTests
             initialSuggestion, clarification = continuation?.UserClarifications, questionSemanticQuality = "UNASSESSED_PRESERVE_EXACT_WORDING",
             suggestion, confirmed, result, callsBeforeConfirmation, callsAfterConfirmation = transport.Calls,
             maximumNativeCalls = clarificationAnswer is null ? 1 : 2, perCallTimeoutSeconds = 90,
+            elapsedMilliseconds = elapsed.ElapsedMilliseconds,
             error = error?.GetType().Name, message = error?.Message, scope = "Actual production generator and configured native provider. No database, browser, persistence or autonomous semantic acceptance."
         };
         if (fixtureEvidence is not null) fixtureEvidence(evidence);

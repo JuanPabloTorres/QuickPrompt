@@ -67,7 +67,8 @@ function backend(kind: 'create' | 'update' | 'read' = 'create', recovered = fals
     const method = options.method ?? 'GET'; const body = options.body ? JSON.parse(String(options.body)) as Record<string, unknown> : null;
     calls.push({ path, method, body });
     if (path === '/account/csrf') return Response.json({ token: 'synthetic-csrf' });
-    if (path === '/account/connections/') return Response.json([{ id: connectionId, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01' }]);
+    // This HTTP fixture represents an authenticated worker currently polling, independently of consent.
+    if (path === '/account/connections/') return Response.json([{ id: connectionId, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01', presence: { status: 'POLLING', observedAt: '2026-10-29T12:00:00Z', expiresAt: '2026-10-29T12:00:20Z' } }]);
     if (!path.startsWith(root)) throw new Error('Unexpected local or foreign API: ' + path);
     if (method === 'POST') expect(new Headers(options.headers).get('X-QP-CSRF')).toBe('synthetic-csrf');
     if (path.endsWith('/groups') || path.endsWith('/memory/sessions')) return Response.json([]);
@@ -120,7 +121,7 @@ function backend(kind: 'create' | 'update' | 'read' = 'create', recovered = fals
 async function chooseDevice() {
   const launcher = screen.queryByRole('button', { name: 'Abrir asistente NOVA' });
   if (launcher) fireEvent.click(launcher);
-  await screen.findByRole('option', { name: 'Equipo QA · Qwen3:8b' });
+  expect(await screen.findByRole('option', { name: /^Equipo QA ·/ })).toHaveProperty('value', connectionId);
   fireEvent.change(screen.getByLabelText('Equipo de NOVA'), { target: { value: connectionId } });
   await screen.findByRole('heading', { name: 'Trabaja con NOVA' });
 }

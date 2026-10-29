@@ -46,6 +46,7 @@ jobs:
             backend/QuickPrompt.Accounts.Tests/TestResults/*.trx
             .playwright/postgres-restore/restore-result.json
             .playwright/postgres-restore/restore-factual-contract-mismatch.json
+            .playwright/postgres-restore/restore-presence-contract-mismatch.json
             .playwright/postgres-restore-contract/result.json
             .playwright/operational-http/http-queue-two-hosts-*.json
             .playwright/operational-http/visible-agent-read-two-hosts-*.json
@@ -70,6 +71,9 @@ jobs:
       - run: dotnet test backend/QuickPrompt.Mcp.Tests/QuickPrompt.Mcp.Tests.csproj --configuration Release --logger trx
       - name: Verify Windows companion private profiles
         run: dotnet test backend/QuickPrompt.Companion.Tests/QuickPrompt.Companion.Tests.csproj --configuration Release --logger trx
+      - name: Verify portable companion package boundaries
+        shell: pwsh
+        run: ./Tests/companion/package-contract.ps1
       - name: Verify private recovery archive boundaries
         run: dotnet test Tests/recovery/QuickPrompt.Recovery.Tests.csproj --configuration Release --logger trx
       - run: dotnet test src/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
