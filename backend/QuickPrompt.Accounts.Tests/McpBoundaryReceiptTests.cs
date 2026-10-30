@@ -72,9 +72,10 @@ public sealed class McpBoundaryReceiptTests
         Assert.Equal(LogLevel.Information, receipt.Level);
         Assert.Equal(5320, receipt.Event.Id);
         Assert.Null(receipt.Exception);
-        Assert.Equal(new[] { "Method", "StatusCode", "ElapsedMilliseconds", "McpTraceId", "{OriginalFormat}" }, receipt.State.Keys);
+        Assert.Equal(new[] { "Method", "StatusCode", "RequestMediaType", "ResponseMediaType", "ElapsedMilliseconds", "McpTraceId", "{OriginalFormat}" }, receipt.State.Keys);
         Assert.Equal(loggedMethod, receipt.State["Method"]);
         Assert.Equal(status, receipt.State["StatusCode"]);
+        Assert.Equal("JSON", receipt.State["RequestMediaType"]);
         Assert.True(Assert.IsType<long>(receipt.State["ElapsedMilliseconds"]) >= 0);
         Assert.Equal(trace, receipt.State["McpTraceId"]);
         Assert.DoesNotContain(Canary, receipt.Message);
