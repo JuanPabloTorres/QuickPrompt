@@ -69,7 +69,7 @@ foreach ($file in (Get-ChildItem -LiteralPath $published -Recurse -File)) {
     $null = New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force
     Copy-Item -LiteralPath $file.FullName -Destination $destination
 }
-foreach ($name in @('Companion.ps1','Companion.Package.ps1','companion.example.json','companion.prompts.example.json','companion.dmr.example.json','companion.dmr.connected.example.json','Test-PythonRequirements.py','README.md')) {
+foreach ($name in @('Companion.ps1','Companion.Package.ps1','Companion.Startup.ps1','companion.example.json','companion.prompts.example.json','companion.dmr.example.json','companion.dmr.connected.example.json','Test-PythonRequirements.py','README.md')) {
     Copy-Source (Join-Path $root "packaging/companion/$name") $name $output
 }
 Copy-Source (Join-Path $PSScriptRoot 'Resolve-NovaDotnet.ps1') 'Resolve-NovaDotnet.ps1' $output

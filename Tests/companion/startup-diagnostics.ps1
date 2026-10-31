@@ -25,8 +25,11 @@ function Check([string]$Name,[scriptblock]$Body){& $Body;$results.Add([pscustomo
 function Invoke-Fixture([string]$Case,[string]$Source,[switch]$Old){
     $folder=Join-Path $temporary ([guid]::NewGuid().ToString('N'));$null=New-Item -ItemType Directory -Path $folder
     Copy-Item -LiteralPath (Join-Path $Source 'Companion.ps1') -Destination $folder
+    $startupSource=Join-Path $Source 'Companion.Startup.ps1'
+    if(Test-Path -LiteralPath $startupSource){Copy-Item -LiteralPath $startupSource -Destination $folder}
     $helper=(Get-Content -LiteralPath (Join-Path $Source 'Companion.Package.ps1') -Raw)+"`n"+$dependencyStubs
-    [IO.File]::WriteAllText((Join-Path $folder 'Companion.Package.ps1'),$helper)
+    if($Case -eq 'package-invalid'){$helper='function Broken( { # SYNTHETIC_PRIVATE_VALUE'}
+    if($Case -ne 'package-missing'){[IO.File]::WriteAllText((Join-Path $folder 'Companion.Package.ps1'),$helper)}
     [IO.File]::WriteAllText((Join-Path $folder 'Resolve-NovaDotnet.ps1'),'param($DotnetPath,$RuntimeConfigPath); $DotnetPath')
     [IO.File]::WriteAllText((Join-Path $folder 'python.ps1'),'Write-Output ''{"schema":1,"ready":true}''; $global:LASTEXITCODE=0')
     [IO.File]::WriteAllText((Join-Path $folder 'runtime.ps1'),@'
@@ -64,6 +67,15 @@ try {
         if(-not $baseline.reproduced){throw 'Missing startup-evidence baseline was not reproduced.'}
     }
     $source=Join-Path $testRoot 'packaging/companion'
+    foreach($case in @('package-missing','package-invalid')){
+        Check "$case records a safe failure before runtime" {
+            $r=Invoke-Fixture $case $source
+            $passed=$r.ExitCode -eq 2 -and -not $r.Invoked -and $r.Record.phase -eq 'INVALID_PACKAGE_OR_CONFIGURATION' -and $r.Record.exitCode -eq 2 -and -not $r.Console.Contains('SYNTHETIC_PRIVATE_VALUE')
+            [ordered]@{case=$case;passed=$passed;exitCode=$r.ExitCode;startupRecords=$r.RecordFiles.Count;runtimeInvoked=$r.Invoked;phase=$r.Record.phase;privateValueLeaked=$r.Console.Contains('SYNTHETIC_PRIVATE_VALUE')} |
+                ConvertTo-Json | Set-Content -LiteralPath (Join-Path $EvidenceDirectory ($case+'.json'))
+            if(-not $passed){throw 'Package import failure escaped the startup observation boundary.'}
+        }
+    }
     foreach($case in @('configuration','python','dotnet','provider')){
         Check "Blocked $case records its phase and never invokes runtime" {
             $r=Invoke-Fixture $case $source

@@ -8,13 +8,14 @@ param(
     [string]$StartupEvidenceDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'QuickPromptNova/companion/startup-diagnostics')
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'Companion.Package.ps1')
+. (Join-Path $PSScriptRoot 'Companion.Startup.ps1')
 $startupRecord = if($Command -eq 'run'){New-CompanionStartupRecord $StartupEvidenceDirectory $ConfigPath}else{$null}
 if($startupRecord){Write-Host ('Diagnóstico de este arranque: '+$startupRecord.Path)}
 if($Command -eq 'run'){try{$Host.UI.RawUI.WindowTitle='QuickPrompt · INICIANDO'}catch{}}
 $checks = [Collections.Generic.List[object]]::new()
 function Add-Check([string]$Id, [bool]$Passed, [string]$Code) { $checks.Add([pscustomobject]@{id=$Id;passed=$Passed;code=$Code}) }
 try {
+    . (Join-Path $PSScriptRoot 'Companion.Package.ps1')
     Assert-CompanionPackage $PSScriptRoot
     $config = Read-CompanionConfiguration $ConfigPath
     $provider = if ($config.version -eq 1) { 'ollama' } else { $config.provider }

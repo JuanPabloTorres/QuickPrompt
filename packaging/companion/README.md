@@ -116,6 +116,16 @@ de requisitos. No guarda el JSON del perfil, argumentos, claves, prompts ni
 mensajes de excepciones. `-StartupEvidenceDirectory` permite elegir otro
 directorio del operador; debe quedar fuera del paquete.
 
+El registro se crea antes de cargar las validaciones del paquete. Si esa carga
+falla, queda `INVALID_PACKAGE_OR_CONFIGURATION`, salida 2 y ningún runtime
+invocado. El módulo mínimo `Companion.Startup.ps1` debe estar presente y poder
+cargarse; un fallo anterior a él continúa sin observación.
+
+Para un acceso directo de escritorio usa `pwsh -NoProfile -NoExit -File` seguido
+de la ruta absoluta de `Companion.ps1` y sus argumentos. `-NoExit` mantiene
+visible la consola tras un error; no reinicia el componente ni cambia el código
+guardado en el registro. No es necesario en automatización por terminal.
+
 `PREREQUISITES_BLOCKED` identifica el requisito que falta y no inicia .NET.
 `INVOKING_RUNTIME` sólo confirma que se alcanzó la llamada al ejecutable;
 no demuestra autorización, conexión ni inferencia. `RUNTIME_EXITED` conserva el
