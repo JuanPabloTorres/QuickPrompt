@@ -46,6 +46,7 @@ FROM (
  UNION ALL SELECT 'execution-result:' || row_to_json(r)::text FROM qp_operations.execution_results r
  UNION ALL SELECT 'proposal-result:' || row_to_json(r)::text FROM qp_operations.proposal_results r
  UNION ALL SELECT 'connection:' || row_to_json(c)::text FROM qp_operations.connections c
+ UNION ALL SELECT 'companion-presence:' || row_to_json(c)::text FROM qp_operations.companion_presence c
  UNION ALL SELECT 'oauth-client:' || row_to_json(a)::text FROM qp_identity."OpenIddictApplications" a
  UNION ALL SELECT 'oauth-grant:' || row_to_json(a)::text FROM qp_identity."OpenIddictAuthorizations" a
  UNION ALL SELECT 'oauth-token:' || row_to_json(t)::text FROM qp_identity."OpenIddictTokens" t
@@ -133,6 +134,90 @@ CREATE TEMP TABLE qp_restore_factual_contract AS SELECT definition FROM (
 SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM qp_restore_factual_contract;
 ROLLBACK;
 '@
+$pgPresenceDataSql = @'
+SELECT md5(COALESCE(string_agg(row_to_json(p)::text,E'\n' ORDER BY row_to_json(p)::text),''))
+FROM qp_operations.companion_presence p;
+'@
+$pgPresenceContractSql = @'
+BEGIN;
+CREATE TEMP TABLE qp_restore_presence (LIKE qp_operations.companion_presence);
+CREATE TEMP TABLE qp_restore_presence_canonical (definition text NOT NULL);
+DO $canonical$
+DECLARE item record; parsed text; parsed_using text; parsed_check text;
+BEGIN
+ FOR item IN SELECT c.conname,c.convalidated,pg_get_constraintdef(c.oid) AS expression
+  FROM pg_constraint c WHERE c.conrelid='qp_operations.companion_presence'::regclass AND c.contype='c'
+ LOOP
+  EXECUTE format('ALTER TABLE pg_temp.qp_restore_presence ADD CONSTRAINT %I %s',item.conname,item.expression);
+  SELECT pg_get_constraintdef(c.oid) INTO parsed FROM pg_constraint c
+   WHERE c.conrelid='pg_temp.qp_restore_presence'::regclass AND c.conname=item.conname;
+  INSERT INTO qp_restore_presence_canonical VALUES ('check:'||item.conname||':'||parsed||':'||item.convalidated);
+ END LOOP;
+ FOR item IN SELECT * FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence'
+ LOOP
+  parsed_using:=NULL; parsed_check:=NULL;
+  IF item.qual IS NOT NULL THEN
+   EXECUTE format('CREATE OR REPLACE TEMP VIEW qp_restore_presence_policy AS SELECT 1 FROM qp_operations.companion_presence WHERE (%s)',item.qual);
+   parsed_using:=pg_get_viewdef('pg_temp.qp_restore_presence_policy'::regclass,false);
+  END IF;
+  IF item.with_check IS NOT NULL THEN
+   EXECUTE format('CREATE OR REPLACE TEMP VIEW qp_restore_presence_policy AS SELECT 1 FROM qp_operations.companion_presence WHERE (%s)',item.with_check);
+   parsed_check:=pg_get_viewdef('pg_temp.qp_restore_presence_policy'::regclass,false);
+  END IF;
+  INSERT INTO qp_restore_presence_canonical VALUES ('policy:'||json_build_object('name',item.policyname,
+   'permissive',item.permissive,'roles',item.roles,'cmd',item.cmd,'using',parsed_using,'check',parsed_check)::text);
+ END LOOP;
+END $canonical$;
+SELECT md5(COALESCE(string_agg(definition,E'\n' ORDER BY definition),'')) FROM (
+ SELECT definition FROM qp_restore_presence_canonical
+ UNION ALL SELECT 'table:'||c.relrowsecurity||':'||c.relforcerowsecurity||':'||pg_get_userbyid(c.relowner)||':'||COALESCE(c.relacl::text,'')
+  FROM pg_class c WHERE c.oid='qp_operations.companion_presence'::regclass
+ UNION ALL SELECT 'column:'||a.attnum||':'||a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull||':'||COALESCE(a.attacl::text,'')||':'||COALESCE(pg_get_expr(d.adbin,d.adrelid),'')
+  FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+  WHERE a.attrelid='qp_operations.companion_presence'::regclass AND a.attnum>0 AND NOT a.attisdropped
+ UNION ALL SELECT 'constraint:'||c.conname||':'||pg_get_constraintdef(c.oid)||':'||c.convalidated
+  FROM pg_constraint c WHERE c.conrelid='qp_operations.companion_presence'::regclass AND c.contype<>'c'
+ UNION ALL SELECT 'index:'||indexname||':'||indexdef FROM pg_indexes WHERE schemaname='qp_operations' AND tablename='companion_presence'
+) definitions;
+ROLLBACK;
+'@
+$pgPresenceSafetySql = @'
+SELECT (SELECT relrowsecurity AND relforcerowsecurity AND pg_get_userbyid(relowner)='quickprompt_migrator'
+ FROM pg_class WHERE oid='qp_operations.companion_presence'::regclass)
+ AND (SELECT count(*)=2 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence')
+ AND (SELECT count(*)=2 FROM pg_policies WHERE schemaname='qp_operations' AND tablename='companion_presence' AND permissive='PERMISSIVE' AND cmd='ALL'
+  AND ((policyname='companion_presence_actor' AND roles=ARRAY['quickprompt_app']::name[])
+   OR (policyname='companion_presence_maintenance' AND roles=ARRAY['quickprompt_migrator']::name[])))
+ AND (SELECT count(*)=3 FROM pg_constraint WHERE conrelid='qp_operations.companion_presence'::regclass AND convalidated
+  AND (contype='p' OR (contype='c' AND conname='bounded_companion_presence')
+   OR (contype='f' AND confrelid='qp_operations.connections'::regclass AND confdeltype='c')))
+ AND (SELECT count(*)=3 FROM pg_indexes WHERE schemaname='qp_operations' AND tablename='companion_presence'
+  AND indexname IN ('PK_companion_presence','IX_companion_presence_ConnectionId_OwnerId','IX_companion_presence_OwnerId_ConnectionId'))
+ AND has_table_privilege('quickprompt_app','qp_operations.companion_presence','SELECT')
+ AND has_table_privilege('quickprompt_app','qp_operations.companion_presence','INSERT')
+ AND NOT has_table_privilege('quickprompt_app','qp_operations.companion_presence','UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+ AND NOT has_any_column_privilege('quickprompt_app','qp_operations.companion_presence','REFERENCES')
+ AND NOT has_column_privilege('quickprompt_app','qp_operations.companion_presence','ConnectionId','UPDATE')
+ AND NOT has_column_privilege('quickprompt_app','qp_operations.companion_presence','OwnerId','UPDATE')
+ AND has_column_privilege('quickprompt_app','qp_operations.companion_presence','ObservationId','UPDATE')
+ AND has_column_privilege('quickprompt_app','qp_operations.companion_presence','Signal','UPDATE')
+ AND has_column_privilege('quickprompt_app','qp_operations.companion_presence','ObservedAt','UPDATE')
+ AND has_column_privilege('quickprompt_app','qp_operations.companion_presence','ExpiresAt','UPDATE')
+ AND NOT has_table_privilege('quickprompt_execution','qp_operations.companion_presence','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+ AND NOT has_any_column_privilege('quickprompt_execution','qp_operations.companion_presence','SELECT,INSERT,UPDATE,REFERENCES')
+ AND CASE WHEN current_setting('server_version_num')::int>=170000 THEN
+  NOT has_table_privilege('quickprompt_app','qp_operations.companion_presence','MAINTAIN')
+  AND NOT has_table_privilege('quickprompt_execution','qp_operations.companion_presence','MAINTAIN') ELSE true END
+ AND NOT EXISTS(SELECT 1 FROM pg_class c,LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a
+  WHERE c.oid='qp_operations.companion_presence'::regclass AND a.grantee=0)
+ AND NOT EXISTS(SELECT 1 FROM pg_attribute c,LATERAL aclexplode(c.attacl) a
+  WHERE c.attrelid='qp_operations.companion_presence'::regclass AND a.grantee=0);
+'@
+$pgPresenceDataBefore = Invoke-DevelopmentPsql 'quickprompt_development' $pgPresenceDataSql
+$pgPresenceContractBefore = Invoke-DevelopmentPsql 'quickprompt_development' $pgPresenceContractSql
+if ((Invoke-DevelopmentPsql 'quickprompt_development' $pgPresenceSafetySql) -ne 't') {
+    throw 'La presencia de companion no conserva sus permisos limitados antes del restore.'
+}
 $pgFactualSafetySql = @'
 SELECT (SELECT count(*)=2 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
  WHERE ((n.nspname='qp_library' AND c.relname='factual_documents') OR (n.nspname='qp_operations' AND c.relname='factual_reviews'))
@@ -242,6 +327,14 @@ if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear una base de restauración nue
 if ($LASTEXITCODE -ne 0) { throw 'La restauración falló; se conserva la base para diagnóstico.' }
 $pgAfter = Invoke-DevelopmentPsql $pgRestore $pgFingerprintSql
 if ($pgBefore -ne $pgAfter) { throw 'La restauración no conserva las filas sintéticas.' }
+if ($pgPresenceDataBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgPresenceDataSql)) { throw 'La restauración cambió las observaciones de companion.' }
+$pgPresenceContractAfter = Invoke-DevelopmentPsql $pgRestore $pgPresenceContractSql
+if ($pgPresenceContractBefore -ne $pgPresenceContractAfter) {
+    @{ status='failed'; scope='SYNTHETIC_COMPANION_PRESENCE_CATALOG_HASHES_ONLY'; source=$pgPresenceContractBefore; restored=$pgPresenceContractAfter } |
+        ConvertTo-Json | Set-Content -LiteralPath (Join-Path $pgEvidence 'restore-presence-contract-mismatch.json')
+    throw 'La restauración cambió políticas, columnas, índices, restricciones o permisos de presencia.'
+}
+if ((Invoke-DevelopmentPsql $pgRestore $pgPresenceSafetySql) -ne 't') { throw 'La restauración no conserva los límites de presencia del companion.' }
 if ($pgFactualDataBefore -ne (Invoke-DevelopmentPsql $pgRestore $pgFactualDataSql)) { throw 'La restauración cambió las revisiones o documentos factuales.' }
 $pgFactualContractAfter = Invoke-DevelopmentPsql $pgRestore $pgFactualContractSql
 if ($pgFactualContractBefore -ne $pgFactualContractAfter) {
@@ -280,10 +373,10 @@ if ($pgSearchPrivileges -ne 't') { throw 'La restauración no conserva los lími
 $pgPolicies = Invoke-DevelopmentPsql $pgRestore @'
 SELECT count(*) FROM pg_class c JOIN pg_namespace n ON c.relnamespace=n.oid
 WHERE ((n.nspname='qp_library' AND c.relname IN ('libraries','prompts','prompt_versions','publications','invitations','imports','agent_contexts','agent_preferences','captures','collections','collection_members','collection_imports','prompt_uses','agent_sessions','factual_documents'))
- OR (n.nspname='qp_operations' AND c.relname IN ('executions','execution_results','proposal_results','connections','agent_runs','agent_run_events','factual_reviews')))
+ OR (n.nspname='qp_operations' AND c.relname IN ('executions','execution_results','proposal_results','connections','agent_runs','agent_run_events','factual_reviews','companion_presence')))
 AND c.relrowsecurity AND c.relforcerowsecurity AND pg_get_userbyid(c.relowner)='quickprompt_migrator';
 '@
-if ($pgPolicies -ne '22') { throw 'La restauración no conserva RLS y propiedad limitada.' }
+if ($pgPolicies -ne '23') { throw 'La restauración no conserva RLS y propiedad limitada.' }
 $pgImmutable = Invoke-DevelopmentPsql $pgRestore @'
 SELECT NOT has_column_privilege('quickprompt_app','qp_library.publications','Template','UPDATE')
  AND NOT has_column_privilege('quickprompt_app','qp_library.invitations','RecipientId','UPDATE')
@@ -409,6 +502,6 @@ $pgRlsRead = Invoke-DevelopmentPsql $pgRestore 'SET ROLE quickprompt_app; SELECT
 if ($pgRlsRead -ne '0') { throw 'La base restaurada revela filas sin contexto de actor.' }
 @{ status='passed'; source='quickprompt_development'; restoredDatabase=$pgRestore; fingerprint=$pgAfter;
    archiveSha256=(Get-FileHash -LiteralPath (Join-Path $pgEvidence 'synthetic-accounts.dump') -Algorithm SHA256).Hash;
-   forcedRlsTables=22; factualRowsSameAsSource=$true; factualContractSameAsSource=$true; factualErasureAndPrivileges=$true; factualFingerprint=$pgFactualDataBefore; privateErasureContractSameAsSource=$true; erasedContentAndVisibility=$true; immutableHostKeyPrivileges=$true; encryptedHostKeys=$true; immutableCollectionSharing=$true; immutableCollectionIdentity=$true; executionContentRetention=$true; mcpCapabilitiesConstraint=$true; mcpCapabilitiesContractSameAsSource=$true; immutableCaptureReceipts=$true; immutableDelegationPrivileges=$true; immutableSharingPrivileges=$true; immutableMemoryPrivileges=$true; immutableExecutionPrivileges=$true; immutableVisibleRunIdentity=$true; anonymousVisibleLibraries=0; checkedAt=[DateTimeOffset]::UtcNow.ToString('O') } |
+   forcedRlsTables=23; companionPresenceRowsSameAsSource=$true; companionPresenceContractSameAsSource=$true; companionPresencePrivileges=$true; factualRowsSameAsSource=$true; factualContractSameAsSource=$true; factualErasureAndPrivileges=$true; factualFingerprint=$pgFactualDataBefore; privateErasureContractSameAsSource=$true; erasedContentAndVisibility=$true; immutableHostKeyPrivileges=$true; encryptedHostKeys=$true; immutableCollectionSharing=$true; immutableCollectionIdentity=$true; executionContentRetention=$true; mcpCapabilitiesConstraint=$true; mcpCapabilitiesContractSameAsSource=$true; immutableCaptureReceipts=$true; immutableDelegationPrivileges=$true; immutableSharingPrivileges=$true; immutableMemoryPrivileges=$true; immutableExecutionPrivileges=$true; immutableVisibleRunIdentity=$true; anonymousVisibleLibraries=0; checkedAt=[DateTimeOffset]::UtcNow.ToString('O') } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $pgEvidence 'restore-result.json')
 Write-Host 'Restauración comprobada: identidad, bibliotecas, prompts, revisiones, migraciones, propietario y RLS conservados. Base sintética retenida para inspección.'

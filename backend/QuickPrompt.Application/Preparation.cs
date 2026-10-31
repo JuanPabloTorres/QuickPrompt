@@ -25,6 +25,7 @@ public record PrepareInput(Guid OperationId, string Message, string Model = Loca
     [JsonIgnore] public VerbatimBodyBinding? VerbatimBody { get; init; }
     [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
     [JsonIgnore] public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
+    [JsonIgnore] public AuthoringBriefContent? AuthoringTaskDraft { get; init; }
     [JsonIgnore] public string TaskRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : System.Text.Json.JsonSerializer.Serialize(new {
         authorizedEarlierUserRequest = AuthorizedPendingRequest, currentUserReply = Message }, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 }

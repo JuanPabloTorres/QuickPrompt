@@ -23,6 +23,47 @@ public sealed class BackupArchiveTests : IDisposable
             key is null ? Pin : BackupRecipient.Fingerprint(key), clock ?? now);
 
     [Fact]
+    public void VerificationReturnsOnlyTheSizeAndLeavesTheArchiveUnchangedWithoutAWriter()
+    {
+        var archive = Protect(); var before = archive.ToArray();
+        var verifiedSize = RecoveryVerification.Verify(archive, BackupArchive.Digest(archive), BackupArchive.Digest(plaintext), certificate, Pin, now);
+        Assert.Equal(plaintext.Length, verifiedSize); Assert.Equal(before, archive);
+        // The verification helper never exposes its decrypted buffer; the same
+        // archive/key remain valid for a later deliberately authorized recovery.
+        var recovered = Recover(archive);
+        try { Assert.Equal(plaintext, recovered); }
+        finally { CryptographicOperations.ZeroMemory(recovered); }
+    }
+
+    [Fact]
+    public void VerificationRejectsAuthenticatedContentThatIsNotAPostgresDump()
+    {
+        var other = "Not a PGDMP archive; synthetic public fixture."u8.ToArray();
+        var hash = BackupArchive.Digest(other);
+        var archive = BackupArchive.Protect(other, hash, certificate, Pin, now, now.AddDays(1));
+        Assert.Throws<InvalidDataException>(() => RecoveryVerification.Verify(archive, BackupArchive.Digest(archive), hash, certificate, Pin, now));
+    }
+
+    [Theory]
+    [InlineData("archive-hash")]
+    [InlineData("plaintext-hash")]
+    [InlineData("recipient-pin")]
+    [InlineData("tamper")]
+    [InlineData("expired")]
+    [InlineData("before-window")]
+    public void VerificationKeepsAllAuthenticationAndRetentionFailures(string change)
+    {
+        var archive = Protect();
+        if (change == "tamper") archive[^1] ^= 0x40;
+        var archiveHash = change == "archive-hash" ? new string('0', 64) : BackupArchive.Digest(archive);
+        var plaintextHash = change == "plaintext-hash" ? new string('0', 64) : BackupArchive.Digest(plaintext);
+        var pin = change == "recipient-pin" ? new string('0', 64) : Pin;
+        var clock = change == "expired" ? now.AddDays(2) : change == "before-window" ? now.AddMinutes(-1) : now;
+        var error = Record.Exception(() => RecoveryVerification.Verify(archive, archiveHash, plaintextHash, certificate, pin, clock));
+        Assert.True(error is CryptographicException or InvalidDataException);
+    }
+
+    [Fact]
     public void ExactBinaryRoundTripWithPublicRecipientAndFreshReader()
     {
         using var publicRecipient = X509CertificateLoader.LoadCertificate(certificate.RawData);

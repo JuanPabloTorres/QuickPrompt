@@ -74,8 +74,8 @@ public sealed partial class AccountHttpTests
         using var raw = Client(host.App); using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var sourceA = await LocalLibrary(a); var sourceB = await LocalLibrary(b);
-        var rawConnection = await LocalDevice(a, raw);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var rawConnection = await PollingLocalDevice(a, raw);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var actorA = await ProposalActor(a); var actorB = await ProposalActor(b);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         await Assert.ThrowsAsync<LibraryUnavailableException>(() => proposals.Submit(actorA, sourceB.Library, grantA.Connection.Id, Guid.NewGuid(), ProposalPacket()));
@@ -117,7 +117,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App); using var raw = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        await LocalDevice(owner, raw); var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        await PollingLocalDevice(owner, raw); var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var operation = Guid.NewGuid(); var packet = ProposalPacket(); var job = await proposals.Submit(actor, source.Library, grant.Connection.Id, operation, packet);
         var lease = (await (await ClaimProposal(device)).Content.ReadFromJsonAsync<LocalProposalLease>())!;
@@ -136,7 +136,7 @@ public sealed partial class AccountHttpTests
     public async Task ProposalCancellationAndModelFailureNeverCreateAResult(bool cancel)
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var job = await proposals.Submit(actor, source.Library, grant.Connection.Id, Guid.NewGuid(), ProposalPacket());
         var lease = (await (await ClaimProposal(device)).Content.ReadFromJsonAsync<LocalProposalLease>())!;
@@ -153,7 +153,7 @@ public sealed partial class AccountHttpTests
     public async Task ProposalRetentionErasesContentAndExpiredLeasesNeverCommitOrRetry()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         var queue = host.App.Services.GetRequiredService<ExecutionQueue>();
         var old = await proposals.Submit(actor, source.Library, grant.Connection.Id, Guid.NewGuid(), ProposalPacket());

@@ -22,6 +22,7 @@ public sealed class AuthoringObligationPipelineTests
         Assert.False(input.Interpretation.Goal.HasContentAssessment(proposal.TemplateText));
         Assert.False(input.Interpretation.Goal.HasHumanContentApproval(proposal.TemplateText));
         Assert.Equal(new[] { "GenerateDraftProposal" }, transport.Calls.Select(call => call.Purpose));
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.AllCalls.Select(call => call.Purpose));
     }
 
     [Fact]
@@ -91,7 +92,7 @@ public sealed class AuthoringObligationPipelineTests
         if (stale) input = input with { SourceRevision = source.Revision + 1 };
         var transport = Transport("Nueva redacción.");
         await Assert.ThrowsAsync<ValidationException>(() => Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), stale ? [new(source, 1, "Source")] : [], default));
-        Assert.Empty(transport.Calls);
+        Assert.Empty(transport.AllCalls);
     }
 
     private static PromptDocument Source(string body) => new(Guid.NewGuid(), "Origen", "", body, 0, false, false, 1,
@@ -107,7 +108,8 @@ public sealed class AuthoringObligationPipelineTests
         Assert.Equal("GenerateDraftProposal", purpose);
         var material = AuthoringReviewTestFixture.Material(packet);
         Assert.False(material.TryGetProperty("contractVersion", out _));
-        Assert.False(string.IsNullOrWhiteSpace(material.GetProperty("originalRequest").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(material.GetProperty("fields").GetProperty("task").GetString()));
+        Assert.False(material.TryGetProperty("originalRequest", out _));
         Assert.False(material.TryGetProperty("obligations", out _));
         return AuthoringReviewTestFixture.Definition(authored, "Propuesta", "Redacción propuesta para revisión humana.");
     });

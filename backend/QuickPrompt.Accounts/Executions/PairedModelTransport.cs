@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
@@ -18,7 +19,11 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
     public bool UsesThinking(string model)
     {
         if (model != LocalWorkProtocol.Model) throw new ValidationException("El equipo vinculado sólo admite Qwen3:8b.");
-        return true;
+        // This is the shipped stage mode, not the model's reasoning capability.
+        // The paired host has no operator-approved thinking capability exchange;
+        // keep discovery compatible with the explicit non-thinking DMR profile.
+        // A local opt-in still cannot be inferred from OAuth consent or presence.
+        return false;
     }
     // No shared model cache, raw-output telemetry or diagnostic persistence at this boundary.
     public void Observe(int stage, string content, string? error) { }
@@ -30,7 +35,14 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
         var request = JsonSerializer.SerializeToElement(packet, Json);
         // Submit validates the packet and identity before charging quota. A fresh operation
         // is one inference attempt, not an automatic retry of a failed model decision.
-        var job = await proposals.Submit(actor, libraryId, connectionId, Guid.NewGuid(), request, cancellation);
+        ExecutionView job;
+        try { job = await proposals.Submit(actor, libraryId, connectionId, Guid.NewGuid(), request, cancellation); }
+        catch (CompanionUnavailableException)
+        {
+            // A visible run may already have earlier receipts. Only this child was not
+            // admitted; do not reinterpret the whole run as a browser failure or retry it.
+            throw new LlmUnavailableException("No hay una señal reciente del componente local para continuar la inferencia. Ábrelo manualmente y espera a que consulte QuickPrompt. Las acciones ya confirmadas conservan sus recibos y no se repetirán automáticamente.", CompanionUnavailableException.Code);
+        }
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         // Queue wait counts towards this bound; the caller may impose an earlier stage deadline.
         deadline.CancelAfter(TimeSpan.FromSeconds(queue.Limits.MaximumSeconds));
@@ -84,8 +96,9 @@ internal sealed class PairedModelTransport(AccountModelProposals proposals, Acco
 
     private static Exception Failure(ExecutionView job) => new LlmUnavailableException(job.ErrorCode switch
     {
-        "MODEL_UNAVAILABLE" => "Ollama no está disponible en el equipo vinculado. La biblioteca sigue disponible.",
+        "MODEL_UNAVAILABLE" => "El proveedor del modelo local no está disponible en el equipo vinculado. La biblioteca sigue disponible.",
         "MODEL_TIMEOUT" => "Qwen agotó el tiempo permitido en el equipo vinculado.",
+        "MODEL_OUTPUT_LIMIT" => "Qwen agotó el límite de salida sin completar la respuesta. No se repetirá automáticamente.",
         "MODEL_FAILED" => "El equipo vinculado no pudo obtener una propuesta válida.",
         "QUEUE_EXPIRED" => "El equipo no recogió la solicitud antes de que caducara.",
         "CONNECTION_REVOKED" or "SESSION_REVOKED" => "La autorización del equipo fue revocada. No se ejecutarán pasos pendientes.",

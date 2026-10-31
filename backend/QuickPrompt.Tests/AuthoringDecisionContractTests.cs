@@ -249,7 +249,7 @@ public sealed class AuthoringDecisionContractTests
         var input = new PrepareInput(Guid.NewGuid(), request) { Interpretation = plan,
             InputScope = requiresMaterial ? UserInputScope.Bind(request, null, null, ["material"], [new("material", "DATO_SINTETICO_COMPLETO", "DATO_SINTETICO_COMPLETO")]) : null };
         var pending = inference.GenerateAfterSyntheticReview(input, new(PreparationIntent.CREATE_PROMPT, "", ""), [], timeout.Token);
-        var extractionCalls = 0; var inventoryCalls = 0; var productionCalls = 0;
+        var extractionCalls = 0; var inventoryCalls = 0; var productionCalls = 0; var discoveryCalls = 0;
         try {
             while (!pending.IsCompleted) {
                 var incoming = listener.GetContextAsync();
@@ -271,7 +271,12 @@ public sealed class AuthoringDecisionContractTests
                     Assert.Contains("UiVisibleState.CompiledText", system);
                 }
                 object reply;
-                if (fields.TryGetProperty("instruction", out _)) {
+                if (fields.TryGetProperty("decisionText", out _)) {
+                    discoveryCalls++;
+                    Assert.Equal(1, packet.RootElement.GetProperty("options").GetProperty("max_requests").GetInt32());
+                    reply = AuthoringSyntheticReview.CurrentAuthorDecisionReady();
+                }
+                else if (fields.TryGetProperty("instruction", out _)) {
                     productionCalls++;
                     Assert.Equal(new[] { "description", "instruction", "literalReference", "outcome", "question", "title" }, fields.EnumerateObject().Select(field => field.Name).Order().ToArray());
                     Assert.DoesNotContain("DATO_SINTETICO_COMPLETO", facts.RootElement.GetRawText());
@@ -304,7 +309,8 @@ public sealed class AuthoringDecisionContractTests
                 Assert.True(plan.Goal!.HasAuthoringStructure(proposal.TemplateText));
                 Assert.False(plan.Goal.HasContentAssessment(proposal.TemplateText)); Assert.False(plan.Goal.HasHumanContentApproval(proposal.TemplateText));
             }
-            Assert.Equal(0, inventoryCalls); Assert.Equal(1, productionCalls); Assert.Equal(request, plan.Goal!.UserRequest);
+            Assert.Equal(0, inventoryCalls); Assert.Equal(1, productionCalls); Assert.Equal(1, discoveryCalls);
+            Assert.Equal(request, plan.Goal!.UserRequest);
         }
         finally { timeout.Cancel(); listener.Stop(); }
     }

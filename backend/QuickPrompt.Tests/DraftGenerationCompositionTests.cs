@@ -31,7 +31,7 @@ public sealed class DraftGenerationCompositionTests
         var pending = generator.GenerateAfterSyntheticReview(input, plan.Preparation(), [], default);
         var proposal=await pending;
         Assert.Equal("Texto generado. No inventes datos.",proposal.TemplateText);
-        Assert.Equal(0,reviewer.Calls);Assert.Equal(1,transport.Calls);
+        Assert.Equal(0,reviewer.Calls);Assert.Equal(2,transport.Calls); Assert.Equal(1, transport.DiscoveryCalls);
         Assert.False(plan.Goal!.HasContentAssessment(proposal.TemplateText));Assert.False(plan.Goal.HasHumanContentApproval(proposal.TemplateText));
         Assert.Equal("REQUIRES_HUMAN_CONTENT_REVIEW",plan.Goal.AuthoringContract!.GetContentReview(proposal.TemplateText).Status);
         Assert.Equal(question,failure.Message);Assert.Equal(code,failure.Data["NovaValidationCode"]);
@@ -47,7 +47,8 @@ public sealed class DraftGenerationCompositionTests
         var reviewer = new Reviewer(); var extractor = new Extractor();
         var generator = new PromptDraftGenerator(new VerbatimTransport(), new Editor(), extractor, reviewer);
         var input = new PrepareInput(Guid.NewGuid(), request) { Interpretation = plan };
-        var proposal = await generator.GenerateAfterSyntheticReview(input, plan.Preparation(), [], default);
+        var proposal = await generator.GenerateAfterSyntheticReview(input, plan.Preparation(), [], default,
+            establishedContent: new("Tarea", "", body, [], [], [], []));
         Assert.Equal("Tarea", proposal.Title); Assert.Equal(body, proposal.TemplateText);
         Assert.NotEmpty(plan.Goal!.AuthoringContract!.Literals);Assert.Null(reviewer.Proposal);
         Assert.Equal(0, reviewer.Calls); Assert.Equal(0, extractor.Calls);
@@ -68,7 +69,8 @@ public sealed class DraftGenerationCompositionTests
             new([], true, null, null, [], [], false), SemanticOutcome.NEW_DRAFT, [], false, "", null, "Crear borrador"));
         plan = plan with { Goal = TaskGoal.Create(request, SemanticContext.Empty, plan, [new(TaskClauseRole.WORK_ORDER, request)]) };
         plan.Goal!.SetInputContract(PromptInputContract.FromUserSelection(request,"",false,TemplateCompiler.Names(request)));
-        var proposal = await generator.GenerateAfterSyntheticReview(new(Guid.NewGuid(), request) { Interpretation = plan }, plan.Preparation(), [], default);
+        var proposal = await generator.GenerateAfterSyntheticReview(new(Guid.NewGuid(), request) { Interpretation = plan }, plan.Preparation(), [], default,
+            establishedContent: new("Tarea", "", literal, [], [], [], []));
         Assert.Equal(literal, proposal.TemplateText);
         Assert.Equal(TemplateCompiler.Names(literal), proposal.RequiredInputs);
         Assert.Null(reviewer.Proposal);
@@ -125,14 +127,21 @@ public sealed class DraftGenerationCompositionTests
     }
     private sealed class VerbatimTransport : IValidatedAgentModelTransport
     {
-        public string Title="Tarea";public string? AuthorRequest;public int Calls;public bool OutsideLiteralRange;public bool SelectLiteral=true;
+        public string Title="Tarea";public string? AuthorRequest;public int Calls;public int DiscoveryCalls;public bool OutsideLiteralRange;public bool SelectLiteral=true;
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
         {
             ct.ThrowIfCancellationRequested();
             Calls++;
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(JsonSerializer.SerializeToElement(packet))) {
+                DiscoveryCalls++;
+                var discovery = AuthoringReviewTestFixture.Material(JsonSerializer.SerializeToElement(packet));
+                AuthorRequest = discovery.GetProperty("originalRequest").GetString();
+                return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
+                    content = JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady()) } })));
+            }
             using var data = JsonDocument.Parse(JsonSerializer.SerializeToElement(packet).GetProperty("messages")[1].GetProperty("content").GetString()!);
-            Assert.True(data.RootElement.TryGetProperty("originalRequest",out _));
-            AuthorRequest = data.RootElement.GetProperty("originalRequest").GetString();
+            Assert.False(data.RootElement.TryGetProperty("originalRequest",out _));
+            Assert.NotEmpty(data.RootElement.GetProperty("fields").GetProperty("task").GetString()!);
             Assert.False(data.RootElement.TryGetProperty("requestUnits",out _));
             var fields = AuthoringReviewTestFixture.SchemaFields(JsonSerializer.SerializeToElement(packet).GetProperty("format"));
             Assert.False(fields.TryGetProperty("taskInstruction", out _));
@@ -159,7 +168,8 @@ public sealed class DraftGenerationCompositionTests
         var packet = Assert.Single(transport.Calls).Packet;
         Assert.Equal(new[] { "title", "description", "outcome", "instruction", "question", "literalReference" }, AuthoringReviewTestFixture.SchemaFields(packet.GetProperty("format")).EnumerateObject().Select(property => property.Name));
         using var data = JsonDocument.Parse(packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        Assert.Equal(input.TaskRequest, data.RootElement.GetProperty("originalRequest").GetString());
+        Assert.Equal(input.TaskRequest, AuthoringReviewTestFixture.Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
+        Assert.False(data.RootElement.TryGetProperty("originalRequest",out _));
         Assert.False(data.RootElement.TryGetProperty("requestUnits", out _));
         Assert.Equal(PreparationDecision.CREATE_NEW, proposal.Decision); Assert.Null(proposal.SourceId);
         Assert.Equal(new[] { "tema" }, proposal.RequiredInputs); Assert.Equal(1, extractor.Calls); Assert.Equal(0, reviewer.Calls);
@@ -240,13 +250,17 @@ public sealed class DraftGenerationCompositionTests
             Assert.NotNull(extractor.Input.ConfirmedBrief); Assert.Null(reviewer.Input);Assert.Null(reviewer.Proposal);
             Assert.Equal(default,reviewer.Token); Assert.Equal(0, editor.Calls);
             var call = Assert.Single(transport.Calls); Assert.Equal("GenerateDraftProposal", call.Purpose);
-            Assert.Equal(cancellation.Token, call.Token); Assert.False(call.Packet.GetProperty("think").GetBoolean());
+            Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.AllCalls.Select(item => item.Purpose));
+            Assert.Single(transport.DiscoveryCalls);
+            Assert.True(call.Token.CanBeCanceled); Assert.Equal(transport.DiscoveryCalls[0].Token, call.Token);
+            Assert.False(call.Packet.GetProperty("think").GetBoolean());
             Assert.Equal(thinking,provider.GetRequiredService<IAgentModelTransport>().UsesThinking(input.Model));
             Assert.Equal(LocalModelPolicy.AgentContextLength, call.Packet.GetProperty("options").GetProperty("num_ctx").GetInt32());
             var system = call.Packet.GetProperty("messages")[0].GetProperty("content").GetString()!;
             Assert.DoesNotContain("PromptDraftGenerator.GenerateDraftProposal", system, StringComparison.Ordinal);
             using var data = JsonDocument.Parse(call.Packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-            Assert.Equal(input.Message, data.RootElement.GetProperty("originalRequest").GetString());
+            Assert.Equal(input.Message, AuthoringReviewTestFixture.Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
+            Assert.False(data.RootElement.TryGetProperty("originalRequest",out _));
             Assert.False(data.RootElement.TryGetProperty("applicationEffects",out _));
             Assert.False(call.Packet.TryGetProperty("tools",out _));
             Assert.False(Directory.Exists(Path.GetDirectoryName(path)));
@@ -267,7 +281,7 @@ public sealed class DraftGenerationCompositionTests
         var generator=new PromptDraftGenerator(transport,editor,extractor,reviewer);
         Task<PromptProposal> Act()=>generator.GenerateAfterSyntheticReview(input,plan.Preparation(),[new(document,1,"Fuente controlada")],default);
         if(wrongIdentity||wrongRevision) {
-            await Assert.ThrowsAsync<ValidationException>(Act);Assert.Equal(0,reviewer.Calls);Assert.Empty(transport.Calls);
+            await Assert.ThrowsAsync<ValidationException>(Act);Assert.Equal(0,reviewer.Calls);Assert.Empty(transport.AllCalls);
         } else {
             var proposal=await Act();Assert.Equal(source.Id,proposal.SourceId);Assert.Equal(source.Title,proposal.Title);
             Assert.Equal("Explica <tema> con ejemplos.",proposal.TemplateText);Assert.Equal(0,reviewer.Calls);Assert.Single(transport.Calls);
@@ -286,17 +300,19 @@ public sealed class DraftGenerationCompositionTests
         if(unavailable){var failure=await Assert.ThrowsAsync<PreparationToolException>(()=>pending);Assert.Equal("MODEL_UNAVAILABLE",failure.Code);}
         else await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.Equal(unavailable ? 1 : 0, transport.Calls.Count); Assert.Equal(0, extractor.Calls); Assert.Equal(0, reviewer.Calls);
+        Assert.Equal(unavailable ? 2 : 0, transport.AllCalls.Count);
     }
 
     [Fact] public async Task FieldRejectionRetainsTheActualRejectedArtifactAndNeverRetriesGeneration()
     {
         var transport=new Transport{Body="Explica <intruso>."};var reviewer=new Reviewer{Reject=true};var input=Input();
         var generator=new PromptDraftGenerator(transport,new Editor(),new Extractor(),reviewer);
-        var suggestion=await generator.Generate(input,input.Interpretation!.Preparation(),[],default);
-        Assert.Equal("Explica <intruso>.",suggestion.Brief!.Proposed.Task); Assert.Empty(suggestion.TemplateText);
+        var suggestion=await generator.GenerateAfterSyntheticTask(input,input.Interpretation!.Preparation(),[],default);
+        Assert.Equal("Explica <intruso>.",suggestion.Brief!.Suggested!.Task); Assert.Empty(suggestion.TemplateText);
         Assert.Throws<ValidationException>(()=>AuthoringBriefs.Confirm(suggestion.Brief,
-            new(suggestion.Brief.BasisHash,suggestion.Brief.Proposed,true)));
-        Assert.Single(transport.Calls);Assert.Equal(0,reviewer.Calls); Assert.Null(input.Interpretation.Goal!.AuthoringContract);
+            new(suggestion.Brief.BasisHash,suggestion.Brief.Suggested,true)));
+        Assert.Single(transport.Calls); Assert.Equal(2, transport.AllCalls.Count);
+        Assert.Equal(0,reviewer.Calls); Assert.Null(input.Interpretation.Goal!.AuthoringContract);
     }
 
     [Fact] public async Task LegacyPortImplementationRemainsSubstitutableThroughTheCompatibilityBridge()
@@ -306,7 +322,7 @@ public sealed class DraftGenerationCompositionTests
             inference.SemanticDiagnostic = (_, _, _) => throw new InvalidOperationException("Legacy provider supplies no diagnostic capability.");
             Assert.Same(legacy.Proposal, await inference.Generate(input, input.Interpretation!.Preparation(), [], default));
         }
-        Assert.Equal(1, legacy.Calls); Assert.False(legacy.Disposed); Assert.Empty(transport.Calls); Assert.False(transport.Disposed);
+        Assert.Equal(1, legacy.Calls); Assert.False(legacy.Disposed); Assert.Empty(transport.AllCalls); Assert.False(transport.Disposed);
     }
 
     [Fact] public async Task ConcurrentRequestsKeepTheirDiagnosticSubscribersAndReviewInputsSeparate()
@@ -354,18 +370,24 @@ public sealed class DraftGenerationCompositionTests
     }
     private sealed class Transport : IValidatedAgentModelTransport, IDisposable
     {
-        public List<(JsonElement Packet, string Purpose, CancellationToken Token)> Calls = [];
+        // Keep writer assertions separate without hiding the additional discovery request.
+        public List<(JsonElement Packet, string Purpose, CancellationToken Token)> AllCalls = [];
+        public List<(JsonElement Packet, string Purpose, CancellationToken Token)> Calls => AllCalls.Where(call => call.Purpose != "DiscoverCurrentAuthorDecision").ToList();
+        public List<(JsonElement Packet, string Purpose, CancellationToken Token)> DiscoveryCalls => AllCalls.Where(call => call.Purpose == "DiscoverCurrentAuthorDecision").ToList();
         public bool Unavailable; public bool Disposed; public string Body="Explica <tema>.";
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
         {
-            ct.ThrowIfCancellationRequested(); Calls.Add((JsonSerializer.SerializeToElement(packet), purpose, ct));
+            ct.ThrowIfCancellationRequested(); var encoded = JsonSerializer.SerializeToElement(packet); AllCalls.Add((encoded, purpose, ct));
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(encoded))
+                return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
+                    content = JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady()) } })));
             if (Unavailable) throw new LlmUnavailableException("Synthetic unavailable");
             var material=AuthoringReviewTestFixture.Material(Calls[^1].Packet);
             return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
                 content=JsonSerializer.Serialize(AuthoringReviewTestFixture.Definition(Body,"Explicación"),AuthoringReviewTestFixture.Json)} })));
 
         }
-        public bool UsesThinking(string model) => throw new InvalidOperationException("Profile is owned by generator.");
+        public bool UsesThinking(string model) => false;
         public void Observe(int stage, string content, string? error) => throw new InvalidOperationException("Diagnostics are per-call.");
         public void Reject(string? answer) => throw new InvalidOperationException("No repair in composition fixtures.");
         public void Dispose() => Disposed = true;

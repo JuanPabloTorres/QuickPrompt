@@ -71,12 +71,12 @@ public sealed partial class AccountHttpTests
         return JsonSerializer.SerializeToElement(result.StructuredContent);
     }
 
-    private static Task<McpClient> McpClientFor(HttpClient http, string accessToken) => McpClient.CreateAsync(new HttpClientTransport(new()
+    private static Task<McpClient> McpClientFor(HttpClient http, string accessToken, string? protocolVersion = null) => McpClient.CreateAsync(new HttpClientTransport(new()
     {
         Endpoint = new Uri(http.BaseAddress!, "/mcp"),
         TransportMode = HttpTransportMode.StreamableHttp,
         AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = "Bearer " + accessToken }
-    }, http, ownsHttpClient: false));
+    }, http, ownsHttpClient: false), new McpClientOptions { ProtocolVersion = protocolVersion });
 
     [Fact]
     public async Task McpCodeAndToolsAreBoundToTheApprovedLibraryAndRevocationStopsRefreshAndTools()

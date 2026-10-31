@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Memory;
 using QuickPrompt.Accounts.Persistence;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 
@@ -47,6 +48,7 @@ public sealed partial class AccountFactualReviews(AccountAgentMemory memory, Exe
                     if (previous.LibraryId != library || previous.Fingerprint != fingerprint) throw new ConflictException("La operación pertenece a otro encargo factual.");
                     return previous;
                 }
+                CompanionAvailability.Require(db, actor.Id, input.ConnectionId, now);
                 foreach (var old in db.FactualReviews.Where(x => x.OwnerId == actor.Id && x.ExpiresAt <= now && x.Status != "APPROVED").ToArray())
                     if (Pending(old)) Clear(old, "EXPIRED");
                 if (db.FactualReviews.Any(x => x.OwnerId == actor.Id && x.ExpiresAt > now && new[] { "ADMITTED", "PROPOSING", "REVIEW", "COMPOSED" }.Contains(x.Status)))
@@ -91,6 +93,12 @@ public sealed partial class AccountFactualReviews(AccountAgentMemory memory, Exe
             if (attached.Status is not ("PROPOSING" or "REVIEW" or "COMPOSED" or "APPROVED"))
                 new AccountExecutionAccess(memory, queue).Cancel(actor, library, child.Id);
             return attached;
+        }
+        catch (CompanionUnavailableException)
+        {
+            return await Change(actor, library, row.Id, (_, active, _) => {
+                if (active.Status == "ADMITTED" && active.ChildExecutionId is null) Clear(active, "FAILED", "ADMISSION_" + CompanionUnavailableException.Code);
+            }, cancellation);
         }
         catch (ExecutionQuotaException error)
         {

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci --ignore-scripts",
+  "buildCommand": "QUICKPROMPT_WEB_MODE=accounts npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "^/.*$",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com https://chatgpt.com/connector_platform_oauth_redirect"
+      },
+      "continue": true
+    },
+    {
+      "src": "^/(account/(confirm|reset)|connect/verify)/?$",
+      "methods": ["GET", "HEAD"],
+      "dest": "/index.html",
+      "headers": { "Cache-Control": "no-store" }
+    },
+    {
+      "src": "^/(api|account|connect)(/.*)?$",
+      "dest": "https://REPLACE_BACKEND_ORIGIN.invalid/$1$2",
+      "headers": {
+        "Cache-Control": "private, no-store",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+        "x-vercel-enable-rewrite-caching": "0"
+      },
+      "transforms": [
+        { "type": "request.headers", "op": "set", "target": { "key": "x-qp-origin-secret" }, "args": "$ORIGIN_SECRET", "env": ["ORIGIN_SECRET"] }
+      ]
+    },
+    {
+      "src": "^/(signin-google|mcp|health)/?$",
+      "dest": "https://REPLACE_BACKEND_ORIGIN.invalid/$1",
+      "headers": {
+        "Cache-Control": "private, no-store",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
+        "x-vercel-enable-rewrite-caching": "0"
+      },
+      "transforms": [
+        { "type": "request.headers", "op": "set", "target": { "key": "x-qp-origin-secret" }, "args": "$ORIGIN_SECRET", "env": ["ORIGIN_SECRET"] }
+      ]
+    },
+    {
+      "src": "^/\\.well-known/(openid-configuration|oauth-authorization-server|oauth-protected-resource/mcp)$",
+      "headers": { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+      "continue": true
+    },
+    { "handle": "filesystem" },
+    { "src": "^/\\.well-known(?:/.*)?$", "status": 404 },
+    { "src": "^/.*$", "dest": "/index.html", "headers": { "Cache-Control": "no-store" } }
+  ]
+}

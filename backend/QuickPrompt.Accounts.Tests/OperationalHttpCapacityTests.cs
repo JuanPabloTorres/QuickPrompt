@@ -269,6 +269,9 @@ public sealed partial class AccountHttpTests
                 var request = OpenVisible(grants[index], owner.Prompt);
                 await measurements.WithPool(owner, async () =>
                 {
+                    // Setup for ten owners may exceed presence TTL. Observe the actual
+                    // device immediately before admission, without a background worker.
+                    await ObserveProposalPolling(devices[index]);
                     (await owner.Client.PostAsJsonAsync(VisiblePath(owner.Library) + "/live", request)).EnsureSuccessStatusCode();
                     var result = await DriveVisibleRead(owner.Client, owner.Library, request.Request.RunId, owner.Prompt);
                     Assert.Equal(LiveStatus.COMPLETED, result.Run.Status);
@@ -282,7 +285,8 @@ public sealed partial class AccountHttpTests
                     (await foreign.Client.GetAsync(VisiblePath(owner.Library) + $"/live/{request.Request.RunId}")).StatusCode));
             })));
             measurements.Facts["visibleReadsCompleted"] = owners.Count;
-            measurements.Facts["modelProposalQueueClaims"] = 0;
+            measurements.Facts["modelProposalLeasesClaimed"] = 0;
+            measurements.Facts["explicitPresencePollsBeforeAdmission"] = owners.Count;
             measurements.Facts["effectsCommitted"] = 0;
             measurements.Facts["browserDomDriven"] = false;
             passed = true;

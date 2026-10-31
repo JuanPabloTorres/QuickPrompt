@@ -101,7 +101,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var actor = await ProposalActor(owner);
+        var grant = await PollingProposalDevice(owner, device); var actor = await ProposalActor(owner);
         await using var scope = host.App.Services.CreateAsyncScope();
         var store = VisibleStore(scope.ServiceProvider, actor, source.Library, grant.Connection.Id);
         var record = NewVisibleRecord(); Assert.True(store.TryCreate(record));

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Memory;
+using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 
@@ -51,6 +52,8 @@ public sealed class AccountExecutionAccess(AccountAgentMemory memory, ExecutionQ
             (replay, token) =>
             {
                 token.ThrowIfCancellationRequested();
+                if (!replay && connectionId is { } local)
+                    memory.InScope(actor, libraryId, database => { CompanionAvailability.Require(database, actor.Id, local); return true; });
                 // Snapshot capture alone is insufficient: erasure can win before
                 // admission. Re-read with the application owner under fence 5283.
                 var current = memory.Catalog(actor, libraryId).Get(promptId);

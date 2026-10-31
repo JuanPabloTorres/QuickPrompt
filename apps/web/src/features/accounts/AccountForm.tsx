@@ -55,6 +55,7 @@ export function AccountForm({ service, options, csrf, onLogin }: { service: Acco
     <span className="eyebrow">TU CUENTA QUICKPROMPT</span><h2 id="account-form-title">{titles[mode]}</h2>
     {mode === 'login' && options.google && <><form action="/account/google" method="post"><input type="hidden" name="__RequestVerificationToken" value={csrf} /><button className="secondary account-google" disabled={operation.busy || !csrf}>Continuar con Google<AppIcon glyph={ArrowRight} size={16} /></button></form><div className="account-divider"><span>o utiliza tu correo</span></div></>}
     {options.mailDelivery === 'development-pickup' && mode !== 'login' && <p className="account-helper">Entorno de prueba: los mensajes se guardan en el buzón local de desarrollo.</p>}
+    {!options.email && (mode === 'login' || mode === 'register' || mode === 'recover') && <p className="account-helper">El registro y la recuperación por correo no están disponibles.{options.google && mode === 'login' ? ' Puedes continuar con Google.' : ''}</p>}
     <form onSubmit={event => { event.preventDefault(); void submit(); }} aria-busy={operation.busy}>
       <fieldset disabled={operation.busy}>
         {needsEmail && <div><label htmlFor="account-email">Correo electrónico</label><input id="account-email" type="email" value={email} onChange={event => setEmail(event.target.value)} required maxLength={256} autoComplete="email" autoCapitalize="none" /></div>}

@@ -28,7 +28,7 @@ public sealed partial class AccountHttpTests
         using var deviceA = Client(host.App); using var deviceB = Client(host.App); using var anonymous = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var ownA = await LocalLibrary(a); var ownB = await LocalLibrary(b);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var requestA = OpenVisible(grantA.Connection.Id, ownA.Prompt); var requestB = OpenVisible(grantB.Connection.Id, ownB.Prompt);
         var surfaceA = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         var surfaceB = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
@@ -66,7 +66,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
+        var grant = await PollingProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
         VisibleSurface(owner, Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"));
         var path = VisiblePath(own.Library) + "/live/" + request.Request.RunId;
         (await owner.PostAsJsonAsync(VisiblePath(own.Library) + "/live", request)).EnsureSuccessStatusCode();
@@ -98,7 +98,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
+        var grant = await PollingProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
         var capability = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"); VisibleSurface(owner, capability);
         var path = VisiblePath(own.Library) + "/live/" + request.Request.RunId;
         (await owner.PostAsJsonAsync(VisiblePath(own.Library) + "/live", request)).EnsureSuccessStatusCode();
@@ -147,7 +147,7 @@ public sealed partial class AccountHttpTests
             })));
         using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
+        var grant = await PollingProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
         VisibleSurface(owner, Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"));
         var path = VisiblePath(own.Library) + "/live/" + request.Request.RunId;
         (await owner.PostAsJsonAsync(VisiblePath(own.Library) + "/live", request)).EnsureSuccessStatusCode();

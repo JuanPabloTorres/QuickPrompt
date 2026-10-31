@@ -62,40 +62,52 @@ public sealed partial class PromptDraftGenerator
         if (goal.AuthoringContract is { } previous && previous.Fingerprint != context.Fingerprint)
             throw new ValidationException("El contexto, origen o campos cambiaron durante la misma tarea.");
         var contract = goal.AuthoringContract ?? context;
-        if (contract.ConfirmedBrief is not null) goal.BindAuthoringContract(contract);
-        var literalIds = contract.Literals.Select(item => item.Id).ToArray();
+        if (contract.ConfirmedBrief is { Review.Stage: AuthoringBriefs.ReviewContent }) goal.BindAuthoringContract(contract);
+        if (contract.ConfirmedBrief is null)
+            return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [],
+                "Establece la tarea y los requisitos antes de que NOVA proponga una redacción. No se llamará al modelo hasta confirmarlos.",
+                "AUTHORING_TASK_REQUIRES_ESTABLISHMENT") { Brief = AuthoringBriefs.Establish(contract,
+                    goal.RequestedTitle ?? snapshot?.Title ?? "Nueva plantilla", input.AuthoringTaskDraft) };
         DraftProduction production;
-        if (contract.ConfirmedBrief is { } brief)
+        if (contract.ConfirmedBrief is { Review.Stage: AuthoringBriefs.ReviewContent } brief)
             production = new(brief.Content.Title, brief.Content.Description, brief.Render(), null);
         else try {
-            var schema = DefinitionSchema(literalIds);
-            var packet = JsonSerializer.Serialize(ContentMaterial(input, contract, HasContentCorrection(input.ValidationFeedback)), Json);
-            if (Encoding.UTF8.GetByteCount(packet) > 26000)
+            // Both stages share the previous authoring deadline and at most two
+            // native attempts. Neither retries a semantic omission or authorizes effects.
+            using var authoringDeadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            authoringDeadline.CancelAfter(TimeSpan.FromSeconds(90));
+            var authoringToken = authoringDeadline.Token;
+            // Freeze both views before inference. Discovery retains provenance;
+            // the writer revises only the fields the human established. Neither
+            // view is truncated to fit the existing complete-packet budget.
+            var material = ContentMaterial(input, contract, HasContentCorrection(input.ValidationFeedback));
+            var established = contract.ConfirmedBrief!.Content;
+            var discoveryPacket = JsonSerializer.Serialize(material, Json);
+            var revisionMaterial = RevisionMaterial(material, established);
+            var packet = JsonSerializer.Serialize(revisionMaterial, Json);
+            if (Encoding.UTF8.GetByteCount(discoveryPacket) > 26000 || Encoding.UTF8.GetByteCount(packet) > 26000)
                 throw new ValidationException("La petición y la fuente no caben completas en el presupuesto; no se truncarán.");
+            var question = await DiscoverCurrentAuthorDecision(input, contract, discoveryPacket, authoringToken);
+            if (question is not null)
+                return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [], question, "FUTURE_TASK_NEEDS_CLARIFICATION");
+            var schema = DefinitionSchema(revisionMaterial.LiteralBodyCandidates.Select(item => item.Id).ToArray(), revisionMaterial.Fields);
             using var response = await Chat(new { model = input.Model, stream = false, think = false, decoding = "native", format = schema,
                 messages = new[] {
                     new { role = "system", content = FutureInstructionSystem },
                     new { role = "user", content = packet }
-                }, options = new { temperature = 0, num_ctx = InferenceContextLength, num_predict = 3500 } }, ct, nameof(GenerateDraftProposal), contentOnly: true);
-            ct.ThrowIfCancellationRequested();
+                }, options = new { temperature = 0, num_ctx = InferenceContextLength, num_predict = 3500, max_requests = 1 } }, authoringToken, nameof(GenerateDraftProposal), contentOnly: true);
+            authoringToken.ThrowIfCancellationRequested();
             var definition = ParseContent<AuthoringDefinition>(response, schema);
-            if (definition.Outcome == "CLARIFICATION") {
-                if (definition.Instruction is not null || definition.LiteralReference is not null || string.IsNullOrWhiteSpace(definition.Question))
-                    throw new ValidationException("Una aclaración debe contener sólo una pregunta y ningún cuerpo o referencia literal.");
-                return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [], definition.Question, "FUTURE_TASK_NEEDS_CLARIFICATION");
-            }
-            var candidate = CompileDefinition(definition, literalIds);
-            var suggestion = definition.Instruction is { } instruction
-                ? new AuthoringBriefContent(definition.Title, definition.Description, instruction.Task, instruction.Steps.Select(UnmarkedInstruction).ToArray(),
-                    instruction.Constraints.Select(UnmarkedInstruction).ToArray(), instruction.OutputRequirements.Select(UnmarkedInstruction).ToArray(), [])
-                : new AuthoringBriefContent(definition.Title, definition.Description,
-                    contract.Literals.Single(item => item.Id == candidate.LiteralReference).Text, [], [], [], []);
+            var suggestion = CompileDefinition(definition, established, contract);
             suggestion = suggestion with { Title = goal.RequestedTitle ?? (plan.Adapts ? snapshot?.Title : null) ?? suggestion.Title,
                 Description = plan.Adapts ? snapshot?.Description ?? suggestion.Description : suggestion.Description };
             return new(PreparationDecision.ASK_CLARIFICATION, null, "", "", "", [],
-                "Revisa y confirma qué deberá hacer el futuro asistente. Puedes corregir la propuesta de NOVA; todavía no se guardará ni ejecutará nada.",
-                "AUTHORING_BRIEF_REQUIRES_CONFIRMATION") { Brief = AuthoringBriefs.Propose(contract, suggestion) };
+                "El contrato establecido se conserva. Compara las mejoras de NOVA y aplica sólo las que quieras antes de confirmar el contenido final.",
+                "AUTHORING_BRIEF_REQUIRES_CONFIRMATION") { Brief = AuthoringBriefs.Suggest(contract, suggestion) };
         } catch (LlmUnavailableException failure) { throw InferenceFailures.ToPreparation(failure, nameof(GenerateDraftProposal)); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) {
+            throw InferenceFailures.ToPreparation(new LlmUnavailableException("Authoring deadline exceeded.", "MODEL_TIMEOUT"), nameof(GenerateDraftProposal));
+        }
         ct.ThrowIfCancellationRequested();
         var description = production.Description;
         var title = production.Title;

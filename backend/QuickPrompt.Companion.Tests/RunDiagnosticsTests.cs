@@ -9,6 +9,18 @@ namespace QuickPrompt.Companion.Tests;
 
 public sealed class RunDiagnosticsTests
 {
+    [Fact]
+    public void OutputLimitHasAnExplicitDiagnosticWhileUnknownCodesRemainPrivate()
+    {
+        var entries = new List<CompanionRunDiagnostic>();
+        var run = new CompanionRunDiagnostics(LocalWorkProtocol.Profile, entries.Add);
+        run.WorkFinished("MODEL_OUTPUT_LIMIT");
+        Assert.Equal("MODEL_OUTPUT_LIMIT", entries.Last().LastWorkCode);
+        run.WorkFinished("SYNTHETIC_PRIVATE_MODEL_OUTPUT_LIMIT");
+        Assert.Equal("UNKNOWN_FAILURE", entries.Last().LastWorkCode);
+        Assert.DoesNotContain("SYNTHETIC_PRIVATE", JsonSerializer.Serialize(entries));
+    }
+
     [Theory]
     [InlineData(LocalWorkProtocol.Profile)]
     [InlineData(LocalProposalProtocol.Profile)]

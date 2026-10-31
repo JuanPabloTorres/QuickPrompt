@@ -1,0 +1,2 @@
+# Repository Engineering Rules
+For architecture, implementation, refactoring, AI, RAG, frontend, backend, persistence, caching, realtime, security and infrastructure tasks, activate the `universal-modular-architecture` skill. Before editing, map the existing capability owner and consumer contracts. Prefer cohesive components over task-specific patches. Do not introduce a new abstraction without documenting which change scenario it isolates. Execute relevant tests; never claim unexecuted checks passed. Use the skill change-contract and report evidence and limitations.

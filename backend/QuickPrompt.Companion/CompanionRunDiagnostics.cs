@@ -72,8 +72,7 @@ public sealed class CompanionRunDiagnostics(string profile, Action<CompanionRunD
         && (value.HttpStatus is null or >= 100 and <= 599)
         && (value.OAuthCode is null || value.OAuthCode == SafeOAuthCode(value.OAuthCode));
 
-    private static bool WorkCode(string code) => code is "SUCCEEDED" or "MODEL_UNAVAILABLE" or "MODEL_TIMEOUT" or "MODEL_FAILED"
-        or "LOCAL_STOPPED" or "LEASE_LOST" or "UNKNOWN_FAILURE";
+    private static bool WorkCode(string code) => LocalWorkProtocol.IsFailureCode(code) || code is "SUCCEEDED" or "LEASE_LOST" or "UNKNOWN_FAILURE";
 
     private void Publish()
     {

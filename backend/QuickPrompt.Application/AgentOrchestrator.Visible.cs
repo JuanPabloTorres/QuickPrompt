@@ -426,9 +426,12 @@ public sealed partial class AgentOrchestrator
                     var basisText = workingBasis?.TemplateText ?? basis?.TemplateText;
                     var creation = new PrepareInput(input.RunId, input.Message, SourcePromptId: decision.ToolName == "ui_prepare_update" ? basis?.Id : null, SourceRevision: decision.ToolName == "ui_prepare_update" ? basis?.Revision : null, Values: input.Values, Model: input.Model, SessionId: input.SessionId) { Interpretation = semantic,
                         WorkingDraft = workingBasis, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope,
-                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications), ConfirmedBrief = input.ConfirmedBrief };
+                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications), ConfirmedBrief = input.ConfirmedBrief,
+                        AuthoringTaskDraft = input.AuthoringTaskDraft };
                     live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION,
-                        input.ConfirmedBrief is null ? "Qwen está proponiendo la tarea del futuro asistente para tu revisión." : "Componiendo literalmente el contrato que confirmaste, sin otra redacción de IA.", "Generation");
+                        input.ConfirmedBrief is null ? "Establece la tarea y sus requisitos antes de solicitar una redacción a NOVA."
+                            : input.ConfirmedBrief.Review.Stage == AuthoringBriefs.EstablishTask ? "Qwen está proponiendo mejoras sobre la tarea que estableciste; todavía no se aplicarán."
+                            : "Componiendo literalmente el contrato que confirmaste, sin otra redacción de IA.", "Generation");
                     PreparedDraft? generated = null;
                     for (var attempt = 0; attempt < 2; attempt++) {
                         try {
@@ -438,7 +441,8 @@ public sealed partial class AgentOrchestrator
                                 RememberPending(); control.Question = proposal.Clarification;
                                 control.Brief = proposal.Brief;
                                 var inputDefinition=proposal.Reason=="INPUT_FIELDS_NEED_CONFIRMATION";
-                                live.Emit(input.RunId, LiveStatus.BLOCKED, inputDefinition?LiveActor.USER_SELECTED:LiveActor.MODEL_SELECTED,
+                                var taskEstablishment = proposal.Brief?.Stage == AuthoringBriefs.EstablishTask;
+                                live.Emit(input.RunId, LiveStatus.BLOCKED, inputDefinition?LiveActor.USER_SELECTED:taskEstablishment?LiveActor.SYSTEM_VALIDATION:LiveActor.MODEL_SELECTED,
                                     inputDefinition?"Define los campos de la plantilla para continuar; todavía no se piden sus valores.":proposal.Brief is not null?"Revisa y confirma la tarea del futuro asistente antes de componer el prompt.":"Necesito concretar el propósito del nuevo prompt.",
                                     "Generation",error:inputDefinition?"INPUT_FIELDS_NEED_CONFIRMATION":"NEEDS_CLARIFICATION"); return;
                             }

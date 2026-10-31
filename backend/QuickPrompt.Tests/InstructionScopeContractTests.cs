@@ -49,7 +49,7 @@ public sealed class InstructionScopeContractTests
         var input=new PrepareInput(Guid.NewGuid(),request){Interpretation=plan};var transport=new Transport();var forbidden=new ForbiddenDependencies();
         var result=await new PromptDraftGenerator(transport,forbidden,forbidden,forbidden).GenerateAfterSyntheticReview(input,plan.Preparation(),[],default);
         Assert.Equal(PreparationDecision.ASK_CLARIFICATION,result.Decision);Assert.Equal("INPUT_FIELDS_NEED_CONFIRMATION",result.Reason);
-        Assert.NotEmpty(result.Clarification);Assert.Empty(result.TemplateText);Assert.Empty(result.Values);Assert.Empty(transport.Calls);
+        Assert.NotEmpty(result.Clarification);Assert.Empty(result.TemplateText);Assert.Empty(result.Values);Assert.Empty(transport.AllCalls);
     }
 
     [Fact]

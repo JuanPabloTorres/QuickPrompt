@@ -18,7 +18,7 @@ public sealed class DraftProposalAuthoringTests
         var input = Input(request, ["proyecto"]); var transport = new Transport(body);
         var proposal = await new PromptDraftGenerator(transport, new ForbiddenExtractor()).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default);
         Assert.Equal(body, proposal.TemplateText); Assert.NotEqual(request, proposal.TemplateText);
-        Assert.Equal("GenerateDraftProposal", Assert.Single(transport.Purposes));
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
         Assert.Equal(PreparationDecision.CREATE_NEW, proposal.Decision); Assert.Null(proposal.SourceId);
         Assert.True(input.Interpretation!.Goal!.HasAuthoringStructure(body));
         Assert.False(input.Interpretation.Goal.HasContentAssessment(body)); Assert.False(input.Interpretation.Goal.HasHumanContentApproval(body));
@@ -36,7 +36,7 @@ public sealed class DraftProposalAuthoringTests
         Assert.Equal(body, proposal.TemplateText); Assert.True(body.Length < source.TemplateText.Length);
         Assert.Equal(source.Id, proposal.SourceId); Assert.Equal(source.Title, proposal.Title); Assert.Equal(source.Description, proposal.Description);
         Assert.Empty(input.Interpretation.Goal!.AuthoringContract!.GetContentReview(body).LiteralChanges.Entries);
-        Assert.Single(transport.Purposes);
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
     }
 
     [Fact]
@@ -67,7 +67,8 @@ public sealed class DraftProposalAuthoringTests
     {
         var input = Input("Crea un resumen.", []); var transport = new Transport("Resume los hechos.") { ExtraOperation = true };
         await Assert.ThrowsAsync<ValidationException>(() => new PromptDraftGenerator(transport, new ForbiddenExtractor()).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default));
-        Assert.Single(transport.Purposes); Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure("Resume los hechos."));
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
+        Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure("Resume los hechos."));
     }
 
     [Fact]
@@ -76,7 +77,8 @@ public sealed class DraftProposalAuthoringTests
         using var stop = new CancellationTokenSource(); var input = Input("Crea un resumen.", []);
         var transport = new Transport("Resume los hechos.") { BeforeReply = stop.Cancel };
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new PromptDraftGenerator(transport, new ForbiddenExtractor()).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], stop.Token));
-        Assert.Single(transport.Purposes); Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure("Resume los hechos."));
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
+        Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure("Resume los hechos."));
     }
 
     [Theory]
@@ -88,7 +90,8 @@ public sealed class DraftProposalAuthoringTests
         var input = Input("Crea un resumen.", []); var transport = new Transport("") { Failure = new LlmUnavailableException("PRIVATE_SYNTHETIC_DETAIL", code) };
         var failure = await Assert.ThrowsAsync<PreparationToolException>(() => new PromptDraftGenerator(transport, new ForbiddenExtractor()).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default));
         Assert.Equal(code, failure.Code); Assert.Equal("GenerateDraftProposal", failure.Tool);
-        Assert.DoesNotContain("PRIVATE_SYNTHETIC_DETAIL", failure.ToString()); Assert.Null(failure.InnerException); Assert.Single(transport.Purposes);
+        Assert.DoesNotContain("PRIVATE_SYNTHETIC_DETAIL", failure.ToString()); Assert.Null(failure.InnerException);
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
     }
 
     [Fact]
@@ -105,16 +108,18 @@ public sealed class DraftProposalAuthoringTests
         var proposal = await generator.GenerateAfterSyntheticReview(input with { ValidationFeedback = feedback }, input.Interpretation.Preparation(), [], default);
         var contract = input.Interpretation.Goal.AuthoringContract!; Assert.Same(fields, contract.FieldContract);
         Assert.Empty(contract.FieldContract.Names); Assert.Null(contract.SourceSnapshot); Assert.Empty(proposal.RequiredInputs!);
-        var material = JsonSerializer.Deserialize<JsonElement>(transport.Packets[1].GetProperty("messages")[1].GetProperty("content").GetString()!);
-        Assert.Equal(input.Message, material.GetProperty("originalRequest").GetString()); Assert.Empty(material.GetProperty("inputs").EnumerateArray());
+        var material = JsonSerializer.Deserialize<JsonElement>(transport.WriterPackets[1].GetProperty("messages")[1].GetProperty("content").GetString()!);
+        Assert.False(material.TryGetProperty("originalRequest", out _));
+        Assert.Equal(input.Message, material.GetProperty("fields").GetProperty("task").GetString()); Assert.Empty(material.GetProperty("inputs").EnumerateArray());
         var repair = material.GetProperty("correctionRequirements"); Assert.Empty(repair.GetProperty("inputs").EnumerateArray());
         Assert.Empty(repair.GetProperty("references").GetProperty("future").EnumerateArray());
         Assert.False(material.TryGetProperty("repairFeedback", out _));
         Assert.DoesNotContain("EVALUATION_CASE_REPAIR_NONAUTH", material.GetRawText());
         Assert.DoesNotContain("campo_ajeno_del_diagnostico", material.GetRawText());
         Assert.DoesNotContain("EVALUATION_CASE", proposal.TemplateText); Assert.False(input.Interpretation.Goal.HasContentAssessment(proposal.TemplateText));
-        Assert.Equal(new[] { "GenerateDraftProposal", "GenerateDraftProposal" }, transport.Purposes);
-        foreach (var packet in transport.Packets)
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal", "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.Purposes);
+        Assert.Equal(4, transport.Packets.Count); Assert.Equal(2, transport.WriterPackets.Count);
+        foreach (var packet in transport.WriterPackets)
             foreach (var branch in packet.GetProperty("format").GetProperty("anyOf").EnumerateArray())
                 Assert.Equal(new[] { "description", "instruction", "literalReference", "outcome", "question", "title" },
                     branch.GetProperty("properties").EnumerateObject().Select(property => property.Name).Order().ToArray());
@@ -146,6 +151,7 @@ public sealed class DraftProposalAuthoringTests
     {
         public List<string> Purposes { get; } = [];
         public List<JsonElement> Packets { get; } = [];
+        public List<JsonElement> WriterPackets { get; } = [];
         public Func<int, string>? BodyForCall { get; init; }
         public bool ExtraOperation { get; init; }
         public Exception? Failure { get; init; }
@@ -153,12 +159,17 @@ public sealed class DraftProposalAuthoringTests
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
         {
             ct.ThrowIfCancellationRequested(); Purposes.Add(purpose); Packets.Add(JsonSerializer.SerializeToElement(packet));
+            // Count discovery in the actual total, but do not consume writer
+            // replies or trigger errors/cancellation intended for that stage.
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(Packets[^1]))
+                return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
+                    content = JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady()) } })));
+            WriterPackets.Add(Packets[^1]);
             if (Failure is not null) throw Failure;
             // Controlled future instruction; preserve the exact existing body
             // oracle. This fixture does not accept the retired production wire.
             var reply = new Dictionary<string, object?> { ["title"] = "Propuesta", ["description"] = "Contenido para revisión",
-                ["outcome"] = "INSTRUCTION", ["instruction"] = new { task = BodyForCall?.Invoke(Purposes.Count) ?? body,
-                    steps = Array.Empty<string>(), constraints = Array.Empty<string>(), outputRequirements = Array.Empty<string>() },
+                ["outcome"] = "INSTRUCTION", ["instruction"] = new { task = BodyForCall?.Invoke(WriterPackets.Count) ?? body },
                 ["question"] = null, ["literalReference"] = null };
             if (ExtraOperation) reply["decision"] = "SAVE_NOW";
             BeforeReply?.Invoke();

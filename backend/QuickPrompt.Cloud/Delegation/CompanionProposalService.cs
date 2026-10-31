@@ -2,6 +2,7 @@ using System.Security.Claims;
 using QuickPrompt.Accounts.Libraries;
 using QuickPrompt.Accounts.Executions;
 using QuickPrompt.Nova.Application;
+using QuickPrompt.Accounts.Delegation;
 
 namespace QuickPrompt.Cloud.Delegation;
 
@@ -15,10 +16,12 @@ public sealed class CompanionProposalService(DelegationBoundary access, Executio
         var connection = await access.ProposalActive(principal, cancellation) ?? throw new UnauthorizedAccessException();
         return await operation(LibraryActor.FromPrincipal(principal), connection.Id, Check);
     }
-    public Task<LocalProposalLease?> Claim(ClaimsPrincipal principal, CancellationToken cancellation) =>
-        Authorized(principal, (actor, connection, check) => queue.ClaimProposal(actor, connection, check, cancellation), cancellation);
-    public Task<LeasePulse> Heartbeat(ClaimsPrincipal principal, Guid id, Guid token, CancellationToken cancellation) =>
-        Authorized(principal, (actor, connection, check) => queue.HeartbeatProposal(actor, connection, id, token, check, cancellation), cancellation);
+    public Task<LocalProposalLease?> Claim(ClaimsPrincipal principal, CancellationToken cancellation, Action<CompanionObservation>? observed = null) =>
+        Authorized(principal, (actor, connection, check) => queue.ClaimProposal(actor, connection, check, cancellation,
+            async (working, stop) => { var signal = await access.ObserveChecked(actor, connection, working, stop); observed?.Invoke(signal); }), cancellation);
+    public Task<LeasePulse> Heartbeat(ClaimsPrincipal principal, Guid id, Guid token, CancellationToken cancellation, Action<CompanionObservation>? observed = null) =>
+        Authorized(principal, (actor, connection, check) => queue.HeartbeatProposal(actor, connection, id, token, check, cancellation,
+            async (working, stop) => { var signal = await access.ObserveChecked(actor, connection, working, stop); observed?.Invoke(signal); }), cancellation);
     public Task<bool> Finish(ClaimsPrincipal principal, Guid id, LocalProposalReceipt receipt, CancellationToken cancellation) =>
         Authorized(principal, (actor, connection, check) => queue.FinishProposal(actor, connection, id, receipt, check, cancellation), cancellation);
 }

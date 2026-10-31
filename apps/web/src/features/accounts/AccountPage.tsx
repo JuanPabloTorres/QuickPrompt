@@ -78,7 +78,7 @@ export function AccountPage({ service }: { service: AccountService }) {
   const portalScope = useMemo(() => ({ active: !checking, dialogHost, overlayHost, onRetry: verifyIdentity }), [checking, dialogHost, overlayHost, verifyIdentity]);
   return <UiPortalScopeProvider value={portalScope}><div className={boot?.user ? 'app-shell accounts-page accounts-workspace' : 'accounts-page'}>
     <a className="skip-link" href="#main">Ir al contenido</a>
-    {!boot?.user && <header className="accounts-brand"><AppBrand onClick={() => { window.history.replaceState(null, '', '/'); reload(); }} /><span className="accounts-candidate">Prueba de cuentas</span></header>}
+    {!boot?.user && <header className="accounts-brand"><AppBrand onClick={() => { window.history.replaceState(null, '', '/'); reload(); }} /></header>}
     <main className="accounts-main" id="main" tabIndex={-1}>
       {!boot ? failure ? <ErrorState title="No pudimos abrir tu espacio" message={failure}><button className="secondary" onClick={reload}>Reintentar</button></ErrorState>
         : <p role="status"><InlineSpinner /> Preparando tu espacio…</p>
@@ -122,7 +122,7 @@ function AccountLibraries({ user, options, service, onExit, theme, onTheme }: {
   return <section className="account-libraries">
     <AccountWorkspaceSidebar view={view} theme={theme} busy={operation.busy} delegation={options.delegation}
       onHome={() => { setSelected(''); setView('libraries'); }} onView={setView} onTheme={onTheme} onLogout={() => void act('logout')} />
-    <div className="account-welcome"><div><span className="eyebrow">TU ESPACIO</span><h1>{view === 'preferences' ? 'Mis preferencias' : view === 'invitations' ? 'Invitaciones' : view === 'connections' ? 'Conexiones locales' : 'Mis bibliotecas'}</h1><p>{user.email}</p></div><span className="accounts-candidate">Prueba de cuentas</span></div>
+    <div className="account-welcome"><div><span className="eyebrow">TU ESPACIO</span><h1>{view === 'preferences' ? 'Mis preferencias' : view === 'invitations' ? 'Invitaciones' : view === 'connections' ? 'Conexiones locales' : 'Mis bibliotecas'}</h1><p>{user.email}</p></div></div>
     <p className="accounts-stage-note">Tus prompts son privados hasta que publicas una versión e invitas a otra cuenta. Con un equipo autorizado, NOVA prepara contenido y tú revisas cada guardado.</p>
     {operation.error && <p role="alert" className="error">{operation.error}</p>}{operation.notice && <p role="status">{operation.notice}</p>}
     {view === 'preferences' ? <NovaPreferenceEditor client={service.preferences} savedMessage="Preferencias confirmadas en tu cuenta." onExpired={onExit} /> : view === 'connections' ? <AccountConnections service={service} onExpired={onExit} /> : view === 'invitations' ? <AccountInvitations libraries={libraries ?? []} service={service} onExpired={onExit} onImported={libraryId => { setSelected(libraryId); setView('libraries'); }} /> : active ? <>

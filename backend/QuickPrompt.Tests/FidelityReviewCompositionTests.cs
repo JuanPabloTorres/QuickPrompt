@@ -50,13 +50,16 @@ public sealed class FidelityReviewCompositionTests
         var diagnostics=new List<int>();
         var proposal=await generator.GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],cancellation.Token,(stage,_,_)=>diagnostics.Add(stage));
         var call=Assert.Single(transport.Calls);
-        Assert.Equal("GenerateDraftProposal",call.Purpose);Assert.Equal(cancellation.Token,call.Token);
+        Assert.Equal("GenerateDraftProposal",call.Purpose);
+        Assert.Equal(new[] { "DiscoverCurrentAuthorDecision", "GenerateDraftProposal" }, transport.AllCalls.Select(item => item.Purpose));
+        Assert.True(call.Token.CanBeCanceled); Assert.Equal(Assert.Single(transport.DiscoveryCalls).Token, call.Token);
         Assert.Equal(input.Model,call.Packet.GetProperty("model").GetString());Assert.False(call.Packet.GetProperty("think").GetBoolean());
         Assert.Equal(LocalModelPolicy.AgentContextLength,call.Packet.GetProperty("options").GetProperty("num_ctx").GetInt32());
         Assert.Equal(3500,call.Packet.GetProperty("options").GetProperty("num_predict").GetInt32());
         var system=call.Packet.GetProperty("messages")[0].GetProperty("content").GetString()!;
         Assert.DoesNotContain("Application system knowledge",system,StringComparison.Ordinal);
-        Assert.Equal(input.TaskRequest,Material(call.Packet).GetProperty("originalRequest").GetString());
+        Assert.Equal(input.TaskRequest,Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
+        Assert.False(Material(call.Packet).TryGetProperty("originalRequest",out _));
         Assert.Equal(new[]{193},diagnostics);Assert.Empty(transport.Rejections);
         Assert.False(input.Interpretation.Goal!.HasContentAssessment(proposal.TemplateText));
         Assert.False(input.Interpretation.Goal.HasHumanContentApproval(proposal.TemplateText));
@@ -70,7 +73,7 @@ public sealed class FidelityReviewCompositionTests
         var transport=new Transport();var forbidden=new ForbiddenDependencies();var generator=new PromptDraftGenerator(transport,forbidden,forbidden,forbidden);
         var input=Input("Explica un tema.");using var cancellation=new CancellationTokenSource();cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>generator.GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],cancellation.Token));
-        Assert.Empty(transport.Calls);transport.Failure=new LlmUnavailableException("Synthetic unavailable");
+        Assert.Empty(transport.AllCalls);transport.Failure=new LlmUnavailableException("Synthetic unavailable");
         var error=await Assert.ThrowsAsync<PreparationToolException>(()=>generator.GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],default));
         Assert.Equal("MODEL_UNAVAILABLE",error.Code);Assert.Single(transport.Calls);Assert.Empty(transport.Rejections);
         Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure("Explica un tema."));

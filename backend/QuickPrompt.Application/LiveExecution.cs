@@ -24,6 +24,7 @@ public record LiveStartInput(Guid RunId, Guid SessionId, string Message, string 
     [JsonIgnore] public UserInputScope? InputScope { get; init; }
     [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
     [JsonIgnore] public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
+    [JsonIgnore] public AuthoringBriefContent? AuthoringTaskDraft { get; init; }
     [JsonIgnore] public string DisplayRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : AuthorizedPendingRequest + "\n\nTu aclaración: " + Message;
     [JsonIgnore] public string TaskRequest => new PrepareInput(RunId, Message) { AuthorizedPendingRequest = AuthorizedPendingRequest }.TaskRequest;
 }
@@ -152,6 +153,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         var normalized = input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) };
         var fingerprint = clarifications.Length == 0 && input.ConfirmedBrief is null ? Hash(normalized)
             : Hash(new { input = normalized, userClarifications = clarifications, confirmedBrief = input.ConfirmedBrief });
+        if (input.AuthoringTaskDraft is not null) fingerprint = Hash(new { input = fingerprint, authoringTaskDraft = input.AuthoringTaskDraft });
         var prior = store.Get(input.RunId);
         if (prior is not null) { if (prior.Fingerprint != fingerprint) throw new ConflictException("RunId ya utilizado."); return prior; }
         foreach (var removed in controls.Where(c => store.Get(c.Key) is null).ToArray()) controls.TryRemove(removed.Key, out _);

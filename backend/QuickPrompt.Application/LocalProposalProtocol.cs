@@ -7,7 +7,9 @@ namespace QuickPrompt.Nova.Application;
 /// <summary>Inference data only. Identity, library authority, endpoints and executable paths stay outside the packet.</summary>
 public static class LocalProposalProtocol
 {
-    public const string Version = "quickprompt-local-proposal/1";
+    // Version 2 carries per-stage attempt limits. Strict v1 clients cannot
+    // honor that field and must fail at protocol negotiation, before a claim.
+    public const string Version = "quickprompt-local-proposal/2";
     public const string Scope = "companion:proposals";
     public const string Profile = "ollama-qwen3-8b-proposals";
     public const string ResourcePath = "/api/companion/proposals";
@@ -32,13 +34,17 @@ public static class LocalProposalProtocol
             if (Text(message, "role") is not ("system" or "user" or "assistant" or "tool") || Text(message, "content") is not { Length: > 0 and <= 64000 }) throw Invalid();
         }
         var options = packet.GetProperty("options");
-        Object(options, ["num_ctx", "num_predict", "temperature", "top_p", "top_k", "min_p", "seed"]);
+        Object(options, ["num_ctx", "num_predict", "temperature", "top_p", "top_k", "min_p", "seed", "max_requests"]);
         if (options.GetProperty("num_ctx").GetInt32() is < 8192 or > 12288 || options.GetProperty("num_predict").GetInt32() is < 1 or > 4000
             || !options.GetProperty("temperature").TryGetDouble(out var temperature) || temperature is < 0 or > 1.5) throw Invalid();
         foreach (var name in new[] { "top_p", "min_p" })
             if (options.TryGetProperty(name, out var value) && (!value.TryGetDouble(out var number) || number is < 0 or > 1)) throw Invalid();
         if (options.TryGetProperty("top_k", out var topK) && topK.GetInt32() is < 0 or > 100) throw Invalid();
         if (options.TryGetProperty("seed", out var seed)) _ = seed.GetInt32();
+        // Trusted model stages can reduce the existing two-attempt budget;
+        // inference data cannot increase it or grant any application authority.
+        if (options.TryGetProperty("max_requests", out var attempts) &&
+            (attempts.ValueKind != JsonValueKind.Number || !attempts.TryGetInt32(out var limit) || limit is < 1 or > 2)) throw Invalid();
         var structured = packet.TryGetProperty("format", out var format) && format.ValueKind != JsonValueKind.Null;
         var tools = packet.TryGetProperty("tools", out var catalog) && catalog.ValueKind != JsonValueKind.Null;
         if (structured && tools) throw Invalid();
@@ -68,9 +74,12 @@ public static class LocalProposalProtocol
     private static void Reply(JsonElement reply, JsonElement request)
     {
         Size(reply);
+        var maximumCalls = request.GetProperty("options").TryGetProperty("max_requests", out var requestedCalls) ? requestedCalls.GetInt32() : 2;
+        if (maximumCalls is < 1 or > 2) throw Invalid();
         Object(reply, ["done", "done_reason", "message", "model", "coreRequestId", "modelCalls", "prompt_eval_count", "eval_count"]);
         if (Text(reply, "model") != LocalWorkProtocol.Model || Text(reply, "done_reason") != "stop"
-            || reply.GetProperty("done").ValueKind != JsonValueKind.True || reply.GetProperty("modelCalls").GetInt32() is < 1 or > 2
+            || reply.GetProperty("done").ValueKind != JsonValueKind.True || reply.GetProperty("modelCalls").GetInt32() < 1
+            || reply.GetProperty("modelCalls").GetInt32() > maximumCalls
             || !Guid.TryParseExact(Text(reply, "coreRequestId"), "N", out _) || reply.GetProperty("prompt_eval_count").GetInt32() is < 0 or > 1000000
             || reply.GetProperty("eval_count").GetInt32() is < 0 or > 1000000) throw Invalid();
         var message = reply.GetProperty("message");

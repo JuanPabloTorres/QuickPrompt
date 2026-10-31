@@ -40,7 +40,7 @@ public sealed partial class AccountHttpTests
         await using var host = await Start(); using var a = Client(host.App); using var b = Client(host.App);
         using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
-        var source = await LocalLibrary(a); var connection = await LocalDevice(a, deviceA); await LocalDevice(b, deviceB);
+        var source = await LocalLibrary(a); var connection = await PollingLocalDevice(a, deviceA); await PollingLocalDevice(b, deviceB);
         var otherSource = await LocalLibrary(b);
         Assert.Equal(HttpStatusCode.NotFound, (await b.PostAsJsonAsync(LocalPath(otherSource.Library, otherSource.Prompt.Id), LocalInput(connection.Id))).StatusCode);
         var submitted = await a.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id));
@@ -66,7 +66,7 @@ public sealed partial class AccountHttpTests
     public async Task RevocationCancelsTheLocalTurnAndRejectsLateCompletion()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var submitted = await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id));
         var job = (await submitted.Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;
@@ -83,7 +83,7 @@ public sealed partial class AccountHttpTests
     public async Task WrongLeaseAndCancellationCannotSaveALocalResponse()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var submitted = await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id));
         var job = (await submitted.Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;
@@ -100,7 +100,7 @@ public sealed partial class AccountHttpTests
     public async Task LocalCompletionRechecksTheClockAfterItsAuthorityCheck()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var submitted = await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id));
         var job = (await submitted.Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;
@@ -121,7 +121,7 @@ public sealed partial class AccountHttpTests
     public async Task DatabaseRejectsAnUnlabelledModelResponse()
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
-        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await LocalDevice(owner, device);
+        await Login(owner, await Register(owner, host.Mail)); var source = await LocalLibrary(owner); var connection = await PollingLocalDevice(owner, device);
         var submitted = await owner.PostAsJsonAsync(LocalPath(source.Library, source.Prompt.Id), LocalInput(connection.Id));
         var job = (await submitted.Content.ReadFromJsonAsync<ExecutionView>())!;
         var lease = (await (await ClaimLocal(device)).Content.ReadFromJsonAsync<LocalWorkLease>())!;

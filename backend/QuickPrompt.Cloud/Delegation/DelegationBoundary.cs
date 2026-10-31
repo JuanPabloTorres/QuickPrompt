@@ -44,4 +44,16 @@ public sealed class DelegationBoundary(IServiceScopeFactory scopes, ExecutionQue
         await Run(access => access.Owned(actor, connectionId, origin.Resource, cancellation)) is not null;
     public async Task<bool> ProposalOwned(LibraryActor actor, Guid connectionId, CancellationToken cancellation) =>
         await Run(access => access.Owned(actor, connectionId, origin.ProposalResource, cancellation)) is { ProfileId: LocalProposalProtocol.Profile };
+
+    // Queue callbacks invoke this only after fresh token/profile authorization inside fence 5283.
+    internal Task<CompanionObservation> ObserveChecked(LibraryActor actor, Guid connectionId, bool working, CancellationToken cancellation) =>
+        Run(access => access.Observe(actor, connectionId, working, cancellation));
+
+    public Task<bool> StopPresence(ClaimsPrincipal principal, Guid observationId, CancellationToken cancellation) =>
+        queue.Fence(async () =>
+        {
+            if (observationId == Guid.Empty) throw new QuickPrompt.Local.ValidationException("Falta la observación del componente.");
+            var connection = await CompanionActive(principal, cancellation) ?? throw new UnauthorizedAccessException();
+            return await Run(access => access.StopPresence(LibraryActor.FromPrincipal(principal), connection.Id, observationId, cancellation));
+        }, cancellation);
 }

@@ -123,7 +123,8 @@ public sealed class AuthoringReferenceCoverageTests
         var reviewer = new ForbiddenReview();
         var generator = new PromptDraftGenerator(transport, editor, new PromptInputValueExtractor(transport), reviewer);
         var proposal = await generator.Generate(new(Guid.NewGuid(), request) { Interpretation = plan }, plan.Preparation(), [], default);
-        Assert.Equal(PreparationDecision.ASK_CLARIFICATION, proposal.Decision); Assert.Equal(1, transport.Calls);
+        Assert.Equal(PreparationDecision.ASK_CLARIFICATION, proposal.Decision); Assert.Equal(0, transport.Calls); Assert.Equal(0, transport.DiscoveryCalls);
+        Assert.Equal(AuthoringBriefs.EstablishTask, proposal.Brief!.Stage);
         Assert.Equal(0, reviewer.Calls); Assert.Null(plan.Goal!.ReferenceCoverage);
         Assert.False(plan.Goal.HasContentAssessment(proposal.TemplateText)); Assert.False(plan.Goal.HasHumanContentApproval(proposal.TemplateText));
         Assert.Null(plan.Goal.AuthoringContract); Assert.Null(Assert.Single(proposal.Brief!.Proposed.References).Role);
@@ -162,7 +163,7 @@ public sealed class AuthoringReferenceCoverageTests
             Assert.False(plan.Goal.HasAuthoringStructure(body));
         }
         Assert.Equal(fingerprint, plan.Goal.ReferenceCoverage.Fingerprint);
-        Assert.Equal(1, transport.Calls); Assert.Equal(0, reviewer.Calls); Assert.False(plan.Executes);
+        Assert.Equal(2, transport.Calls); Assert.Equal(1, transport.DiscoveryCalls); Assert.Equal(0, reviewer.Calls); Assert.False(plan.Executes);
         using var data = JsonDocument.Parse(transport.Last!.Value.GetProperty("messages")[1].GetProperty("content").GetString()!);
         var references = data.RootElement.GetProperty("references");
         Assert.Equal(role == AuthoringReferenceRole.CURRENT_SESSION ? new[] { uri } : [], references.GetProperty("writing").EnumerateArray().Select(item => item.GetString()).ToArray());
@@ -213,13 +214,19 @@ public sealed class AuthoringReferenceCoverageTests
 
     private sealed class Author(string body) : IValidatedAgentModelTransport
     {
-        public int Calls; public JsonElement? Last;
+        public int Calls; public int DiscoveryCalls; public JsonElement? Last;
         public bool UsesThinking(string model) => false;
         public void Observe(int stage, string content, string? error) { }
         public void Reject(string? content) { }
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
         {
-            ct.ThrowIfCancellationRequested(); Calls++; Last = JsonSerializer.SerializeToElement(packet);
+            ct.ThrowIfCancellationRequested(); Calls++; var encoded = JsonSerializer.SerializeToElement(packet);
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(encoded)) {
+                DiscoveryCalls++;
+                return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
+                    content = JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady()) } })));
+            }
+            Last = encoded;
             Assert.False(AuthoringReviewTestFixture.SchemaFields(Last.Value.GetProperty("format")).TryGetProperty("currentSessionControls", out _));
             Assert.Equal("GenerateDraftProposal", purpose);
             Assert.Equal(new[] { "description", "instruction", "literalReference", "outcome", "question", "title" }, AuthoringReviewTestFixture.SchemaFields(Last.Value.GetProperty("format")).EnumerateObject().Select(property => property.Name).Order().ToArray());

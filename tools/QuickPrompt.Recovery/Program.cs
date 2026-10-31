@@ -9,25 +9,24 @@ if (args.Length == 1 && args[0] == "--help")
 {
     Console.WriteLine("protect --repository-root ABS --input ABS.dump --output NEW_ABS.qpb --plaintext-sha256 HEX --recipient-cert ABS_PUBLIC_CERT --recipient-sha256 HEX --retain-until UTC");
     Console.WriteLine("recover --repository-root ABS --input ABS.qpb --output NEW_ABS.dump --archive-sha256 HEX --plaintext-sha256 HEX --recipient-pfx ABS_EXISTING_PFX --recipient-sha256 HEX");
+    Console.WriteLine("verify --repository-root ABS --input ABS.qpb --archive-sha256 HEX --plaintext-sha256 HEX --recipient-pfx ABS_EXISTING_PFX --recipient-sha256 HEX");
     Console.WriteLine("64 MiB pilot limit. Dedicated document-encryption recipient only. Recovery requires an interactive password without echo; no password argument, environment variable or temporary secret file.");
     return 0;
 }
 byte[]? input = null, output = null;
 try
 {
-    if (args.Length < 1 || args[0] is not ("protect" or "recover")) throw new InvalidDataException("Select protect or recover.");
-    var mode = args[0];
-    var options = new Dictionary<string, string>(StringComparer.Ordinal);
-    for (var index = 1; index < args.Length; index += 2)
-        if (index + 1 >= args.Length || !args[index].StartsWith("--", StringComparison.Ordinal) || !options.TryAdd(args[index], args[index + 1]))
-            throw new InvalidDataException("Malformed or duplicate operator option.");
-    var required = new[] { "--repository-root", "--input", "--output", "--plaintext-sha256", "--recipient-sha256" }
-        .Concat(mode == "protect" ? ["--recipient-cert", "--retain-until"] : ["--recipient-pfx", "--archive-sha256"]).ToArray();
-    if (options.Count != required.Length || required.Any(option => !options.ContainsKey(option)))
-        throw new InvalidDataException("Unexpected or missing operator option.");
+    var command = RecoveryCommand.Parse(args);
+    command.RequireInteractiveInput(Console.IsInputRedirected);
+    var mode = command.Mode;
+    var options = command.Options;
     var root = PrivateArchiveFiles.RequireRepositoryRoot(options["--repository-root"]);
-    var destination = PrivateArchiveFiles.RequirePath(options["--output"], root, mustExist: false);
-    if (File.Exists(destination) || Directory.Exists(destination)) throw new IOException("The output already exists; it will not be overwritten.");
+    string? destination = null;
+    if (mode != "verify")
+    {
+        destination = PrivateArchiveFiles.RequirePath(options["--output"], root, mustExist: false);
+        if (File.Exists(destination) || Directory.Exists(destination)) throw new IOException("The output already exists; it will not be overwritten.");
+    }
     input = PrivateArchiveFiles.ReadBounded(options["--input"], root, mode == "protect" ? BackupArchive.MaximumPlaintextBytes : BackupArchive.MaximumArchiveBytes);
     if (mode == "protect")
     {
@@ -40,7 +39,6 @@ try
     else
     {
         var privatePath = PrivateArchiveFiles.RequirePath(options["--recipient-pfx"], root, mustExist: true);
-        if (Console.IsInputRedirected) throw new InvalidOperationException("Recovery requires an interactive operator console.");
         var password = ReadPassword();
         byte[]? encryptedPfx = null;
         try
@@ -49,6 +47,15 @@ try
             // bytes prevents a second, unbounded file open after an earlier size check.
             encryptedPfx = PrivateArchiveFiles.ReadBounded(privatePath, root, 64 * 1024);
             using var certificate = X509CertificateLoader.LoadPkcs12(encryptedPfx, password.AsSpan(), X509KeyStorageFlags.EphemeralKeySet);
+            if (mode == "verify")
+            {
+                var verifiedBytes = RecoveryVerification.Verify(input, options["--archive-sha256"], options["--plaintext-sha256"], certificate,
+                    options["--recipient-sha256"], DateTimeOffset.UtcNow);
+                Console.WriteLine(JsonSerializer.Serialize(new { status = "completed", operation = mode, inputSha256 = BackupArchive.Digest(input),
+                    plaintextSha256 = options["--plaintext-sha256"], plaintextBytes = verifiedBytes, recipientSha256 = options["--recipient-sha256"],
+                    outputWritten = false, databaseRestored = false, published = false, retentionDeletionPerformed = false }));
+                return 0;
+            }
             output = BackupArchive.Recover(input, options["--archive-sha256"], options["--plaintext-sha256"], certificate,
                 options["--recipient-sha256"], DateTimeOffset.UtcNow);
         }
@@ -59,7 +66,7 @@ try
         }
         if (!output.AsSpan().StartsWith("PGDMP"u8)) throw new InvalidDataException("The recovered content is not a PostgreSQL custom-format backup.");
     }
-    PrivateArchiveFiles.WriteNew(destination, root, output);
+    PrivateArchiveFiles.WriteNew(destination!, root, output);
     Console.WriteLine(JsonSerializer.Serialize(new { status = "completed", operation = mode, inputSha256 = BackupArchive.Digest(input),
         outputSha256 = BackupArchive.Digest(output), outputBytes = output.Length, databaseRestored = false, published = false,
         recipientSha256 = options["--recipient-sha256"], retentionDeadlineUtc = mode == "protect" ? options["--retain-until"] : null,

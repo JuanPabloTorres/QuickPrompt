@@ -17,6 +17,22 @@ public sealed class AuthoringClarificationTests
         LiveStatus.BLOCKED, 12, DateTime.UtcNow, ErrorCode: "NEEDS_CLARIFICATION");
 
     [Theory]
+    [InlineData(AuthoringBriefs.EstablishTask)]
+    [InlineData(AuthoringBriefs.ReviewContent)]
+    public void ANewAnswerRetiresEitherPriorConfirmationWithoutGrantingAnotherAction(string stage)
+    {
+        var content = new AuthoringBriefContent("Software", "", "Conceptualiza software.", [], [], [], []);
+        var review = new AuthoringBriefReview("synthetic-basis", Request, null, [], content) { Stage = stage };
+        var confirmed = AuthoringBriefs.Confirm(review, new(review.BasisHash, content, true));
+        var original = Original() with { ConfirmedBrief = confirmed };
+        var next = AuthoringClarifications.Continue(original, Blocked(original), "¿Qué tipo?", Guid.NewGuid(), 12, "Web y App.");
+        Assert.Null(next.ConfirmedBrief); Assert.Same(confirmed, original.ConfirmedBrief);
+        Assert.Equal(content.Task, next.AuthoringTaskDraft!.Task); Assert.NotSame(content, next.AuthoringTaskDraft);
+        Assert.Equal(original.Command!.Operation, next.Command!.Operation);
+        Assert.Equal("Web y App.", Assert.Single(next.UserClarifications).Answer);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void HumanReplyPreservesOriginalRequestActionSourceRevisionFieldsAndSession(bool updating)
@@ -76,7 +92,7 @@ public sealed class AuthoringClarificationTests
     }
 
     [Fact]
-    public async Task WriterReceivesOriginalAndTypedHumanRepliesWithoutGrantingApplicationEffects()
+    public async Task DiscoveryRetainsOriginalAndTypedRepliesWhileWriterReceivesEstablishedFields()
     {
         const string answer = "Una instrucción general para comparar ideas Web, App, AI y Spatial 3D.";
         var input = AuthoringReviewTestFixture.Input(Request, names: ["nombre proyecto", "propósito", "tipo"]) with {
@@ -84,16 +100,20 @@ public sealed class AuthoringClarificationTests
         };
         var transport = new AuthoringReviewTestFixture.Transport((packet, _, _) => {
             var material = AuthoringReviewTestFixture.Material(packet);
-            Assert.Equal(Request, material.GetProperty("originalRequest").GetString());
-            var reply = Assert.Single(material.GetProperty("userClarifications").EnumerateArray());
-            Assert.Equal("¿Qué tipo de software?", reply.GetProperty("question").GetString());
-            Assert.Equal(answer, reply.GetProperty("answer").GetString());
+            Assert.False(material.TryGetProperty("originalRequest", out _));
+            Assert.False(material.TryGetProperty("userClarifications", out _));
+            Assert.Equal(Request, material.GetProperty("fields").GetProperty("task").GetString());
             Assert.Equal(new[] { "<nombre proyecto>", "<propósito>", "<tipo>" }, material.GetProperty("inputs").EnumerateArray().Select(item => item.GetString()));
             return AuthoringReviewTestFixture.Definition("Conceptualiza <nombre proyecto> con <propósito> para <tipo>.");
         });
         var proposal = await new PromptDraftGenerator(transport, new AuthoringReviewTestFixture.ForbiddenDependencies())
             .GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default);
         var contract = input.Interpretation.Goal!.AuthoringContract!;
+        var discovery = AuthoringReviewTestFixture.Material(Assert.Single(transport.DiscoveryCalls).Packet);
+        Assert.Equal(Request, discovery.GetProperty("originalRequest").GetString());
+        var reply = Assert.Single(discovery.GetProperty("userClarifications").EnumerateArray());
+        Assert.Equal("¿Qué tipo de software?", reply.GetProperty("question").GetString());
+        Assert.Equal(answer, reply.GetProperty("answer").GetString());
         Assert.Equal(Request, contract.OriginalRequest); Assert.Equal(answer, Assert.Single(contract.GetContentReview(proposal.TemplateText).UserClarifications).Answer);
         Assert.False(input.Interpretation.Goal.HasHumanContentApproval(proposal.TemplateText));
         var other = new DraftProposalContract(Request, null, contract.FieldContract, userClarifications: [new("¿Qué tipo de software?", "Respuesta distinta")]);

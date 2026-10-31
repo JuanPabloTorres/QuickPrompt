@@ -26,9 +26,10 @@ public sealed class RuntimeSettingsSnapshotTests
         await interpreter.Explain("Explica la biblioteca.",null,null,"qwen3:8b",default);
         var input=AuthoringReviewTestFixture.Input("Crea una instrucción para explicar un tema.");
         var generator=provider.GetRequiredService<IPromptGenerator>();
-        var proposal=await generator.Generate(input,input.Interpretation!.Preparation(),[],default);
+        var proposal=await generator.GenerateAfterSyntheticTask(input,input.Interpretation!.Preparation(),[],default);
         var body=proposal.TemplateText;
-        Assert.Equal(2,transport.Packets.Count);
+        Assert.Equal(3,transport.Packets.Count); // Advice, current-author discovery, then writer.
+        Assert.Single(transport.Packets, AuthoringSyntheticReview.IsCurrentAuthorDecision);
         Assert.False(input.Interpretation!.Goal!.HasContentAssessment(body));
         Assert.False(input.Interpretation!.Goal!.HasHumanContentApproval(body));
         Assert.All(transport.Packets,packet=>{
@@ -82,7 +83,9 @@ public sealed class RuntimeSettingsSnapshotTests
         public Task<JsonDocument> Send(object packet,CancellationToken ct,string purpose)
         {
             ct.ThrowIfCancellationRequested();Packets.Add(JsonSerializer.SerializeToElement(packet));
-            var answer=purpose=="ExplainTaskGoal"?"""{"answer":"Organiza y reutiliza instrucciones."}""":JsonSerializer.Serialize(AuthoringReviewTestFixture.Definition("Explica un tema.","Guía"),AuthoringReviewTestFixture.Json);
+            var answer = AuthoringSyntheticReview.IsCurrentAuthorDecision(Packets[^1])
+                ? JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady())
+                : purpose=="ExplainTaskGoal"?"""{"answer":"Organiza y reutiliza instrucciones."}""":JsonSerializer.Serialize(AuthoringReviewTestFixture.Definition("Explica un tema.","Guía"),AuthoringReviewTestFixture.Json);
             return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new {message=new {content=answer}})));
         }
         public bool UsesThinking(string model)=>false;

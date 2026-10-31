@@ -154,7 +154,8 @@ public static class AccountHost
                 if (error is ExecutionQuotaException rejected) AccountOperations.QuotaRejected(app.Logger, rejected.Code);
                 var status = AccountFailureStatus.Classify(error);
                 if (status == 500) app.Logger.LogError("Account operation failed: {Type}; correlation {Correlation}", error.GetType().Name, context.TraceIdentifier);
-                var title = status == 503 ? "El servicio de datos no está disponible temporalmente. No se pudo confirmar el resultado; consulta su estado antes de repetir la operación."
+                var title = error is QuickPrompt.Accounts.Delegation.CompanionUnavailableException ? QuickPrompt.Accounts.Delegation.CompanionUnavailableException.MessageText
+                    : status == 503 ? "El servicio de datos no está disponible temporalmente. No se pudo confirmar el resultado; consulta su estado antes de repetir la operación."
                     : error is ExecutionQuotaException quota ? quota.Code switch
                 {
                     "DAILY_LIMIT" => "Alcanzaste el límite diario de preparaciones. Tus datos se conservan en el formulario.",

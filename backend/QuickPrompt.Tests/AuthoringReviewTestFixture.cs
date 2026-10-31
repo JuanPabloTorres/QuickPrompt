@@ -51,19 +51,29 @@ internal static class AuthoringReviewTestFixture
     // adapter. Existing body oracles remain exact compact future instructions.
     internal static object Definition(string body,string title="Artefacto",string description="",int? literalReference=null)=>
         new {title,description,outcome=literalReference is null?"INSTRUCTION":"LITERAL",
-            instruction=literalReference is null?new {task=body,steps=Array.Empty<string>(),constraints=Array.Empty<string>(),outputRequirements=Array.Empty<string>()}:null,
+            instruction=literalReference is null?new {task=body}:null,
             question=(string?)null,literalReference};
     internal static JsonElement Material(JsonElement packet)=>JsonSerializer.Deserialize<JsonElement>(packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
 
     internal sealed class Transport(Func<JsonElement,string,int,object>? reply=null):IValidatedAgentModelTransport
     {
-        internal List<(JsonElement Packet,string Purpose,CancellationToken Token)> Calls {get;}=[];
+        // Calls retains the pre-discovery stage view (writer-only for authoring;
+        // other ports keep their own calls). AllCalls is the actual total:
+        // unconfirmed authoring now has discovery plus the writer.
+        internal List<(JsonElement Packet,string Purpose,CancellationToken Token)> AllCalls {get;}=[];
+        internal List<(JsonElement Packet,string Purpose,CancellationToken Token)> Calls =>
+            AllCalls.Where(call => call.Purpose != "DiscoverCurrentAuthorDecision").ToList();
+        internal List<(JsonElement Packet,string Purpose,CancellationToken Token)> DiscoveryCalls =>
+            AllCalls.Where(call => call.Purpose == "DiscoverCurrentAuthorDecision").ToList();
         internal List<string?> Rejections {get;}=[];
         internal Exception? Failure {get;set;}
         internal Action? BeforeReply {get;set;}
         public Task<JsonDocument> Send(object packet,CancellationToken ct,string purpose)
         {
-            ct.ThrowIfCancellationRequested();var encoded=JsonSerializer.SerializeToElement(packet);Calls.Add((encoded,purpose,ct));
+            ct.ThrowIfCancellationRequested();var encoded=JsonSerializer.SerializeToElement(packet);AllCalls.Add((encoded,purpose,ct));
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(encoded))
+                return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new {
+                    content = JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady(), Json) } })));
             if(Failure is not null)throw Failure;
             var result=reply?.Invoke(encoded,purpose,Calls.Count)??Definition("Propuesta sintética.");
             BeforeReply?.Invoke();

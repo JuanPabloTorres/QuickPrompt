@@ -10,7 +10,7 @@ import { AccountFactualReviewDialog } from './AccountFactualReview';
 
 const labels: Record<AccountExecution['status'], string> = { Queued: 'En cola', Running: 'Preparando', Completed: 'Resultado guardado', Failed: 'No se pudo preparar', Cancelled: 'Cancelada', Interrupted: 'Interrumpida; no se repetirá sola' };
 const active = (job: AccountExecution) => job.status === 'Queued' || job.status === 'Running';
-const localIssues: Record<string, string> = { MODEL_UNAVAILABLE: 'Ollama no está disponible en tu equipo. Ábrelo antes de solicitar otra ejecución.',
+const localIssues: Record<string, string> = { MODEL_UNAVAILABLE: 'El proveedor de IA no está disponible en tu equipo. Comprueba su configuración antes de solicitar otra ejecución.',
   MODEL_TIMEOUT: 'El modelo superó el tiempo permitido. La ejecución se detuvo.', MODEL_FAILED: 'El modelo no entregó una respuesta válida.',
   CONNECTION_REVOKED: 'Se revocó la autorización de este equipo.', SESSION_REVOKED: 'Tu sesión fue invalidada. Vuelve a autorizar el equipo.',
   LEASE_EXPIRED: 'Se perdió la conexión con el equipo. No se repetirá la ejecución automáticamente.',

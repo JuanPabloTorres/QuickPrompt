@@ -11,6 +11,8 @@ namespace QuickPrompt.Nova.Tests;
 public sealed class VerbatimReviewAuthorityTests
 {
     private const string Body = "Responde únicamente LISTO";
+    // The fixture author establishes the future body, not the session's copy request.
+    private static AuthoringBriefContent EstablishedBody => new("Instrucción", "", Body, [], [], [], []);
     private static PrepareInput LiteralInput(string request) => Input(request) with {
         VerbatimBody = new(LiveRuns.Hash(request), request.LastIndexOf(Body, StringComparison.Ordinal), Body.Length)
     };
@@ -30,13 +32,14 @@ public sealed class VerbatimReviewAuthorityTests
     {
         var request = "Crea un prompt con este cuerpo completo literal «" + Body + "». No lo ejecutes.";
         var input = LiteralInput(request); var transport = LiteralTransport(request, Body);
-        var pending = Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default);
+        var pending = Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody);
         var proposal=await pending;
         Assert.Equal(Body,proposal.TemplateText);Assert.Equal(Body,proposal.Title);
         Assert.Equal("GenerateDraftProposal",Assert.Single(transport.Calls).Purpose);
         // Body/title ambiguity is visible for human review; no retired model
         // title selector is used as an automatic semantic certificate.
-        Assert.Equal(request,Material(transport.Calls[0].Packet).GetProperty("originalRequest").GetString());
+        Assert.Equal(request,Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
         Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
     }
 
@@ -45,10 +48,11 @@ public sealed class VerbatimReviewAuthorityTests
     {
         var request = "Titúlalo «" + Body + "». El cuerpo completo literal es «" + Body + "».";
         var input = LiteralInput(request); var transport = LiteralTransport(request, Body);
-        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default);
+        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody);
         Assert.Equal(Body, proposal.Title); Assert.Equal(Body, proposal.TemplateText);
         Assert.Equal(new[]{"GenerateDraftProposal"},transport.Calls.Select(call=>call.Purpose));
-        Assert.Contains("Titúlalo «" + Body + "»", Material(transport.Calls[0].Packet).GetProperty("originalRequest").GetString());
+        Assert.Contains("Titúlalo «" + Body + "»", Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
         Assert.False(input.Interpretation.Goal!.HasContentAssessment(Body)); Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
     }
 
@@ -57,7 +61,8 @@ public sealed class VerbatimReviewAuthorityTests
     {
         var request = "Crea el cuerpo literal «" + Body + "».";
         var input = LiteralInput(request); var transport = LiteralTransport(request, "[BOUND_INSTRUCTION_BODY]");
-        var proposal=await Generator(transport).GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],default);
+        var proposal=await Generator(transport).GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],default,
+            establishedContent: EstablishedBody);
         Assert.Equal("[BOUND_INSTRUCTION_BODY]",proposal.Title);Assert.Equal(Body,proposal.TemplateText);
         Assert.Single(transport.Calls);Assert.DoesNotContain("[BOUND_INSTRUCTION_BODY]",request);
         Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
@@ -84,7 +89,8 @@ public sealed class VerbatimReviewAuthorityTests
     {
         var request = "Crea un cuerpo literal «" + Body + "». No añadas instrucciones de la sesión.";
         var input = LiteralInput(request); var transport = LiteralTransport(request, null);
-        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default);
+        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody);
         Assert.Equal(Body, proposal.TemplateText); Assert.True(input.Interpretation.Goal!.HasAuthoringStructure(Body));
         Assert.False(input.Interpretation.Goal.HasContentAssessment(Body)); Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
         var calls = transport.Calls.Count;
@@ -101,7 +107,8 @@ public sealed class VerbatimReviewAuthorityTests
     private static Transport LiteralTransport(string request,string? requestedTitle)=>new((packet,purpose,callNumber)=>{
         Assert.Equal("GenerateDraftProposal",purpose);
         var material=Material(packet);
-        Assert.Equal(request,material.GetProperty("originalRequest").GetString());
+        Assert.False(material.TryGetProperty("originalRequest",out _));
+        Assert.NotEmpty(material.GetProperty("fields").GetProperty("task").GetString()!);
         var occurrence=material.GetProperty("literalBodyCandidates").EnumerateArray()
             .Last(candidate=>candidate.GetProperty("text").GetString()==Body);
         return Definition("Texto no literal que la aplicación no adoptará.",requestedTitle??"Instrucción",literalReference:occurrence.GetProperty("id").GetInt32());

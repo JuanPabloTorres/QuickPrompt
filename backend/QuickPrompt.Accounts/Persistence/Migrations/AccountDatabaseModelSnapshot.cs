@@ -380,6 +380,40 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
                     b.ToTable("OpenIddictTokens", "qp_identity");
                 });
 
+            modelBuilder.Entity("QuickPrompt.Accounts.Delegation.CompanionPresence", b =>
+                {
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ObservationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Signal")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("ConnectionId");
+
+                    b.HasIndex("ConnectionId", "OwnerId");
+
+                    b.HasIndex("OwnerId", "ConnectionId");
+
+                    b.ToTable("companion_presence", "qp_operations", t =>
+                        {
+                            t.HasCheckConstraint("bounded_companion_presence", "\"ObservationId\" <> '00000000-0000-0000-0000-000000000000'::uuid AND \"Signal\" IN ('POLLING','WORKING','STOPPED') AND \"ExpiresAt\" >= \"ObservedAt\" AND \"ExpiresAt\" <= \"ObservedAt\" + interval '20 seconds'");
+                        });
+                });
+
             modelBuilder.Entity("QuickPrompt.Accounts.Delegation.DelegatedConnection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1553,6 +1587,16 @@ namespace QuickPrompt.Accounts.Persistence.Migrations
                     b.Navigation("Application");
 
                     b.Navigation("Authorization");
+                });
+
+            modelBuilder.Entity("QuickPrompt.Accounts.Delegation.CompanionPresence", b =>
+                {
+                    b.HasOne("QuickPrompt.Accounts.Delegation.DelegatedConnection", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectionId", "OwnerId")
+                        .HasPrincipalKey("Id", "OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("QuickPrompt.Accounts.Delegation.DelegatedConnection", b =>

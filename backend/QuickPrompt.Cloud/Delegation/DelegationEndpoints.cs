@@ -82,23 +82,26 @@ public static class DelegationEndpoints
         var work = app.MapGroup("/api/companion/v1/work").RequireAuthorization(DelegationModule.Policy).RequireRateLimiting("credentials");
         app.MapPost("/api/companion/v1/disconnect", async (HttpContext context, CompanionWorkService service, CancellationToken cancellation) =>
         { await service.Disconnect(context.User, cancellation); return Results.NoContent(); }).RequireAuthorization(DelegationModule.AnyCompanionPolicy).RequireRateLimiting("credentials");
+        app.MapPost(CompanionPresenceProtocol.StopPath, async (HttpContext context, LocalPresenceStop input, DelegationBoundary access, CancellationToken cancellation) =>
+            Results.Ok(new { stopped = await access.StopPresence(context.User, input.ObservationId, cancellation) }))
+            .RequireAuthorization(DelegationModule.AnyCompanionPolicy).RequireRateLimiting("credentials");
         work.MapPost("/claim", async (HttpContext context, CompanionWorkService service, CancellationToken cancellation) =>
         {
-            var claimed = await service.Claim(context.User, cancellation);
+            var claimed = await service.Claim(context.User, cancellation, observation => context.Response.Headers[CompanionPresenceProtocol.Header] = observation.ObservationId.ToString());
             return claimed is null ? Results.NoContent() : Results.Ok(claimed);
         });
         work.MapPost("/{id:guid}/heartbeat", async (HttpContext context, Guid id, LocalLeaseToken lease, CompanionWorkService service, CancellationToken cancellation) =>
-            Results.Ok(await service.Heartbeat(context.User, id, lease.Token, cancellation)));
+            Results.Ok(await service.Heartbeat(context.User, id, lease.Token, cancellation, observation => context.Response.Headers[CompanionPresenceProtocol.Header] = observation.ObservationId.ToString())));
         work.MapPost("/{id:guid}/finish", async (HttpContext context, Guid id, LocalWorkReceipt receipt, CompanionWorkService service, CancellationToken cancellation) =>
             await service.Finish(context.User, id, receipt, cancellation) ? Results.NoContent() : Results.Conflict());
         var proposals = app.MapGroup("/api/companion/v1/proposals").RequireAuthorization(DelegationModule.ProposalPolicy).RequireRateLimiting("credentials");
         proposals.MapPost("/claim", async (HttpContext context, CompanionProposalService service, CancellationToken cancellation) =>
         {
-            var claimed = await service.Claim(context.User, cancellation);
+            var claimed = await service.Claim(context.User, cancellation, observation => context.Response.Headers[CompanionPresenceProtocol.Header] = observation.ObservationId.ToString());
             return claimed is null ? Results.NoContent() : Results.Ok(claimed);
         });
         proposals.MapPost("/{id:guid}/heartbeat", async (HttpContext context, Guid id, LocalLeaseToken lease, CompanionProposalService service, CancellationToken cancellation) =>
-            Results.Ok(await service.Heartbeat(context.User, id, lease.Token, cancellation)));
+            Results.Ok(await service.Heartbeat(context.User, id, lease.Token, cancellation, observation => context.Response.Headers[CompanionPresenceProtocol.Header] = observation.ObservationId.ToString())));
         proposals.MapPost("/{id:guid}/finish", async (HttpContext context, Guid id, LocalProposalReceipt receipt, CompanionProposalService service, CancellationToken cancellation) =>
             await service.Finish(context.User, id, receipt, cancellation) ? Results.NoContent() : Results.Conflict());
         app.MapPost("/api/accounts/v1/libraries/{libraryId:guid}/prompts/{promptId:guid}/run-local",

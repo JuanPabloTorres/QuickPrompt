@@ -36,6 +36,7 @@ public sealed class DraftProposalContract
     public AuthoringClarification[] UserClarifications => [.. clarifications];
     public string Fingerprint => ConfirmedBrief is null ? ContextFingerprint : LiveRuns.Hash(new { context = ContextFingerprint, confirmedBrief = ConfirmedBrief });
     private string ContextFingerprint => clarifications.Length == 0 ? BaseFingerprint : LiveRuns.Hash(new { original = BaseFingerprint, userClarifications = clarifications });
+    public string AuthoringContextFingerprint => ContextFingerprint;
     private string BaseFingerprint => LiveRuns.Hash(new { OriginalRequest, Source, FieldContract, caseRanges, literals });
     public string AuthoringRequest => ProjectRequest();
 

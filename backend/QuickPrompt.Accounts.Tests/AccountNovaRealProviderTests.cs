@@ -18,7 +18,7 @@ public sealed class RealQwenFactAttribute : FactAttribute
     public RealQwenFactAttribute()
     {
         if (Environment.GetEnvironmentVariable("QUICKPROMPT_TEST_REAL_QWEN") != "1")
-            Skip = "Requires explicit local Qwen campaign configuration and a running Ollama.";
+            Skip = "Requires explicit local Qwen campaign configuration and its selected provider.";
     }
 }
 
@@ -66,8 +66,14 @@ public sealed partial class AccountHttpTests
     {
         string Required(string key) => Environment.GetEnvironmentVariable(key) is { Length: > 0 } value ? value
             : throw new InvalidOperationException("Missing explicit campaign configuration: " + key);
+        var provider = Environment.GetEnvironmentVariable("QUICKPROMPT_TEST_PROVIDER") ?? "ollama";
+        var endpoint = Environment.GetEnvironmentVariable("QUICKPROMPT_TEST_MODEL_ENDPOINT")
+            ?? Required("QUICKPROMPT_TEST_OLLAMA_ENDPOINT");
+        var configuredThinking = Environment.GetEnvironmentVariable("QUICKPROMPT_TEST_THINKING");
+        if (configuredThinking is not (null or "true" or "false")) throw new InvalidOperationException("Campaign thinking must be true or false.");
         var options = new AdaptiveCoreOptions(Required("QUICKPROMPT_TEST_CORE_PYTHON"), Required("QUICKPROMPT_TEST_CORE_WORKER"),
-            Required("QUICKPROMPT_TEST_CORE_SDK"), Required("QUICKPROMPT_TEST_OLLAMA_ENDPOINT"));
+            Required("QUICKPROMPT_TEST_CORE_SDK"), endpoint, Thinking: configuredThinking is null ? provider == "ollama" : configuredThinking == "true", Provider: provider,
+            PhysicalModel: Environment.GetEnvironmentVariable("QUICKPROMPT_TEST_PHYSICAL_MODEL"));
         options.Validate(); return new(options);
     }
 

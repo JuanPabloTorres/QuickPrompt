@@ -18,7 +18,8 @@ COPY backend/QuickPrompt.Application ./backend/QuickPrompt.Application
 COPY src/QuickPrompt.Domain ./src/QuickPrompt.Domain
 COPY apps/mobile/Domain/Entities ./apps/mobile/Domain/Entities
 COPY apps/mobile/Domain/Enums ./apps/mobile/Domain/Enums
-RUN dotnet publish backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj -c Release -o /published /p:UseAppHost=false
+RUN dotnet restore backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj --locked-mode
+RUN dotnet publish backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj -c Release --no-restore -o /published /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:de0ee358cdd672f7017a003bed21e9ac9ed48a27c922a59b18175b6e82fa7fee AS runtime
 WORKDIR /app

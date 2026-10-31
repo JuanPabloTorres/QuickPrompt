@@ -24,7 +24,11 @@ public static class AuthoringClarifications
     {
         ValidateContinuation(original, blocked, nextRunId, questionSequence);
         var replies = Copy([.. original.UserClarifications, new(question, answer)]);
-        return original with { RunId = nextRunId, UserClarifications = replies,
+        // A new answer changes the authoring basis. Neither task establishment
+        // nor final content confirmation can survive that change as authority.
+        return original with { RunId = nextRunId, UserClarifications = replies, ConfirmedBrief = null,
+            AuthoringTaskDraft = original.ConfirmedBrief is { } prior ? AuthoringBriefs.Copy(prior.Content)
+                : original.AuthoringTaskDraft is { } draft ? AuthoringBriefs.Copy(draft) : null,
             Values = original.Values?.ToDictionary(item => item.Key, item => item.Value),
             Command = original.Command! with { InputNames = original.Command.InputNames?.ToArray(), RequestedOutcomes = original.Command.RequestedOutcomes?.ToArray() } };
     }

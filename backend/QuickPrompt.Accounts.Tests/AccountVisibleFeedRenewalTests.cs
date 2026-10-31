@@ -13,7 +13,7 @@ public sealed partial class AccountHttpTests
     {
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail)); var own = await LocalLibrary(owner);
-        var grant = await ProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
+        var grant = await PollingProposalDevice(owner, device); var request = OpenVisible(grant.Connection.Id, own.Prompt);
         VisibleSurface(owner, Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"));
         var path = VisiblePath(own.Library) + "/live/" + request.Request.RunId;
         (await owner.PostAsJsonAsync(VisiblePath(own.Library) + "/live", request)).EnsureSuccessStatusCode();

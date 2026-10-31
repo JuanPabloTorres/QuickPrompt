@@ -30,23 +30,25 @@ public sealed partial class ExecutionQueue
             .ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, ExecutionStatus.Cancelled).SetProperty(x => x.FinishedAt, now)
                 .SetProperty(x => x.ErrorCode, code).SetProperty(x => x.LeaseToken, (Guid?)null).SetProperty(x => x.LeaseUntil, (DateTimeOffset?)null), cancellation);
     /// <summary>All authorization callbacks run inside the queue fence, outside any model call.</summary>
-    public Task<LocalWorkLease?> ClaimLocal(LibraryActor actor, Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
+    public Task<LocalWorkLease?> ClaimLocal(LibraryActor actor, Guid connection, Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation,
+        Func<bool, CancellationToken, Task>? observe = null) =>
         Change<LocalWorkLease?>(async (database, now) =>
         {
             if (!await authorize(cancellation)) throw new UnauthorizedAccessException();
             now = await Clock(database, cancellation);
             var lease = await ClaimInside(database, now, connection, actor.Id, "RunLocalPrompt", cancellation);
+            if (observe is not null) await observe(lease is not null, cancellation);
             if (lease is null) return null;
             var compiled = await new CompileExecutionHandler().Execute(lease with { Kind = "CompilePrompt" }, cancellation);
             return new(lease.Id, lease.Token, compiled.Text, DelegationPolicy.Model, Limits.LeaseSeconds, Limits.MaximumSeconds);
         }, cancellation);
 
     public Task<LeasePulse> HeartbeatLocal(LibraryActor actor, Guid connection, Guid id, Guid token,
-        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) =>
-        PulseLocal(actor, connection, id, token, "RunLocalPrompt", authorize, cancellation);
+        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation, Func<bool, CancellationToken, Task>? observe = null) =>
+        PulseLocal(actor, connection, id, token, "RunLocalPrompt", authorize, cancellation, observe);
 
     private Task<LeasePulse> PulseLocal(LibraryActor actor, Guid connection, Guid id, Guid token, string kind,
-        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) => Change(async (database, _) =>
+        Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation, Func<bool, CancellationToken, Task>? observe = null) => Change(async (database, _) =>
     {
         var lease = await LocalLease(database, actor, connection, id, token, cancellation, kind);
         var (job, checkedAt) = await Leased(database, lease, cancellation);
@@ -55,6 +57,7 @@ public sealed partial class ExecutionQueue
         checkedAt = await Clock(database, cancellation);
         if (job.LeaseUntil <= checkedAt) return new LeasePulse(false, true);
         if (checkedAt - job.StartedAt >= TimeSpan.FromSeconds(Limits.MaximumSeconds)) return new LeasePulse(false, true);
+        if (observe is not null) await observe(true, cancellation);
         job.LeaseUntil = checkedAt.AddSeconds(Limits.LeaseSeconds);
         return new LeasePulse(true, job.CancelRequested);
     }, cancellation);
@@ -63,7 +66,7 @@ public sealed partial class ExecutionQueue
         Func<CancellationToken, Task<bool>> authorize, CancellationToken cancellation) => Change(async (database, _) =>
     {
         if (receipt.Response is { Length: > 64000 } || (receipt.ErrorCode is not null && (receipt.Response is not null
-            || receipt.ErrorCode is not ("MODEL_UNAVAILABLE" or "MODEL_TIMEOUT" or "MODEL_FAILED" or "LOCAL_STOPPED"))))
+            || !LocalWorkProtocol.IsFailureCode(receipt.ErrorCode))))
             throw new ValidationException("Resultado local inválido.");
         var lease = await LocalLease(database, actor, connection, id, receipt.Token, cancellation);
         var (job, completedAt) = await Leased(database, lease, cancellation);

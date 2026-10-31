@@ -1,0 +1,11 @@
+# ADR: [Decision]
+- Status: proposed / accepted / superseded
+- Context and constraints:
+- Drivers: expected variations, risk, maintainability, performance:
+- Candidate A (minimal extension):
+- Candidate B (strategy/interface):
+- Candidate C (new module/bounded context):
+- Decision and consequences:
+- Stability of contracts and migration strategy:
+- Reversibility and rollback:
+- Verification / fitness functions:

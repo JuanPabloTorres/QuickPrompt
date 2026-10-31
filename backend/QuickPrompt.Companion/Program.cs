@@ -44,7 +44,8 @@ public static class Program
                 else if (options.Command == "status") Console.WriteLine("Autorización vigente para Qwen3:8b. Esta consulta no ejecutó el modelo.");
                 else
                 {
-                    var ending = await new CompanionRunner(connection, new AdaptiveCoreModelTransport(options.Inference), diagnostic).Run(options.MaximumJobs, stop.Token);
+                    var runner = new CompanionRunner(connection, new AdaptiveCoreModelTransport(options.Inference), diagnostic);
+                    var ending = options.StayConnected ? await runner.StayConnected(stop.Token) : await runner.Run(options.MaximumJobs, stop.Token);
                     diagnostic?.Finish(ending);
                 }
             }

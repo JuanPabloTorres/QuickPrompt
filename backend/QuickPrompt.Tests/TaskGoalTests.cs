@@ -127,7 +127,8 @@ public class TaskGoalTests
             var material = AuthoringReviewTestFixture.Material(packet);
             Assert.Equal("GenerateDraftProposal", purpose);
             Assert.False(packet.GetProperty("think").GetBoolean()); Assert.False(packet.TryGetProperty("tools", out _));
-            Assert.Equal(request, material.GetProperty("originalRequest").GetString());
+            Assert.False(material.TryGetProperty("originalRequest", out _));
+            Assert.Equal(source.TemplateText, material.GetProperty("fields").GetProperty("task").GetString());
             Assert.False(material.TryGetProperty("obligations", out _));
             foreach (var branch in packet.GetProperty("format").GetProperty("anyOf").EnumerateArray()) {
                 var properties = branch.GetProperty("properties");

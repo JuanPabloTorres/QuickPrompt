@@ -10,8 +10,8 @@ public sealed class InferenceFailurePropagationTests
 {
     private const string Raw = "SYNTHETIC_UNTRUSTED_PROVIDER_BODY_TOKEN";
     public static IEnumerable<object[]> Codes() => new[] { "review", "advice", "ui", "legacy" }
-        .SelectMany(owner => new[] { "MODEL_UNAVAILABLE", "MODEL_TIMEOUT", "MODEL_FAILED", "QUEUE_EXPIRED", "LOCAL_DISPATCH_TIMEOUT", "CONNECTION_REVOKED",
-            "SESSION_REVOKED", "LEASE_EXPIRED", "HOST_STOPPED", "UNTRUSTED_UNKNOWN_CODE" }.Select(code => new object[] { owner, code }));
+        .SelectMany(owner => new[] { "MODEL_UNAVAILABLE", "MODEL_TIMEOUT", "MODEL_FAILED", "MODEL_OUTPUT_LIMIT", "QUEUE_EXPIRED", "LOCAL_DISPATCH_TIMEOUT", "CONNECTION_REVOKED",
+            "SESSION_REVOKED", "LEASE_EXPIRED", "HOST_STOPPED", "COMPANION_NOT_OBSERVED", "UNTRUSTED_UNKNOWN_CODE" }.Select(code => new object[] { owner, code }));
 
     [Theory, MemberData(nameof(Codes))]
     public async Task EachAdapterPreservesTypedCodeAndStageWithoutRawDiagnosticsOrAnotherRequest(string owner, string code)
@@ -20,6 +20,13 @@ public sealed class InferenceFailurePropagationTests
         var failure = await Assert.ThrowsAsync<PreparationToolException>(() => Invoke(owner, transport, default));
         Assert.Equal(code == "UNTRUSTED_UNKNOWN_CODE" ? "MODEL_FAILED" : code, failure.Code); Assert.Equal(1, transport.Calls);
         if (code == "LOCAL_DISPATCH_TIMEOUT") Assert.Contains("componente local", failure.Message);
+        if (code == "MODEL_OUTPUT_LIMIT") Assert.Contains("límite de salida", failure.Message);
+        if (code == "COMPANION_NOT_OBSERVED")
+        {
+            Assert.Contains("componente local", failure.Message);
+            Assert.Contains("recibos", failure.Message);
+            Assert.DoesNotContain("No se ejecutaron nuevos efectos", failure.Message);
+        }
         Assert.Equal(owner switch { "review" => "ReadRequestedTitle", "advice" => "ExplainTaskGoal", "ui" => "Decide", _ => "SyntheticLegacyStage" }, failure.Tool);
         Assert.DoesNotContain(Raw, failure.ToString()); Assert.Null(failure.InnerException);
         Assert.Equal(0, transport.Rejections);

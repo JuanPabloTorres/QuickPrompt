@@ -22,25 +22,27 @@ public sealed class AuthoringBranchContractTests
         var unavailable = new AuthoringReviewTestFixture.ForbiddenDependencies();
         var generator = new PromptDraftGenerator(transport, unavailable, unavailable, new DraftFidelityReviewer(transport));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            generator.GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default));
+            generator.GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+                establishedContent: new("Resumen", "", "Resume las notas.", [], [], [], [])));
         var packet = Assert.Single(transport.Calls).Packet;
         var schema = packet.GetProperty("format");
         Assert.Equal(new[] { "type", "anyOf" }, schema.EnumerateObject().Select(property => property.Name));
         Assert.Equal("object", schema.GetProperty("type").GetString());
-        Assert.Equal(literalAvailable ? 3 : 2, schema.GetProperty("anyOf").GetArrayLength());
+        Assert.Equal(literalAvailable ? 2 : 1, schema.GetProperty("anyOf").GetArrayLength());
         foreach (var branch in schema.GetProperty("anyOf").EnumerateArray()) {
             Assert.Equal("object", branch.GetProperty("type").GetString());
             Assert.False(branch.GetProperty("additionalProperties").GetBoolean());
             Assert.Equal(6, branch.GetProperty("required").GetArrayLength());
+            Assert.Equal("null", branch.GetProperty("properties").GetProperty("question").GetProperty("type").GetString());
         }
-        object instruction = new { task = "Resume las notas.", steps = Array.Empty<string>(),
-            constraints = Array.Empty<string>(), outputRequirements = Array.Empty<string>() };
+        object instruction = new { task = "Resume las notas." };
         var id = literalAvailable
             ? AuthoringReviewTestFixture.Material(packet).GetProperty("literalBodyCandidates")[0].GetProperty("id").GetInt32()
             : 1;
 
         Validate("INSTRUCTION", instruction, null, null);
-        Validate("CLARIFICATION", null, "¿Qué notas deberá resumir la instrucción?", null);
+        Reject("CLARIFICATION", null, "¿Qué notas deberá resumir la instrucción?", null);
+        Reject("CLARIFICATION", null, null, null);
         if (literalAvailable) Validate("LITERAL", null, null, id);
         else Reject("LITERAL", null, null, id);
 

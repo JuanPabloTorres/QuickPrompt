@@ -17,8 +17,10 @@ public sealed record PasswordRecovery(Guid UserId, string Code, string Password)
 
 /// <summary>Identity owns passwords/tokens/stamps; transport never accepts an actor identifier for login.</summary>
 public sealed class AccountCredentials(UserManager<AccountUser> users, SignInManager<AccountUser> signIn,
-    IAccountMail mail, AccountOrigin origin, ExecutionQueue queue)
+    IAccountMail mail, AccountOrigin origin, ExecutionQueue queue, ILogger<AccountCredentials> logger)
 {
+    private static readonly EventId UnconfirmedMail = new(5296, "AccountMailUnconfirmed");
+
     public async Task<IResult> Register(Registration input, CancellationToken cancellation)
     {
         if (!mail.Available) return Results.Problem(statusCode: 503, title: "El correo de cuentas todavía no está configurado.");
@@ -34,7 +36,7 @@ public sealed class AccountCredentials(UserManager<AccountUser> users, SignInMan
         if (created.Succeeded)
         {
             var token = await users.GenerateEmailConfirmationTokenAsync(user);
-            await mail.Send(new(user.Email!, "confirm", Link("confirm", user.Id, token)), cancellation);
+            await SendAccountMail(user, "confirm", token, cancellation);
         }
         // Same result for an existing email: the caller must prove access through the mailbox.
         return Results.Accepted(value: new { message = "Si corresponde, recibirás los pasos para confirmar tu cuenta." });
@@ -64,7 +66,7 @@ public sealed class AccountCredentials(UserManager<AccountUser> users, SignInMan
         if (user is { EmailConfirmed: true })
         {
             var token = await users.GeneratePasswordResetTokenAsync(user);
-            await mail.Send(new(user.Email!, "reset", Link("reset", user.Id, token)), cancellation);
+            await SendAccountMail(user, "reset", token, cancellation);
         }
         return Results.Accepted(value: new { message = "Si corresponde, recibirás los pasos de recuperación." });
     }
@@ -75,7 +77,7 @@ public sealed class AccountCredentials(UserManager<AccountUser> users, SignInMan
         if (!ValidEmail(input.Email)) return Results.BadRequest();
         var user = await users.FindByEmailAsync(input.Email.Trim());
         if (user is { EmailConfirmed: false })
-            await mail.Send(new(user.Email!, "confirm", Link("confirm", user.Id, await users.GenerateEmailConfirmationTokenAsync(user))), cancellation);
+            await SendAccountMail(user, "confirm", await users.GenerateEmailConfirmationTokenAsync(user), cancellation);
         return Results.Accepted(value: new { message = "Si corresponde, recibirás los pasos para confirmar tu cuenta." });
     }
 
@@ -86,6 +88,22 @@ public sealed class AccountCredentials(UserManager<AccountUser> users, SignInMan
         if (user is null) return Results.BadRequest();
         return await queue.InvalidateLocalSession(user.Id, async () => (await users.ResetPasswordAsync(user, token, input.Password)).Succeeded)
             ? Results.NoContent() : Results.BadRequest();
+    }
+
+    // Provider rejection or uncertainty must not turn mailbox ownership into a
+    // public status oracle. Keep the conditional 202 response and a private,
+    // bounded operational signal; never log the exception, recipient or token.
+    private async Task SendAccountMail(AccountUser user, string purpose, string token, CancellationToken cancellation)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        try { await mail.Send(new(user.Email!, purpose, Link(purpose, user.Id, token)), cancellation); }
+        catch (AccountMailDeliveryException failure)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var code = failure.Code is "MAIL_REJECTED" or "MAIL_RATE_LIMITED" or "MAIL_UNAVAILABLE" or "MAIL_TIMEOUT"
+                ? failure.Code : "MAIL_UNCONFIRMED";
+            logger.LogWarning(UnconfirmedMail, "Account mail not confirmed: purpose={Purpose}, code={Code}; no automatic retry.", purpose, code);
+        }
     }
 
     private string Link(string purpose, Guid id, string token) => QueryHelpers.AddQueryString(

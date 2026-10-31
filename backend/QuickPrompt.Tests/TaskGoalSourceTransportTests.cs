@@ -66,9 +66,10 @@ public class TaskGoalSourceTransportTests
         var transport=new Transport((packet,purpose,callNumber)=>{
             var material=Material(packet);Assert.Equal("GenerateDraftProposal",purpose);
             Assert.False(packet.GetProperty("think").GetBoolean());Assert.False(packet.TryGetProperty("tools",out _));
-            Assert.Equal(request,material.GetProperty("originalRequest").GetString());
-            Assert.Equal(body,material.GetProperty("selectedSource").GetProperty("templateText").GetString());
-            Assert.Equal(description,material.GetProperty("selectedSource").GetProperty("description").GetString());
+            Assert.False(material.TryGetProperty("originalRequest",out _));
+            Assert.False(material.TryGetProperty("selectedSource",out _));
+            Assert.Equal(body,material.GetProperty("fields").GetProperty("task").GetString());
+            Assert.Equal(description,material.GetProperty("description").GetString());
             Assert.Contains("TAIL_SOURCE_NONCE_A1",material.GetRawText());Assert.Contains("DESC_TAIL_Q2",material.GetRawText());
             if(sessionDraft){Assert.Equal("es",material.GetProperty("approvedPreferences").GetProperty("language").GetString());Assert.Equal("MARKDOWN",material.GetProperty("approvedPreferences").GetProperty("format").GetString());}
             var title=outcome is "translated_title" or "bound_literal_title"?"Nombre literal":outcome=="unicode_title"?"Órbita 🛰️":outcome=="unanchored_title"?"Nombre ausente":"Nuevo";

@@ -21,7 +21,7 @@ public sealed class FidelityCoverageContractTests
         var input=Input(Request);
         var transport=new Transport((packet,purpose,callNumber)=>{
             Assert.Equal("GenerateDraftProposal",purpose);var data=Material(packet);
-            Assert.Equal(Request,data.GetProperty("originalRequest").GetString());Assert.False(data.TryGetProperty("contractVersion",out _));
+            Assert.Equal(Request,data.GetProperty("fields").GetProperty("task").GetString());Assert.False(data.TryGetProperty("originalRequest",out _));Assert.False(data.TryGetProperty("contractVersion",out _));
             Assert.False(data.TryGetProperty("requestUnits",out _));Assert.False(data.TryGetProperty("obligations",out _));
             Assert.False(input.Interpretation!.Goal!.HasAuthoringStructure(Body));
             return Definition(Body,"Análisis");

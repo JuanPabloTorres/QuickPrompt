@@ -22,7 +22,9 @@ export const authoringBriefContentSchema = z.object({ title: z.string(), descrip
   constraints: z.array(z.string()), outputRequirements: z.array(z.string()), references: z.array(z.object({ uri: z.string(), role: z.enum(['FUTURE_TASK', 'CURRENT_SESSION', 'BOTH']).nullable() })) });
 export const authoringBriefReviewSchema = z.object({ basisHash: z.string(), originalRequest: z.string(), source: z.object({
   promptId: z.string().uuid().nullable(), revision: z.number().nullable(), templateText: z.string(), title: z.string(), description: z.string() }).nullable(),
-  inputs: z.array(z.string()), proposed: authoringBriefContentSchema });
+  inputs: z.array(z.string()), proposed: authoringBriefContentSchema,
+  stage: z.enum(['ESTABLISH_TASK', 'REVIEW_CONTENT']).optional(),
+  establishedTask: authoringBriefContentSchema.nullable().optional(), suggested: authoringBriefContentSchema.nullable().optional() });
 export type AuthoringBriefReview = z.infer<typeof authoringBriefReviewSchema>;
 export type AuthoringBriefContent = z.infer<typeof authoringBriefContentSchema>;
 export type AuthoringBriefReply = { basisHash: string; content: AuthoringBriefContent; confirmed: true };

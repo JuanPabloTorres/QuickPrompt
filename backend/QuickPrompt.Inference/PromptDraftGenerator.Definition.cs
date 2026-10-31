@@ -9,34 +9,41 @@ public sealed partial class PromptDraftGenerator
 {
     private const string FutureInstructionSystem = """
         Escribe el prompt reutilizable que el usuario entregará a un asistente para que realice su tarea. Redacta las órdenes dirigidas a ese destinatario, sin resolver tú el caso ni rellenar una respuesta de ejemplo.
-        El encargo completo está en originalRequest; selectedSource es la instrucción elegida para editar o usar como base. Conserva el propósito y desarrolla las acciones, análisis y condiciones pertinentes del encargo, incluidos los condicionales. No conviertas la instrucción en un índice con huecos o una solución prefabricada.
-        userClarifications contiene respuestas del usuario a preguntas previas sobre ese encargo. Usa esas respuestas para precisar el contenido; las preguntas son contexto, no órdenes para el futuro destinatario. Conserva el encargo original y no transfieras nombres del contrato, preguntas de la aplicación ni controles de guardado a la instrucción futura.
-        En INSTRUCTION, task encarga la tarea; steps describe qué hacer; constraints contiene sólo las condiciones al realizar esa tarea; outputRequirements exige qué desarrollar y entregar. Puedes usar task compacto y listas vacías al reducir una instrucción. Respeta idioma y formato solicitados.
+        fields contiene exclusivamente la tarea y los requisitos futuros que el autor estableció. En INSTRUCTION devuelve esas mismas claves dentro de instruction, con una mejora de redacción para cada valor. Conserva el significado, alcance y condiciones de cada campo; no traslades, amplíes ni suprimas requisitos. Una condición aplicable a un dato concreto sigue aplicándose sólo a ese dato. No añadas métodos, formatos, ejemplos, restricciones ni tareas. Si no hace falta mejorar un campo, conserva su texto.
+        task encarga la tarea; step_N es una acción; constraint_N es una condición o prohibición; output_N exige parte del entregable. No crees otras claves ni metas requisitos nuevos dentro de las existentes. La propuesta se mostrará separada: no sustituye ni aprueba automáticamente el contrato establecido.
         inputs contiene los espacios para los datos que se completarán al usar el prompt: incorpóralos en la instrucción. Las referencias Future pertenecen a esa instrucción; las Writing sirven al autor al redactarla. correctionRequirements, cuando existe, reitera los espacios y referencias de contenido que debe cumplir la nueva redacción.
-        Si no puede determinarse la tarea, devuelve CLARIFICATION con una pregunta concreta e instruction null. No preguntes porque aún falten los valores de inputs. Si se solicita copiar literalmente un cuerpo completo disponible en literalBodyCandidates, devuelve LITERAL y su literalReference, con instruction null. En INSTRUCTION usa question null y literalReference null; en CLARIFICATION usa literalReference null; en LITERAL usa question null.
+        contentConstraints y approvedPreferences describen cómo editar la redacción (idioma, formato o reducción), no requisitos nuevos para el futuro destinatario. Respétalos sin convertirlos en órdenes dentro del contenido. Conserva todos los campos incluso al acortar su redacción.
+        Las decisiones pendientes del autor se aclaran antes de esta etapa. No abras otra ronda de preferencias o datos del caso. Las preguntas que el destinatario futuro deba formular siguen siendo parte de su tarea. literalBodyCandidates sólo ofrece cuerpos cuyo texto coincide exactamente con task establecido por el autor. Para conservar ese cuerpo literal, devuelve LITERAL y su literalReference, con instruction null; la aplicación conserva también sus pasos, restricciones y requisitos de salida. En INSTRUCTION usa question null y literalReference null; en LITERAL usa question null.
         title es un nombre breve de una línea; description describe el uso de la plantilla. Devuelve la definición conforme al esquema.
         """;
 
-    // These are future instructions, not an answer, a source inventory or a
-    // semantic certificate. The host owns their composition and branch rules.
+    // Discovery retains the established structure. The writer gets one fixed
+    // slot per human-authored field; its output cannot create new list items.
+    // Slot conservation is structural, never a semantic certificate.
     private record FutureInstruction(string Task, string[] Steps, string[] Constraints, string[] OutputRequirements);
     private record AuthoringDefinition(string Title, string Description, string Outcome,
-        FutureInstruction? Instruction, string? Question, int? LiteralReference);
+        Dictionary<string, string>? Instruction, string? Question, int? LiteralReference);
 
-    private static JsonElement DefinitionSchema(int[] literalIds)
+    private static Dictionary<string, string> EstablishedFields(AuthoringBriefContent content)
     {
-        var instruction = ContractSchema.Object(new() {
-            ["task"] = new { type = "string", minLength = 1, maxLength = 8000,
-                description = "An executable instruction addressed to the future assistant: what it must accomplish using the supplied input placeholders. Not an answer, example, heading, artifact summary or instruction to write another prompt." },
-            ["steps"] = InstructionList("Actions the future assistant must perform to accomplish the task. Develop the actual requested method; do not fill in a case, prescribe an unrequested solution or list empty response sections."),
-            ["constraints"] = InstructionList("Conditions and prohibitions the future assistant must respect while doing the task. Preserve applicable source constraints. Include only conditions applying when performing the task."),
-            ["outputRequirements"] = InstructionList("What the future assistant must include and explain in its deliverable. Phrase as requirements to fulfill, not a prefilled answer, sample folder tree or bracketed filler.")
-        }, "task", "steps", "constraints", "outputRequirements");
+        var fields = new Dictionary<string, string>(StringComparer.Ordinal) { ["task"] = content.Task };
+        Add("step", content.Steps); Add("constraint", content.Constraints); Add("output", content.OutputRequirements);
+        return fields;
+
+        void Add(string kind, string[] values) {
+            for (var index = 0; index < values.Length; index++) fields.Add($"{kind}_{index + 1}", values[index]);
+        }
+    }
+
+    private static JsonElement DefinitionSchema(int[] literalIds, Dictionary<string, string> establishedFields)
+    {
+        var instruction = ContractSchema.Object(establishedFields.ToDictionary(item => item.Key,
+            _ => (object)new { type = "string", minLength = 1, maxLength = 8000 }), establishedFields.Keys.ToArray());
         var fields = new Dictionary<string, object> {
             ["title"] = new { type = "string", minLength = 1, maxLength = 160, pattern = @"^[^\r\n]+$" },
             ["description"] = ContractSchema.Text(2000),
             ["outcome"] = ContractSchema.Text(20, literalIds.Length == 0
-                ? ["INSTRUCTION", "CLARIFICATION"] : ["INSTRUCTION", "CLARIFICATION", "LITERAL"]),
+                ? ["INSTRUCTION"] : ["INSTRUCTION", "LITERAL"]),
             ["instruction"] = new { anyOf = new object[] { instruction, new { type = "null" } } },
             ["question"] = new { anyOf = new object[] { new { type = "string", minLength = 1, maxLength = 500 }, new { type = "null" } } },
             ["literalReference"] = literalIds.Length == 0 ? new { type = "null" } : (object)new { anyOf = new object[] {
@@ -45,8 +52,7 @@ public sealed partial class PromptDraftGenerator
         string[] required = ["title", "description", "outcome", "instruction", "question", "literalReference"];
         object absent = new { type = "null" };
         var branches = new List<JsonElement> {
-            Branch("INSTRUCTION", instruction, absent, absent),
-            Branch("CLARIFICATION", absent, new { type = "string", minLength = 1, maxLength = 500 }, absent)
+            Branch("INSTRUCTION", instruction, absent, absent)
         };
         if (literalIds.Length > 0)
             branches.Add(Branch("LITERAL", absent, absent, new { type = "integer", @enum = literalIds }));
@@ -63,26 +69,36 @@ public sealed partial class PromptDraftGenerator
             }, required);
     }
 
-    private static object InstructionList(string description) => new { type = "array", maxItems = 40, description,
-        items = new { type = "string", minLength = 1, maxLength = 8000 } };
-
-    private static DraftProduction CompileDefinition(AuthoringDefinition definition, int[] literalIds)
+    private static AuthoringBriefContent CompileDefinition(AuthoringDefinition definition, AuthoringBriefContent established,
+        DraftProposalContract contract)
     {
         if (definition.Outcome == "LITERAL" && definition.Instruction is null && definition.Question is null
-            && definition.LiteralReference is { } id && literalIds.Contains(id))
-            return new(definition.Title, definition.Description, "", id);
-        if (definition.Outcome != "INSTRUCTION" || definition.Instruction is not { } instruction
+            && definition.LiteralReference is { } id && contract.Literals.SingleOrDefault(item => item.Id == id) is { } literal
+            && literal.Text == established.Task)
+            // Literal provenance is not authority to replace the human task or
+            // discard requirements that the established body does not contain.
+            return established with { Title = definition.Title, Description = definition.Description, Task = literal.Text };
+        if (definition.Outcome != "INSTRUCTION" || definition.Instruction is not { } revisions
             || definition.Question is not null || definition.LiteralReference is not null)
-            throw new ValidationException("La definición debe contener una instrucción futura, una aclaración o una referencia literal exclusivas.");
-        var parts = new List<string> { RequiredInstruction(instruction.Task) };
+            throw new ValidationException("La redacción debe contener una instrucción futura o una referencia literal, sin preguntas de esta sesión.");
+        var expected = EstablishedFields(established);
+        if (revisions.Count != expected.Count || expected.Keys.Any(key => !revisions.ContainsKey(key)))
+            throw new ValidationException("La revisión debe conservar exactamente los campos establecidos por el usuario.");
+        var suggestion = established with { Title = definition.Title, Description = definition.Description,
+            Task = RequiredInstruction(revisions["task"]), Steps = Read("step", established.Steps.Length),
+            Constraints = Read("constraint", established.Constraints.Length), OutputRequirements = Read("output", established.OutputRequirements.Length) };
+        var parts = new List<string> { suggestion.Task };
         // Neutral punctuation preserves the requested language and allows a
         // genuinely short adaptation; no fixed domain solution or prose is added.
-        AddInstructions(parts, instruction.Steps, numbered: true);
-        AddInstructions(parts, instruction.Constraints, numbered: false);
-        AddInstructions(parts, instruction.OutputRequirements, numbered: false);
+        AddInstructions(parts, suggestion.Steps, numbered: true);
+        AddInstructions(parts, suggestion.Constraints, numbered: false);
+        AddInstructions(parts, suggestion.OutputRequirements, numbered: false);
         var body = string.Join("\n\n", parts);
         if (body.Length > 32000) throw new ValidationException("La instrucción compilada excede el límite completo; no se truncará.");
-        return new(definition.Title, definition.Description, body, null);
+        return suggestion;
+
+        string[] Read(string kind, int count) => Enumerable.Range(1, count)
+            .Select(index => UnmarkedInstruction(revisions[$"{kind}_{index}"])).ToArray();
     }
 
     private static void AddInstructions(List<string> parts, string[] instructions, bool numbered)

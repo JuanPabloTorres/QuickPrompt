@@ -60,7 +60,12 @@ public sealed partial class ExecutionQueue(ExecutionDataSource source, Execution
         // excludes private erasure. The worker receives no library privileges.
         validateSource?.Invoke(false, cancellation);
         if (connectionId is not null) now = await Clock(database, cancellation);
-        var pending = database.Executions.Where(x => x.Status == ExecutionStatus.Queued);
+        // Capacity must not depend on a worker returning to reconcile queued rows.
+        // Keep every admission receipt (and its daily charge); count only work that
+        // ClaimInside could still start under this queue's lifetime policy.
+        var oldestAllowed = now.AddSeconds(-Limits.QueueLifetimeSeconds);
+        var pending = database.Executions.Where(x => x.Status == ExecutionStatus.Queued && !x.CancelRequested
+            && x.CreatedAt > oldestAllowed);
         if (await pending.CountAsync(x => x.OwnerId == actor.Id, cancellation) >= Limits.OwnerQueued)
             throw new ExecutionQuotaException("OWNER_QUEUE_FULL");
         if (await pending.CountAsync(cancellation) >= Limits.GlobalQueued) throw new ExecutionQuotaException("QUEUE_FULL");

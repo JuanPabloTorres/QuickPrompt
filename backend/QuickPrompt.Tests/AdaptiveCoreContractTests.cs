@@ -12,6 +12,118 @@ namespace QuickPrompt.Nova.Tests;
 public sealed class AdaptiveCoreContractTests
 {
     [Fact]
+    public void CoreOutputLimitHasItsOwnSafeFailureWithoutRetainingPartialOutput()
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var request = AdaptiveCoreModelTransport.CreateRequest(System.Text.Json.JsonSerializer.SerializeToElement(new {
+            model = "qwen3:8b", messages = Array.Empty<object>(), options = new { max_requests = 1 }
+        }), id);
+        var reply = System.Text.Json.JsonSerializer.SerializeToElement(new {
+            version = AdaptiveCoreModelTransport.Protocol, requestId = id, status = "failed", output = "SYNTHETIC_PRIVATE_PARTIAL_OUTPUT",
+            usage = new { requests = 1, inputTokens = 19, outputTokens = 700 }, error = "MODEL_OUTPUT_LIMIT"
+        });
+        var error = Assert.Throws<LlmUnavailableException>(() => AdaptiveCoreModelTransport.Decode(reply, request, 2));
+        Assert.Equal("MODEL_OUTPUT_LIMIT", error.Code); Assert.Null(error.InnerException);
+        Assert.DoesNotContain("SYNTHETIC_PRIVATE", error.ToString());
+        Assert.True(LocalWorkProtocol.IsFailureCode(error.Code));
+    }
+
+    [Theory]
+    [InlineData("INFERENCE_CONTRACT_FAILED")]
+    [InlineData("model_output_limit")]
+    [InlineData("SYNTHETIC_PRIVATE_MODEL_OUTPUT_LIMIT")]
+    public void OtherCoreErrorsAndModelTextDoNotBecomeAnOutputLimit(string code)
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var request = AdaptiveCoreModelTransport.CreateRequest(System.Text.Json.JsonSerializer.SerializeToElement(new {
+            model = "qwen3:8b", messages = Array.Empty<object>()
+        }), id);
+        var reply = System.Text.Json.JsonSerializer.SerializeToElement(new {
+            version = AdaptiveCoreModelTransport.Protocol, requestId = id, status = "failed", output = "MODEL_OUTPUT_LIMIT",
+            usage = new { requests = 1, inputTokens = 1, outputTokens = 1 }, error = code
+        });
+        var error = Assert.Throws<PreparationToolException>(() => AdaptiveCoreModelTransport.Decode(reply, request, 2));
+        Assert.Equal("CORE_INTERPRETATION_FAILED", error.Code);
+        Assert.DoesNotContain("SYNTHETIC_PRIVATE", error.ToString());
+    }
+
+    [Theory]
+    [InlineData("MODEL_UNAVAILABLE", true)]
+    [InlineData("MODEL_TIMEOUT", true)]
+    [InlineData("MODEL_FAILED", true)]
+    [InlineData("LOCAL_STOPPED", true)]
+    [InlineData("MODEL_OUTPUT_LIMIT", true)]
+    [InlineData("MODEL_OUTPUT_LIMIT_PRIVATE_SUFFIX", false)]
+    [InlineData("model_output_limit", false)]
+    public void LeasedReceiptCodesRemainAClosedSharedContract(string code, bool accepted) =>
+        Assert.Equal(accepted, LocalWorkProtocol.IsFailureCode(code));
+
+    [Theory]
+    [InlineData("{}", 2)]
+    [InlineData("{\"max_requests\":1}", 1)]
+    [InlineData("{\"max_requests\":2}", 2)]
+    public void RequestBudgetDefaultsToTwoAndAllowsAnExplicitSingleAttempt(string options, int expected)
+    {
+        using var packet = System.Text.Json.JsonDocument.Parse("{\"model\":\"qwen3:8b\",\"messages\":[],\"options\":" + options + "}");
+        var request = AdaptiveCoreModelTransport.CreateRequest(packet.RootElement, Guid.NewGuid().ToString("N"));
+        Assert.Equal(expected, request.GetProperty("limits").GetProperty("requests").GetInt32());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("3")]
+    [InlineData("true")]
+    [InlineData("1.5")]
+    [InlineData("1.0")]
+    [InlineData("\"1\"")]
+    [InlineData("null")]
+    public void InvalidRequestBudgetsAreRejectedByTheCodecBeforeAnyProcess(string maximumRequests)
+    {
+        using var packet = System.Text.Json.JsonDocument.Parse("{\"model\":\"qwen3:8b\",\"messages\":[],\"options\":{\"max_requests\":" + maximumRequests + "}}");
+        Assert.Throws<ValidationException>(() => AdaptiveCoreModelTransport.CreateRequest(packet.RootElement, Guid.NewGuid().ToString("N")));
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    public void AReportedSecondCallCannotPassTheExplicitSingleAttemptBudget(int calls, bool accepted)
+    {
+        var id = Guid.NewGuid().ToString("N");
+        using var packet = System.Text.Json.JsonDocument.Parse("""{"model":"qwen3:8b","messages":[],"options":{"max_requests":1}}""");
+        var request = AdaptiveCoreModelTransport.CreateRequest(packet.RootElement, id);
+        var reply = System.Text.Json.JsonSerializer.SerializeToElement(new {
+            version = AdaptiveCoreModelTransport.Protocol, requestId = id, status = "proposed", output = "Synthetic answer.",
+            usage = new { requests = calls, inputTokens = 1, outputTokens = 1 }, error = (string?)null
+        });
+        if (accepted) { using var decoded = AdaptiveCoreModelTransport.Decode(reply, request, 0); Assert.Equal(1, decoded.RootElement.GetProperty("modelCalls").GetInt32()); }
+        else Assert.Throws<PreparationToolException>(() => AdaptiveCoreModelTransport.Decode(reply, request, 0));
+    }
+
+    [Fact]
+    public void ThinkingThenWritingPreservesEachExplicitStageAndAllExistingBudgets()
+    {
+        foreach (var thinking in new[] { true, false })
+        {
+            var id = Guid.NewGuid().ToString("N");
+            var packet = System.Text.Json.JsonSerializer.SerializeToElement(new {
+                model = "qwen3:8b", stream = false, think = thinking,
+                messages = new[] { new { role = "user", content = "Synthetic stage input." } },
+                options = new { num_ctx = 12288, num_predict = 2600, temperature = 0 }
+            });
+            var request = AdaptiveCoreModelTransport.CreateRequest(packet, id);
+            var limits = request.GetProperty("limits");
+            Assert.Equal(id, request.GetProperty("requestId").GetString());
+            Assert.Equal(thinking, limits.GetProperty("thinking").GetBoolean());
+            Assert.Equal(12288, limits.GetProperty("contextTokens").GetInt32());
+            Assert.Equal(2600, limits.GetProperty("outputTokens").GetInt32());
+            Assert.Equal(90, limits.GetProperty("timeoutSeconds").GetInt32());
+            Assert.Equal(2, limits.GetProperty("requests").GetInt32());
+            Assert.Equal("qwen3:8b", request.GetProperty("model").GetString());
+            Assert.Equal(packet.GetProperty("messages").GetRawText(), request.GetProperty("messages").GetRawText());
+        }
+    }
+
+    [Fact]
     public void UnidentifiedLookupSuspendsTheOriginalTaskWithoutInventingASource()
     {
         const string request="Usa el origen previo para una audiencia distinta.";

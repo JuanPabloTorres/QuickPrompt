@@ -131,6 +131,30 @@ variable de entorno ni archivo y no genera PFX temporales. Este recorrido
 interactivo debe ejecutarlo el operador con el destinatario aprobado; las pruebas
 automáticas no crean ni abren archivos PFX o contraseñas.
 
+`verify` exige los mismos hashes, pin y PFX existente de `recover`, pero **rechaza
+`--output`**. Reutiliza su autenticación, descifra sólo en memoria, comprueba el
+prefijo `PGDMP` y limpia el buffer descifrado antes de retornar. No escribe otra
+copia en claro, no restaura PostgreSQL y no elimina originales. Requiere consola
+interactiva sin entrada redirigida; tampoco acepta opciones de contraseña. Su
+recibo sólo contiene estado, hashes, tamaño y controles explícitos como
+`outputWritten=false` y `retentionDeletionPerformed=false`. Los recibos de
+`protect` y `recover` conservan su formato anterior.
+
+Después de la autorización exacta del archivo y su destinatario dedicado:
+
+```powershell
+& $dotnet $recoveryDll verify --repository-root $repositoryRoot `
+  --input $authorizedArchive --archive-sha256 $archiveSha256 `
+  --plaintext-sha256 $dumpSha256 --recipient-pfx $existingDedicatedRecipientPfx `
+  --recipient-sha256 $recipientSha256
+```
+
+Un `verify` satisfactorio acredita descifrado y hash del archivo durante su
+ventana de conservación; no acredita acceso a cuentas, keyring, revocaciones,
+custodia externa o un servicio restaurado. El ejercicio interactivo con claves y
+backups reales sigue sujeto a su propia autorización; las pruebas usan material
+sintético en RAM.
+
 Los archivos quedan en rutas locales físicas fuera del repositorio. La escritura
 usa `CreateNew` y ACL privada de usuario/SYSTEM en Windows o modo 0600 en Unix,
 establecidos antes de escribir bytes. Nunca sobrescribe. La recuperación autentica

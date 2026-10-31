@@ -2,7 +2,6 @@
 .accounts-brand { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px clamp(20px, 5vw, 72px); border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); }
 .accounts-brand .brand { width: auto; flex-shrink: 0; }
 .accounts-brand .nova-logo { flex-shrink: 0; }
-.accounts-candidate { color: var(--muted); font-size: var(--text-meta); border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; white-space: nowrap; }
 .accounts-main { width: min(1120px, 100%); margin: auto; padding: clamp(32px, 7vw, 88px) clamp(20px, 4vw, 48px); display: grid; align-content: center; }
 .accounts-workspace .accounts-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0; align-content: start; }
 .accounts-page:not(.accounts-workspace) > .workspace-footer { max-width: none; margin-top: 0; padding: 24px clamp(20px, 5vw, 72px); }
@@ -85,4 +84,4 @@
 .account-memory-values { margin-top: 24px; display: grid; gap: 12px; }
 .account-memory-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; margin-top: 20px; padding: 16px; background: var(--background); border-radius: 12px; }
 @media (max-width: 600px) { .account-section-heading { align-items: stretch; flex-direction: column; }.account-actions > button { flex: 1 1 100%; }.account-library-list li { flex-wrap: wrap; }.account-library-list li > div { flex-basis: calc(100% - 48px); }.account-library-list li > button { width: 100%; }.account-share-content pre { max-height: 240px; } }
-@media (max-width: 760px) { .accounts-entry { grid-template-columns: 1fr; gap: 32px; }.accounts-intro h1 { max-width: 20ch; font-size: 2.25rem; }.accounts-assurance { display: none; }.accounts-brand { flex-wrap: wrap; gap: 8px 12px; }.accounts-brand .brand-version { display: none; }.accounts-candidate { font-size: var(--text-caption); padding: 6px 10px; }.account-welcome, .account-new-library { align-items: stretch; flex-direction: column; } }
+@media (max-width: 760px) { .accounts-entry { grid-template-columns: 1fr; gap: 32px; }.accounts-intro h1 { max-width: 20ch; font-size: 2.25rem; }.accounts-assurance { display: none; }.accounts-brand { flex-wrap: wrap; gap: 8px 12px; }.accounts-brand .brand-version { display: none; }.account-welcome, .account-new-library { align-items: stretch; flex-direction: column; } }

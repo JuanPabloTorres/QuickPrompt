@@ -7925,6 +7925,110 @@
           }
         }
       }
+    },
+    "/api/v1/nova/live/{id}/clarification": {
+      "post": {
+        "summary": "Continue an owned pending content question or brief with the same source/session and a new RunId. Requires the original X-Nova-Surface; validates phase, sequence and current basis. Establishing a task permits a proposal, not persistence. Replaying the same body preserves its receipt; changed replies conflict.",
+        "operationId": "post_api_v1_nova_live__id__clarification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Continue an owned pending content question or brief with the same source/session and a new RunId. Requires the original X-Nova-Surface; validates phase, sequence and current basis. Establishing a task permits a proposal, not persistence. Replaying the same body preserves its receipt; changed replies conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Validation, origin, missing resource, conflict, busy or unavailable service. A security rejection can have an empty body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "LocalClientHeader": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveClarificationInput"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9944,6 +10048,15 @@
               }
             ],
             "description": "Host-computed literal differences from saved and working snapshots. Conservative textual checks are not exhaustive semantic coverage. Every listed ID requires acknowledgement."
+          },
+          "confirmedBrief": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConfirmedAuthoringBrief"
+              }
+            ],
+            "nullable": true,
+            "description": "Server-bound exact content contract; distinct from permission to save or execute."
           }
         }
       },
@@ -10101,6 +10214,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/LiveRuntime"
+              }
+            ],
+            "nullable": true
+          },
+          "brief": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthoringBriefReview"
               }
             ],
             "nullable": true
@@ -10394,6 +10515,260 @@
           "errorCode": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "AuthoringBriefSource": {
+        "type": "object",
+        "required": [
+          "promptId",
+          "revision",
+          "templateText",
+          "title",
+          "description"
+        ],
+        "properties": {
+          "promptId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "revision": {
+            "type": "integer",
+            "nullable": true
+          },
+          "templateText": {
+            "type": "string",
+            "maxLength": 32000
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthoringBriefContent": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "task",
+          "steps",
+          "constraints",
+          "outputRequirements",
+          "references"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "task": {
+            "type": "string",
+            "maxLength": 8000,
+            "description": "Initially empty for a new task. Confirmation requires a nonempty task."
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 40,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "maxItems": 40,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            }
+          },
+          "outputRequirements": {
+            "type": "array",
+            "maxItems": 40,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            }
+          },
+          "references": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "required": [
+                "uri",
+                "role"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "FUTURE_TASK",
+                    "CURRENT_SESSION",
+                    "BOTH",
+                    null
+                  ],
+                  "nullable": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "AuthoringBriefReview": {
+        "type": "object",
+        "required": [
+          "basisHash",
+          "originalRequest",
+          "source",
+          "inputs",
+          "proposed"
+        ],
+        "properties": {
+          "basisHash": {
+            "type": "string"
+          },
+          "originalRequest": {
+            "type": "string",
+            "maxLength": 32000
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthoringBriefSource"
+              }
+            ],
+            "nullable": true
+          },
+          "inputs": {
+            "type": "array",
+            "maxItems": 60,
+            "items": {
+              "type": "string"
+            }
+          },
+          "proposed": {
+            "$ref": "#/components/schemas/AuthoringBriefContent"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "ESTABLISH_TASK",
+              "REVIEW_CONTENT"
+            ],
+            "default": "REVIEW_CONTENT",
+            "description": "Server-owned phase. Task establishment runs before inference. Content review retains the established contract until the author chooses changes."
+          },
+          "establishedTask": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthoringBriefContent"
+              }
+            ],
+            "nullable": true
+          },
+          "suggested": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthoringBriefContent"
+              }
+            ],
+            "nullable": true,
+            "description": "Unaccepted model suggestion shown separately. It never automatically replaces proposed."
+          }
+        }
+      },
+      "AuthoringBriefReply": {
+        "type": "object",
+        "required": [
+          "basisHash",
+          "content",
+          "confirmed"
+        ],
+        "properties": {
+          "basisHash": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/AuthoringBriefContent"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "ConfirmedAuthoringBrief": {
+        "type": "object",
+        "required": [
+          "review",
+          "content",
+          "edited"
+        ],
+        "properties": {
+          "review": {
+            "$ref": "#/components/schemas/AuthoringBriefReview"
+          },
+          "content": {
+            "$ref": "#/components/schemas/AuthoringBriefContent"
+          },
+          "edited": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        }
+      },
+      "LiveClarificationInput": {
+        "type": "object",
+        "required": [
+          "runId",
+          "questionSequence",
+          "answer",
+          "nextSurface"
+        ],
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionSequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "nextSurface": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 128
+          },
+          "brief": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthoringBriefReply"
+              }
+            ],
+            "nullable": true,
+            "description": "Choose either a literal answer or a brief confirmation with an empty answer. The server retains the review, phase and original command."
           }
         }
       }

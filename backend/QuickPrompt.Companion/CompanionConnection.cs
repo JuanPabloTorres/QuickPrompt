@@ -25,6 +25,7 @@ public sealed class CompanionConnection : IAsyncDisposable
     private CompanionSession? session;
     private string? accessToken;
     private DateTimeOffset expiresAt;
+    private string? lastPresenceObservation;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { MaxDepth = 64 };
     public CompanionConnection(CompanionOptions options, CompanionSecrets secrets)
     {
@@ -122,8 +123,25 @@ public sealed class CompanionConnection : IAsyncDisposable
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken ?? throw new InvalidOperationException("No hay acceso activo."));
         if (body is not null) request.Content = JsonContent.Create(body, options: Json);
         var response = await http.SendAsync(request, cancellation);
+        if ((path.EndsWith("/claim", StringComparison.Ordinal) || path.EndsWith("/heartbeat", StringComparison.Ordinal))
+            && response.Headers.TryGetValues(CompanionPresenceProtocol.Header, out var observations)
+            && observations.Take(2).ToArray() is { Length: 1 } values
+            && Guid.TryParse(values[0], out var observation) && observation != Guid.Empty)
+            Volatile.Write(ref lastPresenceObservation, observation.ToString());
         if (!response.IsSuccessStatusCode) { var status = response.StatusCode; response.Dispose(); throw new CompanionRequestException(status); }
         return response;
+    }
+
+    /// <summary>Best-effort CAS withdrawal; failure expires naturally and never revokes consent or masks the original run outcome.</summary>
+    internal async Task StopPresence()
+    {
+        if (!Guid.TryParse(Interlocked.Exchange(ref lastPresenceObservation, null), out var observation)) return;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try { using var response = await Work(CompanionPresenceProtocol.StopPath, new LocalPresenceStop(observation), timeout.Token); }
+        catch (Exception error) when (error is HttpRequestException or CompanionRequestException or OperationCanceledException
+            or InvalidOperationException or System.Text.Json.JsonException or OpenIddictExceptions.ProtocolException
+            or IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+        { Console.WriteLine("No se confirmó la retirada de la señal; caducará automáticamente. La autorización no se revocó."); }
     }
     private async Task<HttpResponseMessage> Work(string path, object? body, CancellationToken cancellation)
     {

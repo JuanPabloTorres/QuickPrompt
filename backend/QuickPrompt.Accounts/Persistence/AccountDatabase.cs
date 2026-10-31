@@ -71,6 +71,7 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
     public DbSet<AccountExecutionResult> ExecutionResults => Set<AccountExecutionResult>();
     public DbSet<ModelProposalResult> ProposalResults => Set<ModelProposalResult>();
     public DbSet<DelegatedConnection> Connections => Set<DelegatedConnection>();
+    public DbSet<CompanionPresence> CompanionPresences => Set<CompanionPresence>();
     public DbSet<PromptCaptureReceipt> Captures => Set<PromptCaptureReceipt>();
     public DbSet<AccountCollection> Collections => Set<AccountCollection>();
     public DbSet<AccountCollectionMember> CollectionMembers => Set<AccountCollectionMember>();
@@ -152,6 +153,7 @@ public sealed class AccountDatabase(DbContextOptions<AccountDatabase> options)
         CollectionModel.Configure(model);
         PromptUseModel.Configure(model);
         DelegationModel.Configure(model);
+        CompanionAvailability.Configure(model);
     }
 }
 

@@ -40,13 +40,17 @@ public sealed class AdaptiveCoreModelTransport(AdaptiveCoreOptions options, Loca
             mode = "structured";
         }
         var config = packet.TryGetProperty("options", out var settings) ? settings : default;
+        var maximumRequests = 2;
+        if (config.ValueKind == JsonValueKind.Object && config.TryGetProperty("max_requests", out var configuredRequests)
+            && (configuredRequests.ValueKind != JsonValueKind.Number || !configuredRequests.TryGetInt32(out maximumRequests) || maximumRequests is < 1 or > 2))
+            throw new ValidationException("El presupuesto max_requests debe ser un entero entre 1 y 2.");
         int Int(string key, int fallback) => config.ValueKind == JsonValueKind.Object && config.TryGetProperty(key, out var value) ? value.GetInt32() : fallback;
         double temperature = config.ValueKind == JsonValueKind.Object && config.TryGetProperty("temperature", out var temp) ? temp.GetDouble() : 0;
         double? Number(string key) => config.ValueKind == JsonValueKind.Object && config.TryGetProperty(key, out var value) ? value.GetDouble() : null;
         var request = JsonSerializer.SerializeToElement(new {
             version = Protocol, requestId, model = packet.GetProperty("model").GetString(), mode,
             messages = packet.GetProperty("messages"), outputSchema = schema,
-            limits = new { requests = 2, timeoutSeconds = 90, contextTokens = Int("num_ctx", 12288),
+            limits = new { requests = maximumRequests, timeoutSeconds = 90, contextTokens = Int("num_ctx", 12288),
                 outputTokens = Int("num_predict", 2600), temperature,
                 thinking = packet.TryGetProperty("think", out var thinking) && thinking.GetBoolean(),
                 topP = Number("top_p"), topK = config.ValueKind == JsonValueKind.Object && config.TryGetProperty("top_k", out var topK) ? (int?)topK.GetInt32() : null, minP = Number("min_p") }
@@ -75,14 +79,11 @@ public sealed class AdaptiveCoreModelTransport(AdaptiveCoreOptions options, Loca
         modelPolicy.Require(packet.GetProperty("model").GetString()!);
         var requestId = Guid.NewGuid().ToString("N");
         var request = CreateRequest(packet, requestId);
+        ValidateProviderRequest(options, request);
         var serialized = request.GetRawText();
         if (Encoding.UTF8.GetByteCount(serialized) > 128000) throw new ValidationException("La petición excede el contrato de Core; no se truncará.");
         diagnostics?.Inference(NovaTelemetry.RunId,purpose,request);
-        var start = new ProcessStartInfo(options.Python) { UseShellExecute = false, CreateNoWindow = true,
-            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
-            StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
-        foreach (var argument in new[] { "-u", "-B", options.Worker, "--sdk-root", options.SdkRoot, "--endpoint", options.Endpoint }) start.ArgumentList.Add(argument);
-        start.Environment["PYDANTIC_AI_NO_BANNER"] = "1";
+        var start = CreateWorkerStartInfo(options);
         diagnostics?.ConfigureWorker(start,NovaTelemetry.RunId,requestId);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromSeconds(190));
@@ -107,6 +108,31 @@ public sealed class AdaptiveCoreModelTransport(AdaptiveCoreOptions options, Loca
         }
     }
 
+    // Thinking is a local operator permission, not authority supplied by a remote
+    // proposal packet. An enabled profile still sends each stage's explicit bool.
+    internal static void ValidateProviderRequest(AdaptiveCoreOptions options, JsonElement request)
+    {
+        if (options.Provider == "docker-model-runner" && (request.GetProperty("model").GetString() != AdaptiveCoreOptions.ModelAlias
+            || request.GetProperty("limits").GetProperty("thinking").GetBoolean() && !options.Thinking))
+            throw new ValidationException("DMR conserva el alias qwen3:8b; este perfil local debe permitir explícitamente el pensamiento solicitado.");
+    }
+
+    // One ArgumentList entry per configured value. No shell, concatenated command
+    // string, registry lookup or provider fallback is involved.
+    internal static ProcessStartInfo CreateWorkerStartInfo(AdaptiveCoreOptions options)
+    {
+        options.ValidateModelConfiguration();
+        var start = new ProcessStartInfo(options.Python) { UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
+        foreach (var argument in new[] { "-u", "-B", options.Worker, "--sdk-root", options.SdkRoot, "--endpoint", options.Endpoint }) start.ArgumentList.Add(argument);
+        if (options.Provider == "docker-model-runner")
+            foreach (var argument in new[] { "--provider", options.Provider, "--model-alias", AdaptiveCoreOptions.ModelAlias, "--physical-model", options.PhysicalModel! })
+                start.ArgumentList.Add(argument);
+        start.Environment["PYDANTIC_AI_NO_BANNER"] = "1";
+        return start;
+    }
+
     public static JsonDocument Decode(JsonElement reply, JsonElement request, int exitCode)
     {
         if (reply.GetProperty("version").GetString() != Protocol
@@ -115,11 +141,13 @@ public sealed class AdaptiveCoreModelTransport(AdaptiveCoreOptions options, Loca
         if (exitCode != 0 || reply.GetProperty("status").GetString() != "proposed") {
             var error = reply.TryGetProperty("error", out var detail) ? detail.GetString() : null;
             if (error == "MODEL_UNAVAILABLE") throw new LlmUnavailableException("Core no pudo conectar con el modelo local. La biblioteca sigue disponible.");
+            if (error == "MODEL_OUTPUT_LIMIT") throw new LlmUnavailableException("El modelo agotó el límite de salida sin completar la respuesta. No se repetirá automáticamente.", "MODEL_OUTPUT_LIMIT");
             if (error == "DEPENDENCY_MISSING") throw new PreparationToolException("CORE_DEPENDENCY_MISSING", "", "Configura el Python de Adaptive Core con el extra inference instalado.");
             throw new PreparationToolException("CORE_INTERPRETATION_FAILED", "", "Core no pudo obtener una propuesta válida; no se ejecutaron efectos.");
         }
         var usage = reply.GetProperty("usage"); var calls = usage.GetProperty("requests").GetInt32();
-        if (calls is < 1 or > 2) throw new PreparationToolException("CORE_INVALID_PROTOCOL", "", "Core excedió el presupuesto de inferencia.");
+        if (calls is < 1 or > 2 || calls > request.GetProperty("limits").GetProperty("requests").GetInt32())
+            throw new PreparationToolException("CORE_INVALID_PROTOCOL", "", "Core excedió el presupuesto de inferencia.");
         var value = reply.GetProperty("output");
         object message = request.GetProperty("mode").GetString() == "tools"
             ? new { content = "", tool_calls = new[] { new { function = new { name = value.GetProperty("toolName").GetString(), arguments = value.GetProperty("arguments") } } } }

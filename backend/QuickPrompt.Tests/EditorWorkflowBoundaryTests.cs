@@ -28,22 +28,29 @@ public sealed class EditorWorkflowBoundaryTests
             plan.Goal!.SetInputContract(PromptInputContract.FromUserSelection(request,document.TemplateText,true,[]));
 
         }
-        var transport=new Transport((_,_,_)=>throw new OperationCanceledException("Stop before producing a proposal or effects."));
+        using var stop = new CancellationTokenSource();
+        var transport=new Transport((_,_,_)=> {
+            stop.Cancel();
+            throw new OperationCanceledException("Stop before producing a proposal or effects.", stop.Token);
+        });
         var dependencies=new ForbiddenDependencies();
         var generator=new PromptDraftGenerator(transport,dependencies,dependencies,dependencies);
         var input=new PrepareInput(Guid.NewGuid(),request,SourcePromptId:source.Id,SourceRevision:source.Revision){Interpretation=plan};
         if(taskGoal) {
-            await Assert.ThrowsAsync<OperationCanceledException>(()=>generator.GenerateAfterSyntheticReview(input,plan.Preparation(),[new(document,1,"Fuente")],default));
+            await Assert.ThrowsAsync<OperationCanceledException>(()=>generator.GenerateAfterSyntheticReview(input,plan.Preparation(),[new(document,1,"Fuente")],stop.Token));
             var call=Assert.Single(transport.Calls);Assert.Equal("GenerateDraftProposal",call.Purpose);
+            Assert.Equal(2, transport.AllCalls.Count); Assert.Single(transport.DiscoveryCalls);
             var material=Material(call.Packet);
-            Assert.Equal(request,material.GetProperty("originalRequest").GetString());Assert.Equal(source.Template,material.GetProperty("selectedSource").GetProperty("templateText").GetString());
+            Assert.Equal(request,Material(Assert.Single(transport.DiscoveryCalls).Packet).GetProperty("originalRequest").GetString());
+            Assert.False(material.TryGetProperty("originalRequest",out _));
+            Assert.Equal(source.Template,material.GetProperty("fields").GetProperty("task").GetString());
             Assert.False(call.Packet.TryGetProperty("tools",out _));
             Assert.Contains(workflow,plan.Goal!.UserRequest); Assert.Null(plan.Goal.AuthoringContract);
             Assert.Contains(SemanticOperation.REQUEST_SAVE_VERSION,plan.Goal.RequiredEffects);
             Assert.False(plan.Goal.HasContentAssessment(source.Template));Assert.False(plan.Goal.HasHumanContentApproval(source.Template));
         } else {
             await Assert.ThrowsAsync<ValidationException>(()=>generator.GenerateAfterSyntheticReview(input,plan.Preparation(),[new(document,1,"Fuente")],default));
-            Assert.Empty(transport.Calls);
+            Assert.Empty(transport.AllCalls);
         }
         Assert.Equal(originalEffects,plan.Intentions);Assert.Equal(change,plan.RequestedTransformation);
         Assert.Contains(SemanticOperation.REQUEST_SAVE_VERSION,plan.Intentions);Assert.Equal("Explica <tema>.",source.Template);

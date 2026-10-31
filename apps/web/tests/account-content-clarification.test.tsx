@@ -28,7 +28,8 @@ function fixture(recovered = false) {
     const headers = new Headers(options?.headers);
     calls.push({ path, method: options?.method ?? 'GET', body, surface: headers.get('X-Nova-Surface'), csrf: headers.get('X-QP-CSRF') });
     if (path === '/account/csrf') return Response.json({ token: 'csrf' });
-    if (path === '/account/connections/') return Response.json([{ id: connection, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01' }]);
+    // The proposal fixture explicitly includes a recent worker signal; consent alone is not readiness.
+    if (path === '/account/connections/') return Response.json([{ id: connection, profileId: 'ollama-qwen3-8b-proposals', label: 'Equipo QA', active: true, revoked: false, createdAt: '', expiresAt: '2030-01-01', presence: { status: 'POLLING', observedAt: '2026-10-29T12:00:00Z', expiresAt: '2026-10-29T12:00:20Z' } }]);
     if (path.includes('/nova/sessions/')) return new Response(null, { status: 204 });
     if (path.endsWith('/nova/live')) {
       const input = body!.request as { runId: string; sessionId: string }; id = input.runId; session = input.sessionId; status = 'BLOCKED'; return Response.json(record());
@@ -63,7 +64,7 @@ function fixture(recovered = false) {
 
 async function chooseAndAsk(fake: ReturnType<typeof fixture>) {
   const mounted = render(fake.ui());
-  await screen.findByRole('option', { name: 'Equipo QA · Qwen3:8b' });
+  expect(await screen.findByRole('option', { name: /^Equipo QA ·/ })).toHaveProperty('value', connection);
   fireEvent.change(screen.getByLabelText('Equipo de NOVA'), { target: { value: connection } });
   fireEvent.change(await screen.findByLabelText('Acción de NOVA'), { target: { value: 'PROPOSE_ADAPTATION' } });
   fireEvent.change(screen.getByLabelText('Cambios solicitados'), { target: { value: request } });
@@ -218,7 +219,7 @@ it('retires active control at the terminal question and keeps only its separate 
 
 it('never offers content continuation from a recovered run ID without RAM request and surface permission', async () => {
   const fake = fixture(true); render(fake.ui());
-  await screen.findByRole('option', { name: 'Equipo QA · Qwen3:8b' });
+  expect(await screen.findByRole('option', { name: /^Equipo QA ·/ })).toHaveProperty('value', connection);
   fireEvent.change(screen.getByLabelText('Equipo de NOVA'), { target: { value: connection } });
   await screen.findByRole('button', { name: 'Ver última actividad de NOVA' });
   expect(screen.queryByRole('dialog')).toBeNull();

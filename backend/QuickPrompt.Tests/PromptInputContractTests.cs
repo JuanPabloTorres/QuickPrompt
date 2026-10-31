@@ -122,9 +122,19 @@ public sealed class PromptInputContractTests
 
     private sealed class Author(string body="Redacta una propuesta detallada.") : IValidatedAgentModelTransport
     {
-        public int Calls;
+        public int Calls; public int DiscoveryCalls;
         public Task<JsonDocument> Send(object packet,CancellationToken ct,string purpose)
-        { Calls++;var material=AuthoringReviewTestFixture.Material(JsonSerializer.SerializeToElement(packet));return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new {message=new {content=JsonSerializer.Serialize(AuthoringReviewTestFixture.Definition(body,"Propuesta"),AuthoringReviewTestFixture.Json)}}))); }
+        {
+            ct.ThrowIfCancellationRequested(); Calls++;
+            var encoded = JsonSerializer.SerializeToElement(packet);
+            object reply;
+            if (AuthoringSyntheticReview.IsCurrentAuthorDecision(encoded)) {
+                DiscoveryCalls++;
+                reply = AuthoringSyntheticReview.CurrentAuthorDecisionReady();
+            } else reply = AuthoringReviewTestFixture.Definition(body, "Propuesta");
+            return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new {message=new {
+                content=JsonSerializer.Serialize(reply,AuthoringReviewTestFixture.Json)}})));
+        }
         public bool UsesThinking(string model)=>false;
         public void Observe(int stage,string content,string? error){}
         public void Reject(string? answer){}

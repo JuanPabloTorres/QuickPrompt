@@ -14,6 +14,7 @@ export function PromptAuthoringBrief({ runId, sequence, review, identity, onConf
   const [checked, setChecked] = useState(false), [clarifying, setClarifying] = useState(false), [answer, setAnswer] = useState(''), [error, setError] = useState('');
   const scope = useMemo(() => ({ runId, sequence, basis: review.basisHash, identity }), [runId, sequence, review.basisHash, identity]);
   const operation = useBoundOperation(scope), portal = useUiPortalScope();
+  const establishing = review.stage === 'ESTABLISH_TASK';
   useLayoutEffect(() => { if (portal?.active === false) operation.cancel(); }, [portal?.active, operation.cancel]);
   const ready = checked && !!content.task.trim() && !!content.title.trim() && content.references.every(item => item.role !== null);
   const change = <K extends keyof AuthoringBriefContent>(key: K, value: AuthoringBriefContent[K]) => { setChecked(false); setContent(current => ({ ...current, [key]: value })); };
@@ -30,11 +31,20 @@ export function PromptAuthoringBrief({ runId, sequence, review, identity, onConf
     finally { operation.finish(pending); }
   }
   return <>{!open && <button type="button" className="secondary" data-nova-user-control="true" onClick={() => setOpen(true)}>Revisar tarea de NOVA</button>}
-    <Dialog open={open} onOpenChange={next => { if (!next) close(); }} title="Confirma la tarea del futuro asistente"
-      description="NOVA propuso una interpretación. Compárala con tu petición y corrige cualquier omisión antes de continuar.">
+    <Dialog open={open} onOpenChange={next => { if (!next) close(); }} title={establishing ? 'Establece la tarea antes de redactar' : 'Confirma la tarea del futuro asistente'}
+      description={establishing ? 'Define la tarea y sus requisitos. NOVA todavía no ha llamado al modelo ni redactado una propuesta.'
+        : 'Tu contrato sigue seleccionado. Compara las sugerencias y acepta únicamente los cambios que quieras.'}>
       <form className="account-prompt-form" data-nova-command="true" onSubmit={event => { event.preventDefault(); void submit(); }}>
         <details open><summary>Tu petición original</summary><pre className="content-review-text">{review.originalRequest}</pre></details>
         {review.source && <details><summary>Origen: {review.source.title} · versión {review.source.revision}</summary><pre className="content-review-text">{review.source.templateText}</pre></details>}
+        {review.establishedTask && <details><summary>Contrato que estableciste antes de redactar</summary><pre className="content-review-text">{briefText(review.establishedTask)}</pre></details>}
+        {review.suggested && <details open><summary>Mejoras propuestas por NOVA · todavía sin aplicar</summary>
+          <pre className="content-review-text">{briefText(review.suggested)}</pre>
+          <button type="button" className="secondary" disabled={operation.busy || clarifying} onClick={() => {
+            setContent(structuredClone(review.suggested!)); setChecked(false);
+          }}>Aplicar propuesta para revisarla</button>
+          <p className="muted">Aplicarla reemplaza los campos de abajo y exige revisarlos de nuevo. También puedes conservar tu contrato o editarlo directamente.</p>
+        </details>}
         <p className="muted">Variables elegidas: {review.inputs.length ? review.inputs.map(name => `<${name}>`).join(', ') : 'sin variables'}. No se piden sus valores ahora. Los marcadores que falten se incorporarán al componer la plantilla.</p>
         {clarifying ? <label>Aclaración de tu encargo<textarea rows={4} maxLength={2000} value={answer} disabled={operation.busy} onChange={event => setAnswer(event.target.value)} /></label> : <>
           <label>Nombre de la plantilla<input maxLength={160} value={content.title} disabled={operation.busy} onChange={event => change('title', event.target.value)} /></label>
@@ -53,11 +63,18 @@ export function PromptAuthoringBrief({ runId, sequence, review, identity, onConf
             </select></label>)}</fieldset>}
           <label><input type="checkbox" checked={checked} disabled={operation.busy} onChange={event => setChecked(event.target.checked)} />Comparé la tarea, los requisitos y los enlaces con mi petición. Este es el contrato que quiero utilizar.</label>
         </>}
-        <p className="muted">Confirmar compone la plantilla sin volver a reescribir estos requisitos con IA. Después revisarás el resultado. Esto no autoriza guardar ni ejecutar.</p>
+        <p className="muted">{establishing ? 'Establecer la tarea permite solicitar una propuesta de NOVA. No confirma contenido final ni autoriza guardar o ejecutar.'
+          : 'Confirmar compone exactamente los campos revisados sin volver a reescribirlos con IA. Después revisarás el resultado. Esto no autoriza guardar ni ejecutar.'}</p>
         {error && <p role="alert" className="error">{error} Conservamos tu revisión; la continuación aún no está confirmada.</p>}
         <div className="dialog-actions"><button type="button" className="secondary" disabled={operation.busy} onClick={close}>Ahora no</button>
           <button type="button" className="secondary" disabled={operation.busy} onClick={() => { setClarifying(value => !value); setError(''); }}>{clarifying ? 'Volver al contrato' : 'Necesito aclarar el encargo'}</button>
-          <button className="primary" disabled={operation.busy || (clarifying ? !answer.trim() : !ready)}>{operation.busy ? 'Continuando…' : clarifying ? 'Enviar aclaración' : 'Confirmar tarea y componer plantilla'}</button></div>
+          <button className="primary" disabled={operation.busy || (clarifying ? !answer.trim() : !ready)}>{operation.busy ? 'Continuando…' : clarifying ? 'Enviar aclaración'
+            : establishing ? 'Establecer tarea y pedir propuesta' : 'Confirmar tarea y componer plantilla'}</button></div>
       </form>
     </Dialog></>;
+}
+
+function briefText(content: AuthoringBriefContent): string {
+  return [content.title, content.description, content.task, ...content.steps, ...content.constraints, ...content.outputRequirements,
+    ...content.references.map(item => item.uri)].filter(Boolean).join('\n\n');
 }

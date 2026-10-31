@@ -18,6 +18,29 @@ public sealed class LiveExecutionTests : IDisposable
     private LiveStartInput Start(string message = "PRIVATE_REQUEST_SENTINEL") { var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), message); live.Create(input); return input; }
     private UiVisibleState State(PromptDocument source, bool changed = false) => new("create", [], source.Id, source.Revision, source.Title,
         changed ? "Nueva instrucción breve, sin inventar información." : source.TemplateText, [], [], changed, false, null, null, false, false);
+
+    [Fact]
+    public async Task TaskEstablishmentRecordsHostAuthorityWithoutAnyInferenceOrPreparedContent()
+    {
+        const string request = "Crea una plantilla; todavía no he indicado qué tarea debe realizar.";
+        var input = new LiveStartInput(Guid.NewGuid(), Guid.NewGuid(), request,
+            Command: new(SemanticOperation.CREATE_DRAFT, request) { InputNames = [] });
+        live.Create(input);
+        var provider = new AuthoringReviewTestFixture.Transport { Failure = new InvalidOperationException("The host gate cannot call a model.") };
+        var generator = new PromptDraftGenerator(provider, new AuthoringReviewTestFixture.ForbiddenDependencies());
+        var engine = new AgentOrchestrator(new UnusedInference(), new SqlitePromptRetriever(store), generator,
+            new GroundedVariableResolver(), new DeterministicPromptEvaluator(), new PreparedDraftStore(store), new(),
+            sessions: new AgentSessions(), executeGroundedPlan: true, stopAfterVerifiedResult: true);
+        var browser = new CreationBrowser(new("discover", [], null, null, null, null, [], [], false, false, null, null, false, false));
+        await engine.RunVisible(input, "http://127.0.0.1:5226", live, new InvalidDecision(), browser, library);
+        var view = live.View(input.RunId);
+        Assert.Equal(LiveStatus.BLOCKED, view.Run.Status); Assert.Equal("NEEDS_CLARIFICATION", view.Run.ErrorCode);
+        Assert.Equal(AuthoringBriefs.EstablishTask, view.Brief!.Stage);
+        Assert.Equal(LiveActor.SYSTEM_VALIDATION, Assert.Single(live.Events(input.RunId, 0),
+            item => item.Status == LiveStatus.BLOCKED && item.ErrorCode == "NEEDS_CLARIFICATION").Actor);
+        Assert.Empty(provider.AllCalls); Assert.Null(view.Proposal); Assert.False(view.Run.EffectCommitted);
+        Assert.DoesNotContain("ui_prepare_creation", browser.Tools); Assert.Empty(store.Templates());
+    }
     [Theory]
     [InlineData("MODEL_FAILED")]
     [InlineData("MODEL_TIMEOUT")]

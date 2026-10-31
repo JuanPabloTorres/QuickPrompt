@@ -35,7 +35,7 @@ public sealed partial class AccountHttpTests
         using var deviceA = Client(host.App); using var deviceB = Client(host.App);
         await Login(a, await Register(a, host.Mail)); await Login(b, await Register(b, host.Mail));
         var ownA = await LocalLibrary(a); var ownB = await LocalLibrary(b);
-        var grantA = await ProposalDevice(a, deviceA); var grantB = await ProposalDevice(b, deviceB);
+        var grantA = await PollingProposalDevice(a, deviceA); var grantB = await PollingProposalDevice(b, deviceB);
         var actorA = await ProposalActor(a); var actorB = await ProposalActor(b);
         await using var scope = host.App.Services.CreateAsyncScope(); var proposals = scope.ServiceProvider.GetRequiredService<AccountModelProposals>();
         using var novaA = new AccountNovaInference(proposals, actorA, ownA.Library, grantA.Connection.Id);
