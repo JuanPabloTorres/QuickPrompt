@@ -138,7 +138,8 @@ public sealed partial class AccountHttpTests
         else
         {
             Assert.Equal(HttpStatusCode.NoContent, (await FinishProposal(device, lease, null, "MODEL_UNAVAILABLE")).StatusCode);
-            var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => inference); Assert.Contains("Ollama", failure.Message);
+            var failure = await Assert.ThrowsAsync<LlmUnavailableException>(() => inference);
+            Assert.Contains("proveedor del modelo local", failure.Message);
             Assert.Equal("MODEL_UNAVAILABLE", failure.Code);
             Assert.Equal(HttpStatusCode.NoContent, (await ClaimProposal(device)).StatusCode);
         }

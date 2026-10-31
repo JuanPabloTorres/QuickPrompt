@@ -76,8 +76,14 @@ public sealed partial class AccountHttpTests
         (await FinishProposal(device, lease, ContentReply(AuthoringSyntheticReview.CurrentAuthorDecisionReady()))).EnsureSuccessStatusCode();
         var writer = await AwaitProposal(device, driving);
         Assert.False(AuthoringSyntheticReview.IsCurrentAuthorDecision(writer.Packet));
-        Assert.Equal(lease.Packet.GetProperty("messages")[1].GetProperty("content").GetString(),
-            writer.Packet.GetProperty("messages")[1].GetProperty("content").GetString());
+        var writerMaterial = JsonSerializer.Deserialize<JsonElement>(writer.Packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
+        Assert.Equal("Conceptualiza software de tipo <tipo>.", material.GetProperty("establishedTask").GetProperty("task").GetString());
+        Assert.Equal("Conceptualiza software de tipo <tipo>.", writerMaterial.GetProperty("fields").GetProperty("task").GetString());
+        Assert.Equal(new[] { "<tipo>" }, writerMaterial.GetProperty("inputs").EnumerateArray().Select(item => item.GetString()));
+        Assert.False(writerMaterial.TryGetProperty("originalRequest", out _));
+        Assert.False(writerMaterial.TryGetProperty("userClarifications", out _));
+        Assert.False(writerMaterial.TryGetProperty("selectedSource", out _));
+        Assert.False(writerMaterial.TryGetProperty("establishedTask", out _));
         (await FinishProposal(device, writer, ContentReply(new { title = "Conceptualización", description = "", outcome = "INSTRUCTION",
             instruction = new { task = "Conceptualiza una idea de software de tipo <tipo>." }, question = (string?)null, literalReference = (int?)null }))).EnsureSuccessStatusCode();
         var suggestion = await driving;
