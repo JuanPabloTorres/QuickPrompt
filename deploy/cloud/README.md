@@ -127,9 +127,11 @@ sin rebuild, identificación y comprobación del artefacto resultante.
 - [ ] Confirmación/recuperación por correo llegan y sus enlaces funcionan.
 
 Correo sigue bloqueado: Brevo no tiene clave y el usuario reportó SMS fallido;
-ticket autorizado 5641363 enviado/abierto. Mailjet sólo se investiga, sin cuenta
-creada ni adaptador operativo. No cambiar de proveedor ni añadir dependencias
-como si ya hubiera entrega comprobada. El adaptador Brevo existente conserva su
+ticket autorizado 5641363 enviado/abierto. El 31/10 el usuario eligió cambiar:
+el adaptador HTTPS Mailjet está implementado sin dependencias nuevas. La cuenta,
+el remitente, los secretos y la llegada real siguen pendientes de verificación;
+consultar `docs/development/ACCOUNT_MAIL.md`. No presentar la preparación o los
+tests controlados como entrega comprobada. El adaptador Brevo existente conserva su
 configuración privada opcional en la plantilla y no hace envíos al arrancar.
 
 El modo local conserva loopback si no se elige Public explícitamente. Un dominio,

@@ -220,7 +220,10 @@ esquema habrá que revisar inventario, huellas y contadores de esa nueva migraci
 
 Brevo conserva su configuración anterior. SMTP2GO sólo se selecciona mediante
 `QuickPrompt__Accounts__MailProvider=Smtp2Go`, tres opciones privadas completas y
-ninguna configuración Brevo simultánea. Consultar el
+ninguna configuración Brevo simultánea. Mailjet requiere selector `Mailjet`,
+clave y secreto propios, remitente validado y ninguna configuración del proveedor
+anterior. No se presupone que una cuenta creada o un adaptador probado habiliten
+el envío. Consultar el
 [contrato y comparación oficial](../../docs/development/ACCOUNT_MAIL.md).
 No activar un proveedor sin autorizar su cuenta, condiciones y destino de la clave.
 La llegada a un buzón, confirmación y recuperación consumidas desde la interfaz

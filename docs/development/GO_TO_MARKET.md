@@ -2,6 +2,15 @@
 
 Candidato activo: **1.0.1-rc.2**. Decisión comercial: **NO-GO**.
 
+Cambio de correo solicitado el 31/10: adaptador Mailjet preparado dentro de
+`IAccountMail`, sin cambiar Identity ni el esquema. Regresión focal de los tres
+proveedores: 130 PASS/0 FAIL/0 SKIP, con HTTP controlado. No acredita cuenta,
+credenciales, remitente, recepción ni configuración en producción. El primer
+intento detectó y corrigió casing camelCase incompatible con Mailjet. Otro control
+reprodujo una lectura interrumpida que propagaba IOException; ahora produce un
+error seguro sin reintento. Ambos fallos se conservan en los recibos.
+Configuración y límites en [ACCOUNT_MAIL.md](ACCOUNT_MAIL.md).
+
 Esta matriz publica los mismos controles R1–R6 del registro de cierre del
 proyecto. Las evidencias de cuentas y conversaciones se conservan de forma privada;
 esta vista evita publicar sus identidades, credenciales o contenidos. Los resultados
