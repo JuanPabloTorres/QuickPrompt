@@ -181,7 +181,8 @@ public sealed class McpToolReceiptTests
         app.MapMcp("/mcp") // Synthetic admission owner; does not certify real account/grant isolation.
             .AddEndpointFilter((context, next) => state.AllowRequests ? next(context)
                 : ValueTask.FromResult<object?>(Microsoft.AspNetCore.Http.Results.Unauthorized()))
-            .AddEndpointFilter(AccountMcpModule.RejectMissingPostContentType);
+            .AddEndpointFilter(AccountMcpModule.RejectMissingPostContentType)
+            .AddEndpointFilter(new McpSingleResponseFilter().InvokeAsync);
         await app.StartAsync();
         var http = app.GetTestClient(); http.DefaultRequestHeaders.Add("X-QP-MCP-Trace", Canary);
         var client = await McpClient.CreateAsync(new HttpClientTransport(new() {

@@ -56,7 +56,8 @@ public static class AccountMcpModule
                 if (await boundary.McpActive(context.User, context.RequestAborted) is null) return Results.Unauthorized();
                 return await next(invocation);
             })
-            .AddEndpointFilter(RejectMissingPostContentType);
+            .AddEndpointFilter(RejectMissingPostContentType)
+            .AddEndpointFilter(new McpSingleResponseFilter().InvokeAsync);
     }
 
     /// <summary>Register after endpoint authorization and active-grant checks, before the SDK reads JSON.</summary>

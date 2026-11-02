@@ -8,6 +8,51 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
+### R4 — candidato de entrega MCP completa, 02/11/2026
+
+El usuario confirma que la respuesta de ChatGPT aparece al refrescar. La consulta
+literal de QA devolvió `items=[]` por el conector y terminó visible en la conversación
+web, también tras recargar. Esto demuestra recuperación, no la causa del primer
+fallo. El recibo web observado de `search_prompts` terminó HTTP 200 / SSE en 2.917 ms
+y con canales iguales; al no registrar argumentos, no se atribuye inequívocamente
+a esa conversación. No se interpreta un recibo HTTP como aceptación de la UI.
+
+El candidato aislado parte de producción `e16e4ee`. `McpSingleResponseFilter`,
+registrado después de autorización, conexión activa y guard de entrada, permite
+que el SDK ejecute una sola vez y entrega su único resultado como
+`application/json`, con longitud UTF-8 exacta, `no-store, no-transform` y el mismo
+JSON-RPC, ID, metadata y canales de contenido. El SDK conserva descubrimiento,
+validaciones, errores y permisos. No se sustituye su despachador ni se reintenta
+una herramienta. JSON y SSE están admitidos por el
+[contrato Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http).
+
+El filtro difiere también el inicio y flush de la respuesta, no sólo las escrituras.
+Con varios eventos o metadata de reanudación conserva todos los bytes SSE;
+al recogerlos antes de responder, esta vía no ofrece progreso incremental.
+Se limita a las operaciones finitas del MCP de cuentas, no a los feeds NOVA o
+a suscripciones largas. Una respuesta única malformada o codificada de más de
+1 MiB recibe 502 antes de enviar éxito; es un nuevo límite explícito de transporte.
+El resultado de una escritura podría existir aunque su entrega falle: consultar
+su estado y conservar `operationId`, nunca repetir automáticamente.
+
+Las pruebas focales usan SDK 2.3.0, TestServer y sockets Kestrel de loopback con
+datos sintéticos; no usan PostgreSQL privado, ChatGPT o modelos. El baseline
+confirma SSE donde el contrato del candidato pide JSON: no reproduce por sí solo
+el fallo visual. Los recibos de baseline/candidato, resultados y límites se
+conservan en `.playwright/mcp-response-delivery/` del worktree. La prueba inicial
+suponía metadata `serverInfo` en 2025; se corrigió el arnés porque esa revisión
+la omite legítimamente. El candidato mantiene las pruebas de metadata de la
+revisión actual y la conservación literal de metadata explícita.
+El corte final tiene **43 PASS / 0 FAIL / 0 omitidas** en las tres clases focales;
+no equivale a aceptación de ChatGPT ni a la suite PostgreSQL/OAuth completa.
+Para volver al transporte anterior basta retirar el registro de
+`McpSingleResponseFilter`; no hay migración, cambio de scopes o reconexión obligatoria.
+
+Estado: **mitigación de compatibilidad implementada localmente; R4 sigue abierto**.
+No hay publicación, commit, push, cambio de conexión o nueva aceptación en ChatGPT.
+Antes de cerrar: publicar con autorización y comprobar la consulta original sin
+refrescar en el servicio activo; conservar el resultado fallido si reaparece.
+
 ### Diagnóstico del componente y distinción de plazos del 29/10
 
 Una consulta READ ONLY con el rol limitado de aplicación recuperó el run original
