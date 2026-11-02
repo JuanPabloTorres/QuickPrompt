@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# The Companion SDK manifest hashes the exact reviewed source bytes.
+packaging/companion/core-sdk/** -text
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #
