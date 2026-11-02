@@ -79,6 +79,22 @@ public sealed class SameTabUiTests : IAsyncLifetime
         live.Cancel(id); await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
         Assert.Throws<ConflictException>(() => dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", State)));
     }
+    [Fact] public async Task AuthoredMetadataRequiresAnExactBoundReceiptBeforeTheFormCanBeAccepted()
+    {
+        await using var driver = dispatcher.Factory().Create(); var start = driver.Start(id, "", false, CancellationToken.None);
+        var first = dispatcher.Poll(id, capability, true).Action!;
+        dispatcher.Acknowledge(id, capability, new(first.ActionId, first.Sequence, "EXECUTED", "VERIFIED", State)); await start;
+        var pending = driver.Execute("ui_prepare_creation", JsonSerializer.SerializeToElement(new {
+            title = "Guía", templateText = "Explica el procedimiento.", description = "Descripción confirmada."
+        }), CancellationToken.None);
+        var action = dispatcher.Poll(id, capability, true).Action!;
+        var form = State with { Mode = "create", Title = "Guía", TemplateText = "Explica el procedimiento.", DraftChanged = true };
+        Assert.Throws<ValidationException>(() => dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", form)));
+        Assert.False(pending.IsCompleted);
+        Assert.Throws<ValidationException>(() => dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", form with { Description = new string('x', 2001) })));
+        dispatcher.Acknowledge(id, capability, new(action.ActionId, action.Sequence, "EXECUTED", "VERIFIED", form with { Description = "Descripción confirmada." }));
+        Assert.Equal("Descripción confirmada.", (await pending).Description);
+    }
     [Fact] public async Task ClosingDispatcherReleasesAnUnacknowledgedActionAndCanBeRepeated()
     {
         await using var driver = dispatcher.Factory().Create();

@@ -66,6 +66,13 @@ export function createAgentUiCommands(host: AgentUiCommandHost): AgentUiCommandR
     } = {
         editRequest: '', localAllowed: false, providerId: null, working: null,
     };
+    async function writeDescription(args: Record<string, unknown>) {
+        if (typeof args.description !== 'string') return; // Older non-authoring commands have no metadata change.
+        const disclosure = host.surface.control('editor.metadata');
+        if (disclosure?.closest('details')?.open === false) await host.click('editor.metadata');
+        await host.write('prompt-description', args.description);
+        if (host.readState().description !== args.description) throw new Error('UI_METADATA_MISMATCH');
+    }
     return new AgentUiCommandRegistry([
         { names: ["ui_review_deletion"], allowsExternalTarget: true, kind: 'settled', execute: async (action, _before) => {
                 const args = action.arguments;
@@ -150,6 +157,7 @@ export function createAgentUiCommands(host: AgentUiCommandHost): AgentUiCommandR
                     throw new Error('UI_PRECONDITION');
                 await host.write('prompt-title', String(args.title));
                 await host.write('prompt-content', String(args.templateText));
+                await writeDescription(args);
                 await host.settled();
                 if (host.readState().templateText !== args.templateText || host.readState().title !== args.title)
                     throw new Error('UI_VALUE_MISMATCH');
@@ -195,6 +203,7 @@ export function createAgentUiCommands(host: AgentUiCommandHost): AgentUiCommandR
                         throw new Error('UI_WORKING_DRAFT_MISMATCH');
                     await host.write('prompt-title', args.title);
                     await host.write('prompt-content', args.templateText);
+                    await writeDescription(args);
                     await host.settled();
                     if (host.readState().templateText !== args.templateText || host.readState().title !== args.title)
                         throw new Error('UI_VALUE_MISMATCH');

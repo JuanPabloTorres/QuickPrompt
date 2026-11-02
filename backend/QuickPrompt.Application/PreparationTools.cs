@@ -101,6 +101,7 @@ public static class ContractSchema
             : item.GetRawText() == value.GetRawText())) throw new ValidationException("Valor fuera del contrato.");
         if (type == "array")
         {
+            if (schema.TryGetProperty("minItems", out var minItems) && value.GetArrayLength() < minItems.GetInt32()) throw new ValidationException("Faltan elementos obligatorios.");
             if (schema.TryGetProperty("maxItems", out var maxItems) && value.GetArrayLength() > maxItems.GetInt32()) throw new ValidationException("Demasiados elementos.");
             foreach (var item in value.EnumerateArray()) Validate(item, schema.GetProperty("items"));
         }

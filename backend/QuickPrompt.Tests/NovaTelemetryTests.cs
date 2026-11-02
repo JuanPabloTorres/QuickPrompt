@@ -13,6 +13,9 @@ public class NovaTelemetryTests
         NovaTelemetry.DebugPoint("test.disabled", false, () => { evaluated = true; return new(); });
         Assert.False(evaluated);
     }
+#if DEBUG
+    // Payload capture is a Debug contract. Release removes the call sites;
+    // it must never be enabled merely to make diagnostic assertions pass.
     [Fact] public async Task DebugPointsKeepConcurrentRunIdentityWithoutChangingOperationMetrics()
     {
         using var capture = NovaTelemetry.CaptureDebugPoints();
@@ -59,6 +62,22 @@ public class NovaTelemetryTests
         NovaTelemetry.DebugPoint("test.host", false, () => new());
         Assert.Equal("test.host", Assert.Single(capture.Snapshot()).Boundary);
     }
+#else
+    [Fact] public void ReleaseDebugCallsDoNotEvaluatePayloadEvenWithACaptureListener()
+    {
+        using var capture = NovaTelemetry.CaptureDebugPoints();
+        using var run = NovaTelemetry.Begin(Guid.NewGuid());
+        var evaluated = false;
+        NovaTelemetry.DebugPoint("test.release", true, () => {
+            evaluated = true;
+            return new() { ["private.value"] = "SHOULD_NEVER_BE_EVALUATED" };
+        });
+        Assert.False(evaluated);
+        Assert.Empty(capture.Snapshot());
+        Assert.Equal(0, capture.ObserverErrors);
+        Assert.Equal(0, NovaTelemetry.Snapshot(NovaTelemetry.RunId!.Value)!.OperationCount);
+    }
+#endif
     [Fact] public async Task ConcurrentRunsAndLinkedRequestsKeepMetricsSeparateWithoutContent()
     {
         var first = Guid.NewGuid(); var second = Guid.NewGuid();

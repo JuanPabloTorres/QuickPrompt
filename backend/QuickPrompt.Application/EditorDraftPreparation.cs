@@ -16,6 +16,22 @@ public sealed class EditorDraftPreparation(IPromptCatalog library, IPromptEvalua
 {
     public PreparedDraft Prepare(EditorDraftRequest input)
     {
+        var (result, source, request) = Build(input, library, evaluator);
+        drafts.Put(result, LiveRuns.Hash(request));
+        if (input.SessionId is { } sessionId) {
+            var previous = sessions.Get(sessionId);
+            var searchContext = (previous?.Candidates ?? []).Select(candidate => source is not null && candidate.Id == source.Id ? source : candidate).Take(6).ToArray();
+            sessions.ObserveDraft(new(sessionId, source ?? previous?.Source, result, source is null ? previous?.Values ?? [] : input.Values, DateTime.UtcNow,
+                searchContext));
+        }
+        return result;
+    }
+
+    /// <summary>Shared editor validation/compilation without saving a prompt, receipt or session.</summary>
+    public static PreparedDraft Compile(EditorDraftRequest input, IPromptCatalog library, IPromptEvaluator evaluator) => Build(input, library, evaluator).Draft;
+
+    private static (PreparedDraft Draft, PromptDocument? Source, PrepareInput Request) Build(EditorDraftRequest input, IPromptCatalog library, IPromptEvaluator evaluator)
+    {
         EditorTools.ValidateValues(input.TemplateText, input.Values);
         if ((input.PromptId is null) != (input.Revision is null) || input.SessionId == Guid.Empty) throw new ValidationException("Identidad del editor inválida.");
         var source = input.PromptId is { } sourceId ? library.Get(sourceId) : null;
@@ -25,13 +41,6 @@ public sealed class EditorDraftPreparation(IPromptCatalog library, IPromptEvalua
             new(source is null ? PreparationDecision.CREATE_NEW : PreparationDecision.ADAPT_EXISTING, source?.Id, input.Title, source?.Description ?? "", input.TemplateText, [], "", "Borrador del editor; original conservado."),
             source is null ? [] : [new(source, 10, "Origen seleccionado")], input.Values.Where(v => !string.IsNullOrWhiteSpace(v.Value)).Select(v => new VariableValue(v.Key, v.Value, "USER_INPUT", "VALIDATED")).ToArray())
             with { SessionId = input.SessionId };
-        drafts.Put(result, LiveRuns.Hash(request));
-        if (input.SessionId is { } sessionId) {
-            var previous = sessions.Get(sessionId);
-            var searchContext = (previous?.Candidates ?? []).Select(candidate => source is not null && candidate.Id == source.Id ? source : candidate).Take(6).ToArray();
-            sessions.ObserveDraft(new(sessionId, source ?? previous?.Source, result, source is null ? previous?.Values ?? [] : input.Values, DateTime.UtcNow,
-                searchContext));
-        }
-        return result;
+        return (result, source, request);
     }
 }

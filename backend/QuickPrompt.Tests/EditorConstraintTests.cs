@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using QuickPrompt.Local;
@@ -64,29 +63,45 @@ public sealed class EditorConstraintTests
         await Assert.ThrowsAsync<ValidationException>(() => client.Propose("improve", "Hazlo más breve.", source, "qwen3:8b", CancellationToken.None));
         Assert.Equal(2, replies.Inputs.Count); Assert.Equal(Original, source.Template);
     }
-    [Fact] public async Task CanvasProposalReportsActualSystemCompositionWithoutAttributingItToTheModel()
+    [Fact] public async Task CanvasProposalPreservesExistingInputsWithoutCertifyingItsOwnMeaning()
     {
-        using var replies = new Replies("Evalúa una API y sus riesgos. No inventes información."); using var http = new HttpClient(replies); var source = Source();
-        var reservation = new TcpListener(IPAddress.Loopback,0); reservation.Start(); var port=((IPEndPoint)reservation.LocalEndpoint).Port; reservation.Stop();
-        using var listener = new HttpListener(); listener.Prefixes.Add($"http://127.0.0.1:{port}/"); listener.Start();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        using var inference = new QuickPrompt.Web.Infrastructure.PreparationInference($"http://127.0.0.1:{port}", localEditor: new OllamaClient(http));
-        var plan = SemanticFixture.Plan([SemanticOperation.RESOLVE_PROMPT, SemanticOperation.OPEN_PROMPT, SemanticOperation.PROPOSE_ADAPTATION,
-            SemanticOperation.VALIDATE_DRAFT, SemanticOperation.COMPILE_PROMPT], TargetReference.SELECTED, source.Id, outcome: SemanticOutcome.DRAFT);
-        var input = new PrepareInput(Guid.NewGuid(), "Reorienta la explicación.", SourcePromptId: source.Id) { Interpretation = plan };
-        var pending = inference.Generate(input, plan.Preparation(), [new(PromptLibrary.Document(source), 10, "Origen real")], timeout.Token);
-        var review = await listener.GetContextAsync().WaitAsync(timeout.Token);
-        using var packet = await JsonDocument.ParseAsync(review.Request.InputStream,cancellationToken:timeout.Token);
-        using var data = JsonDocument.Parse(packet.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        Assert.Contains("tema: <tema>",data.RootElement.GetProperty("proposedInstruction").GetString());
-        var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {model="qwen3:8b",done=true,message=new {content=JsonSerializer.Serialize(new {
-            verdict="ACCEPT",instructionScope="FUTURE_TASK_ONLY",applicationWorkflowQuotes=Array.Empty<string>(),requestedTitleQuote=(string?)null,issues=Array.Empty<object>()
-        })}}));
-        review.Response.ContentType="application/json";review.Response.ContentLength64=bytes.Length;
-        await review.Response.OutputStream.WriteAsync(bytes,timeout.Token);review.Response.Close();
-        var proposal = await pending;
-        Assert.StartsWith("QuickPrompt incorporó los campos reales", proposal.Reason); Assert.Contains("tema: <tema>", proposal.TemplateText);
-        Assert.Single(replies.Inputs); Assert.Equal(Original, source.Template);
+        const string request="Reorienta la explicación.";
+        var source=Source();var document=PromptLibrary.Document(source);
+        var input=AuthoringReviewTestFixture.Input(request,document);var goal=input.Interpretation!.Goal!;
+        goal.BindRequestedTitle(request,null);
+        var transport=new AuthoringReviewTestFixture.Transport((packet,purpose,_)=>{
+            Assert.Equal("AuthoringRevisionEditor",purpose);
+            return AuthoringReviewTestFixture.RewriteTask(packet, "Evalúa <tema> como una API y sus riesgos.");
+        });
+        var dependencies=new AuthoringReviewTestFixture.ForbiddenDependencies();
+        var generator=new PromptDraftGenerator(transport,dependencies,dependencies,dependencies);
+        var proposal=await generator.GenerateAfterSyntheticReview(input,input.Interpretation.Preparation(),[new(document,10,"Origen real")],default);
+        Assert.Contains("<tema>",proposal.TemplateText);Assert.DoesNotContain("No inventes información.",proposal.TemplateText);
+        Assert.Contains(goal.AuthoringContract!.GetContentReview(proposal.TemplateText).LiteralChanges.Entries,entry=>entry.Kind=="MISSING_SOURCE_CLAUSE");
+        Assert.Contains("Propuesta de contenido",proposal.Reason);Assert.Contains("revisión humana",proposal.Reason);
+        Assert.Single(transport.Calls);Assert.Equal(Original,source.Template);
+        Assert.True(goal.HasAuthoringStructure(proposal.TemplateText));Assert.False(goal.HasContentAssessment(proposal.TemplateText));
+        Assert.False(goal.HasHumanContentApproval(proposal.TemplateText));
+    }
+
+    [Fact] public async Task CanvasProposalCannotRemoveAnExistingInputBeforeContentReview()
+    {
+        const string request = "Reorienta la explicación.";
+        var source = Source(); var document = PromptLibrary.Document(source);
+        var input = AuthoringReviewTestFixture.Input(request, document);
+        var transport = new AuthoringReviewTestFixture.Transport((packet, _, _) =>
+            AuthoringReviewTestFixture.RewriteTask(packet, "Evalúa una API y sus riesgos."));
+        var dependencies = new AuthoringReviewTestFixture.ForbiddenDependencies();
+        var generator = new PromptDraftGenerator(transport, dependencies, dependencies, dependencies);
+        // Existing inputs cannot disappear from an AI revision. The independent
+        // PromptInputContractTests still cover adding missing human-selected
+        // names during the final deterministic composition.
+        await Assert.ThrowsAsync<ValidationException>(() => generator.GenerateAfterSyntheticTask(input,
+            input.Interpretation!.Preparation(), [new(document, 10, "Origen real")], default));
+        Assert.Single(transport.Calls); Assert.Equal(2, transport.AllCalls.Count);
+        Assert.Null(input.Interpretation!.Goal!.AuthoringContract);
+        Assert.False(input.Interpretation.Goal.HasHumanContentApproval("Evalúa una API y sus riesgos."));
+        Assert.Equal(Original, source.Template);
     }
     [Fact] public async Task SemanticEditingRetainsCanonicalSafetyClausesByConstructionAndReportsTheSystemRule()
     {

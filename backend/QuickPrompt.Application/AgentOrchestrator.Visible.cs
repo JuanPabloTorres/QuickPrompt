@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using QuickPrompt.Local;
+using LlmUnavailableException = QuickPrompt.Web.Infrastructure.LlmUnavailableException;
 
 namespace QuickPrompt.Nova.Application;
 
@@ -23,7 +24,8 @@ public sealed partial class AgentOrchestrator
         var conversationBeforeRun = sessions?.Get(input.SessionId);
         try
         {
-            live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, "Consultando Qwen para interpretar la petición completa y el contexto autorizado.", "SemanticInterpretation");
+            live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, input.Command is null
+                ? "Comprobando la petición y el contexto autorizado." : "Validando la acción elegida y el contexto autorizado.", "SemanticInterpretation");
             // Each planning phase owns its bounded stage deadline; the run owns the
             // global eight-minute deadline. Source refinement follows actual retrieval.
             var resolution = await planning.Interpret(input.Message, input.SessionId, input.SourceId, input.SourceRevision, input.Model, null, ct, input.Command);
@@ -48,7 +50,8 @@ public sealed partial class AgentOrchestrator
                 if (semantic.Goal is { } workingGoal) semantic = semantic with { Goal = workingGoal.BindWorking(active, resolution.Context.DraftReference?.DraftRevision ?? 1) };
                 control.Semantic = semantic;
             }
-            live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.MODEL_SELECTED, "Interpretación contextual y plan de operaciones recibidos de Qwen.", "SemanticPlan");
+            live.Emit(input.RunId, LiveStatus.INTERPRETING, input.Command is null ? LiveActor.MODEL_SELECTED : LiveActor.USER_SELECTED,
+                input.Command is null ? "Interpretación contextual y plan de operaciones recibidos." : "Acción elegida y plan de operaciones comprobados.", "SemanticPlan");
             if (semantic.Has(SemanticOperation.CANCEL)) {
                 sessions?.Forget(input.SessionId);
                 live.Emit(input.RunId, LiveStatus.CANCELLED, LiveActor.SYSTEM_VALIDATION, "Solicitud cancelada. Los prompts guardados y sus versiones se conservan.", "Cancellation"); return;
@@ -217,6 +220,21 @@ public sealed partial class AgentOrchestrator
                     semantic = semantic with { Goal = observedGoal with { RequiredInformation = state.VariableNames.Where(name => string.IsNullOrWhiteSpace(state.Values.GetValueOrDefault(name))).ToArray() } };
                     control.Semantic = semantic;
                 }
+                if (semantic.Goal is { AuthoringContract: not null } contentGoal
+                    && (contentGoal.ApprovalRequirements.Length == 0 || semantic.Executes || semantic.Has(SemanticOperation.COPY_TO_CLIPBOARD))
+                    && control.GeneratedDraft is not null && state.DraftChanged && state.TemplateText is { } authored
+                    && !contentGoal.HasHumanContentApproval(authored)
+                    && (executed.Contains("ui_prepare_creation") || executed.Contains("ui_prepare_update")))
+                {
+                    RecordConversation(state);
+                    live.ProposeContentReview(input.RunId, state);
+                    NovaTelemetry.ResultReady(input.RunId);
+                    if (!await control.ApprovalDecision.Task.WaitAsync(ct)) throw new OperationCanceledException(ct);
+                    await live.Boundary(input.RunId, ct);
+                    // Re-read the actual document before any requested copy or
+                    // execution. A content-only review never grants a save.
+                    continue;
+                }
                 var stateHash = LiveRuns.Hash(new { state.Mode, state.PromptId, state.Revision, state.TemplateText, state.Values, state.ResponseComplete });
                 var executionPending = localAllowed && !executed.Contains("ui_execute_local");
                 var capabilities = executionPending ? state with { ResponseComplete = false } : state;
@@ -238,7 +256,8 @@ public sealed partial class AgentOrchestrator
                     && semantic.ProviderId is { } wantedProvider && wantedProvider != "ollama" && state.ProviderId != wantedProvider;
                 var goalCompletion = semantic.Goal is { } currentGoal ? GoalCompletionValidator.Validate(currentGoal, semantic, state,
                     resolution.Source, resolution.Source is { } goalSource ? library.Get(goalSource.Id) : null, executed, grounded,
-                    executed.Contains("ui_prepare_update") || executed.Contains("ui_prepare_creation"), live.Get(input.RunId).EffectCommitted) : null;
+                    executed.Contains("ui_prepare_update") || executed.Contains("ui_prepare_creation"), live.Get(input.RunId).EffectCommitted,
+                    allowPendingContentReview: true) : null;
                 if (goalCompletion?.Complete == true && semantic.Goal!.CompletionConditions.Contains(CompletionCondition.SEARCH_RESULTS_VISIBLE))
                     allowedTools.Add(UiToolCatalog.All.Single(tool => tool.Name == "finish"));
                 var available = allowedTools
@@ -279,7 +298,8 @@ public sealed partial class AgentOrchestrator
                 else if (plannedAction is not null) decision = plannedAction;
                 else using (var stage = CancellationTokenSource.CreateLinkedTokenSource(ct)) { stage.CancelAfter(TimeSpan.FromSeconds(options.StageTimeoutSeconds)); decision = await model.Decide(new(input.TaskRequest, state, executed.ToArray(), available, input.SourceId, ambiguous ? "Several compatible candidates: ask a concrete clarification; do not choose arbitrarily." : priorLoaded && updateAllowed && !executed.Contains("ui_prepare_update") ? "The previous authorized draft is loaded, but the NEW requested content change has not been applied. Prepare that change with ui_prepare_update before finishing." : state.DraftChanged && executed.Contains("ui_prepare_update") && !localAllowed ? "The requested draft change is observed. Empty placeholders do not block review: finish or request human review without filling them." : null, grounded, lastResult, input.SourceId is { } source ? library.Get(source).Title : null, ModelRetry, localAllowed, updateAllowed, RecordRejectedArguments, semantic,
                     new(input.AuthorizedPendingRequest ?? input.Message,
-                        input.AuthorizedPendingRequest is not null && input.AuthorizedPendingRequest != input.Message ? [input.Message] : [],
+                        [.. input.AuthorizedPendingRequest is not null && input.AuthorizedPendingRequest != input.Message ? new[] { input.Message } : [],
+                            .. input.UserClarifications.Select(item => item.Answer)],
                         receipts.ToArray(), goalCompletion, receiptCount - receipts.Count, live.Get(input.RunId).Approval, live.Get(input.RunId).EffectCommitted)), stage.Token); }
                 lock (control.Gate) control.Decisions.Add(decision);
                 var safeTool = UiToolCatalog.IsRegistered(decision.ToolName) ? decision.ToolName : "UNRECOGNIZED";
@@ -324,7 +344,7 @@ public sealed partial class AgentOrchestrator
                     if (semantic.Goal is { } goal) {
                         var completion = GoalCompletionValidator.Validate(goal, semantic, state, resolution.Source,
                             resolution.Source is { } sourceBeforeCompletion ? library.Get(sourceBeforeCompletion.Id) : null,
-                            executed, grounded, true, live.Get(input.RunId).EffectCommitted);
+                            executed, grounded, true, live.Get(input.RunId).EffectCommitted, allowPendingContentReview: true);
                         if (!completion.Complete) throw new PreparationToolException("GOAL_INCOMPLETE", decision.ToolName, "No se cumplieron las condiciones: " + string.Join(", ", completion.Missing));
                     }
                     if (updateAllowed && state.TemplateText is { } modified && state.PromptId is { } sourceId
@@ -374,7 +394,17 @@ public sealed partial class AgentOrchestrator
                         var completion = GoalCompletionValidator.Validate(finalGoal, semantic, state, resolution.Source,
                             resolution.Source is { } finalSource ? library.Get(finalSource.Id) : null, executed, grounded, true,
                             live.Get(input.RunId).EffectCommitted, includePersistence: true, completedClipboard: completedClipboard);
-                        if (!completion.Complete) throw new PreparationToolException("GOAL_INCOMPLETE", "finish", "No se verificó la finalización completa de la tarea.");
+                        if (!completion.Complete) {
+                            if (finalGoal.AuthoringContract is not null && !reviewRequested && !live.Get(input.RunId).EffectCommitted
+                                && completion.Missing.Length > 0 && completion.Missing.All(condition => condition == "CONTENT_VALID")) {
+                                RecordConversation(state);
+                                live.Emit(input.RunId, LiveStatus.BLOCKED, LiveActor.SYSTEM_VALIDATION,
+                                    "Borrador preparado y visible. El contenido y sus cambios siguen pendientes de revisión humana; no se certifica su fidelidad.",
+                                    "ContentReview", error: "CONTENT_REVIEW_REQUIRED");
+                                return;
+                            }
+                            throw new PreparationToolException("GOAL_INCOMPLETE", "finish", "No se verificó la finalización completa de la tarea.");
+                        }
                     }
                     RecordConversation(state);
                     NovaTelemetry.ResultReady(input.RunId);
@@ -391,15 +421,17 @@ public sealed partial class AgentOrchestrator
                     var pipeline = new PromptPreparationPipeline(generator, resolver, evaluator);
                     var basis = (semantic.Goal is not null || decision.ToolName == "ui_prepare_update") && semantic.TargetReference != TargetReference.NONE ? resolution.Source : null;
                     var workingBasis = semantic.TargetReference is TargetReference.ACTIVE_DRAFT or TargetReference.PREVIOUS_RESULT ? control.WorkingDraft : null;
-                    RetrievalCandidate[] creationCandidates = basis is null ? [] : [new(workingBasis is null ? basis : basis with { TemplateText = workingBasis.TemplateText }, 10, "Origen vigente solicitado")];
+                    RetrievalCandidate[] creationCandidates = basis is null ? [] : [new(basis, 10, "Origen vigente solicitado")];
                     var creationRequirements = semantic.Requirements;
                     var basisText = workingBasis?.TemplateText ?? basis?.TemplateText;
-                    if (basisText is not null) creationRequirements = creationRequirements with {
-                        Constraints = creationRequirements.Constraints.Concat(TemplateConstraints.Required(basisText)).Distinct().ToArray(),
-                        WorkingSourceText = string.IsNullOrWhiteSpace(semantic.RequestedTransformation) ? null : basisText };
                     var creation = new PrepareInput(input.RunId, input.Message, SourcePromptId: decision.ToolName == "ui_prepare_update" ? basis?.Id : null, SourceRevision: decision.ToolName == "ui_prepare_update" ? basis?.Revision : null, Values: input.Values, Model: input.Model, SessionId: input.SessionId) { Interpretation = semantic,
-                        WorkingDraft = basis is null ? workingBasis : null, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope };
-                    live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION, "Qwen está generando el contenido del nuevo borrador.", "Generation");
+                        WorkingDraft = workingBasis, AuthorizedPendingRequest = input.AuthorizedPendingRequest, InputScope = input.InputScope,
+                        UserClarifications = AuthoringClarifications.Copy(input.UserClarifications), ConfirmedBrief = input.ConfirmedBrief,
+                        AuthoringTaskDraft = input.AuthoringTaskDraft };
+                    live.Emit(input.RunId, LiveStatus.INTERPRETING, LiveActor.SYSTEM_VALIDATION,
+                        input.ConfirmedBrief is null ? "Establece la tarea y sus requisitos antes de solicitar una redacción a NOVA."
+                            : input.ConfirmedBrief.Review.Stage == AuthoringBriefs.EstablishTask ? "Qwen está proponiendo mejoras sobre la tarea que estableciste; todavía no se aplicarán."
+                            : "Componiendo literalmente el contrato que confirmaste, sin otra redacción de IA.", "Generation");
                     PreparedDraft? generated = null;
                     for (var attempt = 0; attempt < 2; attempt++) {
                         try {
@@ -407,26 +439,43 @@ public sealed partial class AgentOrchestrator
                             var proposal = await pipeline.DraftGeneration(creation, understanding, creationCandidates, ct);
                             if (proposal.Decision == PreparationDecision.ASK_CLARIFICATION) {
                                 RememberPending(); control.Question = proposal.Clarification;
-                                live.Emit(input.RunId, LiveStatus.BLOCKED, LiveActor.MODEL_SELECTED, "Necesito concretar el propósito del nuevo prompt.", "Generation", error: "NEEDS_CLARIFICATION"); return;
+                                control.Brief = proposal.Brief;
+                                var inputDefinition=proposal.Reason=="INPUT_FIELDS_NEED_CONFIRMATION";
+                                var taskEstablishment = proposal.Brief?.Stage == AuthoringBriefs.EstablishTask;
+                                live.Emit(input.RunId, LiveStatus.BLOCKED, inputDefinition?LiveActor.USER_SELECTED:taskEstablishment?LiveActor.SYSTEM_VALIDATION:LiveActor.MODEL_SELECTED,
+                                    inputDefinition?"Define los campos de la plantilla para continuar; todavía no se piden sus valores.":proposal.Brief is not null?"Revisa y confirma la tarea del futuro asistente antes de componer el prompt.":"Necesito concretar el propósito del nuevo prompt.",
+                                    "Generation",error:inputDefinition?"INPUT_FIELDS_NEED_CONFIRMATION":"NEEDS_CLARIFICATION"); return;
                             }
+                            // The app-bound proposal owns the source snapshot. Literal
+                            // differences go to content review rather than being undone
+                            // by source constraints captured before drafting.
+                            if (basisText is not null) creationRequirements = semantic.Requirements with {
+                                Constraints = semantic.Requirements.Constraints.Concat(TemplateConstraints.Required(
+                                    VisibleConstraintSource(semantic.Goal, basisText, basis?.Id, basis?.Revision))).Distinct().ToArray(),
+                                WorkingSourceText = string.IsNullOrWhiteSpace(semantic.RequestedTransformation) ? null : basisText };
                             generated = pipeline.PromptCompilation(creation, understanding, proposal, creationCandidates);
                             control.GeneratedDraft = PromptPreparationPipeline.FinalPreparation(generated, creationRequirements,semantic.Goal);
                             break;
-                        } catch (ValidationException failure) when (attempt == 0 && !failure.Data.Contains("NovaStageRepairExhausted")) {
+                        } catch (ValidationException failure) when (attempt == 0 && creation.ConfirmedBrief is null && !failure.Data.Contains("NovaStageRepairExhausted")) {
                             live.Emit(input.RunId, LiveStatus.VERIFYING, LiveActor.SYSTEM_VALIDATION, "El dominio rechazó la propuesta; solicitando una única corrección estructurada a Qwen.", "GenerationRetry");
                             creation = creation with { ValidationFeedback = JsonSerializer.Serialize(new { failure = failure.Message,
                                 rejectedCandidate=failure.Data["NovaRejectedProposal"],
+                                contractDetails=failure.Data["NovaContractDetails"],
                                 failures = generated is null ? [] : PromptPreparationPipeline.Validation(generated, creationRequirements,semantic.Goal).Errors,
-                                correction = "Correct only the reported contract violations in the complete proposal. Preserve the original task, identity, substantive constraints and requested effects. Do not introduce new inputs or content merely to satisfy metadata; input declarations describe placeholders already present in the body." }) };
+                                requiredVariableNames=semantic.Goal?.InputContract is {Enforced:true} inputs ? inputs.Names.ToArray() : null,
+                                correction = "Correct only the reported contract violations in the complete proposal. Preserve the original task, identity, substantive constraints and requested effects. Keep the fixed requested input contract: requiredVariableNames are authorized fields, not new task requirements. Never invent other fields merely to satisfy metadata." }) };
                         }
                     }
                     generated = control.GeneratedDraft ?? throw new ValidationException("No se obtuvo un borrador validado.");
                     if (semantic.Goal is not null) input = input with { Values = (input.Values ?? []).Concat(generated.Values.Select(value => new KeyValuePair<string, string>(value.Name, value.Value)))
                         .GroupBy(value => value.Key).ToDictionary(group => group.Key, group => group.Last().Value) };
                     await live.Boundary(input.RunId, ct);
-                    state = await browser.Execute(decision.ToolName, JsonSerializer.SerializeToElement(new { promptId = decision.ToolName == "ui_prepare_update" ? basis?.Id : null, title = generated.Title, templateText = generated.TemplateText }), ct);
+                    state = await browser.Execute(decision.ToolName, JsonSerializer.SerializeToElement(new { promptId = decision.ToolName == "ui_prepare_update" ? basis?.Id : null,
+                        title = generated.Title, description = generated.Description, templateText = generated.TemplateText }), ct);
                     if (state.Mode != "create" || state.PromptId != (decision.ToolName == "ui_prepare_update" ? basis?.Id : null) || state.Title != generated.Title || state.TemplateText != generated.TemplateText || !state.VariableNames.SequenceEqual(TemplateCompiler.Names(generated.TemplateText)))
                         throw new ValidationException("El formulario no coincide exactamente con el contenido generado.");
+                    if (semantic.Goal?.AuthoringContract?.ConfirmedBrief is not null && state.Description != generated.Description)
+                        throw new ValidationException("El formulario no conserva la descripción confirmada de la plantilla.");
                 } else state = await browser.Execute(decision.ToolName, decision.Arguments, ct);
                 if (decision.ToolName == "ui_prepare_update" && (!state.DraftChanged || string.IsNullOrWhiteSpace(state.TemplateText)
                     || state.TemplateText.Replace("\r\n", "\n").Trim() == priorTemplate?.Replace("\r\n", "\n").Trim()))
@@ -487,9 +536,12 @@ public sealed partial class AgentOrchestrator
         catch (Exception error)
         {
             if (error is ValidationException) control.Question = error.Message[..Math.Min(500, error.Message.Length)];
-            var code = error is PreparationToolException tool ? tool.Code : error is ConflictException ? "STALE_OR_UNVERIFIED" : error is ValidationException ? "INVALID_DECISION" : "BROWSER_FAILURE";
+            var code = error is PreparationToolException tool ? tool.Code : error is LlmUnavailableException unavailable ? unavailable.Code
+                : error is ConflictException ? "STALE_OR_UNVERIFIED" : error is ValidationException ? "INVALID_DECISION" : "BROWSER_FAILURE";
             if (code == "MODEL_UNAVAILABLE")
                 control.Question = "El modelo local no está disponible. Revisa que Ollama esté abierto y vuelve a intentarlo. Puedes seguir usando tu biblioteca.";
+            else if (error is LlmUnavailableException)
+                control.Question = "La inferencia no pudo completarse. Revisa el diagnóstico de la actividad. Las acciones ya confirmadas conservan su recibo y no se repetirán automáticamente.";
             live.Emit(input.RunId, code is "INVALID_DECISION" or "UI_TOOL_NOT_ALLOWED" or "REQUEST_BLOCKED" or "MANUAL_INTERVENTION" or "UI_OUTCOME_UNKNOWN" ? LiveStatus.BLOCKED : LiveStatus.FAILED,
                 LiveActor.SYSTEM_VALIDATION, "No se pudo completar la ejecución. Revisa la actividad; no se declarará éxito sin verificación.", error: code);
         }
@@ -529,10 +581,28 @@ public sealed partial class AgentOrchestrator
                 with { SessionId = input.SessionId, Semantic = semantic };
         }
     }
+    // Saved identity and working content remain distinct. For a bound proposal,
+    // source-clause losses are reviewed explicitly instead of being reinserted.
+    // Callers without that contract retain the existing source protections.
+    private static string VisibleConstraintSource(TaskGoal? goal, string basisText, Guid? sourceId, int? sourceRevision)
+    {
+        if (goal?.AuthoringContract is not { } contract) return basisText;
+        var workingMatches = goal.WorkingTarget is { } working && contract.SourceText is { } workingText
+            && working.BodyHash == LiveRuns.Hash(workingText) && working.CharacterCount == workingText.Length;
+        if (!goal.HasCurrentAuthoringContract || contract.SourceText != basisText && !workingMatches
+            || contract.SourceId is { } boundId && (sourceId != boundId || sourceRevision != contract.SourceRevision)
+            || contract.SourceId is null && (!workingMatches || sourceId is { } actualId
+                && (sourceRevision is not { } actualRevision || !goal.TargetReferences.Contains(new(actualId, actualRevision)))))
+            throw new PreparationToolException("AUTHORING_SOURCE_BINDING_MISMATCH", "ui_verify_prompt_state", "La propuesta no pertenece al contenido y revisión de origen verificados.");
+        return "";
+    }
     private static void VerifyVisible(UiVisibleState state, PromptLibrary library, bool committed, string request, PromptRequirements semanticRequirements,TaskGoal? goal=null)
     {
         using var measurement = NovaTelemetry.Measure("verification.visible");
         if (state.Candidates.Length > 24 || state.Values.Count > 60 || state.VariableNames.Length > 60 || state.TemplateText?.Length > 32000 || state.CompiledText?.Length > 512000 || state.Response?.Length > 512000) throw new ValidationException("Estado visible fuera de límites.");
+        if (state.DraftChanged && state.TemplateText is { } proposed && goal?.AuthoringContract is not null
+            && !goal.HasAuthoringStructure(proposed) && !goal.HasHumanContentApproval(proposed))
+            throw new PreparationToolException("UI_DRAFT_PROPOSAL_MISMATCH", "ui_verify_prompt_state", "El cuerpo visible no corresponde a la propuesta o revisión aprobada.");
         if (state.PromptId is not { } id) {
             if (state.Mode == "create" && state.TemplateText is { } body && (!state.VariableNames.SequenceEqual(TemplateCompiler.Names(body))
                 || state.CompiledReady && TemplateCompiler.Render(body, state.Values) != state.CompiledText)) throw new ValidationException("El borrador visible no coincide con sus campos y compilación.");
@@ -541,7 +611,8 @@ public sealed partial class AgentOrchestrator
         var source = library.Get(id);
         if (source.Revision != state.Revision || source.IsArchived) throw new PreparationToolException("UI_SOURCE_REVISION_MISMATCH", "ui_verify_prompt_state", "Identidad o revisión visible inválida.");
         if (!committed && !state.DraftChanged && state.TemplateText != source.TemplateText) throw new PreparationToolException("UI_SOURCE_CONTENT_MISMATCH", "ui_verify_prompt_state", "El contenido visible no coincide con el original.");
-        if (state.DraftChanged && state.TemplateText is { } changed && TemplateConstraints.Missing(source.TemplateText, changed).Length > 0) throw new PreparationToolException("UI_SOURCE_CONSTRAINT_OMITTED", "ui_verify_prompt_state", "El borrador omitió una restricción del original.");
+        var constraintSource = state.DraftChanged ? VisibleConstraintSource(goal, source.TemplateText, source.Id, source.Revision) : source.TemplateText;
+        if (state.DraftChanged && state.TemplateText is { } changed && TemplateConstraints.Missing(constraintSource, changed).Length > 0) throw new PreparationToolException("UI_SOURCE_CONSTRAINT_OMITTED", "ui_verify_prompt_state", "El borrador omitió una restricción vigente del original.");
         if (state.DraftChanged && state.TemplateText is { } templateDraft)
         {
             var values = state.Values.Where(value => !string.IsNullOrWhiteSpace(value.Value)).Select(value => new VariableValue(value.Key, value.Value, "USER_INPUT", "VALIDATED")).ToArray();
@@ -549,7 +620,7 @@ public sealed partial class AgentOrchestrator
                 new(PreparationDecision.ADAPT_EXISTING, source.Id, state.Title ?? source.Title, source.Description, templateDraft, [], "", "Borrador observado en React."),
                 [new(source, 10, "Origen verificado")], values);
             var requirements = semanticRequirements;
-            requirements = requirements with { Constraints = requirements.Constraints.Concat(TemplateConstraints.Required(source.TemplateText)).Distinct().ToArray() };
+            requirements = requirements with { Constraints = requirements.Constraints.Concat(TemplateConstraints.Required(constraintSource)).Distinct().ToArray() };
             if (!PromptPreparationPipeline.Validation(prepared, requirements,goal).Valid) throw new PreparationToolException("UI_DRAFT_REQUIREMENTS_MISMATCH", "ui_verify_prompt_state", "El borrador visible no conserva todos los requisitos de la petición.");
         }
         if (state.CompiledReady && state.TemplateText is { } template)

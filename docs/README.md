@@ -1,27 +1,19 @@
 # Documentación de QuickPrompt
 
-La versión de referencia es NOVA 1.0.0, aceptada por el usuario para el flujo por acciones. La fuente del número visible es `apps/web/package.json`.
+El [checklist R1–R6](development/GO_TO_MARKET.md) es el registro de cierre vigente.
+El candidato 1.0.1-rc.2 no tiene certificación comercial.
 
-## Documentos vigentes
+Vistas de la revisión de cierre, sin otro roadmap:
+[alcance](MVP_SCOPE.md), [aceptación](MVP_ACCEPTANCE.md),
+[defectos](MVP_AUDIT.md), [seguridad](SECURITY_VALIDATION.md),
+[preparación](RELEASE_READINESS.md) y [decisión](MVP_CLOSURE.md).
 
-| Necesidad | Documento propietario |
-| --- | --- |
-| Arrancar la aplicación | [README raíz](../README.md) y [configuración de Core](../agents/nova-core/README.md) |
-| Abrir desde el escritorio | [Acceso directo, icono y perfil de arranque](development/DESKTOP.md) |
-| Usar biblioteca, variables y NOVA | [Guía de uso](COMO_USAR_QUICKPROMPT.md) |
-| Responsabilidades y dependencias | [Arquitectura](ARCHITECTURE.md) |
-| Crear formularios y componentes | [UI modular](development/UI_COMPONENTS.md) |
-| Ejecutar checks y mantener documentación | [Desarrollo](development/DEVELOPMENT.md) |
-| Instrucciones de agentes | [AGENTS raíz](../AGENTS.md) y [reglas web](../apps/web/AGENTS.md) |
-| Revisión actual de interfaz | [Cierre r2 y límites](releases/NOVA_1.0.0_R2.md) y [manifiesto](releases/nova-v1.0.0-r2.json) |
-| Aceptación de la versión inicial y correcciones | [Cierre r1](releases/NOVA_1.0.0_R1.md) y [manifiesto r1](releases/nova-v1.0.0-r1.json); [acta inicial](releases/NOVA_1.0.0.md) |
-| Auditoría del agente tras el rediseño | [Resultados, arquitectura y dos hallazgos pendientes](nova/AUDITORIA_AGENTE_UI_20261023.md) |
-| Conservar resultados de ejecución | [Política de evidencia](evidence/README.md) |
-
-Cada capacidad tiene una guía vigente. Los informes fechados conservan qué ocurrió, con qué candidato y sus límites; no sustituyen el contrato actual ni conceden permisos.
-
-## Historial y documentación retirada
-
-[Índice histórico](archive/README.md). Los informes GOAL/PHASE, el legado Blazor/MAUI y las campañas antiguas de `nova/` son evidencia contextual. Se mantienen las rutas referenciadas por matrices o pruebas. Las instrucciones de comandos libres y del modal antiguo salen de la ruta vigente y se archivan con una advertencia de alcance.
-
-La matriz ampliada anterior conserva criterios no certificados; el cierre de NOVA 1.0.0 y la aceptación humana están en el acta de release. No interpretar el estado histórico de otro perfil como el estado de la entrega actual.
+- [Arquitectura](ARCHITECTURE.md) y [componentes UI](development/UI_COMPONENTS.md).
+- [Desarrollo](development/DEVELOPMENT.md), [Companion](development/COMPANION.md),
+  [MCP](development/MCP.md), [correo](development/ACCOUNT_MAIL.md).
+- [Docker AI: configuración compartida y comprobaciones](development/DOCKER_AI.md).
+- [NOVA: catálogo y contratos de herramientas](development/NOVA_TOOLS.md).
+- [Cloud gratuito: comparación y límites para QuickPrompt](research/CLOUD_FREE_REVIEW_20261101.md).
+- [Guía de uso](COMO_USAR_QUICKPROMPT.md).
+- [Archivo histórico](archive/README.md): las actas originales describen la versión
+  local que evaluaron, no una aceptación del candidato SaaS.

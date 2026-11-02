@@ -13,6 +13,16 @@ function setup(prompt?: Prompt, onRequest = vi.fn<(message: string, source?: Pro
 }
 function choose(label: string) { fireEvent.click(screen.getByRole('button', { name: label })); return screen.getByRole('dialog', { name: label }); }
 function more() { fireEvent.click(screen.getByText('Más acciones')); }
+it('passes user-defined input names separately without rewriting the original request or inventing values', async () => {
+  const { onRequest } = setup(); choose('Crear prompt');
+  const original = 'Crea una plantilla para conceptualizar software. Tipo admite web, app o AI.';
+  fireEvent.change(screen.getByLabelText('¿Qué prompt quieres crear?'), { target: { value: original } });
+  fireEvent.click(screen.getByLabelText('Definir las variables ahora'));
+  fireEvent.change(screen.getByLabelText('Variables de la plantilla'), { target: { value: 'nombre proyecto\nproposito\ntipo' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Crear con NOVA' }));
+  await waitFor(() => expect(onRequest).toHaveBeenCalledOnce());
+  expect(onRequest.mock.calls[0]).toEqual([original, undefined, {}, { operation: 'CREATE_DRAFT', content: original, inputNames: ['nombre proyecto', 'proposito', 'tipo'] }]);
+});
 it('shows actual workspace data and blocks a cleared required field instead of using a hidden fallback', async () => {
   const request = vi.fn<(message: string, source?: Prompt, values?: Record<string, string>, command?: LiveCommand) => Promise<void>>(async () => {});
   render(<QuickActions source={source} sourceValues={{ proyecto: 'Proyecto visible', tono: 'Claro' }} onRequest={request} onRemove={async () => {}} />);

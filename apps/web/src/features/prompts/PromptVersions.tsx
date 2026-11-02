@@ -2,6 +2,7 @@ import { useApplicationServices } from '../../components/ServiceContext';
 import { useEffect, useRef, useState } from 'react';
 import { History } from 'lucide-react';
 import { Dialog } from '../../components/ui/Dialog';
+import { formatDateTime } from '../../components/ui/dateTime';
 import { AppIcon } from '../../components/ui/Icon';
 import { errorMessage, type Prompt } from '../../services/api';
 import { type PromptVersion } from '../../services/library';
@@ -60,7 +61,7 @@ export function PromptVersions({ prompt, onClose, onRestored, onCurrentChanged }
       <label htmlFor="prompt-version">Versión para comparar</label>
       <select id="prompt-version" value={chosenRevision ?? ''} disabled={restoring} onChange={event => setChosenRevision(Number(event.target.value))}>
         {!versions.length && <option value="">No hay versiones disponibles</option>}
-        {versions.map(version => <option key={version.revision} value={version.revision}>Versión {version.revision} · {new Date(version.createdAt).toLocaleString()}</option>)}
+        {versions.map(version => <option key={version.revision} value={version.revision}>Versión {version.revision} · {formatDateTime(version.createdAt)}</option>)}
       </select>
       {selected && <div className="variable-grid">
         <section className="prompt-preview" aria-label="Versión actual"><h3>Actual · versión {prompt.revision}</h3><strong>{prompt.title}</strong><p>{prompt.description}</p><pre>{prompt.templateText}</pre>

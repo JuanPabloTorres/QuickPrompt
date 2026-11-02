@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "server": "https://project-sxf1z.vercel.app/",
+  "slot": "mi-pc-nova",
+  "name": "Mi equipo",
+  "capability": "nova",
+  "python": "",
+  "dotnet": "",
+  "endpoint": "http://127.0.0.1:11434/",
+  "maximumJobs": 12
+}

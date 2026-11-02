@@ -16,7 +16,7 @@ La interpretación automática libre rechazada está retirada de producción. Su
 
 ## Validación
 
-El [acta técnica anterior](../nova/CIERRE_TECNICO_ACCIONES_20261022.md) conserva el recorrido completo **14/14 PASS con Qwen real**, con búsqueda original, persistencia/reapertura, mejora/revisión 2, respuesta útil, eliminación confirmada y preservación de otro registro. Incluye un segundo consumidor del SDK y los intentos fallidos del arnés. La revisión anterior comprobó 1160 backend, 253 React y 54 SDK por sus evidencias identificadas.
+El acta técnica anterior (referencia histórica conservada en el expediente original) conserva el recorrido completo **14/14 PASS con Qwen real**, con búsqueda original, persistencia/reapertura, mejora/revisión 2, respuesta útil, eliminación confirmada y preservación de otro registro. Incluye un segundo consumidor del SDK y los intentos fallidos del arnés. La revisión anterior comprobó 1160 backend, 253 React y 54 SDK por sus evidencias identificadas.
 
 Para esta publicación se vuelven a ejecutar backend, React y build web, y se comprueba en navegador la etiqueta de versión. Los resultados finales y hashes portables se registran en [nova-v1.0.0.json](nova-v1.0.0.json). La prueba humana es el testimonio del usuario, separado de estas ejecuciones automatizadas.
 
@@ -28,6 +28,6 @@ Adaptive-AI-Core es una dependencia externa local; no se incluye como submódulo
 
 ## Historial, pendientes y rollback
 
-La [matriz histórica](../nova/VERSION_CLOSURE_MATRIX.md) conserva el alcance original ampliado y los criterios sin certificar. REL-09 cambia a CERRADO por aceptación del usuario; los demás estados no se marcan PASS sin evidencia. La aceptación de esta entrega inicial no demuestra fiabilidad general del antiguo intérprete ni completa ese expediente histórico.
+La matriz histórica (referencia histórica conservada en el expediente original) conserva el alcance original ampliado y los criterios sin certificar. REL-09 cambia a CERRADO por aceptación del usuario; los demás estados no se marcan PASS sin evidencia. La aceptación de esta entrega inicial no demuestra fiabilidad general del antiguo intérprete ni completa ese expediente histórico.
 
 Se conserva MAUI en `apps/mobile`, Blazor de compatibilidad en `src` y los diagnósticos en Evaluation. Las bases privadas, logs, binarios, capturas y artefactos temporales quedan fuera del commit. La activación local cambia el frontend mostrado por la instancia de revisión; conserva su misma base y una copia previa. Para volver al frontend anterior se usa su ruta conservada, con la misma API y datos; no requiere migración.

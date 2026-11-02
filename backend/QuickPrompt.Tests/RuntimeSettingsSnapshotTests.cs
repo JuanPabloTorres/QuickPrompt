@@ -10,7 +10,7 @@ using Xunit;
 
 namespace QuickPrompt.Nova.Tests;
 
-public sealed class RuntimeSettingsSnapshotTests
+public sealed partial class RuntimeSettingsSnapshotTests
 {
     [Theory] [InlineData(false)] [InlineData(true)]
     public async Task DeferredStagesKeepRegistrationProfileWhenConfigurationChanges(bool earlyInterpreter)
@@ -24,12 +24,14 @@ public sealed class RuntimeSettingsSnapshotTests
         configuration["QuickPrompt:Preparation:AuthoringUseContract"]="true";
         interpreter??=provider.GetRequiredService<ISemanticAdviceResponder>();
         await interpreter.Explain("Explica la biblioteca.",null,null,"qwen3:8b",default);
-        var input=new PrepareInput(Guid.NewGuid(),"Crea una instrucción para explicar un tema.") {
-            Interpretation=SemanticFixture.Plan([SemanticOperation.CREATE_DRAFT,SemanticOperation.VALIDATE_DRAFT,SemanticOperation.COMPILE_PROMPT],outcome:SemanticOutcome.NEW_DRAFT)
-        };
-        await provider.GetRequiredService<IDraftFidelityReviewer>().ReviewDraftFidelity(input,
-            new(PreparationDecision.CREATE_NEW,null,"Explicación","","Explica <tema>.",[],"","Fixture."),[],default);
-        Assert.Equal(2,transport.Packets.Count);
+        var input=AuthoringReviewTestFixture.WriterInput("Mejora una instrucción para explicar un tema.", out var candidates);
+        var generator=provider.GetRequiredService<IPromptGenerator>();
+        var proposal=await generator.GenerateAfterSyntheticTask(input,input.Interpretation!.Preparation(),candidates,default);
+        var body=proposal.TemplateText;
+        Assert.Equal(3,transport.Packets.Count); // Advice, current-author discovery, then writer.
+        Assert.Single(transport.Packets, AuthoringSyntheticReview.IsCurrentAuthorDecision);
+        Assert.False(input.Interpretation!.Goal!.HasContentAssessment(body));
+        Assert.False(input.Interpretation!.Goal!.HasHumanContentApproval(body));
         Assert.All(transport.Packets,packet=>{
             Assert.False(packet.GetProperty("think").GetBoolean());
             Assert.DoesNotContain("Application system knowledge",packet.GetProperty("messages")[0].GetProperty("content").GetString());
@@ -81,7 +83,9 @@ public sealed class RuntimeSettingsSnapshotTests
         public Task<JsonDocument> Send(object packet,CancellationToken ct,string purpose)
         {
             ct.ThrowIfCancellationRequested();Packets.Add(JsonSerializer.SerializeToElement(packet));
-            var answer=purpose=="ExplainTaskGoal"?"""{"answer":"Organiza y reutiliza instrucciones."}""":"""{"verdict":"ACCEPT","instructionScope":"FUTURE_TASK_ONLY","applicationWorkflowQuotes":[],"requestedTitleQuote":null,"issues":[]}""";
+            var answer = AuthoringSyntheticReview.IsCurrentAuthorDecision(Packets[^1])
+                ? JsonSerializer.Serialize(AuthoringSyntheticReview.CurrentAuthorDecisionReady(Packets[^1]))
+                : purpose=="ExplainTaskGoal"?"""{"answer":"Organiza y reutiliza instrucciones."}""":JsonSerializer.Serialize(AuthoringReviewTestFixture.RewriteTask(Packets[^1], "Explica un tema."),AuthoringReviewTestFixture.Json);
             return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new {message=new {content=answer}})));
         }
         public bool UsesThinking(string model)=>false;

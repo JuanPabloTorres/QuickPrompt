@@ -2,6 +2,11 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAgentOverlayHost } from './useAgentOverlayHost';
 import type { NovaRuntimeSnapshot } from './NovaLive';
+import { AgentRuntimePanel } from './AgentRuntimePanel';
+import { liveLabels, terminalLive } from '../../services/live';
+import { Workflow } from 'lucide-react';
+import { AppIcon } from '../../components/ui/Icon';
+import { useUiPortalScope } from '../../components/ui/UiPortalScope';
 
 const controlScope = '[data-nova-user-control="true"], .nova-approval-dialog';
 
@@ -19,8 +24,9 @@ export function blocksUserCommand(event: { isTrusted: boolean; target: EventTarg
 
 export function AgentControl({ runId, runtime }: { runId: string | null; runtime: NovaRuntimeSnapshot | null }) {
   const host = useAgentOverlayHost();
+  const active = useUiPortalScope()?.active !== false;
   useEffect(() => {
-    if (!runId) return;
+    if (!runId || !active) return;
     const guard = (event: Event) => {
       if (event instanceof KeyboardEvent && event.key === 'Tab' && event.isTrusted) {
         const scope = host ?? document.body;
@@ -39,8 +45,8 @@ export function AgentControl({ runId, runtime }: { runId: string | null; runtime
     const types = ['pointerdown', 'mousedown', 'touchstart', 'click', 'dblclick', 'keydown', 'beforeinput', 'paste', 'cut', 'drop'];
     types.forEach(type => window.addEventListener(type, guard, { capture: true, passive: false }));
     return () => types.forEach(type => window.removeEventListener(type, guard, true));
-  }, [runId, host]);
-  if (!runId || !host) return null;
+  }, [runId, host, active]);
+  if (!runId || !host || !active) return null;
   const current = runtime?.view.run.runId === runId ? runtime : null;
   // The existing review dialog already presents the artifact and both decisions.
   // Do not cover it with a second fixed approval notice on compact screens.
@@ -61,15 +67,16 @@ export function AgentControl({ runId, runtime }: { runId: string | null; runtime
     else window.dispatchEvent(new CustomEvent('nova-stop-request', { detail: runId }));
   };
   return <>
-    {createPortal(<div className="nova-control-frame" data-testid="agent-control-frame" aria-hidden="true" />, document.body)}
+    {createPortal(<div className="nova-control-frame" data-testid="agent-control-frame" data-pulsing={!!current && !terminalLive(current.view.run.status) && !paused && current.view.run.status !== 'AWAITING_APPROVAL' && !current.disconnected} aria-hidden="true" />, document.body)}
     {!reviewOpen && createPortal(<aside className="nova-control-banner" data-awaiting-approval={!!awaitingApproval} data-nova-user-control="true" aria-label="Control del agente">
       {awaitingApproval ? <>
-        <div role="alert" data-nova-approval-alert="true"><strong>NOVA necesita tu aprobación</strong><span>{current?.view.deletion ? 'Revisa el prompt antes de confirmar su eliminación.' : 'El borrador está listo. Revisa los cambios antes de guardarlos.'}</span></div>
+        <div role="alert" data-nova-approval-alert="true"><strong>NOVA necesita tu aprobación</strong><span>{current?.view.deletion ? 'Revisa el prompt antes de confirmar su eliminación.' : current?.view.proposal?.purpose === 'CONTENT_ONLY' ? 'La propuesta está lista. Revisa el contenido antes de continuar.' : 'El borrador está listo. Revisa los cambios antes de guardarlos.'}</span></div>
         <div className="nova-approval-choices"><button type="button" className="primary" disabled={!!current?.busy || !!paused} onClick={reviewApproval}>{current?.view.deletion ? 'Revisar eliminación' : 'Revisar y aprobar'}</button><button type="button" className="secondary" onClick={stop}>No aprobar</button></div>
       </> : <>
-      <div role="status"><strong>{current?.disconnected ? 'NOVA · conexión interrumpida' : paused ? 'NOVA tiene el control · en pausa' : 'NOVA tiene el control'}</strong><span>Los comandos están reservados al agente. Puedes detenerlo para continuar.</span></div>
-      <button type="button" className="secondary" onClick={stop}>Detener agente</button>
+      <div role="status"><strong>{current?.disconnected ? 'NOVA · sin conexión' : paused ? 'NOVA · en pausa' : 'NOVA tiene el control'}</strong></div>
+      <div className="nova-control-actions"><button type="button" className="icon-button" aria-label="Ver actividad de NOVA" title="Ver actividad de NOVA" onClick={() => window.dispatchEvent(new Event('nova-open-activity'))}><AppIcon glyph={Workflow} size={20} aria-hidden="true" /></button><button type="button" className="secondary" aria-label="Detener agente" onClick={stop}>Detener</button></div>
       </>}
+      {!awaitingApproval && current && <AgentRuntimePanel view={current.view} status={current.status ?? liveLabels[current.view.run.status] ?? current.view.run.status} disconnected={current.disconnected} controlled compact controls={null} />}
     </aside>, host)}
   </>;
 }

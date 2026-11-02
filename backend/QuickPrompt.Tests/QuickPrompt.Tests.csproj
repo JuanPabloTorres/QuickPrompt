@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
+    <Compile Include="../TestSupport/AuthoringSyntheticReview.cs" Link="AuthoringSyntheticReview.cs" />
     <EmbeddedResource Include="Fixtures/capabilities-v1.json" />
+    <EmbeddedResource Include="Fixtures/full-catalog-source-matches.json" />
     <None Include="../../apps/web/public/library/biblioteca-practica.es.json" Link="biblioteca-practica.es.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../QuickPrompt.Infrastructure/QuickPrompt.Infrastructure.csproj" />
     <ProjectReference Include="../QuickPrompt.Api/QuickPrompt.Api.csproj" />

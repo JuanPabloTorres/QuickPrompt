@@ -79,16 +79,14 @@ public static class QuickPromptHost
 #endif
         app.Use(async (context, next) =>
         {
-            var host = context.Request.Host;
-            if (context.Connection.RemoteIpAddress is not { } remote || !IPAddress.IsLoopback(remote)
-                || host.Host is not ("127.0.0.1" or "localhost") || host.Port != port)
-            { context.Response.StatusCode = 403; return; }
-            if (context.Request.Headers.Origin.FirstOrDefault() is { } origin && origin != $"http://{host}")
-            { context.Response.StatusCode = 403; return; }
-            if (context.Request.Headers["Sec-Fetch-Site"] == "cross-site")
-            { context.Response.StatusCode = 403; return; }
-            if (context.Request.Method is not ("GET" or "HEAD") && context.Request.Headers["X-QuickPrompt-Client"] != "nova-v1")
-            { context.Response.StatusCode = 403; return; }
+            if (LocalAccessDenial(context, port) is { } denial)
+            {
+                // Fixed reason only: never log URLs, queries, origins, prompt bodies or credentials.
+                app.Logger.LogWarning("Local request rejected: {Reason}", denial);
+                context.Response.StatusCode = 403;
+                context.Response.Headers["X-QuickPrompt-Rejection"] = denial;
+                return;
+            }
             context.Response.Headers["X-Content-Type-Options"] = "nosniff";
             context.Response.Headers["Referrer-Policy"] = "no-referrer";
             context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
@@ -130,5 +128,21 @@ public static class QuickPromptHost
         if (builder.Configuration.GetValue("QuickPrompt:Demo", false)) app.Services.GetRequiredService<LocalStore>().SeedDemo();
         app.Run();
 
+    }
+
+    private static string? LocalAccessDenial(HttpContext context, int port)
+    {
+        var host = context.Request.Host;
+        if (context.Connection.RemoteIpAddress is not { } remote || !IPAddress.IsLoopback(remote)) return "LOOPBACK_REQUIRED";
+        if (host.Host is not ("127.0.0.1" or "localhost") || host.Port != port) return "HOST_MISMATCH";
+        if (context.Request.Headers.Origin.FirstOrDefault() is { } origin && origin != $"http://{host}") return "ORIGIN_MISMATCH";
+        // Opening the static SPA from a link is safe; its subsequent API reads remain same-origin.
+        // Never apply this exception to API paths, fetches, frames, assets or writes.
+        var publicEntryNavigation = context.Request.Method == "GET" && context.Request.Path == "/"
+            && context.Request.Headers["Sec-Fetch-Mode"] == "navigate"
+            && context.Request.Headers["Sec-Fetch-Dest"] == "document";
+        if (context.Request.Headers["Sec-Fetch-Site"] == "cross-site" && !publicEntryNavigation) return "CROSS_SITE_REQUEST";
+        if (context.Request.Method is not ("GET" or "HEAD") && context.Request.Headers["X-QuickPrompt-Client"] != "nova-v1") return "CLIENT_MARKER_REQUIRED";
+        return null;
     }
 }

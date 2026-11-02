@@ -24,8 +24,11 @@ public sealed class SemanticSystemKnowledgeTests
     [Fact]
     public void ThreeConsumersShareTheSameModelButHaveDistinctResponsibilitiesAndVersions()
     {
-        var resources = new[] { (typeof(SemanticIntentInterpreter), "DeclareAuthoringUse"), (typeof(PromptDraftGenerator), "GenerateAuthoredDefinition"),
-            (typeof(DraftFidelityReviewer), "ReviewDraftFidelity") }
+        // The compatibility declaration keeps its diagnostic metadata; the
+        // production author defines future instructions; the retired inventory descriptor
+        // stays compatibility metadata and is never an acceptance oracle.
+        var resources = new[] { (typeof(SemanticIntentInterpreter), "DeclareAuthoringUse"), (typeof(PromptDraftGenerator), "GenerateDraftProposal"),
+            (typeof(DraftFidelityReviewer), "ReadAuthoringObligations") }
             .Select(stage => SemanticSystemKnowledge.ForMethod(stage.Item1, stage.Item2)!.Value).ToArray();
         var definitions = resources.Select(item => item.GetProperty("resource").GetProperty("representations").GetRawText()).ToArray();
         Assert.Single(definitions.Distinct());
@@ -35,7 +38,9 @@ public sealed class SemanticSystemKnowledgeTests
             Assert.True(System.Text.Encoding.UTF8.GetByteCount(resource.GetRawText()) <= 8000);
             Assert.Equal(5, resource.GetProperty("resource").GetProperty("representations").GetArrayLength());
         });
-        var again = SemanticSystemKnowledge.ForMethod(typeof(PromptDraftGenerator), "GenerateAuthoredDefinition")!.Value;
+        Assert.Equal("PromptDraftGenerator.GenerateDraftProposal",resources[1].GetProperty("resource").GetProperty("consumer").GetString());
+        Assert.Equal("DraftFidelityReviewer.ReadAuthoringObligations",resources[2].GetProperty("resource").GetProperty("consumer").GetString());
+        var again = SemanticSystemKnowledge.ForMethod(typeof(PromptDraftGenerator), "GenerateDraftProposal")!.Value;
         Assert.Equal(resources[1].GetRawText(), again.GetRawText());
     }
 
@@ -44,6 +49,7 @@ public sealed class SemanticSystemKnowledgeTests
     {
         Assert.Null(SemanticSystemKnowledge.ForMethod(typeof(PreparationInference), "ExtractInputs"));
         Assert.Null(SemanticSystemKnowledge.ForMethod(typeof(PreparationInference), "untrusted_model_selected_name"));
+        Assert.Null(SemanticSystemKnowledge.ForMethod(typeof(DraftFidelityReviewer), "ReviewDraftFidelity"));
     }
 
     [Theory]

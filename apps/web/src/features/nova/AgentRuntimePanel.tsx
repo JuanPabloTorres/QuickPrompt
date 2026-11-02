@@ -10,9 +10,9 @@ const toolLabels = { available: 'Disponible', selected: 'Seleccionada', running:
 const stepLabels = { pending: 'Sin observar', active: 'En curso', completed: 'Completado', stopped: 'Interrumpido', paused: 'En pausa', waiting: 'Espera tu decisión' };
 const seconds = (value: number) => `${(value / 1000).toFixed(1)} s`;
 
-export function AgentRuntimePanel({ view, status, controls, disconnected, controlLost = false, controlled = false }: { view: LiveView; status: string; controls: ReactNode; disconnected: boolean; controlLost?: boolean; controlled?: boolean }) {
+export function AgentRuntimePanel({ view, status, controls, disconnected, controlLost = false, controlled = false, compact = false }: { view: LiveView; status: string; controls: ReactNode; disconnected: boolean; controlLost?: boolean; controlled?: boolean; compact?: boolean }) {
   const runtime = view.runtime;
-  if (!runtime || runtime.runId !== view.run.runId || runtime.sequence !== view.run.sequence) return <><p className="activity-help">El resumen de runtime aún no está disponible.</p>{controls}</>;
+  if (!runtime || runtime.runId !== view.run.runId || runtime.sequence !== view.run.sequence) return compact ? null : <><p className="activity-help">El resumen de runtime aún no está disponible.</p>{controls}</>;
   const paused = view.run.pauseRequested || view.run.status === 'PAUSED';
   const terminal = terminalLive(view.run.status);
   const waiting = view.run.status === 'AWAITING_APPROVAL';
@@ -20,6 +20,10 @@ export function AgentRuntimePanel({ view, status, controls, disconnected, contro
   const working = activity === 'working';
   const modelActive = working && ['interpreting', 'generating'].includes(runtime.modelState);
   const activeTool = runtime.tools.find(tool => tool.id === runtime.activeTool);
+  const flow = <ol className={`runtime-flow${compact ? ' runtime-flow--compact' : ''}`} aria-label="Flujo observado de NOVA">{runtime.flow.map(step => <li key={step.id} aria-label={`${step.label}: ${stepLabels[step.state]}`} data-state={step.state} aria-current={step.state === 'active' || step.state === 'waiting' ? 'step' : undefined}><AppIcon glyph={step.state === 'completed' ? Check : Circle} size={16} /><strong>{step.label}</strong><small>{stepLabels[step.state]}</small></li>)}</ol>;
+  if (compact) return <section className="agent-runtime agent-runtime--compact" aria-label="Mapa compacto de NOVA" data-activity={activity}>
+    <span className="runtime-compact-stage" title={status}>{controlLost ? 'Sin control' : disconnected ? 'Sin conexión' : paused ? 'En pausa' : status}</span>{flow}
+  </section>;
   return <section className="agent-runtime" data-testid="agent-runtime" aria-label="Runtime de NOVA" data-connected={!disconnected} data-activity={activity}>
     <div className="runtime-caption"><span>Un sistema conectado</span><span>RUNTIME / 01</span></div>
     <div className="runtime-map">
@@ -31,7 +35,7 @@ export function AgentRuntimePanel({ view, status, controls, disconnected, contro
       <article className="runtime-card runtime-human"><div className="runtime-card-title"><AppIcon glyph={ShieldCheck} size={20} /><h3>Control humano</h3></div><strong>{terminal || controlLost ? 'Control devuelto al usuario' : paused ? 'En pausa' : view.run.approval === 'PENDING' || view.deletion && view.run.status === 'AWAITING_APPROVAL' ? 'Esperando tu aprobación' : controlled ? 'NOVA opera · puedes detenerlo' : 'Tú mantienes el control'}</strong><p>Escrituras con aprobación</p>{controls}</article>
     </div>
     <article className="runtime-memory"><div className="runtime-card-title"><AppIcon glyph={BrainCircuit} size={20} /><h3>Memoria activa</h3></div><div className="runtime-memory-facts"><span>{runtime.memory.sourceBound ? 'Prompt vinculado' : 'Sin prompt de origen'}</span><span>{runtime.memory.draftActive ? 'Borrador activo' : 'Sin borrador preparado'}</span><span>{runtime.memory.resolvedVariables}/{runtime.memory.totalVariables} variables resueltas</span>{runtime.memory.reusesDraft && <span>Borrador recuperado</span>}</div><p>{runtime.memory.constraints.join(' · ')}</p></article>
-    <ol className="runtime-flow" aria-label="Flujo observado de NOVA">{runtime.flow.map(step => <li key={step.id} aria-label={`${step.label}: ${stepLabels[step.state]}`} data-state={step.state} aria-current={step.state === 'active' || step.state === 'waiting' ? 'step' : undefined}><AppIcon glyph={step.state === 'completed' ? Check : Circle} size={16} /><strong>{step.label}</strong><small>{stepLabels[step.state]}</small></li>)}</ol>
+    {flow}
     <details className="runtime-identity"><summary>Identidad de la ejecución</summary><p>RunId <code>{runtime.runId}</code> · evento {runtime.sequence}</p></details>
     {runtime.recoverableOnly && <p className="activity-help">Historial recuperado. La memoria temporal y el catálogo actual ya no están disponibles.</p>}
   </section>;

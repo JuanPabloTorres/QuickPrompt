@@ -1,28 +1,124 @@
-name: NOVA web contracts
+name: QuickPrompt CI and delivery
 
 on:
   push:
+    branches: [main, 'release/**']
+    tags: ['v1.*']
   pull_request:
+  workflow_dispatch:
+    inputs:
+      promote:
+        description: Deploy this exact checked main commit to the existing Render service
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: quickprompt-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QUICKPROMPT_TEST_REAL_QWEN: '0'
+
 jobs:
+  cloud-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build the pinned linguistic resource and expose its immutable identity
+        run: |
+          docker build -f deploy/linguistics/Dockerfile -t quickprompt-linguistics:ci .
+          echo "QUICKPROMPT_TEST_APERTIUM_IMAGE=$(docker image inspect quickprompt-linguistics:ci --format '{{.Id}}')" >> "$GITHUB_ENV"
+      - name: Execute the real linguistic resource release gate
+        env:
+          QUICKPROMPT_TEST_APERTIUM: '1'
+        run: dotnet test backend/QuickPrompt.Tests -c Release --filter Category=TranslationResource --logger trx
+      - name: Build the production container with locked dependencies
+        run: docker build -f deploy/cloud/Dockerfile -t quickprompt-cloud:ci .
+      - name: Verify private key transport without network or real credentials
+        run: |
+          mkdir -p .playwright/cloud-container
+          docker run --pull=never --rm --network none --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,mode=1777 \
+            -e ENTRYPOINT_SOURCE=/app/entrypoint.sh \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/Tests/cloud/entrypoint-secrets.sh,target=/checks/entrypoint-secrets.sh,readonly" \
+            --entrypoint /bin/sh quickprompt-cloud:ci /checks/entrypoint-secrets.sh \
+            | tee .playwright/cloud-container/entrypoint.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cloud-container-results
+          include-hidden-files: true
+          path: .playwright/cloud-container/entrypoint.txt
+  postgres-accounts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Verify locked production Cloud dependency graph
+        run: dotnet restore backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj --locked-mode
+      - name: Start isolated PostgreSQL and limited roles
+        shell: pwsh
+        run: |
+          $ciSecrets = Join-Path $env:RUNNER_TEMP 'quickprompt-postgres-secrets'
+          "QUICKPROMPT_TEST_POSTGRES_SECRETS=$ciSecrets" >> $env:GITHUB_ENV
+          ./scripts/Start-QuickPromptPostgres.ps1 -SecretDirectory $ciSecrets
+      - name: Verify real PostgreSQL isolation and migrations
+        env:
+          QUICKPROMPT_TEST_POSTGRES: '1'
+        run: dotnet test backend/QuickPrompt.Accounts.Tests --configuration Release --logger trx
+      - name: Verify restore comparator detects catalog policy drift
+        shell: pwsh
+        run: ./Tests/accounts/postgres-restore-contract.ps1
+      - name: Verify restoration and forced RLS
+        shell: pwsh
+        run: ./scripts/Test-QuickPromptPostgresRestore.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: postgres-account-results
+          include-hidden-files: true
+          path: |
+            backend/QuickPrompt.Accounts.Tests/TestResults/*.trx
+            .playwright/postgres-restore/restore-result.json
+            .playwright/postgres-restore/restore-factual-contract-mismatch.json
+            .playwright/postgres-restore-contract/result.json
+            .playwright/operational-http/http-queue-two-hosts-*.json
+            .playwright/operational-http/visible-agent-read-two-hosts-*.json
+            .playwright/operational-http/account-pool-starvation-recovery-*.json
   web:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          global-json-file: global.json
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts
       - run: npm ci --ignore-scripts --prefix apps/web
       - run: node scripts/Check-RepositoryLayout.cjs
+      - run: node scripts/Check-Documentation.cjs
+      - shell: pwsh
+        run: ./scripts/Test-QuickPromptCoreSnapshot.ps1
       - run: node scripts/Check-ModuleBoundaries.cjs
       - run: dotnet test backend/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
+      - name: Verify Debug-only diagnostic capture
+        run: dotnet test backend/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Debug --filter FullyQualifiedName~NovaTelemetryTests --logger "trx;LogFileName=telemetry-debug.trx"
+      - run: dotnet test backend/QuickPrompt.Mcp.Tests/QuickPrompt.Mcp.Tests.csproj --configuration Release --logger trx
+      - name: Verify Windows companion private profiles
+        run: dotnet test backend/QuickPrompt.Companion.Tests/QuickPrompt.Companion.Tests.csproj --configuration Release --logger trx
+      - name: Verify private recovery archive boundaries
+        run: dotnet test Tests/recovery/QuickPrompt.Recovery.Tests.csproj --configuration Release --logger trx
       - run: dotnet test src/QuickPrompt.Tests/QuickPrompt.Tests.csproj --configuration Release --logger trx
       - run: npm run build --prefix apps/web
       - run: npm run test:release --prefix apps/web
@@ -31,3 +127,102 @@ jobs:
         with:
           name: nova-contract-results
           path: '**/TestResults/*.trx'
+
+  companion-install:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install explicit prerequisites in a new Windows VM
+        shell: pwsh
+        run: |
+          $venv=Join-Path $env:RUNNER_TEMP 'quickprompt-python'
+          python -m venv $venv
+          $python=Join-Path $venv 'Scripts/python.exe'
+          & $python -m pip install -r packaging/companion/core-sdk/requirements-inference.lock.txt
+          if($LASTEXITCODE -ne 0){throw 'Pinned Python environment failed.'}
+          "QUICKPROMPT_CI_PYTHON=$python" >> $env:GITHUB_ENV
+      - shell: pwsh
+        run: ./scripts/Test-QuickPromptCoreSnapshot.ps1
+      - run: dotnet restore backend/QuickPrompt.Companion --locked-mode
+      - name: Export independently twice and compare full ZIP bytes
+        shell: pwsh
+        run: |
+          ./scripts/New-QuickPromptCompanionPackage.ps1 -OutputDirectory "$env:RUNNER_TEMP/package-a" -SourceLabel $env:GITHUB_SHA
+          ./scripts/New-QuickPromptCompanionPackage.ps1 -OutputDirectory "$env:RUNNER_TEMP/package-b" -SourceLabel $env:GITHUB_SHA
+          ./Tests/companion/reproducible-package.ps1 -FirstZip "$env:RUNNER_TEMP/package-a.zip" -SecondZip "$env:RUNNER_TEMP/package-b.zip"
+      - name: Verify actual relocated installation, rollback and payload removal
+        shell: pwsh
+        run: |
+          $dotnet=(Get-Command dotnet -CommandType Application).Source
+          ./Tests/companion/portable-export.ps1 -PackageZip "$env:RUNNER_TEMP/package-a.zip" -Python $env:QUICKPROMPT_CI_PYTHON -Dotnet $dotnet -EvidenceDirectory .playwright/ci-clean-install
+          ./Tests/companion/portable-lifecycle.ps1 -PreviousZip "$env:RUNNER_TEMP/package-a.zip" -CandidateZip "$env:RUNNER_TEMP/package-b.zip" -Python $env:QUICKPROMPT_CI_PYTHON -Dotnet $dotnet -EvidenceDirectory .playwright/ci-lifecycle
+      - name: Prepare package checksum
+        shell: pwsh
+        run: |
+          $null=New-Item -ItemType Directory -Path dist
+          Copy-Item -LiteralPath "$env:RUNNER_TEMP/package-a.zip" -Destination dist/QuickPrompt-Companion.zip
+          $hash=(Get-FileHash dist/QuickPrompt-Companion.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  QuickPrompt-Companion.zip" | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-package
+          path: dist/*
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fresh-windows-install-results
+          include-hidden-files: true
+          path: |
+            .playwright/ci-clean-install/*.json
+            .playwright/ci-lifecycle/*.json
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v1.')
+    needs: [web, postgres-accounts, cloud-container, companion-install]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: companion-package
+          path: dist
+      - name: Publish the checked source version and Companion package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v1\.[0-9]+\.[0-9]+$ ]]
+          test "$(node -p "require('./apps/web/package.json').version")" = "${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" dist/QuickPrompt-Companion.zip dist/SHA256SUMS.txt --verify-tag --target "$GITHUB_SHA" --notes-file docs/releases/INITIAL_1.0.1.md
+      - name: Publish the versioned production image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY,,}"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -f deploy/cloud/Dockerfile -t "$registry:$GITHUB_REF_NAME" .
+          docker push "$registry:$GITHUB_REF_NAME"
+
+  promote:
+    if: github.event_name == 'workflow_dispatch' && inputs.promote && github.ref == 'refs/heads/main'
+    needs: [web, postgres-accounts, cloud-container, companion-install]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy only this checked commit to the existing service
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          test -n "$RENDER_DEPLOY_HOOK_URL" || { echo 'Configure the existing service deploy hook repository secret.'; exit 1; }
+          curl --fail --silent --show-error --request POST "${RENDER_DEPLOY_HOOK_URL}&ref=${GITHUB_SHA}" > "$RUNNER_TEMP/deploy.json"
+          python -c 'import json,os; d=json.load(open(os.environ["RUNNER_TEMP"]+"/deploy.json")); assert d.get("deploy",d).get("id"), "No deployment identity received"; print("Deployment requested for checked commit")'

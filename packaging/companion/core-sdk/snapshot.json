@@ -1,0 +1,66 @@
+{
+  "schema": "quickprompt-core-source-snapshot/1",
+  "purpose": "Exact allowlisted first-party Core sources already executed by the candidate; no third-party implementation, model, venv, data or private settings.",
+  "files": [
+    {
+      "path": "adaptive_core/capabilities.py",
+      "sha256": "731806f372e4e1563125736ea368c9f6d9b4c9700f025b28b3a518c219217fbc"
+    },
+    {
+      "path": "adaptive_core/dmr_framework.py",
+      "sha256": "9de20589df0b4d7b8310bccf52792d92b5f4a70fc30c0f353a495dc7c10be456"
+    },
+    {
+      "path": "adaptive_core/host.py",
+      "sha256": "eecad0c6b25b864a77b6da61a26d2ad90cbf13417179fa7282920c7f472fa2b0"
+    },
+    {
+      "path": "adaptive_core/inference-reply.schema.json",
+      "sha256": "57aa333eb8f90d6cfb9fbe464d841f5e2f4d105e41fdcba815a966a6438020e9"
+    },
+    {
+      "path": "adaptive_core/inference-request.schema.json",
+      "sha256": "a8a2fd4fecf51a6f2121b87718c8a89d441cdfaf8d37e58b78febd96e102e36f"
+    },
+    {
+      "path": "adaptive_core/inference.py",
+      "sha256": "e9a7d34fd212ec70d8e4be9f69843917ab47746bcd4cf0f481dfbbb8de2af61a"
+    },
+    {
+      "path": "adaptive_core/observation.py",
+      "sha256": "8ffb742267cb754434d5ba0ac7f1434d4f652bfdd17e68d240eda4c11f57a29e"
+    },
+    {
+      "path": "adaptive_core/ollama_framework.py",
+      "sha256": "a36b08821268845ef4c225acf9142a7df460c9e2bc1643491d97cde81ab0c54b"
+    },
+    {
+      "path": "adaptive_core/provider.py",
+      "sha256": "9b22862e2d6d3bee3a55a12389225c4a61d72e8606f85ec021b6fe010c578112"
+    },
+    {
+      "path": "adaptive_core/runtime.py",
+      "sha256": "ba0c6059c3a12e639af5129991d28d9c31eac570280cda986aa2b6d0f3247a8a"
+    },
+    {
+      "path": "adaptive_core/store.py",
+      "sha256": "b562ba5c25e89ec754f5ef2f63281bc1e23dde55127b96ad5bb35e41581e2143"
+    },
+    {
+      "path": "adaptive_core/__init__.py",
+      "sha256": "4b379f5d6e76fef9886c78b791c2d4934b00f4c29fe71e8b0c8d6c33d12f9749"
+    },
+    {
+      "path": "requirements-inference.lock.txt",
+      "sha256": "4e20f04fdb62565776b66e1fbd2dd0361ba05abdd16c4aba504365f3786226e3"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "d84718e81d972e133bf0e77d594d6d5df014823f24ea52d78ef2a00bf067a300"
+    },
+    {
+      "path": "NOTICE.txt",
+      "sha256": "b94ff66f3939913ceccb269b04985eab184c2be80b2809e0fe4de9f609f5f608"
+    }
+  ]
+}

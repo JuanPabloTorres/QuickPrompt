@@ -46,7 +46,7 @@ public sealed partial class SemanticIntentInterpreter : IIntentInterpreter, ISem
         return await transport.Send(packet, ct, purpose);
     }
     private async Task<JsonDocument> ChatForUi(object body, CancellationToken ct, [System.Runtime.CompilerServices.CallerMemberName] string purpose = "ChatForUi")
-    { try { return await Chat(body, ct, purpose); } catch (LlmUnavailableException) { throw new PreparationToolException("MODEL_UNAVAILABLE", "", "El modelo local no está disponible."); } }
+    { try { return await Chat(body, ct, purpose); } catch (LlmUnavailableException failure) { throw InferenceFailures.ToPreparation(failure, purpose); } }
     private static T ParseContent<T>(JsonDocument response, JsonElement schema)
     {
         try { using var content = JsonDocument.Parse(response.RootElement.GetProperty("message").GetProperty("content").GetString()!); return Parse<T>(content.RootElement, schema); }

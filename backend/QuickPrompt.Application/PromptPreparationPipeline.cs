@@ -9,9 +9,9 @@ public record PromptEvaluation(bool Valid, string[] Errors);
 // Kept separate from generation: structural facts are enforced by code; semantic quality is measured in evals.
 public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVariableResolver resolver, IPromptEvaluator evaluator)
 {
-    public static string CorrectionFeedback(string[] failures,PromptRequirements requirements,string actualSource,string? rejectedCandidate=null)
+    public static string CorrectionFeedback(string[] failures,PromptRequirements requirements,string actualSource,string? rejectedCandidate=null, IReadOnlyCollection<string>? requiredInputs=null)
         =>System.Text.Json.JsonSerializer.Serialize(new {
-            failures,rejectedCandidate,requiredVariableNames=TemplateCompiler.Names(actualSource),
+            failures,rejectedCandidate,requiredVariableNames=requiredInputs?.ToArray() ?? TemplateCompiler.Names(actualSource),
             requiredVerbatimConstraints=requirements.Constraints,requiredTargetTerms=requirements.TargetTerms??[],
             maximumCharacters=requirements.Shortening?Math.Max(1,actualSource.Length-1):32000,
             correction="Return a corrected reusable instruction applying the actual requested change. Every requiredVariableName must occur as <name> in text, not only metadata. Every requiredVerbatimConstraint must be an exact unchanged substring; requiredTargetTerms must remain in the task context. These lists are validation metadata: do not append their labels, this feedback, or the editing request to text. Do not return the unchanged source." });
@@ -47,6 +47,7 @@ public sealed class PromptPreparationPipeline(IPromptGenerator generator, IVaria
         // Values and escaped literals may legitimately contain <html> or {{code}}. Only the
         // domain parser owns placeholder identity; never parse the filled text a second time.
         var names = TemplateCompiler.Names(draft.TemplateText);
+        if(goal?.InputContract is { } inputs && !inputs.Matches(draft.TemplateText)) errors.Add("REQUESTED_INPUTS_MISSING_OR_EXTRA");
         var values = draft.Values.ToDictionary(v => v.Name, v => v.Value);
         var missing = names.Where(name => !values.ContainsKey(name)).ToArray();
         if (!names.SequenceEqual(draft.Variables.Select(v => v.Name)) || !missing.SequenceEqual(draft.MissingVariables)) errors.Add("VARIABLE_INTEGRITY");

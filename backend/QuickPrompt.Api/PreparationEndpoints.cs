@@ -23,17 +23,8 @@ public static class PreparationEndpoints
         api.MapDelete("/nova/runs/{id:guid}", (Guid id, IAgentRunStore runs) => { runs.Forget(id); return Results.NoContent(); });
         api.MapPost("/nova/sessions/{id:guid}/context", (Guid id, SessionContextInput input, AgentSessions sessions, PromptLibrary library) =>
         {
-            if (id == Guid.Empty || input.Values?.Count > 60 || input.Values?.Any(v => v.Value is null || v.Value.Length > 8000) == true) throw new ValidationException("Contexto inválido.");
-            var prompt = library.Get(input.PromptId);
-            if (input.Revision < 1 || prompt.IsArchived || prompt.Revision != input.Revision && !input.AllowStaleContext) throw new ConflictException("El origen cambió.");
-            if (input.Values?.Any(v => !prompt.VariableNames.Contains(v.Key)) == true) throw new ValidationException("Variable desconocida.");
-            var previous = sessions.Get(id);
-            var same = previous?.Source?.Id == prompt.Id && previous.Source.Revision == prompt.Revision;
-            var stale = prompt.Revision != input.Revision;
-            if (stale) prompt = previous?.Source?.Id == prompt.Id && previous.Source.Revision == input.Revision ? previous.Source : prompt with { Revision = input.Revision, TemplateText = "", Defaults = new Dictionary<string, string>(), VariableNames = [] };
-            sessions.Put(new(id, prompt, previous?.Draft, same ? previous!.Values.Concat(input.Values ?? []).GroupBy(v => v.Key).ToDictionary(g => g.Key, g => g.Last().Value) : input.Values ?? [], DateTime.UtcNow,
-                previous?.Candidates, previous?.LastProposal, previous?.PendingAction, "NOT_GRANTED", stale, previous?.PendingPlan, previous?.PendingRequest) {
-                    DraftRevision = previous?.DraftRevision ?? 1, PendingCommand = same && !stale ? previous?.PendingCommand : null }); return Results.NoContent();
+            sessions.BindSource(library, id, new(input.PromptId, input.Revision, input.Values, input.AllowStaleContext));
+            return Results.NoContent();
         });
         api.MapDelete("/nova/sessions/{id:guid}", (Guid id, AgentSessions sessions) => { sessions.Forget(id); return Results.NoContent(); });
         api.MapPost("/nova/sessions/{id:guid}/draft-context", (Guid id, DraftContextInput input, IPreparedDraftStore drafts, AgentSessions sessions) =>

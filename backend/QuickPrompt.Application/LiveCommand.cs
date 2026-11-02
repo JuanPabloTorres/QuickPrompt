@@ -9,8 +9,12 @@ public record LiveCommand(SemanticOperation Operation, string Content = "", stri
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] SemanticOperation[]? RequestedOutcomes = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] CopyContent CopyContent = CopyContent.RENDERED)
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string[]? InputNames { get; init; }
     public void Validate(LiveStartInput input)
     {
+        PromptInputContract.ValidateSelection(InputNames);
+        if(InputNames is not null&&Operation is not (SemanticOperation.CREATE_DRAFT or SemanticOperation.PROPOSE_ADAPTATION))
+            throw new ValidationException("La definición de campos requiere crear o actualizar un prompt.");
         if (!Enum.IsDefined(CopyContent) || RequestedOutcomes is { } requested && (requested.Length is < 1 or > 8
             || requested.Distinct().Count() != requested.Length || !requested.Contains(Operation)
             || requested.Except([Operation, SemanticOperation.COPY_PROMPT]).Any()))
@@ -70,6 +74,6 @@ public record LiveCommand(SemanticOperation Operation, string Content = "", stri
         // the canonical authoring boundary instead of declaring it future prose.
         var clauses = creates ? new[] { new TaskClause(TaskClauseRole.WORK_ORDER, message) }
             : changes ? new[] { new TaskClause(TaskClauseRole.CONTENT, Content) } : [];
-        return plan with { Goal = TaskGoal.FromIntent(message, context, plan, clauses, intent), ValidationNotes = ["EXPLICIT_UI_COMMAND"] };
+        return plan with { Goal = TaskGoal.FromIntent(message, context, plan, clauses, intent), ValidationNotes = ["EXPLICIT_UI_COMMAND"], UserDefinedInputs=InputNames?.ToArray() };
     }
 }

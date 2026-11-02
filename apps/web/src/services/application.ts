@@ -1,6 +1,6 @@
 import { createApiClient, type ApiClient } from './api';
 import { archives, collections, createLibraryServices, prompts, templates, type CollectionClient, type LibraryArchiveClient, type PromptLibraryClient, type TemplateClient } from './library';
-import { createLiveClient, createVisibleSessionClient, live, observeOperation, releaseSurface, startVisible, surfaceCapability, type LiveClient, type LiveEvents, type VisibleSessionClient } from './live';
+import { createLiveClient, createLocalVisibleSessionClient, live, visibleSession, type LiveClient, type LiveEvents, type VisibleSessionClient } from './live';
 import { createPreparationClient, preparation, type PreparationClient } from './preparation';
 import { createProviderClient, providers, type ProviderClient } from './providers';
 import { createPreferenceClient, preferences, type PreferenceClient } from './preferences';
@@ -26,17 +26,14 @@ export function createApplicationServices(client: ApiClient = createApiClient(),
     ...createLibraryServices(client),
     preparation: createPreparationClient(client),
     live: liveClient,
-    visibleSession: createVisibleSessionClient(liveClient),
+    visibleSession: createLocalVisibleSessionClient(client, liveClient),
     providers: createProviderClient(client),
     preferences: createPreferenceClient(client),
   };
 }
 
 // Standalone consumers retain their existing bindings and resolve only ports they use.
-const compatibleVisibleSession: VisibleSessionClient = {
-  startVisible: (...args) => startVisible(...args), observeOperation: (...args) => observeOperation(...args),
-  surfaceCapability: id => surfaceCapability(id), releaseSurface: id => releaseSurface(id),
-};
+const compatibleVisibleSession = visibleSession;
 export const defaultApplicationServices: ApplicationServices = {
   get history() { return history; },
   get prompts() { return prompts; }, get templates() { return templates; },

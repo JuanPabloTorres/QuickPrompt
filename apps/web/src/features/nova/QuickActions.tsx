@@ -10,6 +10,7 @@ import { errorMessage, type Prompt } from '../../services/api';
 import { useLibrary } from '../../hooks/useLibrary';
 import type { LiveCommand } from '../../services/live';
 import { PromptVariableFields } from '../prompts/PromptVariableFields';
+import { PromptInputNames, inputNames } from '../prompts/PromptInputNames';
 
 const actions = [
   { id: 'create', label: 'Crear prompt', icon: Plus, question: '¿Qué prompt quieres crear?', hint: 'Describe para qué lo necesitas y qué resultado esperas.', submit: 'Crear con NOVA' },
@@ -68,6 +69,7 @@ function ActionForm({ action, initialPrompt, initialValues, onRequest, onRemove,
   const { providers: providerClient } = useApplicationServices();
   const [prompt, setPrompt] = useState<Prompt | null>(action.id === 'create' || action.id === 'find' ? null : initialPrompt ?? null);
   const [details, setDetails] = useState(''), [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries((initialPrompt?.variableNames ?? []).map(name => [name, initialValues?.[name] ?? initialPrompt?.defaults[name] ?? ''])));
+  const [defineInputs, setDefineInputs] = useState(false), [fieldNames, setFieldNames] = useState('');
   const [copyContent, setCopyContent] = useState<'TEMPLATE' | 'RENDERED'>(action.id === 'adapt-copy' ? 'TEMPLATE' : 'RENDERED');
   const [providers, setProviders] = useState<Destination[]>([]), [providerId, setProviderId] = useState('');
   const [providerError, setProviderError] = useState(''), [providerRetry, setProviderRetry] = useState(0);
@@ -103,6 +105,7 @@ function ActionForm({ action, initialPrompt, initialValues, onRequest, onRemove,
         const supplied = !needsValues ? {} : Object.fromEntries(Object.entries(values).filter(([name, value]) => prompt?.variableNames.includes(name) && (action.id !== 'fill' || !!value.trim())));
         const operations = { create: 'CREATE_DRAFT', find: 'SEARCH_PROMPT', update: 'PROPOSE_ADAPTATION', 'adapt-copy': 'PROPOSE_ADAPTATION', open: 'OPEN_PROMPT', fill: 'FILL_VARIABLES', prepare: 'PREPARE_PROVIDER', execute: 'EXECUTE_LOCAL', copy: 'COPY_TO_CLIPBOARD' } as const;
         await onRequest(message, prompt ?? undefined, supplied, { operation: operations[action.id], content: details.trim(),
+          ...(defineInputs ? { inputNames: inputNames(fieldNames) } : {}),
           ...(action.id === 'execute' ? { providerId: 'ollama' } : destination ? { providerId: destination.providerId } : {}),
           ...(action.id === 'copy' || action.id === 'adapt-copy' ? { copyContent } : {}),
           ...(action.id === 'adapt-copy' ? { requestedOutcomes: ['PROPOSE_ADAPTATION', 'COPY_PROMPT'] } : {}) });
@@ -115,6 +118,10 @@ function ActionForm({ action, initialPrompt, initialValues, onRequest, onRemove,
     {!independent && (!prompt ? <PromptChoice allowArchived={action.id === 'delete'} onChoose={selected => { setPrompt(selected); setValues(Object.fromEntries(selected.variableNames.map(name => [name, selected.defaults[name] ?? '']))); setError(''); }} /> : <div className="quick-selected"><div><span className="muted">Prompt elegido</span><strong>{prompt.title}</strong><p className="muted">{prompt.description || prompt.templateText.slice(0, 160)}</p></div><button type="button" className="text-button" disabled={busy} onClick={() => { setPrompt(null); setValues({}); }}>Elegir otro</button></div>)}
     {(independent || prompt) && <>
       {needsDetails && <div className="prepared-field"><label htmlFor={`${id}-details`}>{action.question}</label><textarea id={`${id}-details`} rows={4} maxLength={detailLimit} required disabled={busy} value={details} onChange={event => setDetails(event.target.value)} aria-describedby={`${id}-hint`} /><p className="muted" id={`${id}-hint`}>{action.hint}</p></div>}
+      {(action.id === 'create' || action.id === 'update' || action.id === 'adapt-copy') && <fieldset disabled={busy}><legend>Campos de entrada</legend>
+        <label><input type="checkbox" checked={defineInputs} onChange={event => setDefineInputs(event.target.checked)} />Definir las variables ahora</label>
+        {defineInputs ? <PromptInputNames value={fieldNames} onChange={setFieldNames} updating={action.id !== 'create'} disabled={busy} /> : <p className="muted">NOVA te pedirá los nombres antes de preparar el contenido. Todavía no se rellenan valores.</p>}
+      </fieldset>}
       {(action.id === 'copy' || action.id === 'adapt-copy') && <fieldset disabled={busy}><legend>¿Qué quieres copiar?</legend>
         <label><input type="radio" name={`${id}-copy-content`} checked={copyContent === 'TEMPLATE'} onChange={() => setCopyContent('TEMPLATE')} />Plantilla con marcadores</label>
         <label><input type="radio" name={`${id}-copy-content`} checked={copyContent === 'RENDERED'} onChange={() => setCopyContent('RENDERED')} />Texto rellenado</label>

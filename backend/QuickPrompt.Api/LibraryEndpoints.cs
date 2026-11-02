@@ -29,6 +29,8 @@ public static class LibraryEndpoints
         {
             var prompt = library.Create(input); return Results.Created($"/api/v1/prompts/{prompt.Id}", prompt);
         });
+        // Additive operation for external capture; the same loopback/client guards and domain validation apply.
+        api.MapPost("/prompts/capture", (PromptCaptureInput input, IPromptCapture capture) => capture.Capture(input));
         api.MapPut("/prompts/{id:guid}", (Guid id, PromptInput input, PromptLibrary library) => library.Update(id, input));
         api.MapPost("/prompts/{id:guid}/favorite", (Guid id, RevisionInput input, PromptLibrary library) => library.Favorite(id, input.Revision));
         api.MapPost("/prompts/{id:guid}/archive", (Guid id, RevisionInput input, PromptLibrary library) => library.Archive(id, input.Revision, true));
@@ -36,6 +38,7 @@ public static class LibraryEndpoints
         api.MapPost("/prompts/{id:guid}/duplicate", (Guid id, PromptLibrary library) => library.Duplicate(id));
         api.MapDelete("/prompts/{id:guid}", (Guid id, [Microsoft.AspNetCore.Mvc.FromBody] ConfirmInput input, PromptLibrary library) => { library.Delete(id, input); return Results.NoContent(); });
         api.MapPost("/prompts/{id:guid}/compile", (Guid id, CompileInput input, PromptLibrary library) => library.Compile(id, input));
+        api.MapPost("/prompts/{id:guid}/render", (Guid id, CompileInput input, PromptLibrary library) => library.Render(id, input));
         api.MapPost("/prompts/{id:guid}/usage", (Guid id, UseInput input, PromptLibrary library) => { library.RecordUse(id, input); return Results.NoContent(); });
         api.MapPost("/templates/inspect", (InspectInput input) => new { variableNames = TemplateCompiler.Names(input.TemplateText) });
         api.MapPost("/templates/toggle-variable", (ToggleVariableInput input) => EditorTools.Toggle(input));

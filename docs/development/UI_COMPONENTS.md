@@ -1,5 +1,21 @@
 # Formularios y componentes modulares
 
+## Horarios visibles
+
+`components/ui/dateTime.ts` es el propietario del formato de fecha y hora en
+pantalla: español, ciclo `h12` (1–12 con a. m./p. m.) y zona horaria del navegador.
+`formatTime` conserva segundos para actividad; `formatDateTime` muestra fecha y
+minutos en historial, versiones, publicaciones y vencimientos. Los consumidores
+de `historyDate` delegan en el mismo propietario. Las vistas que sólo muestran
+una fecha conservan su formato de calendario.
+
+No convertir los ISO de transporte, almacenamiento, atributos `dateTime` o JSON
+exportado a este formato: identifican instantes, no etiquetas de presentación.
+Una fecha inválida muestra «Fecha no disponible» sin romper el componente.
+Regresión: `tests/date-time.test.ts`; límites medianoche/mediodía, tarde, valores
+ISO e inválidos. La comprobación visual usa datos sintéticos y el componente
+real `HistoryResult`; no acredita aceptación comercial de los servicios.
+
 ## Contrato de cambio
 
 Capacidad: mostrar y editar valores de variables en detalle, preparación de borrador y acciones de NOVA sin copiar su renderizado y fallback. Propietario: `features/prompts/PromptVariableFields.tsx`. Es una capacidad de prompts; no se convierte en un generador universal de formularios.
@@ -32,12 +48,111 @@ al enviar formulario:
 
 ## Capas de UI
 
-`features/nova/NovaWelcome` muestra un recorrido previsto en reposo y el mapa
-real de `AgentRuntimePanel` durante la ejecución. Sustituye el retrato grande;
-el mapa queda compacto y sticky mientras el agente enfoca el editor.
+### Candidato de cuentas
+
+`features/accounts/AccountPage` identifica la sesión y monta su espacio con clave de
+usuario; vuelve a comprobar la identidad al recuperar foco/visibilidad. El modo local
+mantiene su composición existente. `AccountPromptLibrary` compone el contrato privado
+de título/cuerpo/revisión y `AccountSharing` presenta publicaciones e invitaciones.
+La composición NOVA actual ofrece crear, abrir y actualizar con revisión. Las otras
+acciones del workbench no se ofrecen hasta tener sus capacidades privadas completas.
+
+El editor privado consulta `AccountEditorMemory.Inspect` por medio de
+`services/accounts.inspectEditor`. `useAccountEditorInspection` conserva dos
+identidades: definición (cuenta montada, biblioteca, origen/revisión, estado activo y cuerpo) y
+snapshot de valores. Sólo el servidor descubre variables y compila; una respuesta
+tardía se descarta. Cambiar un valor conserva los campos y su foco mientras invalida
+la vista previa; cambiar cuerpo, origen o biblioteca invalida también los nombres.
+El hook pausa la inspección de una fuente archivada tanto en detalle como en el
+editor: aborta la consulta, descarta su respuesta y conserva los valores locales.
+Recuperar el prompt reanuda la inspección con su revisión vigente. Un texto sin
+origen mantiene la inspección normal. El editor explica la pausa e impide conservar
+contexto ligado al archivo; la edición manual de título/cuerpo permanece disponible.
+Esta pausa no amplía permisos del servidor.
+Se reutiliza `PromptVariableFields`. Inspeccionar no conserva memoria ni solicita IA;
+«Conservar borrador» y «Guardar prompt» mantienen sus efectos explícitos separados.
+El guardado manual sigue disponible ante un fallo de preview, sujeto a validación
+del servidor. Un borrador restaurado obsoleto puede inspeccionarse como texto sin
+origen; no recupera el permiso de sobrescribir la revisión guardada.
+
+`services/accountNova` fija cuenta/biblioteca/conexión al componer el transporte
+nativo. No cambia el actor del servidor (siempre cookie), no usa rutas locales y no
+guarda cuerpos, valores o capacidades de superficie en sessionStorage. Sólo conserva
+el UUID del run bajo una clave específica. `AccountNovaBoundary` elige una conexión
+vigente del perfil de propuestas y monta `SameTabAgent`/`NovaLive` mediante el puerto
+estrecho `AgentRuntimeServiceProvider`; el modo local conserva `ApplicationServices`.
+El driver y la suscripción se retiran también si cambia su servicio. Los callbacks
+tardíos de una conexión no publican estado en la nueva.
+
+Al volver a la ventana, `AccountPage` comprueba de nuevo `/me` sin desmontar el
+espacio de la misma cuenta. `UiPortalScope` conserva los nodos de formularios y
+diálogos, oculta sus hijos privados y traslada overlays a un host oculto mientras
+la identidad está pendiente. Los diálogos presentan sólo una explicación genérica
+y reintento dentro de su foco modal; no se conserva un botón de aprobación visible.
+La comprobación se agrupa y vence a los cuatro segundos; error o respuesta tardía
+no exponen el contenido. Una identidad diferente o anónima recarga el acceso,
+retira el driver, sus capacidades y actividad, y descarta peticiones antiguas.
+
+`SameTabAgent` pausa su driver y sondeo durante esa comprobación, conservando las
+pausas del usuario, servidor y conexión como motivos independientes. La
+confirmación de la misma cuenta no crea otra superficie ni otra ejecución. Los
+recibos terminados esperan a la verificación; una sesión retirada no los envía.
+`AgentControl` retira temporalmente su guardia para que el reintento público sea
+accesible. Este alcance de presentación no sustituye cookie/sello, CSRF, revisión,
+conexión o aprobación comprobados por el servidor. El modo local sin proveedor de
+alcance conserva el comportamiento anterior.
+
+`AccountNovaActions` reutiliza `LiveCommand` y `PromptInputNames`: la acción, origen
+y nombres de entrada viajan separados del texto. `AccountPromptEditor` y
+`AccountPromptFocus` exponen los controles y marcadores nativos con identidad y
+revisión; las escrituras siguen pasando por eventos de sus formularios controlados.
+Una aprobación habilita el botón estable `approval.apply` sólo para el run y origen
+actuales. El guardado aprobado conserva los metadatos de la propuesta revisada y
+usa commit transaccional; el guardado manual conserva su servicio anterior.
+
+Se reutilizan el mapa compacto, perímetro, parada y diálogo de revisión existentes.
+El historial sólo ofrece otro acceso cuando no hay control activo. Al desmontar
+cuenta/biblioteca/conexión se retiran capacidades y entradas del journal de sus
+últimos tres runs; no se almacenan contenidos o valores en el navegador. Una
+recarga ofrece leer el borrador pendiente y detener, sin recuperar aprobación ni
+acciones. Un inicio incierto espera una vista autoritativa antes de operar.
+
+`accountNovaCommit` resuelve una respuesta de guardado perdida con lecturas acotadas
+del recibo y su recurso exacto. No vuelve a enviar commit; no acepta otro run,
+versión posterior, cuerpo distinto, aprobación pendiente o efecto sin confirmar.
+El reemplazo del contexto aborta esta recuperación. Las pruebas React usan HTTP
+simulado; su resultado no sustituye el recorrido real con navegador y companion.
+
+`services/accounts.ts` posee DTOs, rutas y CSRF; `useAccountOperation` comparte el
+ciclo de vida visual sobre `useBoundOperation`. Cancelar o cambiar contexto descarta
+respuestas tardías. No hay tokens, prompts, borradores o valores en localStorage.
+Los permisos y revisiones pertenecen a los módulos Accounts/Sharing del servidor.
+Dialog, AppBrand, Icon y tokens se reutilizan; no se crea un segundo kit visual.
+Las invitaciones pendientes no cargan contenido. La importación requiere destino
+propio explícito y conserva su clave al reintentar un error de transporte; una
+denegación limpia la vista compartida. Revocar explica las copias ya importadas.
+
+### Nombres de campos y valores de uso
+
+`features/prompts/PromptInputNames.tsx` es el propietario del control de nombres: lista por líneas, sin valores ni defaults. Lo consumen `QuickActions` y `PromptInputQuestion`; no duplican su parseo ni sus etiquetas. El modal de aclaración se muestra cuando NOVA devuelve `INPUT_FIELDS_NEED_CONFIRMATION` y ya liberó el control de la pestaña. `App` conserva en memoria la petición, acción y origen de esa ejecución para continuar con los nombres elegidos; el servicio vuelve a comprobar la revisión del origen. No se persiste el texto privado en el almacenamiento del navegador.
+
+Los nombres se envían en `LiveCommand.inputNames`, por separado de `values`. Ausencia/null pide aclaración; una lista vacía confirmada crea sin variables o conserva las existentes al actualizar. Application copia la selección en el contrato y el dominio valida los nombres y compone los marcadores. Los campos para completar valores siguen perteneciendo a `PromptVariableFields`; esta capacidad no sustituye ese propietario ni concede guardado.
+
+`features/nova/NovaWelcome` presenta la entrada en reposo y se retira cuando
+existe actividad. El mapa real de `AgentRuntimePanel`, la etapa actual y la
+parada se reúnen en un único panel compacto de `AgentControl`, en la esquina
+inferior derecha. No existe otro mapa o stepper sobre el editor. El documento
+reserva espacio inferior para permitir desplazar sus últimos controles fuera
+del panel. «Ver actividad de NOVA» abre el mapa y los hechos completos bajo
+demanda. La etapa mostrada procede del mismo propietario de presentación de
+`NovaLive`, para evitar etiquetas divergentes entre ambas vistas.
 `NovaLive` conserva la única lectura/SSE del runtime y publica su snapshot
 por identidad de ejecución; el mapa no crea otro polling ni interpreta texto.
 `AgentDock` conserva apertura, foco, contexto y estado visual del runtime.
+Al montar tarde un observador (por ejemplo, al elegir un equipo tras abrir el
+asistente), `NovaLive` lee la visibilidad actual del panel antes de escuchar sus
+cambios. El historial recuperado sigue siendo consultable sin reactivar controles
+de ejecución, aprobaciones ni otra solicitud.
 Su launcher muestra sólo el icono; mientras `SameTabAgent` posee la pestaña,
 se suspende todo el dock. `NovaLive` oculta también su trigger y parada flotantes;
 el mapa conserva una entrada explícita a la actividad. El portal no usa un dock
@@ -56,6 +171,13 @@ de vista como presentación controlada. `App` conserva consulta, paginación,
 preferencias y navegación; el componente no duplica servicios ni estado.
 `design/library.css` comparte jerarquía de tarjetas, filas y editor. Los nombres
 accesibles y marcadores del driver se conservan al cambiar la composición.
+
+`features/groups/GroupSelector` sirve tanto Home como el detalle de un prompt.
+Carga catálogo y pertenencias con resultados independientes y cancelación por
+contexto: una lectura fallida no descarta la otra. Carga, vacío y error son
+estados distintos; el error ofrece reintento. No permite alternar pertenencias
+hasta disponer de ambas lecturas vigentes. La asignación sigue usando la revisión
+del prompt y el servicio existente; no se sustituye la autorización del dominio.
 
 `features/prompts/PromptDetailHeader` presenta identidad, revisión, fecha y
 acciones de gestión mediante callbacks. No posee consultas, persistencia ni
@@ -80,8 +202,11 @@ usa fuentes locales, sin nuevas dependencias ni solicitudes externas.
 eventos humanos de ratón, teclado, escritura y pegado mientras exista esa
 posesión, incluyendo pausa/desconexión. No marca el workspace como `inert`
 ni deshabilita sus destinos: las acciones programáticas del driver deben seguir
-funcionando. El degradado azul tiene extremos oscuros y se disuelve hacia el
-centro; no tiene línea de borde, no captura punteros y no simula actividad.
+funcionando. El halo azul tiene esquinas redondeadas, un contorno fino y sombras
+interiores que se disuelven hacia el centro. Su pulso suave de 3,6 segundos sólo
+acompaña ejecución conectada; se detiene en pausa, desconexión, aprobación y
+estados terminales. Con movimiento reducido permanece estático. No captura
+punteros ni concede permisos.
 
 Se permiten las superficies de control del agente, el mapa de lectura y las
 aprobaciones existentes. El borrado requiere además coincidencia del runId;
@@ -127,6 +252,36 @@ resultados y límites concretos.
 
 `Dialog`, `TemplateCopyPreview`, `ClipboardReceipt`, `useBoundOperation`, `useEditorHistory`, `usePromptDeletion`, `ApplicationServices` y los clientes de servicios ya son propietarios reutilizables. Consultarlos antes de añadir otro wrapper o hook.
 
+### Borradores conservados del candidato de cuentas
+
+`AccountRememberedDrafts` posee carga cancelable, recuperación y confirmación de
+olvido. `AccountPromptLibrary` conserva el editor y compone `PromptVariableFields`
+para nombres devueltos por el compilador del servidor. No hay parser duplicado ni
+almacenamiento privado en localStorage. Cambiar contenido descarta valores/preview
+anteriores; cambiar valores invalida sólo la compilación mostrada hasta conservar.
+`services/accounts.ts` posee DTOs, CSRF y revisiones; `useAccountOperation` descarta
+respuestas tardías por cuenta/biblioteca. Un origen obsoleto exige copia explícita.
+Guardar el prompt y conservar contexto son elecciones distintas; el último no
+autoriza una ejecución. El flujo real A/B y sus límites se documentan en
+[el expediente SaaS](SAAS_DELIVERY.md).
+
+### Preparaciones privadas del candidato
+
+`UseAccountPromptDialog` obtiene variables del servidor y compone los campos
+existentes; no analiza marcadores en React. Sólo el botón explícito envía la
+preparación. Un fallo de transporte conserva el operationId para el mismo contenido;
+el usuario puede reintentar el descubrimiento de variables sin crear una ejecución.
+`AccountExecutions` consulta sólo la biblioteca montada, sondea mientras hay trabajo
+y detiene ese sondeo ante error o desmontaje. Cambiar cuenta/biblioteca descarta
+respuestas tardías mediante el ciclo existente. El servidor decide cuota y estado.
+
+El resultado reutiliza `SavedText` del historial, con texto literal, copia sin otro
+uso y descarga mediante `downloadPreparedText` (nombre opcional; default conservado).
+El dueño del lector carga su CSS; los contratos locales del historial permanecen.
+La UI distingue instrucción compilada de respuesta IA y no reenvía trabajos perdidos.
+La cancelación solicita detener el ID seleccionado; cerrar un diálogo no declara
+que la ejecución haya terminado. Los tokens de turno nunca llegan al frontend.
+
 ### Historial de resultados
 
 `CompilationHistory` conserva el ciclo de carga, cancelación, paginación y borrado
@@ -152,11 +307,77 @@ borrado sigue requiriendo consentimiento explícito y validación del servidor.
 
 ## Antes de crear una pantalla o formulario
 
+`AccountExecutions` sigue snapshots de la biblioteca mediante
+`AccountService.watchExecutions`, en lugar de mantener polling de HTTP en la
+vista. El servicio verifica identidad de biblioteca, schemas y recibo terminal.
+Sólo renueva ante `renew` del servidor, hasta 40 conexiones de 30 segundos; una
+desconexión o error exige Actualizar preparaciones y nunca repite la ejecución.
+Cambiar biblioteca/servicio aborta el lector e invalida inmediatamente el snapshot
+anterior. Cerrar el seguimiento no cancela trabajo; Detener preparación conserva
+su endpoint con sesión y CSRF. Un flujo no contiene texto de prompts o respuestas.
+
+`serverEvents` es dueño del framing SSE, UTF-8, CRLF/LF, límites y cierre/cancelación
+del reader. Tiene tres consumidores: preparación local, respuesta local y estados
+de cuentas. Cada uno conserva sus schemas, identidad y criterios de finalización;
+compartir transporte no concede permisos ni convierte un EOF en resultado correcto.
+
+`AccountConnections` compone consentimiento, listado y revocación con
+`useAccountOperation` y `Dialog`. El servicio de cuentas es propietario del
+formato OAuth form-urlencoded y del acuse de verificación local del SDK; la vista
+no interpreta tokens ni guarda códigos en almacenamiento web. Revisar un código
+no concede acceso; editarlo descarta la revisión. Se distinguen autorización
+vigente e inferencia disponible; el candidato todavía no ejecuta el companion.
+Los controles no sustituyen el actor, CSRF, perfil, recurso ni vigencia del servidor.
+
+El listado muestra también permisos MCP de lectura y su biblioteca autorizada.
+El perfil de importación se presenta por separado: añade lectura de snapshots
+aceptados e importación en esa biblioteca; no se interpreta como equipo de IA.
+Los grants nuevos describen capacidades por `scopes`; la vista presenta las
+etiquetas de lectura/importación/creación/colecciones y conserva el fallback para perfiles
+anteriores. No deriva autoridad de esas etiquetas ni ofrece MCP como destino Qwen.
+Colecciones significa leer snapshots ya aceptados e importar su conjunto; no
+implica permiso de autoría libre o importación de prompts individuales.
+`UseAccountPromptDialog` ofrece como destino de IA únicamente conexiones activas
+con perfil `ollama-qwen3-8b`; una conexión MCP no es un worker. El consentimiento
+OAuth de MCP lo sirve `Cloud/Delegation/McpConsent`: formulario nativo de primera
+parte con sesión, CSRF y biblioteca explícita, sin exponer tokens a React.
+
 Buscar el propietario existente y sus consumidores. Separar controles visuales, estado temporal, estado del servidor y reglas del dominio. Reutilizar el componente o caso de uso apropiado; compartir el algoritmo cuando su contrato realmente sea el mismo. Evitar copiar validación, cancelación, navegación o recibos para otra página.
 
 Los schemas pueden describir campos que realmente comparten comportamiento. Mantener explícitas las excepciones de dominio; no llenar un componente universal de flags por cada pantalla. No introducir librerías de formularios ni estado global para esta reutilización.
 
 ## Pruebas de aceptación
+
+`PublicationManager` conserva un solo flujo de publicar, invitar y revocar para
+`PublishPromptDialog` y `PublishCollectionDialog`. El segundo revisa los miembros
+y envía sus versiones explícitas; compartir desde un filtro no amplía la colección.
+Las invitaciones distinguen prompt individual de colección antes de aceptar.
+El diálogo receptor muestra sólo el snapshot, selecciona biblioteca propia y
+conserva una operación de importación al reintentar. La revocación retira el
+contenido visible tras un rechazo del servidor. El cliente no convierte una
+colección en una importación individual ni decide su autoridad.
+
+`CollectionManager` conserva una sola implementación del diálogo de organización.
+`GroupSelector` compone el cliente local desde `ApplicationServices`;
+`AccountCollectionDialog` compone `AccountService.collections(libraryId)` y gestiona
+sesiones caducadas. Ambos usan `CollectionClient`, las mismas cargas independientes
+de catálogo/pertenencias y el mismo manejo de revisiones/errores. El cliente de
+cuentas sólo llama rutas de su biblioteca y añade CSRF; no cae al host local.
+
+`AccountPromptLibrary` permite abrir el gestor desde la biblioteca y desde un prompt.
+El filtro se envía al servidor, que también lo usa en el catálogo del agente.
+Crear un prompt mientras hay filtro no lo asigna automáticamente: la vista se
+recarga con ese filtro y distingue selección vacía de biblioteca vacía. Una colección
+eliminada o ajena devuelve error, sin ampliar silenciosamente la selección.
+
+`AccountExecutions` permite olvidar el contenido de una ejecución terminada mediante
+el `Dialog` existente y una confirmación explícita. Abrir/cancelar no llama al servidor;
+se conserva el destino al reintentar. El cliente comprueba biblioteca, ID y `forgottenAt`
+del recibo antes de mostrar éxito. La vista conserva el estado terminal, muestra
+«Contenido olvidado» y deja de ofrecer el resultado. Los trabajos activos sólo se
+pueden detener, no olvidar. La autorización y la retirada atómica pertenecen al
+servidor, no al diálogo. La caducidad de siete días y la conservación del recibo se
+explican junto al historial; no se promete eliminar copias descargadas ni backups.
 
 Tests del componente: entrada literal sin mutación, vacío frente a default, etiquetas distintas y separación entre workspace y diálogo. Regresiones de consumidores: detalle, preparación del editor, acciones NOVA, copia e interacción del agente. Navegador: completar valores en el detalle y el editor sin perder el preview; completar una acción sin añadir campos del diálogo a los destinos del workspace. Las pruebas estructurales y de tipos no sustituyen este recorrido.
 

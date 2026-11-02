@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "adaptive-inference/1 reply",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "requestId", "status", "output", "usage", "error"],
+  "properties": {
+    "version": {"const": "adaptive-inference/1"},
+    "requestId": {"type": ["string", "null"]},
+    "status": {"enum": ["proposed", "failed"]},
+    "output": {},
+    "usage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requests", "inputTokens", "outputTokens"],
+      "properties": {
+        "requests": {"type": "integer", "minimum": 0, "maximum": 2},
+        "inputTokens": {"type": "integer", "minimum": 0},
+        "outputTokens": {"type": "integer", "minimum": 0}
+      }
+    },
+    "error": {"enum": [null, "DEPENDENCY_MISSING", "INVALID_PROTOCOL_REQUEST", "MODEL_UNAVAILABLE", "MODEL_OUTPUT_LIMIT", "INFERENCE_CONTRACT_FAILED"]}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "proposed"}}},
+     "then": {"properties": {"requestId": {"type": "string", "pattern": "^[a-fA-F0-9-]{32,36}$"}, "error": {"type": "null"}, "usage": {"properties": {"requests": {"minimum": 1}}}}}},
+    {"if": {"properties": {"status": {"const": "failed"}}},
+     "then": {"properties": {"output": {"type": "null"}, "error": {"type": "string"}}}}
+  ]
+}

@@ -1,11 +1,30 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { ApiError } from '../src/services/api';
-import { releaseSurface, startVisible, surfaceCapability } from '../src/services/live';
+import { createVisibleSessionClient, liveRecordSchema, releaseSurface, startVisible, surfaceCapability } from '../src/services/live';
 
 const ids: string[] = [];
 afterEach(() => { ids.splice(0).forEach(releaseSurface); sessionStorage.clear(); vi.unstubAllGlobals(); });
 const record = (runId: string, sessionId: string) => ({ runId, sessionId, mode: 'SAME_TAB', status: 'CREATED', sequence: 0,
   targetId: null, revision: null, pauseRequested: false, browserOpen: false, approval: 'NONE', effectCommitted: false, errorCode: null });
+
+it('bounds private RAM controls to three, retires old questions and preserves the question being explicitly answered', async () => {
+  const session = crypto.randomUUID();
+  const start = vi.fn(async input => liveRecordSchema.parse(record(input.runId, input.sessionId)));
+  const clarify = vi.fn(async (_old, input) => liveRecordSchema.parse(record(input.runId, session)));
+  const client = createVisibleSessionClient({ bindContext: vi.fn(), start, record: vi.fn(), observe: vi.fn() }, 'private-fixture', clarify);
+  const retained: string[] = [];
+  for (let index = 0; index < 3; index++) {
+    const run = await client.startVisible('Encargo', session); retained.push(run.runId); client.finishSurface!(run.runId, true);
+  }
+  const next = await client.clarifyVisible!(retained[2], 9, 'Respuesta explícita');
+  expect(client.clarificationCapability!(retained[0])).toBeUndefined();
+  expect(client.clarificationCapability!(retained[1])).toBeTruthy();
+  expect(client.clarificationCapability!(retained[2])).toBeTruthy();
+  expect(client.surfaceCapability(next.runId)).toBeTruthy();
+  expect(clarify).toHaveBeenCalledTimes(1);
+  for (const id of [...retained, next.runId]) client.releaseSurface(id);
+  expect(client.clarificationCapability!(retained[2])).toBeUndefined();
+});
 
 it.each([500, 503])('does not publish a phantom run after HTTP %s and authoritative absence', async status => {
   const history = crypto.randomUUID(); sessionStorage.setItem('nova-live-run', history);

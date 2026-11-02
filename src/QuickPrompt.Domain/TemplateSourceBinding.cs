@@ -25,9 +25,11 @@ public static class TemplateSourceBinding
                     throw new ValidationException("El núcleo termina con un fragmento de una restricción protegida. Devuelve una instrucción completa, sin copiar ni abreviar las restricciones que compone el dominio.");
         }
     }
-    public static BoundSourceTemplate Bind(string source, string candidate)
+    public static BoundSourceTemplate Bind(string source, string candidate) => Bind(source, candidate, null);
+    public static BoundSourceTemplate Bind(string source, string candidate, IReadOnlyCollection<string>? authorizedInputs)
     {
-        var names = TemplateCompiler.Names(source);
+        var names = authorizedInputs?.ToArray() ?? TemplateCompiler.Names(source);
+        var addsAuthorizedInputs=source.Length>0&&authorizedInputs is not null&&names.Except(TemplateCompiler.Names(source),StringComparer.Ordinal).Any();
         if (TemplateCompiler.Names(candidate).Except(names, StringComparer.Ordinal).Any())
             throw new ValidationException("La propuesta introdujo variables ajenas al origen / Proposal introduced unknown source inputs.");
         var missingClauses = TemplateConstraints.Missing(source, candidate);
@@ -41,7 +43,7 @@ public static class TemplateSourceBinding
                 value = string.Concat(TemplateCompiler.Parse(value).Where(token => token.Name is null).Select(token => token.Text));
                 return Regex.Replace(PromptSearch.Normalize(value), @"[\p{P}\s]+", " ", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)).Trim();
             }
-            if (TaskWords(source) == TaskWords(candidate))
+            if (!addsAuthorizedInputs && TaskWords(source) == TaskWords(candidate))
                 throw new ValidationException("Conservar campos o restricciones por sí solo no constituye una adaptación / Binding source inputs or constraints alone is not an adaptation.");
         }
         if (missingInputs.Length > 0)

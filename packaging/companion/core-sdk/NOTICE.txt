@@ -1,0 +1,6 @@
+Adaptive Core: first-party source snapshot supplied explicitly to the packager.
+Only the allowlisted SDK sources and schemas are included, never its data, venv or configuration.
+No third-party Python implementation is vendored; requirements-inference.lock.txt pins separately installed distributions.
+See provenance.json for source hashes and Adaptive-Core-pyproject.toml for its declared package version.
+Any existing source LICENSE/NOTICE/COPYING files are copied alongside this notice. If none exist,
+this notice does not invent a license or grant onward redistribution rights: resolve first-party licensing before public distribution.

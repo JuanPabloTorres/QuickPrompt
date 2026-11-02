@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { emptySchema, openApiResponse, request, type ApiClient } from './api';
 
-const preferencesSchema = z.object({ language: z.enum(['es', 'en']).nullable(), format: z.enum(['JSON', 'Markdown', 'Tabla', 'Texto']).nullable(), providerId: z.string().nullable() });
+export const preferencesSchema = z.object({ language: z.enum(['es', 'en']).nullable(), format: z.enum(['JSON', 'Markdown', 'Tabla', 'Texto']).nullable(), providerId: z.string().nullable() });
 export type PreparationPreferences = z.infer<typeof preferencesSchema>;
 export interface PreferenceClient {
   get(signal?: AbortSignal): Promise<PreparationPreferences>;

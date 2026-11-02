@@ -12,13 +12,13 @@ namespace QuickPrompt.Nova.Tests;
 // Controlled membership, actual composition/orchestration. Not model accuracy.
 public sealed class CandidateSelectionCompositionTests
 {
-    [Fact] public async Task MembershipIsMeasuredIndependentlyInsteadOfOfferingCompetingWinners()
+    [Fact] public async Task CompleteMembershipPreservesEveryMatchInsteadOfChoosingAWinner()
     {
-        var transport=new Transport {RequireIndependent=true,AllMatches=true};
+        var transport=new Transport {AllMatches=true};
         var first=Prompt(Guid.NewGuid(),"Seguimiento comercial");var second=Prompt(Guid.NewGuid(),"Seguimiento de proyectos");
         var result=await new SemanticCandidateSelector(transport).Select("Ver seguimiento.",[new(first,10,""),new(second,9,"")],"synthetic:model",default);
         Assert.Equal(new[]{first.Id,second.Id},result.PromptIds);
-        Assert.Equal(2,transport.Calls.Count);
+        Assert.Single(transport.Calls);
     }
     [Fact] public async Task ActualAgentFactoryUsesBorrowedTransportWithoutConstructingInterpreterOrEditor()
     {
@@ -38,14 +38,14 @@ public sealed class CandidateSelectionCompositionTests
         var first = Prompt(Guid.NewGuid(), "Primero"); var second = Prompt(Guid.NewGuid(), "Segundo");
         var result = await selector.Select("Descripción íntegra 🛰️", [new(first, 0, "score no autoriza"), new(second, 999, "score no autoriza")], "synthetic:model", cancellation.Token);
         Assert.Equal(new[] { first.Id }, result.PromptIds);
-        Assert.Equal(2,transport.Calls.Count);var call = transport.Calls[0];
+        var call = Assert.Single(transport.Calls);
         Assert.Equal(cancellation.Token, call.Token); Assert.Equal("Select", call.Purpose);
         Assert.Equal("synthetic:model", call.Packet.GetProperty("model").GetString());
         Assert.Equal(LocalModelPolicy.AgentContextLength, call.Packet.GetProperty("options").GetProperty("num_ctx").GetInt32());
         using var data = JsonDocument.Parse(call.Packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        Assert.Equal("Descripción íntegra 🛰️", data.RootElement.GetProperty("request").GetString());
+        Assert.Equal("Descripción íntegra 🛰️", data.RootElement.GetProperty("sourceClause").GetString());
         var candidates = data.RootElement.GetProperty("candidates").EnumerateArray().ToArray();
-        Assert.Equal(new[] { "candidate_1" }, candidates.Select(candidate => candidate.GetProperty("candidateKey").GetString()));
+        Assert.Equal(new[] { "candidate_1", "candidate_2" }, candidates.Select(candidate => candidate.GetProperty("candidateKey").GetString()));
         Assert.All(candidates, candidate => Assert.False(candidate.TryGetProperty("score", out _)));
         Assert.False(Directory.Exists(Path.GetDirectoryName(path)));
         Assert.False(typeof(IDisposable).IsAssignableFrom(typeof(SemanticCandidateSelector)));
@@ -64,14 +64,13 @@ public sealed class CandidateSelectionCompositionTests
         using var cancellation = new CancellationTokenSource();
         var result = await selector.Select(lookup, [new(first, 1, "No autoriza"), new(second, 99, "No autoriza")], "synthetic:model", cancellation.Token);
         Assert.Equal(new[] { first.Id }, result.PromptIds); // Controlled reply, not an interpretation oracle.
-        Assert.Equal(2,transport.Calls.Count);var call = transport.Calls[0];
+        var call = Assert.Single(transport.Calls);
         Assert.Equal(cancellation.Token, call.Token);
         using var data = JsonDocument.Parse(call.Packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        var reference = data.RootElement.GetProperty("sourceReference");
-        Assert.Equal("Anuncios", reference.GetProperty("sourceDescription").GetString());
-        Assert.Equal(directive, reference.GetProperty("userDirective").GetString());
-        Assert.Equal(lookup.AuthorizedEarlierDirective, reference.GetProperty("authorizedEarlierDirective").GetString());
-        Assert.Equal("Anuncios", data.RootElement.GetProperty("request").GetString());
+        Assert.Equal(directive, data.RootElement.GetProperty("sourceClause").GetString());
+        Assert.Equal(lookup.AuthorizedEarlierDirective, data.RootElement.GetProperty("authorizedEarlierDirective").GetString());
+        Assert.False(data.RootElement.TryGetProperty("sourceDescription", out _));
+        Assert.False(data.RootElement.TryGetProperty("request", out _));
         Assert.False(call.Packet.GetProperty("think").GetBoolean());
     }
 
@@ -83,11 +82,10 @@ public sealed class CandidateSelectionCompositionTests
         var first = Prompt(Guid.NewGuid(), "Primero"); var second = Prompt(Guid.NewGuid(), "Segundo");
         var lookup = new SourceLookupContext("proyección", "Petición original íntegra 🛰️", "Antecedente autorizado");
         await selector.Select(lookup, [new(first, 1, "No autoriza"), new(second, 2, "No autoriza")], "synthetic:model", default);
-        Assert.Equal(2,transport.Calls.Count);
+        Assert.Single(transport.Calls);
         using var data = JsonDocument.Parse(transport.Calls[0].Packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        var reference = data.RootElement.GetProperty("sourceReference");
-        Assert.Equal(lookup.UserDirective, reference.GetProperty("userDirective").GetString());
-        Assert.Equal(lookup.AuthorizedEarlierDirective, reference.GetProperty("authorizedEarlierDirective").GetString());
+        Assert.Equal(lookup.UserDirective, data.RootElement.GetProperty("sourceClause").GetString());
+        Assert.Equal(lookup.AuthorizedEarlierDirective, data.RootElement.GetProperty("authorizedEarlierDirective").GetString());
     }
 
     [Fact] public async Task EmptyDuplicateOversizedAndCancelledInputsDoNotCallTheModel()
@@ -105,10 +103,10 @@ public sealed class CandidateSelectionCompositionTests
         Assert.Same(failure, await Assert.ThrowsAsync<LlmUnavailableException>(() => selector.Select("Consulta", [candidate], "synthetic:model", default)));
     }
 
-    [Fact] public async Task CancellationBetweenMembershipChecksNeverReturnsAPartialSelection()
+    [Fact] public async Task CancellationAfterTheProposalNeverReturnsASelection()
     {
         using var cancel=new CancellationTokenSource();
-        var transport=new Transport {RequireIndependent=true,AllMatches=true,AfterCall=()=>cancel.Cancel()};
+        var transport=new Transport {AllMatches=true,AfterCall=()=>cancel.Cancel()};
         var candidates=new[]{new RetrievalCandidate(Prompt(Guid.NewGuid(),"Uno"),1,""),new(Prompt(Guid.NewGuid(),"Dos"),1,"")};
         await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>new SemanticCandidateSelector(transport).Select("Consulta",candidates,"synthetic:model",cancel.Token));
         Assert.Single(transport.Calls);
@@ -184,7 +182,6 @@ public sealed class CandidateSelectionCompositionTests
     {
         public List<(JsonElement Packet, string Purpose, CancellationToken Token)> Calls { get; } = [];
         public Exception? Failure { get; set; }
-        public bool RequireIndependent { get; set; }
         public bool AllMatches { get; set; }
         public Action? AfterCall { get; set; }
         public Task<JsonDocument> Send(object packet, CancellationToken ct, string purpose)
@@ -193,7 +190,6 @@ public sealed class CandidateSelectionCompositionTests
             if (Failure is not null) throw Failure;
             var value=Calls[^1].Packet;
             using var input=JsonDocument.Parse(value.GetProperty("messages")[1].GetProperty("content").GetString()!);
-            if(RequireIndependent)Assert.Single(input.RootElement.GetProperty("candidates").EnumerateArray());
             var matches=value.GetProperty("format").GetProperty("properties").GetProperty("matches").GetProperty("required").EnumerateArray()
                 .ToDictionary(key=>key.GetString()!,key=>AllMatches||key.GetString()=="candidate_1");
             AfterCall?.Invoke();

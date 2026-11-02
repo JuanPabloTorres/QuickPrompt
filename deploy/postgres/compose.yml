@@ -1,0 +1,29 @@
+# Isolated development infrastructure. No public DB listener or embedded password.
+services:
+  postgres:
+    image: postgres:18@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
+    container_name: quickprompt-saas-postgres
+    labels:
+      io.quickprompt.scope: saas-development
+    environment:
+      POSTGRES_USER: quickprompt_bootstrap
+      POSTGRES_DB: quickprompt_development
+      POSTGRES_PASSWORD_FILE: /run/secrets/bootstrap_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    secrets:
+      - bootstrap_password
+    ports:
+      - 127.0.0.1:55432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U quickprompt_bootstrap -d quickprompt_development]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: "no"
+secrets:
+  bootstrap_password:
+    file: ${QUICKPROMPT_POSTGRES_SECRET_FILE:?Set an existing local bootstrap secret file}
+volumes:
+  postgres_data:

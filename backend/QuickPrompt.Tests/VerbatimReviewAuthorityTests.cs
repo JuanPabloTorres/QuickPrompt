@@ -1,108 +1,116 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using QuickPrompt.Local;
 using QuickPrompt.Nova.Application;
 using QuickPrompt.Web.Infrastructure;
 using Xunit;
+using static QuickPrompt.Nova.Tests.AuthoringReviewTestFixture;
 
 namespace QuickPrompt.Nova.Tests;
 
 public sealed class VerbatimReviewAuthorityTests
 {
-    const string Body = "Responde únicamente LISTO";
-    static PrepareInput Input(string request)
-    {
-        var plan = new LiveCommand(SemanticOperation.CREATE_DRAFT, request).Compile(request, SemanticContext.Empty);
-        return new(Guid.NewGuid(), request) { Interpretation = plan,
-            VerbatimBody = new(LiveRuns.Hash(request), request.LastIndexOf(Body, StringComparison.Ordinal), Body.Length) };
-    }
-    static PromptProposal Proposal(string title = "Instrucción") => new(PreparationDecision.CREATE_NEW, null, title, "", Body, [], "", "");
-    static object Accept(string? title) => new { verdict = "ACCEPT", instructionScope = "FUTURE_TASK_ONLY",
-        applicationWorkflowQuotes = Array.Empty<string>(), requestedTitleQuote = title, issues = Array.Empty<object>() };
+    private const string Body = "Responde únicamente LISTO";
+    // The fixture author establishes the future body, not the session's copy request.
+    private static AuthoringBriefContent EstablishedBody => new("Instrucción", "", Body, [], [], [], []);
+    private static PrepareInput LiteralInput(string request) => Input(request) with {
+        VerbatimBody = new(LiveRuns.Hash(request), request.LastIndexOf(Body, StringComparison.Ordinal), Body.Length)
+    };
 
     [Fact]
     public void HttpInputCannotSupplyProcessOwnedVerbatimAuthority()
     {
-        var input = Input("Crea un cuerpo literal «" + Body + "».");
-        var json = JsonSerializer.Serialize(input, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var input = LiteralInput("Crea un cuerpo literal «" + Body + "».");
+        var json = JsonSerializer.Serialize(input, Json);
         Assert.DoesNotContain("verbatimBody", json);
         var injected = json[..^1] + ",\"verbatimBody\":{\"requestHash\":\"forged\",\"start\":0,\"length\":3}}";
-        Assert.Null(JsonSerializer.Deserialize<PrepareInput>(injected, new JsonSerializerOptions(JsonSerializerDefaults.Web))!.VerbatimBody);
+        Assert.Null(JsonSerializer.Deserialize<PrepareInput>(injected, Json)!.VerbatimBody);
     }
 
     [Fact]
-    public async Task AVerbatimBodyCannotBecomeAnInventedTitleRequirementDuringMetadataRepair()
+    public async Task AProposalWithABodyAsTitleStillRequiresHumanReviewOfBoth()
     {
         var request = "Crea un prompt con este cuerpo completo literal «" + Body + "». No lo ejecutes.";
-        var input = Input(request);
-        var transport = new Transport(Accept(Body), new { requestedTitleQuote = (string?)null });
-        await new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, Proposal(), [], default);
-        Assert.Equal(2, transport.Packets.Count);
-        var first = Material(transport.Packets[0]);
-        Assert.Equal(request, first.GetProperty("authorizedUserRequest").GetString());
-        Assert.Equal(Body, first.GetProperty("proposedInstruction").GetString());
-        var repair = Material(transport.Packets[1]).GetProperty("authorizedUserRequest").GetString()!;
-        Assert.DoesNotContain(Body, repair);
-        Assert.Contains("[BOUND_INSTRUCTION_BODY]", repair);
-        Assert.True(input.Interpretation!.Goal!.HasContentAssessment(Body));
+        var input = LiteralInput(request); var transport = LiteralTransport(request, Body);
+        var pending = Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody with { Title = Body });
+        var proposal=await pending;
+        Assert.Equal(Body,proposal.TemplateText);Assert.Equal(Body,proposal.Title);
+        Assert.Empty(transport.AllCalls);
+        // Body/title ambiguity is visible for human review; no retired model
+        // title selector is used as an automatic semantic certificate.
+        Assert.Equal(request, input.Interpretation!.Goal!.AuthoringContract!.OriginalRequest);
+        Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
     }
 
     [Fact]
     public async Task ASeparateTitleOccurrenceWithTheSameTextKeepsItsOwnAuthority()
     {
         var request = "Titúlalo «" + Body + "». El cuerpo completo literal es «" + Body + "».";
-        var input = Input(request); var transport = new Transport(Accept(Body));
-        await new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, Proposal(Body), [], default);
-        Assert.Single(transport.Packets);
-        Assert.Contains("Titúlalo «" + Body + "»", Material(transport.Packets[0]).GetProperty("metadataAuthorityRequest").GetString());
+        var input = LiteralInput(request); var transport = LiteralTransport(request, Body);
+        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody with { Title = Body });
+        Assert.Equal(Body, proposal.Title); Assert.Equal(Body, proposal.TemplateText);
+        Assert.Empty(transport.AllCalls);
+        Assert.Contains("Titúlalo «" + Body + "»", input.Interpretation!.Goal!.AuthoringContract!.OriginalRequest);
+        Assert.False(input.Interpretation.Goal!.HasContentAssessment(Body)); Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
     }
 
     [Fact]
-    public async Task AHostMarkerCannotBecomeUserTitleAuthority()
+    public async Task AProposedHostMarkerTitleRemainsUnapprovedAndNeverBecomesUserAuthority()
     {
-        var input = Input("Crea el cuerpo literal «" + Body + "».");
-        var transport = new Transport(Accept("[BOUND_INSTRUCTION_BODY]"), new { requestedTitleQuote = "[BOUND_INSTRUCTION_BODY]" });
-        await Assert.ThrowsAsync<ValidationException>(() => new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, Proposal(), [], default));
-        Assert.Equal(2, transport.Packets.Count);
-        Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));
+        var request = "Crea el cuerpo literal «" + Body + "».";
+        var input = LiteralInput(request); var transport = LiteralTransport(request, "[BOUND_INSTRUCTION_BODY]");
+        var proposal=await Generator(transport).GenerateAfterSyntheticReview(input,input.Interpretation!.Preparation(),[],default,
+            establishedContent: EstablishedBody);
+        Assert.Equal(EstablishedBody.Title,proposal.Title);Assert.Equal(Body,proposal.TemplateText);
+        Assert.Empty(transport.AllCalls);Assert.DoesNotContain("[BOUND_INSTRUCTION_BODY]",request);
+        Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
+        Assert.Equal(request,input.Interpretation.Goal.AuthoringContract!.GetContentReview(Body).OriginalRequest);
     }
 
     [Theory]
-    [InlineData(true)] [InlineData(false)]
+    [InlineData(true)]
+    [InlineData(false)]
     public async Task ABindingForAnotherRequestOrAnAlteredBodyFailsBeforeInference(bool changedRequest)
     {
-        var input = Input("Crea un cuerpo literal «" + Body + "».");
-        if (changedRequest) input = input with { Message = "Otra petición" , Interpretation = null };
-        var transport = new Transport(Accept(null));
-        if (changedRequest) {
-            Assert.Throws<ValidationException>(() => input.VerbatimBody!.MetadataAuthority(input.Message, Body));
-        } else {
-            await Assert.ThrowsAsync<ValidationException>(() => new DraftFidelityReviewer(transport)
-                .ReviewDraftFidelity(input, Proposal() with { TemplateText = Body + "." }, [], default));
-        }
-        Assert.Empty(transport.Packets);
+        var request = "Crea un cuerpo literal «" + Body + "»."; var input = LiteralInput(request);
+        var start = request.LastIndexOf(Body, StringComparison.Ordinal);
+        var registered=Register(input,Body,literals:[new(0,start,Body.Length,Body)],literalReference:0);
+        Assert.Equal(Body,registered.Draft.TemplateText);
+        var transport = new Transport();
+        if (changedRequest) Assert.Throws<ValidationException>(() => input.VerbatimBody!.MetadataAuthority("Otra petición", Body));
+        else await Assert.ThrowsAsync<ValidationException>(() => new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, Proposal(Body + "."), [], default));
+        Assert.Empty(transport.Calls);
     }
 
     [Fact]
-    public async Task LiteralProvenanceDoesNotBypassIndependentContentRejection()
+    public async Task LiteralProvenanceCannotApproveSessionContaminationOrCreateAModelCertificate()
     {
-        var input = Input("Crea un cuerpo literal «" + Body + "». No añadas instrucciones de la sesión.");
-        var transport = new Transport(new { verdict = "REVISE", instructionScope = "CURRENT_AUTHORING_ONLY",
-            applicationWorkflowQuotes = new[] { Body }, requestedTitleQuote = (string?)null, issues = Array.Empty<object>() });
-        await Assert.ThrowsAsync<ValidationException>(() => new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, Proposal(), [], default));
-        Assert.Single(transport.Packets); Assert.False(input.Interpretation!.Goal!.HasContentAssessment(Body));
+        var request = "Crea un cuerpo literal «" + Body + "». No añadas instrucciones de la sesión.";
+        var input = LiteralInput(request); var transport = LiteralTransport(request, null);
+        var proposal = await Generator(transport).GenerateAfterSyntheticReview(input, input.Interpretation!.Preparation(), [], default,
+            establishedContent: EstablishedBody);
+        Assert.Equal(Body, proposal.TemplateText); Assert.True(input.Interpretation.Goal!.HasAuthoringStructure(Body));
+        Assert.False(input.Interpretation.Goal.HasContentAssessment(Body)); Assert.False(input.Interpretation.Goal.HasHumanContentApproval(Body));
+        var calls = transport.Calls.Count;
+        await Assert.ThrowsAsync<ValidationException>(() => new DraftFidelityReviewer(transport).ReviewDraftFidelity(input, proposal with { TemplateText = Body + " No añadas instrucciones de la sesión." }, [], default));
+        Assert.Equal(calls, transport.Calls.Count);
     }
 
-    static JsonElement Material(JsonElement packet) => JsonSerializer.Deserialize<JsonElement>(packet.GetProperty("messages")[1].GetProperty("content").GetString()!);
-    sealed class Transport(params object[] replies) : IValidatedAgentModelTransport
+    private static PromptDraftGenerator Generator(Transport transport)
     {
-        public List<JsonElement> Packets { get; } = [];
-        public Task<JsonDocument> Send(object body, CancellationToken ct, string purpose)
-        {
-            ct.ThrowIfCancellationRequested(); Packets.Add(JsonSerializer.SerializeToElement(body));
-            return Task.FromResult(JsonDocument.Parse(JsonSerializer.Serialize(new { message = new { content = JsonSerializer.Serialize(replies[Packets.Count - 1]) } })));
-        }
-        public void Reject(string? answer) { }
-        public bool UsesThinking(string model) => true;
-        public void Observe(int stage, string content, string? error) { }
+        var dependencies = new ForbiddenDependencies();
+        return new(transport, dependencies, dependencies, dependencies);
     }
+
+    private static Transport LiteralTransport(string request,string? requestedTitle)=>new((packet,purpose,callNumber)=>{
+        Assert.Equal("GenerateDraftProposal",purpose);
+        var material=Material(packet);
+        Assert.False(material.TryGetProperty("originalRequest",out _));
+        Assert.NotEmpty(material.GetProperty("fields").GetProperty("task").GetString()!);
+        var occurrence=material.GetProperty("literalBodyCandidates").EnumerateArray()
+            .Last(candidate=>candidate.GetProperty("text").GetString()==Body);
+        return Definition("Texto no literal que la aplicación no adoptará.",requestedTitle??"Instrucción",literalReference:occurrence.GetProperty("id").GetInt32());
+    });
 }

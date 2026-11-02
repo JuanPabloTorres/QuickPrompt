@@ -26,14 +26,6 @@
 .footer-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; font-size: .75rem; }
 .footer-private, .footer-meta button { display: inline-flex; align-items: center; gap: 8px; }
 .footer-meta button { font-size: .75rem; min-height: 44px; }
-.nova-control-banner { left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); max-width: calc(100vw - var(--sidebar-width) - 32px); }
-.nova-control-banner > .nova-approval-choices { display: flex; flex-wrap: wrap; gap: 8px; }
-.nova-control-banner[data-awaiting-approval='true'] { border-color: var(--warning); }
-.nova-control-banner[data-awaiting-approval='true'] strong { color: var(--warning); }
-.nova-control-banner[data-awaiting-approval='true'] button { border-color: var(--line); }
-body:has(.nova-control-banner) .app-shell { padding-top: 104px; }
-.nova-mission[data-controlling='true'] { top: 96px; }
-body:has(.nova-control-banner[data-awaiting-approval='true']) .nova-mission[data-controlling='true'] { top: 116px; }
 @media (max-width: 1000px) {
   :root { --sidebar-width: 72px; }
   .workspace-sidebar { padding: 24px 10px; }
@@ -51,14 +43,5 @@ body:has(.nova-control-banner[data-awaiting-approval='true']) .nova-mission[data
   .workspace-sidebar nav > button, .sidebar-utilities > button { min-height: 44px; }
   .workspace-footer { margin-top: 32px; gap: 12px; padding-top: 20px; padding-right: 64px; }
   .footer-meta { gap: 8px 12px; }
-  .nova-control-banner { gap: 8px; flex-wrap: wrap; justify-content: space-between; max-width: calc(100vw - var(--sidebar-width) - 20px); }
-  .nova-control-banner[data-awaiting-approval='true'] > [role='alert'] span { display: block; font-size: .6875rem; }
-  .nova-control-banner[data-awaiting-approval='true'] { width: calc(100vw - var(--sidebar-width) - 20px); }
-  .nova-control-banner > .nova-approval-choices { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  .nova-control-banner button { min-width: 0; white-space: normal; }
-  body:has(.nova-control-banner) .app-shell { padding-top: 104px; }
-  body:has(.nova-control-banner[data-awaiting-approval='true']) .app-shell { padding-top: 166px; }
-  .nova-mission[data-controlling='true'] { top: 96px; max-height: 42dvh; overflow-y: auto; }
-  body:has(.nova-control-banner[data-awaiting-approval='true']) .nova-mission[data-controlling='true'] { top: 156px; }
   .nova-mission { padding: 16px 12px; }
 }

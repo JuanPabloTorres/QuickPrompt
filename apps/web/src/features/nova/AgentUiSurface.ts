@@ -1,9 +1,9 @@
 // A code-owned DOM port. Model output never supplies selectors or captions.
-export type AgentControl = 'library.home' | 'prompt.new' | 'prompt.edit' | 'prompt.use' | 'prompt.copy' | 'prompt.copy-template' | 'prompt.template-preview' | 'editor.prepare' | 'provider.execute' | 'dialog.close' | 'approval.apply';
+export type AgentControl = 'library.home' | 'prompt.new' | 'prompt.edit' | 'prompt.use' | 'prompt.copy' | 'prompt.copy-template' | 'prompt.template-preview' | 'editor.prepare' | 'editor.metadata' | 'provider.execute' | 'dialog.close' | 'approval.apply';
 type Owner = 'application' | 'library' | 'workspace' | 'provider';
 const owners: Record<AgentControl, Owner> = {
   'library.home': 'application', 'prompt.new': 'library', 'prompt.edit': 'workspace', 'prompt.use': 'workspace', 'prompt.copy': 'workspace',
-  'prompt.copy-template': 'workspace', 'prompt.template-preview': 'workspace', 'editor.prepare': 'workspace', 'provider.execute': 'provider', 'dialog.close': 'provider', 'approval.apply': 'workspace',
+  'prompt.copy-template': 'workspace', 'prompt.template-preview': 'workspace', 'editor.prepare': 'workspace', 'editor.metadata': 'workspace', 'provider.execute': 'provider', 'dialog.close': 'provider', 'approval.apply': 'workspace',
 };
 const workspaceMarkers = new Set(['focus-title', 'compile-ready', 'compiled-preview', 'template-preview', 'variables-inspected', 'draft-prepared', 'editor-preparation', 'clipboard-receipt']);
 const providerMarkers = new Set(['local-qwen-response', 'local-response-complete']);

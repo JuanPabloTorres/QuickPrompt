@@ -1,12 +1,18 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { SameTabAgent } from '../src/features/nova/SameTabAgent';
 import { createAgentProposalSession } from '../src/features/nova/AgentProposalSession';
 import { AgentUiProvider } from '../src/features/nova/AgentUiContext';
-import { startVisible, surfaceCapability } from '../src/services/live';
+import { releaseSurface, startVisible, surfaceCapability } from '../src/services/live';
+import { UiPortalScopeProvider } from '../src/components/ui/UiPortalScope';
+import { AgentUiDriver, readUiState } from '../src/features/nova/AgentUiDriver';
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+const testRuns = new Set<string>();
+const trackRun = (event: Event) => testRuns.add((event as CustomEvent<string>).detail);
+beforeEach(() => window.addEventListener('nova-agent-started', trackRun));
+afterEach(() => { cleanup(); window.removeEventListener('nova-agent-started', trackRun); testRuns.forEach(id => releaseSurface(id)); testRuns.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const record = (id: string, status = 'CREATED') => ({ runId: id, sessionId: id, mode: 'SAME_TAB', status, sequence: 1, targetId: null, revision: null, pauseRequested: false, browserOpen: false, approval: 'NONE', effectCommitted: false, errorCode: null });
+const startAction = (id: string) => ({ runId: id, actionId: crypto.randomUUID(), sequence: 1, tool: 'start', target: null, arguments: {}, timestamp: new Date().toISOString(), executionStatus: 'DISPATCHED', verificationStatus: 'PENDING' });
 
 it('releases local command ownership on Stop and ignores a late authenticated action', async () => {
   let id = ''; let resolvePoll: (response: Response) => void = () => {};
@@ -123,4 +129,50 @@ it('remembers an SSE wake received during an in-flight poll and ignores another 
   expect(polls).toBe(2);
   await act(async () => { window.dispatchEvent(new CustomEvent('nova-ui-state-available', { detail: crypto.randomUUID() })); });
   expect(polls).toBe(2); rendered.unmount();
+});
+
+it('does not turn a retained user pause into permission to execute after identity verification', async () => {
+  let id = '', receipts = 0; let acceptPoll!: (response: Response) => void;
+  const execute = vi.spyOn(AgentUiDriver.prototype, 'execute').mockImplementation(async () => readUiState());
+  vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {
+    if (path === '/api/v1/nova/live') { id = JSON.parse(options!.body as string).runId; return Response.json(record(id)); }
+    if (path.endsWith('/actions/receipt')) { receipts++; return new Response(null, { status: 204 }); }
+    if (path.includes('/actions?')) return new Promise<Response>(resolve => { acceptPoll = resolve; });
+    throw Error('Unexpected endpoint');
+  }));
+  await startVisible('Conserva mi pausa.', crypto.randomUUID());
+  const agent = (active: boolean) => <UiPortalScopeProvider value={{ active, dialogHost: null, overlayHost: null, onRetry: vi.fn() }}><SameTabAgent runId={id} onActive={vi.fn()} /></UiPortalScopeProvider>;
+  const view = render(agent(true));
+  await waitFor(() => expect(acceptPoll).toBeTypeOf('function'));
+  const firstPoll = acceptPoll;
+  act(() => window.dispatchEvent(new CustomEvent('nova-ui-control', { detail: 'pause' })));
+  view.rerender(agent(false));
+  await act(async () => acceptPoll(Response.json({ run: record(id), action: startAction(id) })));
+  view.rerender(agent(true));
+  expect(execute).not.toHaveBeenCalled(); expect(receipts).toBe(0);
+  await waitFor(() => expect(acceptPoll).not.toBe(firstPoll));
+  act(() => window.dispatchEvent(new CustomEvent('nova-ui-control', { detail: 'resume' })));
+  await act(async () => acceptPoll(Response.json({ run: record(id), action: startAction(id) })));
+  await waitFor(() => expect(receipts).toBe(1)); expect(execute).toHaveBeenCalledTimes(1);
+});
+
+it.each([false, true])('holds a completed UI receipt during verification and drops it if its scope retires (%s)', async retire => {
+  let id = '', receipts = 0; let finish!: () => void;
+  vi.spyOn(AgentUiDriver.prototype, 'execute').mockImplementation(() => new Promise(resolve => { finish = () => resolve(readUiState()); }));
+  vi.stubGlobal('fetch', vi.fn(async (path: string, options?: RequestInit) => {
+    if (path === '/api/v1/nova/live') { id = JSON.parse(options!.body as string).runId; return Response.json(record(id)); }
+    if (path.endsWith('/actions/receipt')) { receipts++; return new Response(null, { status: 204 }); }
+    if (path.includes('/actions?')) return Response.json({ run: record(id), action: startAction(id) });
+    throw Error('Unexpected endpoint');
+  }));
+  await startVisible('Valida antes del recibo.', crypto.randomUUID());
+  const agent = (active: boolean) => <UiPortalScopeProvider value={{ active, dialogHost: null, overlayHost: null, onRetry: vi.fn() }}><SameTabAgent runId={id} onActive={vi.fn()} /></UiPortalScopeProvider>;
+  const view = render(agent(true));
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  view.rerender(agent(false));
+  await act(async () => { finish(); await new Promise(resolve => setTimeout(resolve, 60)); });
+  expect(receipts).toBe(0);
+  if (retire) view.unmount(); else view.rerender(agent(true));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 60)); });
+  expect(receipts).toBe(retire ? 0 : 1);
 });

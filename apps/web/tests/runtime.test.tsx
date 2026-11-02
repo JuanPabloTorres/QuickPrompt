@@ -5,6 +5,7 @@ import type { NovaRuntimeSnapshot } from '../src/features/nova/NovaLive';
 import { afterEach, expect, it, vi } from 'vitest';
 import { NovaLive } from '../src/features/nova/NovaLive';
 import { AgentRuntimePanel } from '../src/features/nova/AgentRuntimePanel';
+import { NovaWelcome } from '../src/features/nova/NovaWelcome';
 import { liveViewSchema, type LiveRuntime, type LiveView } from '../src/services/live';
 import { AgentDock } from '../src/features/nova/AgentDock';
 import { domAnimation, LazyMotion } from 'motion/react';
@@ -25,12 +26,12 @@ function view(runId = id): LiveView {
 }
 it('offers a central alert and current review without redundant floating controls', async () => {
   const current = view(); current.run.status = 'AWAITING_APPROVAL'; current.run.approval = 'PENDING';
-  current.proposal = { id, hash: 'current-hash', promptId: null, revision: null, draft: { title: 'Propuesta actual', templateText: 'Resumen actual.', description: '', categoryId: 0 }, originalText: '' };
+  current.proposal = { id, hash: 'current-hash', promptId: null, revision: null, purpose: 'SAVE', draft: { title: 'Propuesta actual', templateText: 'Resumen actual.', description: '', categoryId: 0 }, originalText: '' };
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(current)));
   const prepare = vi.fn(async () => {});
   function Harness() {
     const [snapshot, setSnapshot] = useState<NovaRuntimeSnapshot | null>(null);
-    return <><NovaLive runId={id} worker centralControl runtimeInWorkspace onRuntimeChange={setSnapshot} onPrepareReview={prepare} onReview={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /><LazyMotion features={domAnimation}><AgentDock suspended context="Biblioteca" actions={null}>{null}</AgentDock></LazyMotion></>;
+    return <><NovaLive runId={id} worker centralControl onRuntimeChange={setSnapshot} onPrepareReview={prepare} onReview={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /><LazyMotion features={domAnimation}><AgentDock suspended context="Biblioteca" actions={null}>{null}</AgentDock></LazyMotion></>;
   }
   render(<Harness />);
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'NOVA necesita tu aprobaciónEl borrador está listo. Revisa los cambios antes de guardarlos.');
@@ -43,9 +44,27 @@ it('offers a central alert and current review without redundant floating control
   expect(screen.getByRole('button', { name: 'Confirmar guardado de esta copia' })).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();
 });
+it('describes a content-only review in the central alert without announcing a save', async () => {
+  const current = view(); current.run.status = 'AWAITING_APPROVAL'; current.run.approval = 'PENDING';
+  current.proposal = { id, hash: 'content-only-hash', promptId: null, revision: null, purpose: 'CONTENT_ONLY',
+    draft: { title: 'Propuesta', templateText: 'Texto para continuar.', description: '', categoryId: 0 }, originalText: '' };
+  vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async () => Response.json(current)));
+  function Harness() {
+    const [snapshot, setSnapshot] = useState<NovaRuntimeSnapshot | null>(null);
+    return <><NovaLive runId={id} worker centralControl onRuntimeChange={setSnapshot} onReview={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /></>;
+  }
+  render(<Harness />);
+  expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'NOVA necesita tu aprobaciónLa propuesta está lista. Revisa el contenido antes de continuar.');
+  fireEvent.click(screen.getByRole('button', { name: 'Revisar y aprobar' }));
+  expect(await screen.findByRole('dialog', { name: 'Revisar contenido' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Aprobar contenido y continuar' })).toHaveProperty('disabled', true);
+  expect(screen.getByText('La propuesta no incluye el material de revisión. Vuelve a abrirla antes de continuar.')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Confirmar guardado/ })).toBeNull();
+});
+
 it('rejects from the central alert through the existing cancel owner without approving', async () => {
   const current = view(); current.run.status = 'AWAITING_APPROVAL'; current.run.approval = 'PENDING';
-  current.proposal = { id, hash: 'current-hash', promptId: null, revision: null, draft: { title: 'Propuesta', templateText: 'Resumen.', description: '', categoryId: 0 }, originalText: '' };
+  current.proposal = { id, hash: 'current-hash', promptId: null, revision: null, purpose: 'SAVE', draft: { title: 'Propuesta', templateText: 'Resumen.', description: '', categoryId: 0 }, originalText: '' };
   const calls: string[] = [];
   vi.stubGlobal('EventSource', Events); vi.stubGlobal('fetch', vi.fn(async (path: string) => { calls.push(path); if (path.endsWith('/cancel')) { current.run.status = 'CANCELLED'; return Response.json(current.run); } return Response.json(current); }));
   function Harness() {
@@ -67,6 +86,33 @@ class Events extends EventTarget {
     status, durationMs: 100, errorCode: null, safeDisplayMessage: 'PRIVATE_MESSAGE' }) })); }
 }
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); Events.items = []; });
+it('shows only the observed flow in compact mode and leaves detailed facts to activity', () => {
+  render(<AgentRuntimePanel view={view()} status="Generando" controls={null} disconnected={false} compact />);
+  const compact = screen.getByRole('region', { name: 'Mapa compacto de NOVA' });
+  expect(within(compact).getByRole('list', { name: 'Flujo observado de NOVA' }).querySelector('[aria-current="step"]')?.getAttribute('aria-label')).toBe('Ejecutar: En curso');
+  expect(compact.querySelector('.runtime-map')).toBeNull();
+  expect(compact.textContent).not.toMatch(/PRIVATE_|Memoria activa|Modelo local/);
+});
+it('keeps the live map in the control bar instead of occupying the editor workspace', async () => {
+  const snapshot: NovaRuntimeSnapshot = { view: view(), disconnected: false, stop: vi.fn(async () => {}) };
+  render(<><NovaWelcome runtime={snapshot} home={false} controlling onOpen={vi.fn()} onHelp={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /><label>Instrucción<textarea /></label></>);
+  const stop = await screen.findByRole('button', { name: 'Detener agente' });
+  expect(stop.closest('.nova-control-banner')?.querySelector('.runtime-flow--compact')).toBeTruthy();
+  expect(document.querySelector('.nova-mission')).toBeNull();
+  expect(screen.getByLabelText('Instrucción')).toBeTruthy();
+});
+it.each(['PAUSED', 'AWAITING_APPROVAL', 'COMPLETED', 'CANCELLED'] as const)('does not pulse the perimeter for %s', async status => {
+  const current = view(); current.run.status = status;
+  render(<AgentControl runId={id} runtime={{ view: current, disconnected: false, stop: vi.fn(async () => {}) }} />);
+  expect((await screen.findByTestId('agent-control-frame')).dataset.pulsing).toBe('false');
+});
+it('pulses only during owned connected work and stops the pulse on connection loss', async () => {
+  const snapshot: NovaRuntimeSnapshot = { view: view(), disconnected: false, stop: vi.fn(async () => {}) };
+  const mounted = render(<AgentControl runId={id} runtime={snapshot} />);
+  expect((await screen.findByTestId('agent-control-frame')).dataset.pulsing).toBe('true');
+  mounted.rerender(<AgentControl runId={id} runtime={{ ...snapshot, disconnected: true }} />);
+  expect(screen.getByTestId('agent-control-frame').dataset.pulsing).toBe('false');
+});
 it('renders only public runtime facts and uses explicit textual states', () => {
   render(<AgentRuntimePanel view={view()} status="Écriture en cours" controls={<button>Pausar</button>} disconnected={false} />);
   const panel = screen.getByRole('region', { name: 'Runtime de NOVA' });
@@ -99,10 +145,10 @@ it('publishes only the current runtime and prevents an old Stop callback from ca
   const calls: string[] = [];
   vi.stubGlobal('fetch', vi.fn(async (path: string) => { calls.push(path); return Response.json(view(path.includes(secondId) ? secondId : id)); }));
   const changed = vi.fn();
-  const mounted = render(<NovaLive runId={id} worker={false} onReview={vi.fn()} onRuntimeChange={changed} runtimeInWorkspace />);
+  const mounted = render(<NovaLive runId={id} worker={false} onReview={vi.fn()} onRuntimeChange={changed} />);
   await waitFor(() => expect(changed.mock.calls.at(-1)?.[0]?.view.run.runId).toBe(id));
   const oldStop = changed.mock.calls.at(-1)![0].stop;
-  mounted.rerender(<NovaLive runId={secondId} worker={false} onReview={vi.fn()} onRuntimeChange={changed} runtimeInWorkspace />);
+  mounted.rerender(<NovaLive runId={secondId} worker={false} onReview={vi.fn()} onRuntimeChange={changed} />);
   await waitFor(() => expect(changed.mock.calls.at(-1)?.[0]?.view.run.runId).toBe(secondId));
   await oldStop();
   expect(calls.some(path => path.endsWith('/cancel'))).toBe(false);

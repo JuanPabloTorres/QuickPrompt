@@ -6,7 +6,7 @@ desde `apps/web/package.json`. Se conservan los tags anteriores sin moverlos.
 
 El usuario solicitó commit y cierre condicionado a las comprobaciones. El cierre
 cubre las mejoras de interfaz validadas. Los hallazgos A01 y A02 de la
-[auditoría del agente](../nova/AUDITORIA_AGENTE_UI_20261023.md) siguen pendientes:
+auditoría del agente (referencia histórica conservada en el expediente original) siguen pendientes:
 pérdida de un hecho en una respuesta y espera deficiente ante error del proveedor.
 Son limitaciones medias conocidas, sin reparación en esta revisión. No se declara
 fidelidad autónoma del contenido ni certificación global del agente. La aceptación

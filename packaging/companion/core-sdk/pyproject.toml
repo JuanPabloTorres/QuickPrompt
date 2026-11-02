@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-ai-core"
+version = "0.1.1"
+description = "Local-first capability runtime and agent workspace"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.10,<3"]
+
+[project.optional-dependencies]
+inference = ["pydantic-ai-slim[openai]==2.59.0", "jsonschema==4.26.0"]
+
+[project.scripts]
+adaptive-workspace = "pilot.server:main"
+
+[tool.setuptools.packages.find]
+include = ["adaptive_core*", "pilot*"]
+
+[tool.setuptools.package-data]
+adaptive_core = ["*.schema.json"]
+pilot = ["web/*"]

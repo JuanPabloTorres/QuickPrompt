@@ -64,6 +64,7 @@ public record SemanticInterpretation(SemanticOperation[] Intentions, TargetRefer
     SemanticOperation[]? DeferredGoals = null, SemanticOutcome? DeferredOutcome = null, bool ContinuesPendingTask = false)
 {
     [JsonIgnore] public TaskGoal? Goal { get; init; }
+    [JsonIgnore] public string[]? UserDefinedInputs { get; init; }
     [JsonIgnore] public TaskIntentContract? IntentContract { get; init; }
     [JsonIgnore] public InstructionAuthoring? Authoring { get; init; }
     [JsonIgnore] public WorkflowGoalSnapshot? WorkflowGoals { get; init; }

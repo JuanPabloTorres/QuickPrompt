@@ -27,10 +27,11 @@ import { NovaWelcome } from '../features/nova/NovaWelcome';
 import { AgentUiProvider } from '../features/nova/AgentUiContext';
 import { InterfaceSettings } from '../features/settings/InterfaceSettings';
 import { useInterfacePreferences } from '../hooks/useInterfacePreferences';
+import { useInterfaceTheme } from '../hooks/useInterfaceTheme';
 import { EditorPreparation } from '../features/prompts/EditorPreparation';
 import { type PromptAction } from '../services/library';
 import { type PreparedDraft } from '../services/preparation';
-import { terminalLive, type LiveView, type LiveCommand } from '../services/live';
+import { terminalLive, type LiveView, type LiveCommand, type AuthoringBriefReply } from '../services/live';
 
 import { errorMessage, type Group, type Prompt, type PromptDraft } from '../services/api';
 
@@ -45,7 +46,6 @@ const CompilationHistory = lazy(() => import('../features/prompts/CompilationHis
 
 const blank: PromptDraft = { title: '', templateText: '', description: '', categoryId: 0 };
 const noValues: Record<string, string> = {};
-function initialTheme() { try { return localStorage.getItem('nova-theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; } }
 export default function App() {
   return <AgentUiProvider><ApplicationView /></AgentUiProvider>;
 }
@@ -56,6 +56,7 @@ function ApplicationView() {
   const { observeOperation, startVisible } = visibleSession;
   const [workerRunId] = useState(() => { const id = new URLSearchParams(location.search).get('novaRun'); return id && /^[0-9a-f-]{36}$/i.test(id) ? id : null; });
   const [liveRunId, setLiveRunId] = useState<string | null>(() => { if (workerRunId) return workerRunId; try { const id = sessionStorage.getItem('nova-live-run'); return id && /^[0-9a-f-]{36}$/i.test(id) ? id : null; } catch { return null; } });
+  const [inputRequest, setInputRequest] = useState<{ runId: string; message: string; source?: Prompt; command: LiveCommand } | null>(null);
   useEffect(() => { if (liveRunId) try { sessionStorage.setItem('nova-live-run', liveRunId); } catch { /* Only a run ID is retained; no request or values. */ } }, [liveRunId]);
   useEffect(() => { const uncertain = (event: Event) => { const id = (event as CustomEvent<string>).detail; if (/^[0-9a-f-]{36}$/i.test(id)) setLiveRunId(id); }; window.addEventListener('nova-uncertain-start', uncertain); return () => window.removeEventListener('nova-uncertain-start', uncertain); }, []);
   const [sameTabActive, setSameTabActive] = useState(false);
@@ -69,7 +70,7 @@ function ApplicationView() {
   const [agentNotice, setAgentNotice] = useState('');
   const executionRunId = workerRunId ?? (sameTabActive ? liveRunId : null);
   const [editorUse, setEditorUse] = useState<PreparedDraft | null>(null);
-  const [theme, setTheme] = useState(initialTheme);
+  const [theme, setTheme] = useInterfaceTheme();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [groupId, setGroupId] = useState('');
@@ -111,7 +112,6 @@ function ApplicationView() {
     const timer = setTimeout(() => setShowSkeleton(true), 250);
     return () => clearTimeout(timer);
   }, [library.loading]);
-  useEffect(() => { document.documentElement.dataset.theme = theme; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--background').trim()); try { localStorage.setItem('nova-theme', theme); } catch { /* Theme remains usable without storage. */ } }, [theme]);
   useEffect(() => { collections.list().then(setGroups).catch(() => {}); }, [version]);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
@@ -194,6 +194,20 @@ function ApplicationView() {
       if (fresh?.isArchived) throw new Error('Restaura este prompt desde el archivo antes de utilizarlo con NOVA.');
       const supplied = fresh ? Object.fromEntries(Object.entries(values ?? {}).filter(([name]) => fresh.variableNames.includes(name))) : undefined;
       const run = await startVisible(message, sessionId.current, fresh, supplied, { bindSource: true, command });
+      setInputRequest(command && (command.operation === 'CREATE_DRAFT' || command.operation === 'PROPOSE_ADAPTATION') ? { runId: run.runId, message, source: fresh, command } : null);
+      setLiveRunId(run.runId);
+    } finally { quickLaunching.current = false; }
+  }
+  async function continueAuthoring(answer: string, sequence: number, brief?: AuthoringBriefReply) {
+    const original = inputRequest;
+    if (!original || original.runId !== liveRunId || !visibleSession.clarifyVisible || quickLaunching.current)
+      throw new Error('Esta pestaña ya no conserva el encargo de esa pregunta.');
+    quickLaunching.current = true;
+    try {
+      const run = await visibleSession.clarifyVisible(original.runId, sequence, answer, brief);
+      // The workspace owns both the activity and SameTab driver. A transport
+      // acknowledgement alone must not leave the new run without its UI worker.
+      setInputRequest({ ...original, runId: run.runId });
       setLiveRunId(run.runId);
     } finally { quickLaunching.current = false; }
   }
@@ -253,9 +267,11 @@ function ApplicationView() {
     <div className={`toast-region${mode === 'focus' || providerOpen || dataOpen || groupsOpen ? ' sr-only' : ''}`} role="status" aria-live="polite" aria-atomic="true">{toast && <div className="toast">{toast}</div>}</div>
     <main id="main" tabIndex={-1}>
       <SameTabAgent runId={workerRunId ? null : liveRunId} onActive={setSameTabActive} speed={agentSpeed} onNotice={setAgentNotice} />
-      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} centralControl={controlling} onRuntimeChange={setRuntimeSnapshot} runtimeInWorkspace onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }} />
+      <NovaLive runId={liveRunId} worker={!!executionRunId} notice={agentNotice} centralControl={controlling} onRuntimeChange={setRuntimeSnapshot} onApprovalChange={setApprovedRunId} onPrepareReview={prepareLiveReview} onChooseSource={chooseSearchSource} onReview={view => { void reviewLive(view); }}
+        contentClarification={inputRequest?.runId === liveRunId ? { identity: visibleSession, confirm: continueAuthoring } : undefined}
+        inputDefinition={inputRequest?.runId === liveRunId ? { updating: inputRequest.command.operation === 'PROPOSE_ADAPTATION', confirm: names => quickRequest(inputRequest.message, inputRequest.source, undefined, { ...inputRequest.command, inputNames: names }) } : undefined} />
       <AgentControl runId={controlling ? liveRunId : null} runtime={runtime} />
-      {(mode === 'discover' || controlling) && <NovaWelcome runtime={runtime} home={mode === 'discover'} controlling={controlling} controlLost={!!runtime && runtime.view.run.mode === 'SAME_TAB' && !terminalLive(runtime.view.run.status) && !visibleSession.surfaceCapability(runtime.view.run.runId)} onOpen={() => window.dispatchEvent(new Event('nova-open-assistant'))} onHelp={() => setHelpOpen(true)} />}
+      {mode === 'discover' && <NovaWelcome runtime={runtime} home controlling={controlling} onOpen={() => window.dispatchEvent(new Event('nova-open-assistant'))} onHelp={() => setHelpOpen(true)} />}
       {!workerRunId && <AgentDock suspended={controlling} hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} sourceValues={activePrompt ? valuesByPrompt[activePrompt.id] : undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
         <p className="search-hint" data-testid="nova-action-workbench">Elige la acción; NOVA te ayuda con el contenido, los datos y la búsqueda.</p>
       </AgentDock>}

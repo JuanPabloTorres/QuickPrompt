@@ -6,6 +6,11 @@ import { NovaLogo, type NovaVisualState } from '../../design/NovaLogo';
 import { canvasMotion, panelMotion, stillCanvasMotion, stillPanelMotion } from '../../design/motion';
 import { liveLabels, terminalLive } from '../../services/live';
 
+function focusCommand(root: HTMLElement | null) {
+  (root?.querySelector<HTMLElement>('.nova-input textarea') ?? root?.querySelector<HTMLElement>('.quick-action')
+    ?? root?.querySelector<HTMLElement>('[data-nova-command] select:not(:disabled), [data-nova-command] textarea:not(:disabled)'))?.focus();
+}
+
 export function AgentDock({ children, actions, context, hasActivity = false, suspended = false }: { children: ReactNode; actions: ReactNode; context: string; hasActivity?: boolean; suspended?: boolean }) {
   const reduced = useReducedMotionConfig();
   const [expanded, setExpanded] = useState(false);
@@ -21,7 +26,7 @@ export function AgentDock({ children, actions, context, hasActivity = false, sus
     const reveal = (event: Event) => {
       if (suspendedRef.current) return;
       const focus = (event as CustomEvent<{ focus?: boolean }>).detail?.focus !== false;
-      if (open.current && focus) (root.current?.querySelector<HTMLTextAreaElement>('.nova-input textarea') ?? root.current?.querySelector<HTMLButtonElement>('.quick-action'))?.focus();
+      if (open.current && focus) focusCommand(root.current);
       else { focusRequested.current = focus; setExpanded(true); }
     };
     const activity = (event: Event) => setStatus((event as CustomEvent<string>).detail);
@@ -32,7 +37,7 @@ export function AgentDock({ children, actions, context, hasActivity = false, sus
   }, []);
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('nova-assistant-visibility', { detail: expanded }));
-    if (expanded && focusRequested.current) { focusRequested.current = false; (root.current?.querySelector<HTMLTextAreaElement>('.nova-input textarea') ?? root.current?.querySelector<HTMLButtonElement>('.quick-action'))?.focus(); }
+    if (expanded && focusRequested.current) { focusRequested.current = false; focusCommand(root.current); }
   }, [expanded]);
   useEffect(() => {
     if (!expanded) return;

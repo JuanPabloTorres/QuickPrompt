@@ -32,8 +32,10 @@ it('keeps rejected approval/deletion requests rejected and never retries effects
   await expect(client.deletion(first, approval)).rejects.toBeInstanceOf(ApiError);
   expect(send).toHaveBeenCalledTimes(1);
   expect(JSON.parse(send.mock.calls[0][1].body as string)).toEqual(approval);
-  await expect(client.approve(first, { ...approval, confirmed: true })).rejects.toBeInstanceOf(ApiError);
+  const reviewed = { ...approval, confirmed: true, contentReviewed: true, contentReviewHash: 'contract-fixture', approvedLiteralChangeIds: ['literal-change'] };
+  await expect(client.approve(first, reviewed)).rejects.toBeInstanceOf(ApiError);
   expect(send).toHaveBeenCalledTimes(2);
+  expect(JSON.parse(send.mock.calls[1][1].body as string)).toEqual(reviewed);
 });
 
 it('substitutes the event connection without giving event data an execution capability', () => {

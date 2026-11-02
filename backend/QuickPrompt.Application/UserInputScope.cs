@@ -100,6 +100,12 @@ public sealed class UserInputScope
         }
         return text.Append(request[cursor..]).ToString();
     }
+    /// <summary>Trusted original ranges for authoring projection; values remain owned by input extraction.</summary>
+    public AuthoringCaseRange[] AuthoringRanges(string request, string[] names)
+    {
+        Validate(request, names);
+        return bindings.Select(binding => new AuthoringCaseRange(binding.LabelStart, binding.End - binding.LabelStart, binding.Name)).ToArray();
+    }
 }
 
 public interface IInputScopeInterpreter

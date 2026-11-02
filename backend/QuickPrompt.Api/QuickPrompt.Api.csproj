@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-  <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile></PropertyGroup>
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile></PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../contracts/openapi/nova-v1.json" LogicalName="nova-openapi.json" />
     <ProjectReference Include="../QuickPrompt.Application/QuickPrompt.Application.csproj" />

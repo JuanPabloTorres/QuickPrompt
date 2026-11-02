@@ -7,7 +7,7 @@ using QuickPrompt.Local;
 namespace QuickPrompt.Nova.Application;
 
 public sealed partial class AgentOrchestrator(IIntentInterpreter interpreter, IPromptRetriever retriever, IPromptGenerator generator,
-    IVariableResolver resolver, IPromptEvaluator evaluator, IPreparedDraftStore drafts, PreparationOptions options,
+    IVariableResolver resolver, IPromptEvaluator evaluator, IPreparedDraftStore? drafts, PreparationOptions options,
     IAgentRunStore? runs = null, AgentSessions? sessions = null, ILocalPreparedExecutor? executor = null, IPreparationReadTools? readTools = null,
     PreparationDiagnostics? diagnostics = null, IPreparationPreferences? preferences = null, ICandidateSelector? candidateSelector = null,
     ITaskPlanner? taskPlanner = null, bool stopAfterVerifiedResult = false, bool executeGroundedPlan = false, IInputValueExtractor? inputExtractor = null,

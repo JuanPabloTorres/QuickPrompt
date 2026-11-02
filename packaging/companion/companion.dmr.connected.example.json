@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "server": "https://project-sxf1z.vercel.app/",
+  "slot": "mi-pc-nova",
+  "name": "Mi equipo",
+  "capability": "nova",
+  "python": "",
+  "dotnet": "",
+  "endpoint": "http://127.0.0.1:12434/",
+  "provider": "docker-model-runner",
+  "physicalModel": "docker.io/ai/qwen3@sha256:977d1540140cd0d5437d2e22ffc6853714bef103bda39754edd0f2d9e2aabb82",
+  "thinking": false,
+  "sessionMode": "connected"
+}

@@ -25,7 +25,36 @@ function loadProject(file) {
   references.forEach(loadProject);
 }
 loadProject(apiProject);
+loadProject('backend/QuickPrompt.Mcp/QuickPrompt.Mcp.csproj');
 loadProject('src/QuickPrompt.Web/QuickPrompt.Web.csproj');
+loadProject('backend/QuickPrompt.Accounts/QuickPrompt.Accounts.csproj');
+loadProject('backend/QuickPrompt.Cloud/QuickPrompt.Cloud.csproj');
+loadProject('backend/QuickPrompt.Companion/QuickPrompt.Companion.csproj');
+check('Companion and inference share transport without importing persistence', () => {
+  const permitted = new Set(['backend/QuickPrompt.Inference/QuickPrompt.Inference.csproj', 'backend/QuickPrompt.Application/QuickPrompt.Application.csproj']);
+  const references = graph.get('backend/QuickPrompt.Companion/QuickPrompt.Companion.csproj') || [];
+  if (references.length !== permitted.size || references.some(reference => !permitted.has(reference))) errors.push('Companion must depend only on its shared inference/application contracts.');
+  for (const file of [...files('backend/QuickPrompt.Companion', ['.cs']), ...files('backend/QuickPrompt.Inference', ['.cs'])])
+    if (/\bLocalStore\b|\bNpgsql\b|\bMicrosoft\.Data\.Sqlite\b/.test(read(file))) errors.push('Persistence dependency in local inference/companion: ' + file);
+});
+check('Account persistence is explicit and never shares the local SQLite store', () => {
+  const references = graph.get('backend/QuickPrompt.Accounts/QuickPrompt.Accounts.csproj') || [];
+  const allowed = new Set(['src/QuickPrompt.Domain/QuickPrompt.Domain.csproj', 'backend/QuickPrompt.Application/QuickPrompt.Application.csproj']);
+  if (references.length !== allowed.size || references.some(reference => !allowed.has(reference)))
+    errors.push('Accounts must reuse domain/application contracts without depending on the local host/store or inference adapters.');
+  for (const file of files('backend/QuickPrompt.Accounts', ['.cs']))
+    if (/\bLocalStore\b|\bMicrosoft\.Data\.Sqlite\b/.test(read(file)))
+      errors.push('Accounts bypasses PostgreSQL isolation: ' + file);
+});
+check('MCP delegates to the loopback API without owning persistence or model inference', () => {
+  const project = 'backend/QuickPrompt.Mcp/QuickPrompt.Mcp.csproj';
+  const references = graph.get(project) || [];
+  if (references.length !== 1 || !references[0].endsWith('/QuickPrompt.Application/QuickPrompt.Application.csproj'))
+    errors.push('MCP must reference only the shared application contracts.');
+  for (const file of files('backend/QuickPrompt.Mcp', ['.cs']))
+    if (/\bLocalStore\b|\bMicrosoft\.Data\.Sqlite\b|\bQuickPrompt\.Web\.Infrastructure\b|\bProcess\.Start\b/.test(read(file)))
+      errors.push('MCP bypasses its API boundary: ' + file);
+});
 check('Production project dependency graph is acyclic and excludes evaluation', () => {
   const visited = new Set(), active = new Set();
   function visit(file) {
@@ -127,7 +156,7 @@ check('Model transport can be composed without constructing the semantic interpr
   if (!composition.includes('AddSingleton<IAgentModelTransport>(sp => sp.GetRequiredService<AdaptiveCoreModelTransport>())')
       || !composition.includes('AddSingleton<IValidatedAgentModelTransport>(sp => sp.GetRequiredService<AdaptiveCoreModelTransport>())'))
     errors.push('Model transport must resolve its independent owner.');
-  for (const file of ['backend/QuickPrompt.Infrastructure/AdaptiveCoreModelTransport.cs'])
+  for (const file of ['backend/QuickPrompt.Inference/AdaptiveCoreModelTransport.cs'])
     if (/\bPreparationInference\b|\bLocalStore\b|\bSemanticPlanCompiler\b/.test(read(file))) errors.push('Semantic/domain dependency in model transport: ' + file);
   if (fs.existsSync(path.join(root, 'backend/QuickPrompt.Infrastructure/InferenceReuse.cs')))
     errors.push('Old interpreter cache owner remains after migration.');
@@ -164,7 +193,7 @@ check('Contract metadata exporter is independent of the API artifact it generate
   if (generator.includes('qwen3:8b') || generator.includes('qwen2.5:7b-instruct')) errors.push('OpenAPI generator duplicates local model identities.');
 });
 check('UI action selection can be composed without the semantic interpreter or authoring client', () => {
-  const selector = read('backend/QuickPrompt.Infrastructure/UiDecisionModel.cs');
+  const selector = read('backend/QuickPrompt.Inference/UiDecisionModel.cs');
   if (/\bPreparationInference\b|\bILocalLlmClient\b|\bLocalStore\b|\bHttpClient\b/.test(selector))
     errors.push('UI selector depends on semantic/authoring/storage/HTTP implementation.');
   if (!selector.includes('IAgentModelTransport transport')) errors.push('UI selector lacks its borrowed transport port.');
@@ -173,7 +202,7 @@ check('UI action selection can be composed without the semantic interpreter or a
     errors.push('Visible execution must compose its UI selector independently.');
 });
 check('Candidate membership has an independent owner and no ranked compatibility authority', () => {
-  const selector = read('backend/QuickPrompt.Infrastructure/SemanticCandidateSelector.cs');
+  const selector = read('backend/QuickPrompt.Inference/SemanticCandidateSelector.cs');
   if (/\bPreparationInference\b|\bILocalLlmClient\b|\bLocalStore\b|\.Score\b/.test(selector))
     errors.push('Candidate selector depends on unrelated capabilities or retrieval rank.');
   if (!read('backend/QuickPrompt.Api/ApplicationModules.cs').includes('AddSingleton<ICandidateSelector>(sp => new SemanticCandidateSelector(sp.GetRequiredService<IAgentModelTransport>()))'))
@@ -184,7 +213,7 @@ check('Candidate membership has an independent owner and no ranked compatibility
   if (!compatibility.includes('"CAPABILITY_UNAVAILABLE"')) errors.push('Missing membership capability does not fail explicitly.');
 });
 check('Field extraction has an independent provider and an explicit orchestration port', () => {
-  const extractor = read('backend/QuickPrompt.Infrastructure/PromptInputValueExtractor.cs');
+  const extractor = read('backend/QuickPrompt.Inference/PromptInputValueExtractor.cs');
   if (/\bPreparationInference\b|\bIPromptGenerator\b|\bILocalLlmClient\b|\bLocalStore\b/.test(extractor))
     errors.push('Field extraction depends on unrelated interpretation, authoring or persistence.');
   const composition = read('backend/QuickPrompt.Api/ApplicationModules.cs');
@@ -196,7 +225,7 @@ check('Field extraction has an independent provider and an explicit orchestratio
     if (/generator is IInputValueExtractor/.test(read(file))) errors.push('Orchestration still requires extraction to be implemented by the generator: ' + file);
 });
 check('Input scope is independently composed and its old partial implementation is retired', () => {
-  const provider = read('backend/QuickPrompt.Infrastructure/PromptInputScopeInterpreter.cs');
+  const provider = read('backend/QuickPrompt.Inference/PromptInputScopeInterpreter.cs');
   if (/\bPreparationInference\b|\bIIntentInterpreter\b|\bIPromptGenerator\b|\bLocalStore\b|\bHttpClient\b/.test(provider))
     errors.push('Input scope depends on unrelated interpretation, authoring, persistence or HTTP.');
   if (!read('backend/QuickPrompt.Api/ApplicationModules.cs').includes('AddSingleton<IInputScopeInterpreter>(sp => new PromptInputScopeInterpreter(sp.GetRequiredService<IInputValueExtractor>()))'))
@@ -209,22 +238,25 @@ check('Input scope is independently composed and its old partial implementation 
   if (/\bIAgentModelTransport\b|\bIPromptRetriever\b|\bLocalStore\b/.test(choice))
     errors.push('Explicit action boundary acquired inference, retrieval or persistence.');
 });
-check('Draft fidelity review has one independent owner and shared stage packet encoding', () => {
-  const reviewer = read('backend/QuickPrompt.Infrastructure/DraftFidelityReviewer.cs');
+check('Retired fidelity review stays outside production composition and shares packet encoding', () => {
+  const reviewer = read('backend/QuickPrompt.Inference/DraftFidelityReviewer.cs');
   if (/\bPreparationInference\b|\bILocalLlmClient\b|\bLocalStore\b|\bHttpClient\b/.test(reviewer))
     errors.push('Fidelity review depends on unrelated interpretation, editing, persistence or HTTP.');
   if (!reviewer.includes('IValidatedAgentModelTransport transport')) errors.push('Fidelity reviewer lacks its validated transport port.');
   const composition = read('backend/QuickPrompt.Api/ApplicationModules.cs');
-  if (!composition.includes('AddSingleton<IDraftFidelityReviewer>(sp => new DraftFidelityReviewer(sp.GetRequiredService<IValidatedAgentModelTransport>()')
-      || !composition.includes('sp.GetRequiredService<IInputValueExtractor>(), sp.GetRequiredService<IDraftFidelityReviewer>()'))
-    errors.push('Fidelity reviewer is not independently composed and injected.');
-  for (const file of ['backend/QuickPrompt.Evaluation/Compatibility/PreparationInference.cs', 'backend/QuickPrompt.Infrastructure/DraftFidelityReviewer.cs'])
+  // The compatibility reviewer remains loadable for historical consumers, but
+  // proposal authoring no longer treats a second model as content authority.
+  if (/AddSingleton<IDraftFidelityReviewer>|GetRequiredService<IDraftFidelityReviewer>/.test(composition))
+    errors.push('Retired fidelity review has re-entered production composition.');
+  if (!read('backend/QuickPrompt.Inference/PromptDraftGenerator.cs').includes('return await GenerateDraftProposal('))
+    errors.push('Production authoring does not delegate to the complete proposal owner.');
+  for (const file of ['backend/QuickPrompt.Evaluation/Compatibility/PreparationInference.cs', 'backend/QuickPrompt.Inference/DraftFidelityReviewer.cs'])
     if (!read(file).includes('AgentStagePacket.Encode(')) errors.push('Stage packet encoding has a second owner: ' + file);
   if (fs.existsSync(path.join(root, 'backend/QuickPrompt.Infrastructure/DraftFidelity.cs')))
     errors.push('Old embedded fidelity implementation remains after migration.');
 });
 check('Draft generation has an independent factory and one implementation behind the existing port', () => {
-  for (const file of ['backend/QuickPrompt.Infrastructure/PromptDraftGenerator.cs', 'backend/QuickPrompt.Infrastructure/PromptDraftGenerator.Authoring.cs']) {
+  for (const file of ['backend/QuickPrompt.Inference/PromptDraftGenerator.cs', 'backend/QuickPrompt.Inference/PromptDraftGenerator.Authoring.cs']) {
     const source = read(file);
     if (/\bPreparationInference\b|\bLocalStore\b|\bHttpClient\b|\bISemanticIntentInterpreter\b/.test(source))
       errors.push('Generation depends on interpretation, persistence or a private transport: ' + file);
@@ -260,19 +292,30 @@ check('Production preserves explicit user choice and an independent content owne
     errors.push('Python launcher still owns application or inference logic.');
   for (const retired of ['bridge.py','run.py','test_bridge.py'])
     if (fs.existsSync(path.join(root,'agents/nova-core',retired))) errors.push('Alternate domain engine remains: ' + retired);
-  const selector = read('backend/QuickPrompt.Infrastructure/UiDecisionModel.cs');
+  const selector = read('backend/QuickPrompt.Inference/UiDecisionModel.cs');
   if (/retryReason|json_schema_retry|for \(var attempt/.test(selector)) errors.push('UI domain selector owns a protocol-repair loop.');
 });
 check('Web hosts share the owned local-client factory without claiming borrowed HTTP resources', () => {
-  const client = read('backend/QuickPrompt.Infrastructure/Local/OllamaClient.cs');
+  const client = read('backend/QuickPrompt.Inference/OllamaClient.cs');
   if (!client.includes('ILocalLlmClient, IDisposable') || !client.includes('public static OllamaClient CreateOwned(')
-      || !client.includes('if (ownsHttp) http.Dispose();'))
+      || !/if \(ownsHttp\) http\??\.Dispose\(\);/.test(client))
     errors.push('Local inference adapter lacks explicit owned versus borrowed resource lifecycle.');
   for (const file of ['backend/QuickPrompt.Api/ApplicationModules.cs', 'src/QuickPrompt.Web/Program.cs']) {
     const host = read(file);
     if (!host.includes('OllamaClient.CreateOwned(') || /new OllamaClient\(new HttpClient/.test(host))
       errors.push('Web host leaves an unowned inference HTTP client: ' + file);
   }
+});
+check('Account NOVA composes canonical capabilities only through its private companion port', () => {
+  const source = read('backend/QuickPrompt.Cloud/AccountNovaInference.cs');
+  if (!source.includes('proposals.ForConnection(actor, libraryId, connectionId)') || !source.includes('OllamaClient.ForTransport(transport)'))
+    errors.push('Account NOVA does not bind its private model port outside packets.');
+  if (/\bnew HttpClient\b|OllamaClient\.CreateOwned|\bnew AdaptiveCoreModelTransport\b|\bProcess\.Start\b/.test(source))
+    errors.push('Account NOVA constructs a server-local provider instead of using the approved companion.');
+  for (const owner of ['PromptDraftGenerator','PromptInputValueExtractor','SemanticCandidateSelector','UiDecisionModel'])
+    if (!source.includes('new ' + owner + '(')) errors.push('Account NOVA does not reuse canonical capability: ' + owner);
+  if (/new DraftFidelityReviewer\(|IDraftFidelityReviewer/.test(source))
+    errors.push('Account NOVA allocates retired fidelity review.');
 });
 check('React application composes service ports and visible sessions without feature singleton imports', () => {
   const modulePorts = { library: new Set(['prompts', 'templates', 'collections', 'archives']), live: new Set(['live', 'startVisible', 'observeOperation', 'surfaceCapability', 'releaseSurface']),
@@ -315,7 +358,7 @@ check('Semantic workflows receive independent capabilities instead of requiring 
       errors.push('Retired native planning port is present in the Core factory: ' + port);
   if (!composition.includes('AddSingleton<ISemanticAdviceResponder>(sp => new PromptAdviceResponder('))
     errors.push('Advice must have an independent owner outside legacy planning.');
-  const advice = read('backend/QuickPrompt.Infrastructure/PromptAdviceResponder.cs');
+  const advice = read('backend/QuickPrompt.Inference/PromptAdviceResponder.cs');
   if (/\bSemanticIntentInterpreter\b/.test(advice)) errors.push('Advice depends on legacy planning.');
   const resolver = read('backend/QuickPrompt.Application/TaskSourceResolver.cs');
   if (resolver.includes('selector is IGroundedSourceSelector') || resolver.includes('interpreter is ISemanticClauseReviewer')

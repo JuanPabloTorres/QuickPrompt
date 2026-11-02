@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/eng-spa.2025.11.23.tei.gz" LogicalName="QuickPrompt.Translation.eng-spa.2025.11.23.tei.gz" />
+    <None Remove="Resources/NOTICE.translation-lexicon.md" />
+    <Content Include="Resources/NOTICE.translation-lexicon.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.11.0" />
+    <ProjectReference Include="../../src/QuickPrompt.Domain/QuickPrompt.Domain.csproj" />
+    <ProjectReference Include="../QuickPrompt.Application/QuickPrompt.Application.csproj" />
+  </ItemGroup>
+</Project>

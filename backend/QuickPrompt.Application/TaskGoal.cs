@@ -42,14 +42,85 @@ public record TaskGoal(Guid GoalId,
     private readonly object assessmentLock=new();
     private readonly Queue<string> assessedBodies=new();
     private string? humanApprovedBody;
+    private string? humanApprovedDraft;
+    private string? authoringFingerprint;
+    [JsonIgnore] public DraftProposalContract? AuthoringContract { get; private set; }
+    [JsonIgnore] public PromptInputContract? InputContract { get; private set; }
+    [JsonIgnore] public AuthoringReferenceCoverage? ReferenceCoverage { get; private set; }
+    [JsonIgnore] public bool TitleInterpreted { get; private set; }
+    [JsonIgnore] public string? RequestedTitle { get; private set; }
+    public void BindRequestedTitle(string request,string? title)
+    {
+        if(title is not null&&(string.IsNullOrWhiteSpace(title)||title.Length>160||title.Contains('\n')||!request.Contains(title,StringComparison.Ordinal)))
+            throw new ValidationException("El título no es una cita literal del encargo.");
+        lock(assessmentLock) {
+            if(TitleInterpreted&&RequestedTitle!=title) throw new ValidationException("El título solicitado no puede reinterpretarse durante el reintento.");
+            RequestedTitle=title;TitleInterpreted=true;
+        }
+    }
+    // Trusted content preparation binds this once; it cannot rewrite an accepted declaration on retry.
+    public void SetInputContract(PromptInputContract contract)
+    {
+        lock (assessmentLock) {
+            if (InputContract is not null && InputContract != contract)
+                throw new ValidationException("No se puede reinterpretar el contrato de campos durante la misma tarea.");
+            InputContract = contract;
+        }
+    }
+    /// <summary>Fix source-grounded reference roles for this task; revisions may not replace that expectation.</summary>
+    public void BindReferenceCoverage(AuthoringReferenceCoverage coverage)
+    {
+        if (!coverage.Resolved) throw new ValidationException("Falta resolver el contrato de referencias.");
+        lock (assessmentLock)
+        {
+            if (ReferenceCoverage is not null && ReferenceCoverage.Fingerprint != coverage.Fingerprint)
+                throw new ValidationException("El papel de las referencias no puede reinterpretarse durante la misma tarea.");
+            ReferenceCoverage = coverage;
+        }
+    }
+    /// <summary>Bind application-owned context before drafting; this does not approve the proposed meaning.</summary>
+    public void BindAuthoringContract(DraftProposalContract contract)
+    {
+        if (contract.OriginalRequest != UserRequest
+            || (contract.SourceId is null) != (contract.SourceRevision is null)
+            || contract.SourceId is { } sourceId && !TargetReferences.Contains(new(sourceId, contract.SourceRevision!.Value))
+            || contract.SourceSnapshot?.PromptId is { } savedId
+                && !TargetReferences.Contains(new(savedId, contract.SourceSnapshot.Revision!.Value))
+            || contract.SourceId is null && TargetReferences.Length > 0 && WorkingTarget is null
+            || contract.SourceId is null && WorkingTarget is { } working && LiveRuns.Hash(contract.SourceText ?? "") != working.BodyHash)
+            throw new ValidationException("La propuesta de autoría no pertenece al encargo y origen vigentes.");
+        lock (assessmentLock)
+        {
+            if (authoringFingerprint is not null && authoringFingerprint != contract.Fingerprint)
+                throw new ValidationException("El contexto de autoría no puede cambiar durante la misma tarea.");
+            AuthoringContract = contract;
+            authoringFingerprint = contract.Fingerprint;
+        }
+    }
+    /// <summary>Checks the exact proposed body receipt; semantic acceptance still requires explicit content review.</summary>
+    public bool HasAuthoringStructure(string body) => HasCurrentAuthoringContract && AuthoringContract!.MatchesProposal(body);
+    [JsonIgnore] internal bool HasCurrentAuthoringContract => AuthoringContract is { } contract
+        && authoringFingerprint == contract.Fingerprint;
     // Separate provenance: this is a confirmed proposal, not a model assessment.
-    internal void RecordHumanContentApproval(string body) { lock (assessmentLock) humanApprovedBody = AssessmentHash(body); }
+    internal void RecordHumanContentApproval(PromptInput draft)
+    {
+        lock (assessmentLock)
+        {
+            humanApprovedBody = AssessmentHash(draft.TemplateText);
+            humanApprovedDraft = ContentApprovalFingerprint(draft);
+        }
+    }
     public bool HasHumanContentApproval(string body) { lock (assessmentLock) return humanApprovedBody == AssessmentHash(body); }
+    public bool HasHumanContentApproval(PromptInput draft) { lock (assessmentLock) return humanApprovedDraft == ContentApprovalFingerprint(draft); }
+    internal string ContentApprovalFingerprint(PromptInput draft) => LiveRuns.Hash(new { authority = AssessmentHash(draft.TemplateText), draft });
     // An assessment cannot grant effects or declare completion. The exact body is
     // bound to this process-owned goal; native structure/receipts remain independent.
-    private string AssessmentHash(string body)=>LiveRuns.Hash(new {GoalId,UserRequest,TargetReferences,WorkingTarget,Constraints,AuthoringDecision,Clauses,body});
+    private string AssessmentHash(string body)=>LiveRuns.Hash(new {GoalId,UserRequest,TargetReferences,WorkingTarget,Constraints,AuthoringDecision,Clauses,InputContract,ReferenceCoverage=ReferenceCoverage?.Fingerprint,AuthoringContract=AuthoringContract?.Fingerprint,TitleInterpreted,RequestedTitle,body});
     public void RecordContentAssessment(string body)
     {
+        if (AuthoringContract is not null)
+            throw new ValidationException("El contrato verifica procedencia y estructura; el modelo no certifica el contenido de esta tarea.");
+        ReferenceCoverage?.ValidateBody(body);
         var hash=AssessmentHash(body);
         lock(assessmentLock) {
             if(assessedBodies.Contains(hash))return;
@@ -59,6 +130,7 @@ public record TaskGoal(Guid GoalId,
     }
     public bool HasContentAssessment(string body)
     {
+        if (AuthoringContract is not null) return false;
         var hash=AssessmentHash(body);lock(assessmentLock)return assessedBodies.Contains(hash);
     }
     [JsonIgnore] public string ContentRequest {
@@ -182,7 +254,8 @@ public static class GoalCompletionValidator
     // prerequisite; native observations, domain validation and receipts must also pass.
     public static GoalCompletion Validate(TaskGoal goal, SemanticInterpretation plan, UiVisibleState state,
         PromptDocument? original, PromptDocument? current, IReadOnlyCollection<string> executed,
-        IReadOnlyDictionary<string, string> groundedValues, bool contentValid, bool effectCommitted, bool includePersistence = false, UiClipboardReceipt? completedClipboard = null)
+        IReadOnlyDictionary<string, string> groundedValues, bool contentValid, bool effectCommitted, bool includePersistence = false, UiClipboardReceipt? completedClipboard = null,
+        bool allowPendingContentReview = false)
     {
         var missing = new List<string>();
         if (goal.RequiredEffects.Contains(SemanticOperation.ASK_CLARIFICATION)) missing.Add("AWAITING_INFORMATION");
@@ -194,6 +267,7 @@ public static class GoalCompletionValidator
             missing.Add("SESSION_CONTROL_RECEIPT_REQUIRED");
         if (goal.AuthoringDecision != plan.Authoring) missing.Add("AUTHORING_DECISION_CHANGED");
         if (state.Error is not null) missing.Add("UI_ERROR");
+        if (goal.InputContract is { } inputs && !inputs.Matches(state.TemplateText ?? "")) missing.Add("REQUESTED_INPUTS_MISSING_OR_EXTRA");
         if (goal.TargetReferences is [var target] && (original?.Id != target.Id || original.Revision != target.Revision
             || !effectCommitted && (current?.Id != target.Id || current.Revision != target.Revision || current.TemplateText != original.TemplateText))) missing.Add("SOURCE_REVISION_CHANGED");
         if (effectCommitted && goal.ApprovalRequirements.Length == 0) missing.Add("UNREQUESTED_PERSISTENCE");
@@ -210,7 +284,9 @@ public static class GoalCompletionValidator
                     && (!goal.Constraints.Shortening || state.TemplateText.Length < (goal.WorkingTarget?.CharacterCount ?? original?.TemplateText.Length)),
                 CompletionCondition.NEW_DRAFT_VISIBLE => (state.Mode == "create" && state.PromptId is null && state.DraftChanged || effectCommitted && state.PromptId is not null) && state.Title is { Length: > 0 }
                     && state.TemplateText is { Length: > 0 } && executed.Contains("ui_prepare_creation"),
-                CompletionCondition.CONTENT_VALID => contentValid && state.TemplateText is { } assessed && (goal.HasContentAssessment(assessed) || goal.HasHumanContentApproval(assessed)),
+                CompletionCondition.CONTENT_VALID => contentValid && state.TemplateText is { } assessed
+                    && (goal.HasHumanContentApproval(assessed) || goal.AuthoringContract is null && goal.HasContentAssessment(assessed)
+                        || allowPendingContentReview && goal.HasAuthoringStructure(assessed)),
                 CompletionCondition.TEMPLATE_VISIBLE => state.TemplateText is { Length: > 0 } && state.TemplatePreviewText == state.TemplateText && executed.Contains("ui_show_template"),
                 CompletionCondition.CLIPBOARD_WRITTEN => executed.Contains(plan.RequiresTemplatePreview ? "ui_copy_template" : "ui_copy_compiled_prompt") && (ClipboardMatches(state, plan.CopyContent)
                     // A verified save changes visible identity/revision. The prior copied

@@ -1,0 +1,14 @@
+.account-factual { display: grid; gap: 20px; padding-top: 20px; }
+.account-factual pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; padding: 20px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; }
+.factual-stages { display: flex; flex-wrap: wrap; list-style: none; padding: 0; gap: 12px; color: var(--muted); font-size: var(--text-meta); }
+.factual-stages li { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; }
+.factual-stages [aria-current="step"] { color: var(--text-primary); background: var(--surface-active); }
+.account-factual .factual-check { display: flex; gap: 12px; align-items: center; min-height: 44px; margin-block: 16px; }
+.factual-check input { width: 20px; height: 20px; flex-shrink: 0; }
+.factual-facts { min-width: 0; border: 0; padding: 0; display: grid; gap: 20px; }
+.factual-fact { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.factual-fact label { display: block; margin-top: 16px; }
+.factual-fact textarea, .factual-fact select { width: 100%; }
+.account-factual details { padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+.account-factual summary { min-height: 44px; cursor: pointer; display: flex; align-items: center; }
+.account-factual blockquote { white-space: pre-wrap; overflow-wrap: anywhere; border-left: 2px solid var(--border); padding-left: 12px; }

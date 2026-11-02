@@ -49,6 +49,11 @@ function update(runId: string, entry: ActionActivity) {
   if (index >= 0 && entries[index].status === 'verified') return;
   histories.set(runId, (index < 0 ? [...entries, entry] : entries.map((item, at) => at === index ? entry : item)).slice(-100));
   while (histories.size > 3) histories.delete(histories.keys().next().value!);
+  notifyLater();
+}
+/** Clear only the retiring private scope's runs; a new account must not inherit UUID-keyed fields. */
+export function clearActivity(runId: string) { if (histories.delete(runId)) notifyLater(); }
+function notifyLater() {
   // The journal is immediate; rendering its observers is coalesced and never
   // runs synchronously on the executor's critical path.
   if (notification === undefined) notification = setTimeout(() => {

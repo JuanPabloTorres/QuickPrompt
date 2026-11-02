@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="colorPrimary">#EFB036</color>
-    <color name="colorPrimaryDark">#EFB036</color>
-    <color name="colorAccent">#EFB036</color>
-
-  <color name="splash_background">#EFB036</color>  <!-- Color amarillo -->
-
-</resources>

@@ -6,6 +6,14 @@ import { useState } from 'react';
 import { AgentUiDriver, readUiState } from '../src/features/nova/AgentUiDriver';
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+it('opens activity from the compact control bar without issuing a task command', async () => {
+  const open = vi.fn(); window.addEventListener('nova-open-activity', open);
+  render(<AgentControl runId="run-a" runtime={null} />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Ver actividad de NOVA' }));
+  expect(open).toHaveBeenCalledOnce();
+  expect(screen.getByRole('button', { name: 'Detener agente' })).toBeTruthy();
+  window.removeEventListener('nova-open-activity', open);
+});
 it('distinguishes the code-owned approval alert from actual workspace errors', () => {
   vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
   const root = document.createElement('div'); document.body.append(root);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readServerEvents } from './serverEvents';
 import { promptSchema, emptySchema, openApiResponse, post, request, type ApiClient, type Prompt } from './api';
 import { semanticSchema } from './semantic';
 
@@ -58,27 +59,18 @@ export class PreparationFailure extends Error {
 export const stageLabels: Record<PreparationState, string> = { RECEIVED: 'Preparando el prompt…', UNDERSTANDING: 'Preparando el prompt…', SEARCHING: 'Buscando en tu biblioteca…', SELECTING_OR_GENERATING: 'Preparando el prompt…', FILLING: 'Preparando el prompt…', VALIDATING: 'Comprobando el resultado…', READY: 'Listo para utilizar', USER_ACTION: 'Esperando tu decisión', COMPLETED: 'Listo para utilizar', NEEDS_INFORMATION: 'Necesito un dato', CANCELLED: 'Detenido', FAILED: 'No se pudo completar', BLOCKED: 'No se pudo completar' };
 export async function readPreparation(response: Response, operationId: string, stage: (value: PreparationState) => void, signal: AbortSignal, onResponse?: (text: string) => void): Promise<PreparedDraft> {
   if (!response.ok || !response.body) throw new Error(response.status === 429 ? 'NOVA está ocupada. Espera un momento y reintenta.' : 'No se pudo iniciar la preparación. Tu biblioteca sigue disponible.');
-  const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8', { fatal: true }); let buffer = '';
   try {
-    while (true) {
-      const chunk = await reader.read();
-      if (signal.aborted) throw new DOMException('Detenido', 'AbortError');
-      buffer += decoder.decode(chunk.value, { stream: !chunk.done });
-      if (buffer.length > 1200000) throw new Error('Propuesta demasiado grande.');
-      let boundary: number;
-      while ((boundary = buffer.indexOf('\n\n')) >= 0) {
-        const event = buffer.slice(0, boundary); buffer = buffer.slice(boundary + 2);
-        const name = event.split('\n').find(line => line.startsWith('event: '))?.slice(7);
-        const raw = event.split('\n').find(line => line.startsWith('data: '))?.slice(6);
-        if (!raw) throw new Error('Evento de preparación incompleto.');
-        const data: unknown = JSON.parse(raw);
-        if (name === 'stage') stage(z.object({ state: stateSchema }).parse(data).state);
-        else if (name === 'response') onResponse?.(z.object({ text: z.string().max(64000) }).parse(data).text);
-        else if (name === 'error') { const failure = z.object({ message: z.string(), code: z.string().optional() }).parse(data); throw new PreparationFailure(failure.message, failure.code ?? 'FAILED'); }
-        else if (name === 'complete') { const result = preparedSchema.parse(data); if (result.id !== operationId) throw new Error('La propuesta pertenece a otra operación.'); return result; }
-        else throw new Error('Evento de preparación desconocido.');
-      }
-      if (chunk.done) throw new Error('La preparación quedó incompleta. Tu trabajo anterior se conserva.');
+    for await (const event of readServerEvents(response, signal)) {
+      const data: unknown = JSON.parse(event.data);
+      if (event.type === 'stage') stage(z.object({ state: stateSchema }).parse(data).state);
+      else if (event.type === 'response') onResponse?.(z.object({ text: z.string().max(64000) }).parse(data).text);
+      else if (event.type === 'error') { const failure = z.object({ message: z.string(), code: z.string().optional() }).parse(data); throw new PreparationFailure(failure.message, failure.code ?? 'FAILED'); }
+      else if (event.type === 'complete') { const result = preparedSchema.parse(data); if (result.id !== operationId) throw new Error('La propuesta pertenece a otra operación.'); return result; }
+      else throw new Error('Evento de preparación desconocido.');
     }
-  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+    throw new Error('La preparación quedó incompleta. Tu trabajo anterior se conserva.');
+  } catch (error) {
+    if (signal.aborted) throw new DOMException('Detenido', 'AbortError');
+    throw error;
+  }
 }

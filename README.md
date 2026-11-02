@@ -1,47 +1,71 @@
-# QuickPrompt NOVA
+# QuickPrompt
 
-**Versión inicial 1.0.0 aceptada por el usuario.** Revisión de interfaz cerrada: `nova-v1.0.0-r2`. [Acta y límites de r2](docs/releases/NOVA_1.0.0_R2.md). Se conservan los tags inicial y r1, junto con su [aceptación previa](docs/releases/NOVA_1.0.0_R1.md).
+Biblioteca de prompts con variables, colecciones, versiones y resultados. NOVA
+ayuda a buscar, redactar y ejecutar instrucciones con revisión y permisos explícitos.
+La edición SaaS usa React/TypeScript, .NET 10 y PostgreSQL; MCP delega acceso a una
+biblioteca concreta y Companion conecta el modelo local del usuario.
 
-QuickPrompt guarda y organiza prompts, completa variables y permite copiarlos o usarlos con IA local. En NOVA eliges la acción; la IA ayuda con la búsqueda por significado y el contenido. Guardar, eliminar y trasladar texto a otro servicio conservan sus revisiones y confirmaciones.
+Versión inicial **1.0.1** en preparación. Estado de aceptación integral: **pendiente**; consultar
+[controles y fallos abiertos](docs/development/GO_TO_MARKET.md).
 
-## Ejecutar
+## Preparar el entorno
 
-Requiere .NET 8, Node/npm y las dependencias del frontend instaladas. Para IA se configuran una instalación existente de Adaptive-AI-Core, su Python y Ollama con `qwen3:8b`. El arranque no instala paquetes ni descarga modelos. [Configuración de Core](agents/nova-core/README.md).
+- SDK .NET 10 indicado en global.json, Node 22 y PostgreSQL para las integraciones.
+- Docker Model Runner con Qwen3:8b para la inferencia local, configurado de forma
+  explícita. El repositorio no incluye modelos, bibliotecas personales o credenciales.
+- Instalar dependencias con `npm ci --ignore-scripts` en la raíz y apps/web.
+  `dotnet restore backend/QuickPrompt.Cloud --locked-mode` verifica el grafo Cloud.
 
-Desde la raíz, con las dependencias existentes:
+## Verificar
 
 ```powershell
-./scripts/Start-Nova.ps1 -CorePython ../Adaptive-AI-Core/.venv/Scripts/python.exe -CoreSdkRoot ../Adaptive-AI-Core
+dotnet test backend/QuickPrompt.Tests --configuration Release
+npm test --prefix apps/web -- --run
+npm run build --prefix apps/web
+node scripts/Check-ModuleBoundaries.cjs
+node scripts/Check-Documentation.cjs
 ```
 
-Abre la URL indicada por el script, normalmente `http://127.0.0.1:5190`. `-Port` y `-DataPath` permiten una instancia explícita. La base privada y los perfiles del navegador no pertenecen al repositorio. La biblioteca manual funciona sin inferencia; las operaciones IA requieren su proveedor configurado y fallan de forma explícita si falta.
+Los tests que requieren hardware, PostgreSQL o servicios reales deben ejecutarse
+con configuración explícita y registrar las omisiones. Un build no acredita
+inferencia, entrega de correo o uso desde ChatGPT.
 
-Para abrir una entrega con doble clic, instalar el [acceso de escritorio con icono](docs/development/DESKTOP.md). Reutiliza una instancia compatible o inicia la entrega configurada, conservando su biblioteca.
+## Operar y desarrollar
 
-## Usar
+- [Arquitectura y propietarios](docs/ARCHITECTURE.md)
+- [Companion y Docker Model Runner](docs/development/COMPANION.md)
+- [Correo de cuentas](docs/development/ACCOUNT_MAIL.md)
+- [MCP y autorización](docs/development/MCP.md)
+- [Desarrollo y checks](docs/development/DEVELOPMENT.md)
+- [Construcción del contenedor](deploy/cloud/README.md)
 
-1. Elige un prompt o crea uno con título y contenido. Los campos se escriben como `<nombre>`.
-2. Completa los valores y revisa la vista previa antes de copiar o ejecutar.
-3. Abre «Trabajar con NOVA» en la portada o el acceso persistente del agente y elige Crear, Actualizar, Buscar por significado u otra acción disponible.
-4. Revisa el cambio antes de guardar una copia, una versión o eliminar.
+La configuración privada vive fuera de Git. Las actas históricas de la UI local
+conservan su alcance original y no certifican el SaaS actual.
 
-[Guía de uso](docs/COMO_USAR_QUICKPROMPT.md) · [Documentación vigente](docs/README.md) · [Desarrollo y pruebas](docs/development/DEVELOPMENT.md).
+## Entrega y CI/CD
 
-## Arquitectura y contribución
+El workflow [QuickPrompt CI and delivery](.github/workflows/nova-web.yml) comprueba
+backend, UI, MCP, Companion, seguridad de cuentas/PostgreSQL y restauración. Un
+trabajo separado ejecuta el recurso lingüístico nativo fijado; una VM nueva de
+Windows instala los prerrequisitos explícitos, exporta dos ZIP reproducibles y
+comprueba instalación reubicada, rollback y retirada de payloads. La prueba en
+Windows usa datos sintéticos y no afirma instalar Docker Model Runner ni ejecutar
+Qwen en el runner. La inferencia local tiene evidencia propia con el proveedor real.
 
-- `apps/web`: React/TypeScript; composición de pantallas, formularios y controles.
-- `backend`: API ASP.NET Core, casos de uso y adaptadores.
-- `agents/nova-core`: adaptador de inferencia; no decide permisos ni escribe la biblioteca.
-- `src`: dominio compartido y consumidor Blazor de compatibilidad.
-- `apps/mobile`: aplicación MAUI conservada.
-- `Tests`, `scripts`, `contracts`: pruebas, herramientas y contratos.
+El snapshot mínimo de Adaptive Core está en `packaging/companion/core-sdk`, con
+identidad por archivo y avisos originales. No incluye pesos, entornos, configuración
+privada o implementaciones de dependencias externas. El exportador lo usa por
+defecto y permite seleccionar explícitamente una instalación propia compatible.
 
-[Mapa de propietarios](docs/ARCHITECTURE.md) · [Componentes y formularios](docs/development/UI_COMPONENTS.md) · [Reglas para agentes](AGENTS.md).
+Los tags `v1.*` publican el ZIP y sus hashes y una imagen GHCR versionada sólo
+después de los controles. La promoción explícita de `main` usa el deploy hook del
+servicio Render existente, guardado como secreto de GitHub; fija el SHA comprobado.
+El secreto todavía debe configurarse antes de habilitar la promoción. Un commit,
+un tag o una ejecución de CI no sustituyen aceptación pública de NOVA/MCP.
 
-Una página compone capacidades existentes. Las reglas, la validación de dominio y la persistencia tienen un propietario; no se copian para cada pantalla. Las abstracciones compartidas deben conservar diferencias reales y demostrar su uso en consumidores concretos.
+[Acta de versión inicial](docs/releases/INITIAL_1.0.1.md).
 
-## Estado y evidencia
-
-Los resultados portables de esta revisión están en [su manifiesto](docs/releases/nova-v1.0.0-r1.json). Los logs, bases y capturas quedan locales según la [política de evidencia](docs/evidence/README.md). Una prueba estructural no demuestra comprensión semántica ni fiabilidad universal.
-
-La documentación anterior a esta limpieza describe otros perfiles y se consulta como [historial](docs/archive/README.md). La interpretación automática libre rechazada no es la entrada principal del producto actual. No se afirma aceptación de todos los proveedores externos, paridad móvil completa o todos los criterios del expediente ampliado.
+Traducción contextual comprobada el 02/11: tras la aclaración humana de tarjeta/registro,
+una nueva captura produjo Card and instruction y Open the card «Firmar» and request
+to sign <acuerdo>. Dos llamadas reales, sin retries ni efectos. El fallo automático
+sin aclaración se conserva; no se declara una campaña automática 4/4.

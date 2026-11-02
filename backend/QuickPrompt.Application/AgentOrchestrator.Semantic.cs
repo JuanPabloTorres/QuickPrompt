@@ -10,6 +10,7 @@ public sealed partial class AgentOrchestrator
     private async Task<PreparedDraft> PrepareSemantic(PrepareInput original, Func<PreparationState, Task> progress, Action<string, string, double> observe,
         CancellationToken ct, Func<string, Task>? responseProgress, Func<string, CancellationToken, Task>? beforeTool, Action<string>? modelConsulted)
     {
+        if (drafts is null) throw new InvalidOperationException("This composition exposes visible runs only; no standalone preparation store was configured.");
         Validate(original);
         var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(original with { Values = original.Values?.OrderBy(v => v.Key, StringComparer.Ordinal).ToDictionary() }))));
         if (drafts.Fingerprint(original.OperationId) is { } previous)
@@ -66,17 +67,30 @@ public sealed partial class AgentOrchestrator
             string CorrectionFeedback(string[] failures, string? rejectedCandidate = null)
             {
                 var actualSource = input.WorkingDraft?.TemplateText ?? candidates.SingleOrDefault(candidate => candidate.Prompt.Id == input.SourcePromptId)?.Prompt.TemplateText ?? "";
-                return PromptPreparationPipeline.CorrectionFeedback(failures,requirements,actualSource,rejectedCandidate);
+                return PromptPreparationPipeline.CorrectionFeedback(failures,requirements,actualSource,rejectedCandidate,plan.Goal?.InputContract is {Enforced:true} inputs ? inputs.Names : null);
+            }
+            void RefreshConstraintBasis()
+            {
+                if (plan.Goal?.AuthoringContract is not { } contract) return;
+                var actualBasis = input.WorkingDraft?.TemplateText ?? source?.TemplateText;
+                if (!plan.Goal.HasCurrentAuthoringContract || contract.SourceText != actualBasis
+                    || contract.SourceId is { } sourceId && (source?.Id != sourceId || source.Revision != contract.SourceRevision))
+                    throw new ConflictException("La propuesta no corresponde al origen vigente de esta preparación.");
+                // Losses from the source are displayed by the proposal contract.
+                // Only actual user/content constraints remain hard requirements;
+                // reintroducing the old source would undo a reviewed edit.
+                requirements = requirements with { Constraints = plan.Requirements.Constraints,
+                    WorkingSourceText = plan.Adapts ? contract.SourceText : requirements.WorkingSourceText };
             }
             async Task<PromptProposal> Generate(CancellationToken cancel) {
                 modelConsulted?.Invoke("Generation");
-                try { return await pipeline.DraftGeneration(input, understanding, candidates, cancel); }
-                catch (ValidationException failure) when ((plan.Adapts || plan.Creates) && !didRevise) {
+                try { var generated = await pipeline.DraftGeneration(input, understanding, candidates, cancel); RefreshConstraintBasis(); return generated; }
+                catch (ValidationException failure) when ((plan.Adapts || plan.Creates) && !didRevise && !failure.Data.Contains("NovaStageRepairExhausted")) {
                     // The shared editor can reject a malformed/variable-changing body before a
                     // PreparedDraft exists. That rejection consumes the SAME single correction budget.
                     didRevise = true; modelConsulted?.Invoke("Revision");
                     var correction = input with { ValidationFeedback = CorrectionFeedback([failure.Message[..Math.Min(500, failure.Message.Length)]]) };
-                    return await pipeline.DraftGeneration(correction, understanding, candidates, cancel);
+                    var generated = await pipeline.DraftGeneration(correction, understanding, candidates, cancel); RefreshConstraintBasis(); return generated;
                 }
             }
             toolRegistry.Register<EmptyArgs, PromptProposal>("propose_prompt_update", ToolPermission.Prepare, empty, (_, cancel) => Generate(cancel));
@@ -124,6 +138,8 @@ public sealed partial class AgentOrchestrator
                 cancel.ThrowIfCancellationRequested(); return Task.FromResult(ProviderRegistry.Providers.Single(p => p.ProviderId == (plan.ProviderId ?? "ollama"))); });
             toolRegistry.Register<EmptyArgs, string>("execute_local_llm", ToolPermission.LocalExecution, empty, async (_, cancel) => {
                 if (!plan.Executes || executor is null || draft?.State != PreparationState.READY || plan.Constraints.ForbiddenOperations.Contains(SemanticOperation.EXECUTE_LOCAL)) throw new ValidationException("No hay ejecución local autorizada y preparada.");
+                if (NeedsContentReview(draft))
+                    throw new PreparationToolException("CONTENT_REVIEW_REQUIRED", "execute_local_llm", "Revisa el contenido exacto de la propuesta antes de ejecutarlo.");
                 if (draft.Values.Any(value => value.Value.Contains(plan.ExecutionEvidence, StringComparison.Ordinal))) throw new ValidationException("La evidencia de ejecución coincide con datos del prompt; revisa y usa el control explícito de ejecución.");
                 run = run with { EffectStarted = true, Approval = "SEMANTIC_EXPLICIT_LOCAL_REQUEST" }; runs?.Put(run);
                 return await executor.Execute(draft, input.Model, responseProgress, cancel); });
@@ -156,7 +172,7 @@ public sealed partial class AgentOrchestrator
                             requirements = requirements with { Constraints = requirements.Constraints.Concat(TemplateConstraints.Required(source.TemplateText)).Distinct().ToArray() };
                             if (plan.Creates && !string.IsNullOrWhiteSpace(plan.RequestedTransformation)) requirements = requirements with { WorkingSourceText = source.TemplateText };
                             if (plan.TargetReference is TargetReference.ACTIVE_DRAFT or TargetReference.PREVIOUS_RESULT && resolution.ActiveDraft is { TemplateText.Length: > 0 } active && active.SourceId == source.Id) {
-                                candidates = candidates.Select(c => c.Prompt.Id == source.Id ? c with { Prompt = c.Prompt with { TemplateText = active.TemplateText } } : c).ToArray();
+                                input = input with { WorkingDraft = active };
                                 requirements = requirements with { Constraints = requirements.Constraints.Concat(TemplateConstraints.Required(active.TemplateText)).Distinct().ToArray(),
                                     WorkingSourceText = plan.Creates && !string.IsNullOrWhiteSpace(plan.RequestedTransformation) ? active.TemplateText : requirements.WorkingSourceText };
                                 if (!plan.Adapts && !plan.Creates) proposal = new(active.Decision, active.SourceId, active.Title, active.Description, active.TemplateText, [], "", "Borrador activo de la sesión; original conservado.");
@@ -194,6 +210,9 @@ public sealed partial class AgentOrchestrator
                         await toolRegistry.Call<EmptyArgs, ProviderCapability>("prepare_provider_transfer", new(), ToolPermission.Prepare, token); break;
                     case SemanticOperation.EXECUTE_LOCAL:
                         if (draft?.State != PreparationState.READY) return await Finish(draft ?? Question(plan));
+                        if (NeedsContentReview(draft))
+                            return await Finish(draft with { State = PreparationState.USER_ACTION, Question = "",
+                                Reason = "Propuesta preparada. Revisa su contenido y cambios antes de ejecutar; no se ha guardado ni ejecutado." });
                         draft = draft with { LocalResponse = await toolRegistry.Call<EmptyArgs, string>("execute_local_llm", new(), ToolPermission.LocalExecution, token) }; break;
                     case SemanticOperation.COPY_TO_CLIPBOARD:
                         throw new PreparationToolException("VISIBLE_CLIPBOARD_REQUIRED", "ui_copy_compiled_prompt", "La copia real requiere el agente en la pestaña visible. El texto preparado se conserva.");
@@ -224,6 +243,10 @@ public sealed partial class AgentOrchestrator
             if (draft is null) { proposal ??= Reuse(source); draft = pipeline.PromptCompilation(input, understanding, proposal, candidates); }
             return await Finish(draft);
 
+            bool NeedsContentReview(PreparedDraft candidate) => plan.Goal is { AuthoringContract: not null } goal
+                && !goal.HasHumanContentApproval(new PromptInput(candidate.Title, candidate.TemplateText, candidate.Description,
+                    candidate.CategoryId, candidate.SourceRevision ?? 0));
+
             async Task<PreparedDraft> Finish(PreparedDraft result)
             {
                 token.ThrowIfCancellationRequested();
@@ -239,7 +262,13 @@ public sealed partial class AgentOrchestrator
                         result.LocalResponse, result.LocalResponse is not null, plan.Has(SemanticOperation.PREPARE_PROVIDER), ProviderId: result.ProviderId ?? plan.ProviderId);
                     var completion = GoalCompletionValidator.Validate(goal, plan, visibleResult, source, source is null ? null : retriever.ReadSource(source.Id), receipts,
                         result.Values.ToDictionary(v => v.Name, v => v.Value), PromptPreparationPipeline.Validation(result, requirements).Valid, false);
-                    if (!completion.Complete) throw new PreparationToolException("GOAL_INCOMPLETE", "finish", "Faltan resultados obligatorios del contrato de la tarea.");
+                    if (!completion.Complete) {
+                        if (goal.AuthoringContract is not null && completion.Missing.Length > 0
+                            && completion.Missing.All(condition => condition == "CONTENT_VALID"))
+                            result = result with { State = PreparationState.USER_ACTION, Question = "",
+                                Reason = "Propuesta preparada. El contenido y sus cambios siguen pendientes de revisión humana; no se certifica su fidelidad." };
+                        else throw new PreparationToolException("GOAL_INCOMPLETE", "finish", "Faltan resultados obligatorios del contrato de la tarea.");
+                    }
                 }
                 if (result.State == PreparationState.NEEDS_INFORMATION && plan.DesiredOutcome == SemanticOutcome.READ
                     && (plan.Has(SemanticOperation.OPEN_PROMPT) || plan.Has(SemanticOperation.SEARCH_PROMPT)) && !plan.Has(SemanticOperation.COPY_PROMPT) && !plan.Has(SemanticOperation.FILL_VARIABLES))
@@ -262,7 +291,8 @@ public sealed partial class AgentOrchestrator
                     else sessions.ObserveDraft(observation, result.TemplateText.Length == 0 ? DraftObservationKind.Snapshot
                         : plan.Creates ? DraftObservationKind.NewArtifact : plan.Adapts ? DraftObservationKind.Authored : DraftObservationKind.Snapshot);
                 }
-                run = run with { PreparedId = result.Id, UserIntent = AgentRouting.Intent(result.Intent), Plan = plan.Preparation().Operations!.Select(AgentRouting.Intent).Distinct().ToArray(), Approval = "SAVE_REQUIRES_REVIEW" };
+                run = run with { PreparedId = result.Id, UserIntent = AgentRouting.Intent(result.Intent), Plan = plan.Preparation().Operations!.Select(AgentRouting.Intent).Distinct().ToArray(),
+                    Approval = result.State == PreparationState.USER_ACTION && NeedsContentReview(result) ? "CONTENT_REVIEW_REQUIRED" : "SAVE_REQUIRES_REVIEW" };
                 SaveRun(result.State == PreparationState.CANCELLED ? AgentRunState.CANCELLED : result.State == PreparationState.NEEDS_INFORMATION ? AgentRunState.NEEDS_CLARIFICATION : AgentRunState.READY);
                 await progress(result.State); return result;
             }

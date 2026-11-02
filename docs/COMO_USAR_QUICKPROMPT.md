@@ -4,13 +4,52 @@ Un prompt es una instrucción reutilizable. QuickPrompt guarda esa instrucción 
 
 ## Abrir
 
-Abre la dirección que indique el arranque de QuickPrompt. La instancia de revisión puede usar otro puerto; utiliza el que esté funcionando. Si el navegador muestra conexión rechazada, consulta el [arranque](../README.md). Recarga una pestaña después de actualizar sólo cuando hayas guardado tus cambios.
+Abre [QuickPrompt](https://project-sxf1z.vercel.app), pulsa **Continuar con Google** y comprueba el correo de la cuenta antes de abrir o crear una biblioteca. Las bibliotecas de otra cuenta no se trasladan al cambiar de sesión. El registro y la recuperación por correo requieren que el operador haya habilitado el correo transaccional; si no están disponibles, usa Google para el acceso autorizado.
+
+En una instalación local, usa la dirección que indique su arranque. Si el navegador muestra conexión rechazada, consulta el [arranque](../README.md). Recarga una pestaña después de actualizar sólo cuando hayas guardado tus cambios.
+
+### Crear una cuenta y recuperar el acceso
+
+Los formularios siguientes se publicaron en el dominio actual el 01/11/2026.
+El envío de correo real sigue pendiente de habilitar un proveedor transaccional.
+El estado operativo se mantiene en [configuración de correo](development/ACCOUNT_MAIL.md).
+
+- **Crear una cuenta** abre `/account/register`. Introduce tu correo y una
+  contraseña de al menos 12 caracteres con mayúsculas, minúsculas, números y un
+  símbolo; repítela y abre el enlace recibido para confirmar el correo.
+- **Reenviar correo de confirmación** abre `/account/resend` si no recibiste el
+  enlace. Revisa también spam. No inicia sesión ni cambia tu contraseña.
+- **Olvidé mi contraseña** abre `/account/recover`. Solicita un enlace, ábrelo y
+  escribe dos veces la contraseña nueva. Después vuelve a iniciar sesión. El
+  cambio invalida las sesiones anteriores y el enlace no puede reutilizarse.
+
+Si el correo no está habilitado, los formularios explican la indisponibilidad y
+no envían solicitudes de alta, recuperación o reenvío. El acceso de cuentas
+existentes y Google conserva sus opciones. La respuesta «Si corresponde…» no
+confirma que exista una cuenta ni que el proveedor haya entregado el correo.
+Los enlaces incompletos o inválidos permiten solicitar otro. Al abrir un enlace
+de confirmación o recuperación, su token se retira de la URL; si recargas esa
+pantalla, vuelve a abrir el enlace original recibido por correo.
+
+Diagnóstico, contratos y evidencia: [acceso por correo](research/ACCOUNT_ACCESS_20261101.md).
+
+## Trabajar en tu biblioteca privada
+
+En **Mis bibliotecas**, abre tu biblioteca y pulsa **Crear prompt**. Escribe un título y la plantilla, por ejemplo: `Revisa <nombre_proyecto>, de tipo <tipo>, cuyo propósito es <proposito>.` Guarda y comprueba que aparezcan los tres campos reales. Los marcadores forman parte de la plantilla; sus valores se completan en cada uso.
+
+Pulsa **Usar** para completar los datos. **Preparar para copiar · sin IA** conserva una instrucción compilada en **Preparaciones recientes**; no produce una respuesta del modelo. Puedes volver a abrirla mediante **Ver resultado**. La plantilla guardada conserva sus marcadores.
+
+La ejecución con IA requiere un equipo autorizado para esa misma cuenta y capacidad. Revisa **Conexiones locales** y el [Companion](development/COMPANION.md). Un permiso vigente no demuestra que el proceso esté atendiendo trabajos; conserva abierta su sesión y usa **Ctrl+C** para detenerla. No necesitas vincular un equipo para el CRUD o la preparación sin IA.
+
+Las secciones siguientes describen también los controles del espacio local. Utiliza las acciones disponibles en tu pantalla; un control grabado en una versión anterior no sustituye el flujo de cuentas.
 
 ## Guardar una instrucción
 
 Pulsa **Nuevo prompt**, escribe un título y el contenido y guarda. Puedes usar marcadores como `<notas>` o `<destinatario>`. Para pedir ayuda, abre el botón circular NOVA y elige **Crear prompt**; describe la tarea y revisa el borrador. **Revisar y guardar copia** y su confirmación guardan el resultado en la biblioteca.
 
 Puedes corregir el borrador antes de revisar. Tanto el botón de NOVA como **Guardar prompt** revisan la edición actual. Comprueba título, contenido y variables; confirmar permite aplicar exactamente esa versión. La revisión sigue siendo necesaria: el modelo puede omitir una condición del encargo.
+
+En **Crear prompt** o **Actualizar prompt**, activa **Definir las variables ahora** para indicar los nombres, uno por línea. Si no los defines, NOVA abre una aclaración antes de redactar y conserva tu petición. Esta lista crea marcadores; no pide valores de uso. Para `tipo`, las opciones `web/app/AI` pertenecen a la descripción y no se agregan como campos separados. Una lista vacía confirmada crea sin variables o conserva las existentes al actualizar. [Contrato y evidencias](nova/VARIABLES_CONFIRMADAS_20261025.md).
 
 ## Encontrar
 

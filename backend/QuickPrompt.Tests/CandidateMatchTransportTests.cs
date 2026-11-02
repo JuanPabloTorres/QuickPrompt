@@ -30,16 +30,14 @@ public sealed class CandidateMatchTransportTests
         var first = Prompt(Guid.NewGuid(), "Primero"); var second = Prompt(Guid.NewGuid(), "Segundo");
         var pending = inference.Select("Busca mi instrucción guardada.", [new(first, 1, "Recuperado"), new(second, 1, "Recuperado")], "qwen3:8b", cancellation.Token);
         try {
-          for(var index=1;index<=(scenario is "no-match" or "one-match" or "ambiguous" ? 2 : 1);index++) {
             var received = await listener.GetContextAsync().WaitAsync(cancellation.Token);
             using var packet = await JsonDocument.ParseAsync(received.Request.InputStream, cancellationToken: cancellation.Token);
             var membership = packet.RootElement.GetProperty("format").GetProperty("properties").GetProperty("matches");
-            var key="candidate_"+index;
-            Assert.Equal(new[] { key }, membership.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
+            Assert.Equal(new[] { "candidate_1", "candidate_2" }, membership.GetProperty("required").EnumerateArray().Select(item => item.GetString()));
             var values = scenario switch {
-                "no-match" => JsonSerializer.Serialize(new Dictionary<string,bool>{{key,false}}),
-                "one-match" => JsonSerializer.Serialize(new Dictionary<string,bool>{{key,index==1}}),
-                "ambiguous" => JsonSerializer.Serialize(new Dictionary<string,bool>{{key,true}}),
+                "no-match" => "{\"candidate_1\":false,\"candidate_2\":false}",
+                "one-match" => "{\"candidate_1\":true,\"candidate_2\":false}",
+                "ambiguous" => "{\"candidate_1\":true,\"candidate_2\":true}",
                 "empty-object" => "{}",
                 "missing" => "{\"candidate_2\":true}",
                 "foreign" => "{\"candidate_1\":true,\"candidate_2\":false,\"invented\":true}",
@@ -50,7 +48,6 @@ public sealed class CandidateMatchTransportTests
             var content = "{\"matches\":" + values + ",\"reason\":\"Contrato sintético; no mide comprensión.\"" + (scenario == "extra-top-level" ? ",\"winner\":\"candidate_1\"" : "") + "}";
             var bytes = JsonSerializer.SerializeToUtf8Bytes(new { done = true, message = new { content } });
             received.Response.ContentType = "application/json"; await received.Response.OutputStream.WriteAsync(bytes, cancellation.Token); received.Response.Close();
-          }
             Guid[] ids = scenario == "no-match" ? [] : scenario == "ambiguous" ? [first.Id, second.Id] : [first.Id];
             if (scenario is "no-match" or "one-match" or "ambiguous") Assert.Equal(ids, (await pending).PromptIds);
             else await Assert.ThrowsAsync<ValidationException>(() => pending);

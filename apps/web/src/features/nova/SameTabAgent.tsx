@@ -1,5 +1,6 @@
-import { useApplicationServices } from '../../components/ServiceContext';
-import { useEffect, useRef, useState } from 'react';
+import { useAgentRuntimeServices } from '../../components/ServiceContext';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useUiPortalScope } from '../../components/ui/UiPortalScope';
 import { terminalLive, type LiveUiReceipt } from '../../services/live';
 import { AgentUiDriver, readUiState, type CursorTarget, type UiAction, type UiState } from './AgentUiDriver';
 import { createAgentProposalSession } from './AgentProposalSession';
@@ -8,17 +9,21 @@ import { beginActivity, confirmActivity, progressActivity } from './activity';
 import { NovaAgentCursor } from './NovaAgentCursor';
 
 export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { runId: string | null; onActive: (active: boolean) => void; speed?: 'normal' | 'fast'; onNotice?: (notice: string) => void }) {
-  const { live, visibleSession } = useApplicationServices();
+  const { live, visibleSession } = useAgentRuntimeServices();
   const inheritedSession = useAgentProposalSession();
   const [standaloneSession] = useState(createAgentProposalSession);
   const proposalSession = inheritedSession ?? standaloneSession;
-  const { releaseSurface, surfaceCapability } = visibleSession;
+  const { releaseSurface, surfaceCapability, finishSurface } = visibleSession;
   const [target, setTarget] = useState<CursorTarget | null>(null);
   const [notice, setNotice] = useState('');
   useEffect(() => { onNotice?.(notice); }, [notice, onNotice]);
   const onActiveRef = useRef(onActive); onActiveRef.current = onActive;
   const driverRef = useRef<AgentUiDriver | null>(null);
   const speedRef = useRef(speed); speedRef.current = speed;
+  const scopeActive = useUiPortalScope()?.active !== false;
+  const scopeActiveRef = useRef(scopeActive); scopeActiveRef.current = scopeActive;
+  const refreshPauseRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => { refreshPauseRef.current?.(); }, [scopeActive]);
   useEffect(() => { if (driverRef.current) driverRef.current.speed = speed; }, [speed]);
   useEffect(() => {
     setNotice('');
@@ -43,9 +48,14 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
         }
       }
     }); driverRef.current = driver; driver.speed = speedRef.current; const releaseProposal = proposalSession.register(driver);
-    let disposed = false, executing = false, lastSequence = 0, active = true, connectionLost = false, localPauseRequested = false;
+    let disposed = false, executing = false, lastSequence = 0, active = true, connectionLost = false, localPauseRequested = false, serverPauseRequested = false;
     let wakePending = false, wakePoll: (() => void) | null = null;
     const wake = () => { if (wakePoll) wakePoll(); else wakePending = true; };
+    const refreshPause = (notify = true) => {
+      driver.paused = localPauseRequested || serverPauseRequested || connectionLost || !scopeActiveRef.current;
+      if (notify) wake();
+    };
+    refreshPauseRef.current = refreshPause; refreshPause();
     const stateAvailable = (event: Event) => { if ((event as CustomEvent<string>).detail === runId) wake(); };
     const waitForState = () => new Promise<void>(resolve => {
       if (wakePending) { wakePending = false; resolve(); return; }
@@ -63,7 +73,7 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
       if (action === 'cancel') {
         active = false; driver.stop(); lifecycle.abort(); progressRequest?.abort();
         releaseSurface(runId); releaseProposal(); onActiveRef.current(false);
-      } else { localPauseRequested = action === 'pause'; driver.paused = localPauseRequested || connectionLost; if (action === 'resume' && !driver.intervention) setNotice(''); }
+      } else { localPauseRequested = action === 'pause'; refreshPause(); if (action === 'resume' && !driver.intervention) setNotice(''); }
       wake();
     };
     // Focus, selection, scrolling and tab visibility are not requests to pause.
@@ -82,6 +92,8 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
         receipts.set(action.actionId, receipt); lastSequence = action.sequence;
       }
       // Retrying delivery retries this receipt, never the DOM action.
+      while (!disposed && active && !scopeActiveRef.current) await new Promise(resolve => setTimeout(resolve, 40));
+      if (disposed || !active || lifecycle.signal.aborted) { executing = false; return; }
       try {
         progressRequest?.abort(); progressRequest = null;
         await acknowledge(receipt);
@@ -98,19 +110,25 @@ export function SameTabAgent({ runId, onActive, speed = 'fast', onNotice }: { ru
     }
     async function poll() {
       while (!disposed && active) {
+        if (!scopeActiveRef.current) { await waitForState(); continue; }
         try {
           const data = await live.poll(runId!, capability!, document.visibilityState !== 'hidden', lifecycle.signal);
           if (disposed || !active) break;
           if (connectionLost) { connectionLost = false; if (!driver.intervention) setNotice(''); }
-          driver.paused = localPauseRequested || data.run.pauseRequested;
-          if (terminalLive(data.run.status)) { active = false; driver.stop(); releaseSurface(runId!); releaseProposal(); onActiveRef.current(false); break; }
+          serverPauseRequested = data.run.pauseRequested; refreshPause(false);
+          if (terminalLive(data.run.status)) {
+            active = false; driver.stop();
+            if (finishSurface) finishSurface(runId!, data.run.status === 'BLOCKED' && data.run.errorCode === 'NEEDS_CLARIFICATION' && data.run.approval === 'NONE' && !data.run.effectCommitted);
+            else releaseSurface(runId!);
+            releaseProposal(); onActiveRef.current(false); break;
+          }
           if (data.action && !driver.paused && !executing) void execute(data.action).catch(() => { driver.intervene(); setNotice('No se pudo confirmar el último paso. Detén NOVA y revisa el borrador.'); });
-        } catch { if (disposed || !active) break; connectionLost = true; driver.paused = true; setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
+        } catch { if (disposed || !active) break; connectionLost = true; refreshPause(false); setNotice('Recuperando la conexión. NOVA continuará automáticamente sin repetir acciones.'); }
         await waitForState();
       }
     }
     void poll();
-    return () => { disposed = true; active = false; wakePoll?.(); lifecycle.abort(); progressRequest?.abort(); driver.stop(); releaseProposal(); if (driverRef.current === driver) driverRef.current = null; onActiveRef.current(false); window.removeEventListener('nova-ui-control', control); window.removeEventListener('nova-ui-state-available', stateAvailable); };
-  }, [runId, proposalSession]);
+    return () => { disposed = true; active = false; wakePoll?.(); lifecycle.abort(); progressRequest?.abort(); driver.stop(); releaseProposal(); if (driverRef.current === driver) driverRef.current = null; if (refreshPauseRef.current === refreshPause) refreshPauseRef.current = null; onActiveRef.current(false); window.removeEventListener('nova-ui-control', control); window.removeEventListener('nova-ui-state-available', stateAvailable); };
+  }, [runId, proposalSession, live, releaseSurface, surfaceCapability, finishSurface]);
   return <NovaAgentCursor target={target} />;
 }

@@ -25,48 +25,42 @@ public class Phase5BoundaryTests
     }
 
     [Fact]
-    public async Task ReviewAndCompilerAssessTheSameExplicitlyDeclaredBody()
+    public async Task ReviewAndCompilerKeepTheSameHostComposedBodyWithoutSemanticAcceptance()
     {
-        using var listener = Listen();
-        using var inference = new PreparationInference(listener.Prefixes.Single(), taskGoals: true, taskResultContract: true);
-        const string message = "Crea una instrucción para resumir un documento.";
-        var plan = SemanticPlanCompiler.Compile(new([SemanticOperation.CREATE_DRAFT], TargetReference.NONE, "", null, "", message,
-            new([], true, null, null, [], [], false), SemanticOutcome.NEW_DRAFT, [], false, "", null, "Crear"));
-        var goal = TaskGoal.Create(message, SemanticContext.Empty, plan, [new(TaskClauseRole.CONTENT, message)]);
-        var input = new PrepareInput(Guid.NewGuid(), message, SessionId: Guid.NewGuid()) { Interpretation = plan with { Goal = goal } };
-        var understanding = input.Interpretation.Preparation();
-        var pending = inference.Generate(input, understanding, [], default);
-        var generation = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        string generationPacket;using (var request = new StreamReader(generation.Request.InputStream)) generationPacket=await request.ReadToEndAsync();
-        using var generationJson=JsonDocument.Parse(generationPacket);
-        using var generationData=JsonDocument.Parse(generationJson.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        var lastUnit=generationData.RootElement.GetProperty("requestUnits").GetArrayLength()-1;
-        await Reply(generation, new { decision = "CREATE_NEW", sourceId = (Guid?)null, title = "Resumen documental", description = "",
-            authoringEvidence=new {bodyRanges=new[]{new {start=0,end=lastUnit}},outsideRanges=Array.Empty<object>(),titleRange=(object?)null},
-            templateText = "Resume <documento> sin inventar datos.", requiredInputs = new[] { "documento" }, values = Array.Empty<object>(), clarification = "", reason = "Instrucción solicitada." });
-        var review = await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        string body; using (var request = new StreamReader(review.Request.InputStream)) body = await request.ReadToEndAsync();
-        using var packet = JsonDocument.Parse(body);
-        using var material = JsonDocument.Parse(packet.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!);
-        var reviewed = material.RootElement.GetProperty("proposedInstruction").GetString()!;
-        Assert.Contains("<documento>", reviewed);
-        await Reply(review, new { verdict="ACCEPT",instructionScope="FUTURE_TASK_ONLY",applicationWorkflowQuotes = Array.Empty<string>(), requestedTitleQuote=(string?)null, issues = Array.Empty<object>() });
-        var proposal = await pending.WaitAsync(TimeSpan.FromSeconds(5));
-        var pipeline = new PromptPreparationPipeline(inference, new GroundedVariableResolver(), new DeterministicPromptEvaluator());
-        var prepared = pipeline.PromptCompilation(input, understanding, proposal, []);
-        Assert.Equal(reviewed, prepared.TemplateText);
-        Assert.Equal(proposal, DeterministicPromptEvaluator.Canonicalize(proposal));
-        Assert.True(goal.HasContentAssessment(prepared.TemplateText));
-        Assert.False(goal.HasContentAssessment(prepared.TemplateText + "\nCambio posterior."));
-        Assert.False((goal with { Constraints = goal.Constraints with { LiteralClauses = ["Restricción posterior."] } })
-            .HasContentAssessment(prepared.TemplateText));
-        var sourceBound = goal with { TargetReferences = [new(Guid.NewGuid(), 7)] };
+        const string message="Crea una instrucción para resumir un documento.";
+        const string authored="Resume <documento> sin inventar datos.";
+        var plan=new LiveCommand(SemanticOperation.CREATE_DRAFT,message){InputNames=["documento"]}.Compile(message,SemanticContext.Empty);
+        var goal=plan.Goal!;
+        var input=new PrepareInput(Guid.NewGuid(),message,SessionId:Guid.NewGuid()){Interpretation=plan};
+        var transport=new AuthoringReviewTestFixture.Transport((packet,purpose,_)=>{
+            Assert.Equal("AuthoringRevisionEditor",purpose);
+            return AuthoringReviewTestFixture.RewriteTask(packet, authored);
+        });
+        var dependencies=new AuthoringReviewTestFixture.ForbiddenDependencies();
+        var generator=new PromptDraftGenerator(transport,dependencies,dependencies,dependencies);
+        var understanding=plan.Preparation();var proposal=await generator.GenerateAfterSyntheticReview(input,understanding,[],default,
+            establishedContent: new("Resumen documental", "", authored, [], [], [], []));
+        var pipeline=new PromptPreparationPipeline(generator,new GroundedVariableResolver(),new DeterministicPromptEvaluator());
+        var prepared=pipeline.PromptCompilation(input,understanding,proposal,[]);
+        Assert.Equal(authored,prepared.TemplateText);Assert.Equal(proposal,DeterministicPromptEvaluator.Canonicalize(proposal));
+        Assert.True(goal.HasAuthoringStructure(prepared.TemplateText));Assert.False(goal.HasAuthoringStructure(prepared.TemplateText+"\nCambio posterior."));
+        Assert.False(goal.HasContentAssessment(prepared.TemplateText));Assert.False(goal.HasHumanContentApproval(prepared.TemplateText));
+        Assert.Throws<ValidationException>(()=>goal.RecordContentAssessment(prepared.TemplateText));
+        Assert.Empty(transport.AllCalls);
+
+        // Preserve the existing hash/source/working-revision controls for legacy
+        // consumers; these are not an R3 semantic or human approval certificate.
+        var legacyGoal=TaskGoal.Create(message,SemanticContext.Empty,plan,[new(TaskClauseRole.CONTENT,message)]);
+        legacyGoal.RecordContentAssessment(prepared.TemplateText);
+        Assert.True(legacyGoal.HasContentAssessment(prepared.TemplateText));
+        Assert.False(legacyGoal.HasContentAssessment(prepared.TemplateText+"\nCambio posterior."));
+        Assert.False((legacyGoal with {Constraints=legacyGoal.Constraints with {LiteralClauses=["Restricción posterior."]}}).HasContentAssessment(prepared.TemplateText));
+        var sourceBound=legacyGoal with {TargetReferences=[new(Guid.NewGuid(),7)]};
         sourceBound.RecordContentAssessment(prepared.TemplateText);
-        Assert.False((sourceBound with { TargetReferences = [sourceBound.TargetReferences[0] with { Revision = 8 }] })
-            .HasContentAssessment(prepared.TemplateText));
-        var working = goal.BindWorking(prepared, 1); working.RecordContentAssessment(prepared.TemplateText);
-        Assert.False(working.BindWorking(prepared, 2).HasContentAssessment(prepared.TemplateText));
-        Assert.False(working.BindWorking(prepared with { Id = Guid.NewGuid() }, 1).HasContentAssessment(prepared.TemplateText));
+        Assert.False((sourceBound with {TargetReferences=[sourceBound.TargetReferences[0] with {Revision=8}]}).HasContentAssessment(prepared.TemplateText));
+        var working=legacyGoal.BindWorking(prepared,1);working.RecordContentAssessment(prepared.TemplateText);
+        Assert.False(working.BindWorking(prepared,2).HasContentAssessment(prepared.TemplateText));
+        Assert.False(working.BindWorking(prepared with {Id=Guid.NewGuid()},1).HasContentAssessment(prepared.TemplateText));
     }
 
     [Theory]

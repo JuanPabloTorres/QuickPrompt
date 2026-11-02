@@ -120,28 +120,30 @@ public class TaskGoalTests
         Assert.Throws<PreparationToolException>(()=>TaskGoal.Create(directive,SemanticContext.Empty,plan,
             [new(TaskClauseRole.CONTENT,directive),new(TaskClauseRole.WORKFLOW,"sin guardar.")]));
     }
-    [Fact] public async Task ProductionEditorReceivesOnlyScopedContentNotWorkflowOrEvaluationMarkers()
+    [Fact] public async Task ProductionEditorReceivesCompleteContextWithoutGainingWorkflowOrApprovalAuthority()
     {
         var plan = Plan(); plan = plan with { Goal = Goal(plan) };
-        var editor = new CapturingEditor();
-        var reservation=new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback,0);reservation.Start();var port=((System.Net.IPEndPoint)reservation.LocalEndpoint).Port;reservation.Stop();
-        using var listener=new System.Net.HttpListener();listener.Prefixes.Add($"http://127.0.0.1:{port}/");listener.Start();
-        using var cancellation=new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        using var inference = new PreparationInference($"http://127.0.0.1:{port}", localEditor: editor, taskGoals: true);
-        var input = new PrepareInput(Guid.NewGuid(), request, SourcePromptId: source.Id, SourceRevision: source.Revision) { Interpretation = plan };
-        var pending=inference.Generate(input, plan.Preparation(), [new(source, 10, "synthetic authorized source")], cancellation.Token);
-        try {
-            var exchange=await listener.GetContextAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            using var packet=await System.Text.Json.JsonDocument.ParseAsync(exchange.Request.InputStream);
-            Assert.True(packet.RootElement.GetProperty("think").GetBoolean());Assert.False(packet.RootElement.TryGetProperty("tools",out _));
-            var reply=System.Text.Json.JsonSerializer.Serialize(new {model="qwen3:8b",done=true,message=new {content=System.Text.Json.JsonSerializer.Serialize(new {
-                verdict="ACCEPT",instructionScope="FUTURE_TASK_ONLY",applicationWorkflowQuotes=Array.Empty<string>(),requestedTitleQuote=(string?)null,issues=Array.Empty<object>()
-            })}});
-            var bytes=System.Text.Encoding.UTF8.GetBytes(reply);exchange.Response.ContentType="application/json";exchange.Response.ContentLength64=bytes.Length;
-            await exchange.Response.OutputStream.WriteAsync(bytes);exchange.Response.Close();
-            await pending;
-        } finally { cancellation.Cancel();listener.Stop(); }
-        Assert.Equal("Reduce el texto.", editor.Context); Assert.DoesNotContain("X9Q7", editor.Context); Assert.DoesNotContain("No guardes", editor.Context);
+        var transport = new AuthoringReviewTestFixture.Transport((packet, purpose, callNumber) => {
+            var material = AuthoringReviewTestFixture.Material(packet);
+            Assert.Equal("AuthoringRevisionEditor", purpose);
+            Assert.False(packet.GetProperty("think").GetBoolean()); Assert.False(packet.TryGetProperty("tools", out _));
+            Assert.False(material.TryGetProperty("originalRequest", out _));
+            Assert.Equal(source.TemplateText, AuthoringReviewTestFixture.WriterText(packet, "task"));
+            Assert.False(material.TryGetProperty("obligations", out _));
+            var properties = packet.GetProperty("format").GetProperty("properties");
+            Assert.False(properties.TryGetProperty("approval", out _)); Assert.False(properties.TryGetProperty("operations", out _));
+            Assert.False(properties.TryGetProperty("sourceId", out _));
+            return AuthoringReviewTestFixture.RewriteTask(packet, "Resume. No inventes datos.");
+        });
+        var forbidden = new AuthoringReviewTestFixture.ForbiddenDependencies();
+        var generator = new PromptDraftGenerator(transport, forbidden, forbidden, new DraftFidelityReviewer(transport));
+        var input = new PrepareInput(Guid.NewGuid(), request, SourcePromptId: source.Id, SourceRevision: source.Revision) {
+            Interpretation = plan with { UserDefinedInputs = [] }, ValidationFeedback = "EVALUATION_ONLY_MARKER" };
+        var proposal = await generator.GenerateAfterSyntheticReview(input, plan.Preparation(), [new(source, 10, "synthetic authorized source")], default);
+        Assert.Contains("Resume.", proposal.TemplateText); Assert.Contains("No inventes datos.", proposal.TemplateText);
+        Assert.DoesNotContain("X9Q7", proposal.TemplateText); Assert.DoesNotContain("No guardes", proposal.TemplateText);
+        Assert.DoesNotContain("EVALUATION_ONLY_MARKER", proposal.TemplateText);
+        Assert.True(plan.Goal!.HasAuthoringStructure(proposal.TemplateText)); Assert.False(plan.Goal.HasContentAssessment(proposal.TemplateText));
     }
     [Fact] public void RequiredFieldAndNativePreviewPostconditionsCannotBeSubstitutedByASuccessMessage()
     {
@@ -200,16 +202,5 @@ public class TaskGoalTests
         Assert.Contains(CompletionCondition.SEARCH_RESULTS_VISIBLE, goal.CompletionConditions);
         var listed = State() with { Mode = "discover", PromptId = null, Revision = null, Candidates = [new(source.Id, source.Title, source.Revision)] };
         Assert.True(GoalCompletionValidator.Validate(goal, plan, listed, source, source, ["ui_search_prompt"], new Dictionary<string, string>(), true, false).Complete);
-    }
-    private sealed class CapturingEditor : ILocalLlmClient
-    {
-        public string Context = "";
-        public Task<AiProposal> Propose(string action, string context, Template? template, string model, CancellationToken ct) {
-            Context = context; return Task.FromResult(new AiProposal(Guid.NewGuid(), template!.Id, template.Revision, "Resume. No inventes datos.", ["Breve"], ["Reducido"], [], [], model));
-        }
-        public Task<string[]> Available(CancellationToken ct) => throw new NotSupportedException();
-        public Task<(string Text, double ElapsedMs)> Execute(CompiledPrompt prompt, string model, bool confirmed, Func<string, Task>? progress, CancellationToken ct) => throw new NotSupportedException();
-        public Task<AssistPlan> PlanAssist(string command, string model, CancellationToken ct) => throw new NotSupportedException();
-        public Task<Dictionary<string, string>> Suggest(Template template, string context, string model, CancellationToken ct) => throw new NotSupportedException();
     }
 }

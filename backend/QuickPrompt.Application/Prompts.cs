@@ -17,6 +17,9 @@ public record RevisionInput(int Revision);
 public record ConfirmInput(int Revision, bool Confirmed);
 public record UseInput(int Revision, Dictionary<string, string> Values, Guid OperationId, string ExpectedText);
 public record CompileResult(string Text, int TemplateRevision);
+public record PromptRendering(Guid PromptId, int TemplateRevision,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.Never)] string? Text,
+    string[] MissingVariables);
 public record InspectInput(string TemplateText);
 public record GroupInput(string Name, int Revision = 0);
 public record MembershipInput(Guid GroupId, int Revision, bool Member);
@@ -69,11 +72,12 @@ public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer) : 
         prompt.Variables = input.Defaults ?? prompt.Variables.Where(x => names.Contains(x.Key)).ToDictionary();
         prompt.Validate();
     }
-    public PromptDocument Create(PromptInput input)
+    internal static Template NewTemplate(PromptInput input)
     {
         var prompt = new Template(); Apply(prompt, input);
-        return Document(writer.Create(prompt));
+        return prompt;
     }
+    public PromptDocument Create(PromptInput input) => Document(writer.Create(NewTemplate(input)));
     public PromptDocument Update(Guid id, PromptInput input)
     {
         if (input.Revision < 1) throw new ValidationException("Revisión requerida para editar.");
@@ -109,6 +113,16 @@ public sealed class PromptLibrary(IPromptReader reader, IPromptWriter writer) : 
         ValidateValues(input.Values);
         var compiled = reader.Preview(id, input.Revision, input.Values);
         return new(compiled.Text, compiled.Revision);
+    }
+    /// <summary>Renders only reusable content with explicit values; excludes private defaults and general instructions.</summary>
+    public PromptRendering Render(Guid id, CompileInput input)
+    {
+        var prompt = reader.Find(id) ?? throw new MissingPromptException();
+        if (!prompt.IsActive) throw new MissingPromptException();
+        if (input.Revision < 1 || prompt.Revision != input.Revision)
+            throw new ConflictException("El prompt cambió. Recupera la revisión actual antes de completar variables.");
+        var rendered = EditorTools.Compile(prompt.Template, input.Values);
+        return new(prompt.Id, prompt.Revision, rendered.Text, rendered.MissingVariables);
     }
     public void RecordUse(Guid id, UseInput input)
     {

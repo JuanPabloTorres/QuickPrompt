@@ -14,6 +14,13 @@ export type Group = z.infer<typeof groupsSchema>[number];
 export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
+
+/** Read only the server's public Problem Details fields; never display arbitrary payloads. */
+export async function readApiError(response: Response, invalidProblem = 'No se pudo conectar con la biblioteca.', emptyProblem = 'No se pudo completar la operación.'): Promise<ApiError> {
+  const problem: unknown = await response.json().catch(() => null);
+  const parsed = z.object({ detail: z.string().optional(), title: z.string().optional() }).safeParse(problem);
+  return new ApiError(parsed.success ? parsed.data.detail ?? parsed.data.title ?? emptyProblem : invalidProblem, response.status);
+}
 export interface HttpTransport {
   send(path: string, options: RequestInit): Promise<Response>;
 }
@@ -24,21 +31,19 @@ export interface ApiClient {
 
 // The composition point owns transport and protocol headers. Components and stream
 // readers consume the same port; neither supplies another backend connection.
-export function createApiClient(transport: HttpTransport = { send: (path, options) => fetch(path, options) }): ApiClient {
+export function createApiClient(transport: HttpTransport = { send: (path, options) => fetch(path, options) }, pathPrefix = '/api/v1'): ApiClient {
+  if (pathPrefix && (!pathPrefix.startsWith('/') || pathPrefix.startsWith('//') || pathPrefix.includes('\\') || pathPrefix.includes('..')))
+    throw new Error('Prefijo de API inválido.');
   async function open(path: string, options: RequestInit = {}): Promise<Response> {
     if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) throw new Error('Ruta de API inválida.');
     const headers = new Headers(options.headers);
     if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     headers.set('X-QuickPrompt-Client', 'nova-v1');
-    return transport.send(`/api/v1${path}`, { ...options, headers });
+    return transport.send(`${pathPrefix}${path}`, { ...options, headers });
   }
   async function request<T>(path: string, schema: z.ZodType<T>, options: RequestInit = {}): Promise<T> {
     const response = await open(path, options);
-    if (!response.ok) {
-      const problem: unknown = await response.json().catch(() => null);
-      const parsed = z.object({ detail: z.string().optional(), title: z.string().optional() }).safeParse(problem);
-      throw new ApiError(parsed.success ? parsed.data.detail ?? parsed.data.title ?? 'No se pudo completar la operación.' : 'No se pudo conectar con la biblioteca.', response.status);
-    }
+    if (!response.ok) throw await readApiError(response);
     if (response.status === 204) return schema.parse(undefined);
     const result = schema.safeParse(await response.json());
     if (!result.success) throw new Error('La respuesta del servidor no es compatible. Actualiza la aplicación.');

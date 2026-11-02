@@ -12,6 +12,12 @@ internal sealed record NovaAgentSettings(string Endpoint, TimeSpan AiTimeout, bo
     public string CorePython { get; init; } = "";
     public string CoreWorker { get; init; } = "agents/nova-core/nova_worker.py";
     public string CoreSdkRoot { get; init; } = "../Adaptive-AI-Core";
+    // Explicit model binding is separate from the legacy local endpoint used
+    // by embeddings. Neither a prompt nor a deferred factory can change it.
+    public string CoreProvider { get; init; } = "ollama";
+    public string? CoreEndpoint { get; init; }
+    public string? CorePhysicalModel { get; init; }
+    public QuickPrompt.Web.Infrastructure.AuthoringTranslationResourceOptions TranslationSources { get; init; } = new();
     public static NovaAgentSettings Read(IConfiguration configuration)
     {
         var aiTimeout = configuration.GetValue("QuickPrompt:AiTimeoutSeconds", 180);
@@ -32,7 +38,12 @@ internal sealed record NovaAgentSettings(string Endpoint, TimeSpan AiTimeout, bo
                 Runtime = configuration["QuickPrompt:Agent:Runtime"] ?? "adaptive-core",
                 CorePython = configuration["QuickPrompt:AdaptiveCore:Python"] ?? "",
                 CoreWorker = configuration["QuickPrompt:AdaptiveCore:Worker"] ?? "agents/nova-core/nova_worker.py",
-                CoreSdkRoot = configuration["QuickPrompt:AdaptiveCore:SdkRoot"] ?? "../Adaptive-AI-Core"
+                CoreSdkRoot = configuration["QuickPrompt:AdaptiveCore:SdkRoot"] ?? "../Adaptive-AI-Core",
+                CoreProvider = configuration["QuickPrompt:AdaptiveCore:Provider"] ?? "ollama",
+                CoreEndpoint = configuration["QuickPrompt:AdaptiveCore:Endpoint"],
+                CorePhysicalModel = configuration["QuickPrompt:AdaptiveCore:PhysicalModel"],
+                TranslationSources = new(configuration["QuickPrompt:Preparation:TranslationSource"] ?? "none",
+                    configuration["QuickPrompt:Preparation:TranslationSourceImage"])
             };
     }
 }

@@ -22,18 +22,36 @@ public record LiveStartInput(Guid RunId, Guid SessionId, string Message, string 
 {
     [JsonIgnore] public string? AuthorizedPendingRequest { get; init; }
     [JsonIgnore] public UserInputScope? InputScope { get; init; }
+    [JsonIgnore] public AuthoringClarification[] UserClarifications { get; init; } = [];
+    [JsonIgnore] public ConfirmedAuthoringBrief? ConfirmedBrief { get; init; }
+    [JsonIgnore] public AuthoringBriefContent? AuthoringTaskDraft { get; init; }
     [JsonIgnore] public string DisplayRequest => AuthorizedPendingRequest is null || AuthorizedPendingRequest == Message ? Message : AuthorizedPendingRequest + "\n\nTu aclaración: " + Message;
     [JsonIgnore] public string TaskRequest => new PrepareInput(RunId, Message) { AuthorizedPendingRequest = AuthorizedPendingRequest }.TaskRequest;
 }
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum LiveApprovalPurpose { SAVE, CONTENT_ONLY }
 public record LiveApproval(Guid Id, string Hash, Guid? PromptId, int? Revision, PromptInput Draft, string OriginalText)
 {
+    public LiveApprovalPurpose Purpose { get; init; } = LiveApprovalPurpose.SAVE;
     [System.Text.Json.Serialization.JsonIgnore] public GoalTarget? SourceBasis { get; init; }
+    /// <summary>Source inventory shown for explicit human review; its presence is not content certification.</summary>
+    public AuthoringContentReview? ContentReview { get; init; }
+    [JsonIgnore] public string? ContentAuthorityHash { get; init; }
 }
-public record LiveApprovalInput(Guid ApprovalId, string Hash, int? Revision, bool Confirmed);
+public record LiveApprovalInput(Guid ApprovalId, string Hash, int? Revision, bool Confirmed)
+{
+    /// <summary>Explicit content-review acknowledgement, required separately from effect confirmation for authoring contracts.</summary>
+    public bool ContentReviewed { get; init; }
+    /// <summary>Contract hash of the displayed inventory; Hash also binds the complete form and authority.</summary>
+    public string? ContentReviewHash { get; init; }
+    /// <summary>Each host-detected literal change requires acknowledgement for this exact proposal.</summary>
+    public string[] ApprovedLiteralChangeIds { get; init; } = [];
+}
 public record LiveDeletion(Guid Id, string Hash, Guid PromptId, int Revision, string Title);
 public record LiveView(LiveRecord Run, string? Request, string? Question, UiVisibleState? Observation, LiveApproval? Proposal, UiDecision[] Decisions, SemanticInterpretation? Semantic = null, LiveDeletion? Deletion = null, LiveRuntime? Runtime = null)
 {
     public UiPrompt[] SourceChoices { get; init; } = [];
+    public AuthoringBriefReview? Brief { get; init; }
 }
 public interface ILiveRunStore
 {
@@ -41,6 +59,12 @@ public interface ILiveRunStore
     LiveRecord? Get(Guid id);
     LiveEvent[] Events(Guid id, long after);
     LiveEvent Append(LiveRecord record, LiveEvent item);
+}
+/// <summary>Optional durable approval/effect boundary. The callback uses the library in the same transaction.</summary>
+public interface ILiveRunCommitStore : ILiveRunStore
+{
+    LiveEvent Append(LiveRecord record, LiveEvent item, LiveApproval? proposal);
+    PromptDocument Commit(LiveRecord expected, LiveApproval proposal, IReadOnlyList<GoalTarget> sources, Func<PromptLibrary, PromptDocument> write);
 }
 public record UiPrompt(Guid Id, string Title, int Revision);
 public record UiClipboardReceipt(Guid OperationId, Guid? PromptId, int? Revision, string Text)
@@ -54,6 +78,7 @@ public record UiVisibleState(string Mode, UiPrompt[] Candidates, Guid? PromptId,
     [property: AgentRepresentation(AgentRepresentation.RenderedInstruction, "Deterministic result of substituting authorized case values into the reusable definition. It still addresses the future instruction reader. Compiling, previewing or copying it does not request rewriting the definition or executing its task.")] string? CompiledText, string? Response, bool ResponseComplete, bool ProviderOpen, string? Error = null, string? ProviderId = null,
     Guid? DeletionPromptId = null, int? DeletionRevision = null, Guid? DeletionRunId = null, bool DeletionConfirmationReady = false)
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Description { get; init; }
     public UiClipboardReceipt? Clipboard { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? TemplatePreviewText { get; init; }
 }
@@ -88,6 +113,8 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         public SemanticInterpretation? Semantic;
         public PreparedDraft? WorkingDraft;
         public PreparedDraft? GeneratedDraft;
+        public AuthoringBriefReview? Brief;
+        public (Guid RunId, string Fingerprint)? Continuation;
         public string? AuthorizedTaskRequest;
         public string? VisibleTaskRequest;
         public LiveApproval? Proposal;
@@ -121,8 +148,12 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             throw new ValidationException("Revisa la solicitud de ejecución visible.");
         if ((input.SourceId is null) != (input.SourceRevision is null) || input.SourceRevision is < 1) throw new ValidationException("El contexto requiere un origen y su revisión vigente.");
         input.Command?.Validate(input);
+        var clarifications = AuthoringClarifications.Copy(input.UserClarifications);
         if (!LocalModelPolicy.Production.Allows(input.Model) || input.Mode is "BROWSER" or "SAME_TAB" && !LocalModelPolicy.Production.AllowsAgentControl(input.Model)) throw new ValidationException("Modelo no permitido para este modo.");
-        var fingerprint = Hash(input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) });
+        var normalized = input with { Values = input.Values?.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value) };
+        var fingerprint = clarifications.Length == 0 && input.ConfirmedBrief is null ? Hash(normalized)
+            : Hash(new { input = normalized, userClarifications = clarifications, confirmedBrief = input.ConfirmedBrief });
+        if (input.AuthoringTaskDraft is not null) fingerprint = Hash(new { input = fingerprint, authoringTaskDraft = input.AuthoringTaskDraft });
         var prior = store.Get(input.RunId);
         if (prior is not null) { if (prior.Fingerprint != fingerprint) throw new ConflictException("RunId ya utilizado."); return prior; }
         foreach (var removed in controls.Where(c => store.Get(c.Key) is null).ToArray()) controls.TryRemove(removed.Key, out _);
@@ -143,7 +174,7 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         if (Terminal(record.Status) && control.Touched < DateTime.UtcNow.AddHours(-2)) { controls.TryRemove(id, out _); return new(record, null, null, null, null, [], Runtime: RuntimeView(record, null)); }
         lock (control.Gate) {
             record = Get(id);
-            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control)) { SourceChoices = control.SourceChoices };
+            return new(record, control.VisibleTaskRequest ?? control.Input.Message, control.Question, control.Observation, control.Proposal, control.Decisions.ToArray(), control.Semantic, control.Deletion, RuntimeView(record, control)) { SourceChoices = control.SourceChoices, Brief = control.Brief };
         }
     }
     public LiveEvent Emit(Guid id, LiveStatus status, LiveActor actor, string message, string stage = "Execution", string? tool = null,
@@ -157,7 +188,8 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             if (Terminal(record.Status) && status != record.Status && !uiReceipt) return store.Events(id, Math.Max(0, record.Sequence - 1)).Last();
             if (update is not null) record = update(record);
             record = record with { Status = uiReceipt ? record.Status : record.PauseRequested && !Terminal(status) ? LiveStatus.PAUSED : status, UpdatedAt = DateTime.UtcNow, ErrorCode = error ?? record.ErrorCode };
-            var item = store.Append(record, new(id, Guid.NewGuid(), 0, DateTime.UtcNow, stage, actor, tool, target, status, duration, error, message, actionId, actionSequence));
+            var pending = new LiveEvent(id, Guid.NewGuid(), 0, DateTime.UtcNow, stage, actor, tool, target, status, duration, error, message, actionId, actionSequence);
+            var item = store is ILiveRunCommitStore durable ? durable.Append(record, pending, control.Proposal) : store.Append(record, pending);
             var changed = control.Changed; control.Changed = NewSignal(); changed.TrySetResult(); control.Touched = DateTime.UtcNow; return item;
         }
     }
@@ -167,7 +199,14 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         while (true)
         {
             Task pending;
-            lock (control.Gate) { ct.ThrowIfCancellationRequested(); control.Cancellation.Token.ThrowIfCancellationRequested(); if (!Get(id).PauseRequested) return; pending = control.Resumed.Task; }
+            lock (control.Gate)
+            {
+                ct.ThrowIfCancellationRequested(); control.Cancellation.Token.ThrowIfCancellationRequested();
+                var current = Get(id);
+                if (Terminal(current.Status)) throw new OperationCanceledException("La ejecución ya terminó o perdió su turno.", control.Cancellation.Token);
+                if (!current.PauseRequested) return;
+                pending = control.Resumed.Task;
+            }
             await pending.WaitAsync(ct);
         }
     }
@@ -206,6 +245,8 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         {
             if (control.Deletion is not null) throw new ConflictException("Una revisión de eliminación no puede convertirse en un guardado.");
             if (control.Semantic?.Goal is { ApprovalRequirements.Length: 0 }) throw new ValidationException("La petición no solicita persistir este borrador.");
+            if (control.Proposal is { Purpose: LiveApprovalPurpose.CONTENT_ONLY } && !control.ApprovalConsumed)
+                throw new ConflictException("Completa la revisión de contenido pendiente antes de preparar el guardado solicitado.");
             if (state.PromptId is null) {
                 // The session owner revalidates this reference at the review
                 // boundary. Restore an existing verified draft into this run;
@@ -222,33 +263,64 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
                 }
                 var generated = control.GeneratedDraft ?? throw new ValidationException("Falta un borrador generado y verificado.");
                 if (state.Mode != "create" || manualDraft is null && (state.Title != generated.Title || state.TemplateText != generated.TemplateText)) throw new ConflictException("El formulario no coincide con el borrador generado.");
-                var created = manualDraft ?? new PromptInput(state.Title ?? "", state.TemplateText ?? "", "", 0);
+                var created = manualDraft ?? new PromptInput(state.Title ?? "", state.TemplateText ?? "", generated.Description, 0);
                 if (created.Defaults is not null || created.Revision != 0) throw new ValidationException("El borrador nuevo no puede cambiar valores por defecto ni una revisión guardada.");
                 new Template { Title = created.Title, Template = created.TemplateText, Description = created.Description }.Validate();
                 var proposalIdNew = Guid.NewGuid();
-                control.Proposal = new(proposalIdNew, Hash(new { id, proposalIdNew, created }), null, null, created, "");
+                SetSaveProposal(control, BindContentReview(control, new(proposalIdNew, Hash(new { id, proposalIdNew, created }), null, null, created, "")));
                 Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION, "Borrador nuevo preparado. Revisa antes de guardarlo.", "Approval", update: r => r with { Approval = "PENDING" }); return;
             }
             var source = library.Get(state.PromptId.Value);
+            var authoredDescription = control.Semantic?.Goal?.AuthoringContract?.ConfirmedBrief is not null
+                ? control.GeneratedDraft?.Description ?? source.Description : source.Description;
             if (source.Revision != state.Revision || !state.DraftChanged || string.IsNullOrWhiteSpace(state.TemplateText)) throw new ConflictException("Revisa la propuesta y su origen vigente.");
             if (control.Semantic?.RequestsApprovalFor(SemanticOperation.REQUEST_SAVE_COPY) == true) {
-                var copy = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, source.Description, source.CategoryId);
+                var copy = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, authoredDescription, source.CategoryId);
                 if (copy.Revision != 0 || copy.Defaults is not null) throw new ValidationException("La copia requiere una revisión nueva y valores revisados.");
                 new Template { Title = copy.Title, Template = copy.TemplateText, Description = copy.Description }.Validate();
                 var copyId = Guid.NewGuid();
-                control.Proposal = new(copyId, Hash(new { runId = id, copyId, sourceId = source.Id, source.Revision, copy }), null, null, copy, source.TemplateText) {
+                SetSaveProposal(control, BindContentReview(control, new(copyId, Hash(new { runId = id, copyId, sourceId = source.Id, source.Revision, copy }), null, null, copy, source.TemplateText) {
                     SourceBasis = new(source.Id, source.Revision)
-                };
+                }));
                 Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION, "Copia preparada. El original se conserva; revisa antes de guardarla.", "Approval", update: r => r with { Approval = "PENDING" }); return;
             }
             if (control.Semantic?.Goal is { Constraints.PreserveOriginal: true }) throw new ValidationException("El original está protegido; no se propone sobrescribirlo.");
-            var draft = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, source.Description, source.CategoryId, source.Revision);
+            var draft = manualDraft ?? new PromptInput(state.Title ?? source.Title, state.TemplateText, authoredDescription, source.CategoryId, source.Revision);
             if (draft.Revision != source.Revision || draft.Defaults is not null) throw new ValidationException("La propuesta no puede cambiar valores por defecto ni otra revisión.");
             new Template { Title = draft.Title, Template = draft.TemplateText, Description = draft.Description }.Validate();
             var proposalId = Guid.NewGuid(); var hash = Hash(new { runId = id, proposalId, source.Id, source.Revision, draft });
-            control.Proposal = new(proposalId, hash, source.Id, source.Revision, draft, source.TemplateText);
+            SetSaveProposal(control, BindContentReview(control, new(proposalId, hash, source.Id, source.Revision, draft, source.TemplateText)));
             Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION, "Borrador preparado. Revisa la propuesta antes de guardar una versión.", stage: "Approval", target: source.Id,
                 update: r => r with { TargetId = source.Id, Revision = source.Revision, Approval = "PENDING" });
+        }
+    }
+    /// <summary>Review an authored result without adding persistence to the user's requested effects.</summary>
+    public void ProposeContentReview(Guid id, UiVisibleState state)
+    {
+        var control = Active(id); lock (control.Gate)
+        {
+            if (control.Semantic?.Goal is not { AuthoringContract: { } contract } goal
+                || control.GeneratedDraft is not { } generated || !goal.HasCurrentAuthoringContract)
+                throw new ValidationException("La tarea no admite una revisión de contenido sin guardado.");
+            var run = Get(id);
+            if (Terminal(run.Status) || run.PauseRequested || control.Proposal is not null || control.ApprovalConsumed)
+                throw new ConflictException("Esta ejecución ya no admite otra propuesta de contenido.");
+            if (state.Mode != "create" || !state.DraftChanged || state.TemplateText != generated.TemplateText
+                || state.Title != generated.Title || state.PromptId != generated.SourceId || state.Revision != generated.SourceRevision
+                || !goal.HasAuthoringStructure(state.TemplateText))
+                throw new ConflictException("El formulario no coincide con la propuesta de contenido generada.");
+            var draft = new PromptInput(generated.Title, generated.TemplateText, generated.Description,
+                generated.CategoryId, generated.SourceRevision ?? 0);
+            var proposalId = Guid.NewGuid();
+            var proposal = new LiveApproval(proposalId, Hash(new { id, proposalId, draft, purpose = LiveApprovalPurpose.CONTENT_ONLY }),
+                generated.SourceId, generated.SourceRevision, draft, contract.SourceText ?? "") { Purpose = LiveApprovalPurpose.CONTENT_ONLY };
+            var bound = BindContentReview(control, proposal);
+            ValidateContentReview(control, bound);
+            control.Proposal = bound;
+            control.Observation = state;
+            Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.SYSTEM_VALIDATION,
+                "Revisa el contenido y sus cambios. Continuar no guardará este borrador.", "ContentReview",
+                update: value => value with { Approval = "PENDING" });
         }
     }
     public void RefreshProposal(Guid id, PromptInput draft)
@@ -256,9 +328,10 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         var control = Active(id); lock (control.Gate)
         {
             var run = Get(id); var old = control.Proposal ?? throw new ConflictException("Espera a que NOVA prepare la propuesta antes de revisarla.");
-            if (run.Status != LiveStatus.AWAITING_APPROVAL || run.Approval != "PENDING" || control.ApprovalConsumed || draft.Revision != (old.Revision ?? 0)) throw new ConflictException("Esta propuesta ya no admite cambios. Cancela e inicia una nueva revisión.");
+            if (run.Status != LiveStatus.AWAITING_APPROVAL || run.Approval != "PENDING" || control.ApprovalConsumed
+                || old.Purpose != LiveApprovalPurpose.SAVE || draft.Revision != (old.Revision ?? 0)) throw new ConflictException("Esta propuesta ya no admite cambios. Cancela e inicia una nueva revisión.");
             var state = control.Observation ?? throw new ConflictException("No hay un editor verificado.");
-            state = state with { Title = draft.Title, TemplateText = draft.TemplateText, DraftChanged = true, CompiledReady = false, CompiledText = null };
+            state = state with { Title = draft.Title, Description = draft.Description, TemplateText = draft.TemplateText, DraftChanged = true, CompiledReady = false, CompiledText = null };
             ProposeSave(id, state, draft); control.Observation = state;
             Emit(id, LiveStatus.AWAITING_APPROVAL, LiveActor.USER_SELECTED, "Propuesta actualizada con tus cambios. La confirmación anterior ya no es válida.", "Approval");
         }
@@ -272,7 +345,29 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
             if (run.Status != LiveStatus.AWAITING_APPROVAL || run.PauseRequested || control.ApprovalConsumed || run.Approval != "PENDING") throw new ConflictException("La propuesta no está disponible para aprobación.");
             if (proposal.PromptId is { } existing && library.Get(existing).Revision != proposal.Revision) throw new ConflictException("El prompt cambió; revisa la nueva versión.");
             if (proposal.SourceBasis is { } basis && library.Get(basis.Id).Revision != basis.Revision) throw new ConflictException("El origen cambió; revisa la copia antes de aprobar.");
-            control.Semantic?.Goal?.RecordHumanContentApproval(proposal.Draft.TemplateText);
+            ValidateContentReview(control, proposal);
+            if (proposal.ContentReview is { } review)
+            {
+                if (!input.ContentReviewed || input.ContentReviewHash != review.ContractHash)
+                    throw new ValidationException("Confirma la revisión del contenido y del contexto exactos de esta propuesta.");
+                var expectedChanges = review.LiteralChanges.Entries.Select(change => change.Id).ToHashSet(StringComparer.Ordinal);
+                if (input.ApprovedLiteralChangeIds is null || input.ApprovedLiteralChangeIds.Length > 200
+                    || input.ApprovedLiteralChangeIds.Distinct(StringComparer.Ordinal).Count() != input.ApprovedLiteralChangeIds.Length
+                    || !expectedChanges.SetEquals(input.ApprovedLiteralChangeIds))
+                    throw new ValidationException("Revisa y confirma cada cambio literal destacado para esta propuesta exacta.");
+            }
+            else if (input.ApprovedLiteralChangeIds is null || input.ApprovedLiteralChangeIds.Length > 0)
+                throw new ValidationException("La propuesta no contiene esos cambios para aprobar.");
+            control.Semantic?.Goal?.RecordHumanContentApproval(proposal.Draft);
+            if (proposal.Purpose == LiveApprovalPurpose.CONTENT_ONLY)
+            {
+                control.ApprovalConsumed = true;
+                Emit(id, LiveStatus.TOOL_APPROVED, LiveActor.USER_SELECTED,
+                    "Contenido y cambios revisados; continuar sólo con los efectos solicitados, sin guardar.", "ContentReview",
+                    update: value => value with { Approval = "CONSUMED" });
+                control.ApprovalDecision.TrySetResult(true);
+                return;
+            }
             Emit(id, LiveStatus.TOOL_APPROVED, LiveActor.USER_SELECTED, "Nueva versión aprobada para esta propuesta y revisión.", "Approval", target: proposal.PromptId, update: r => r with { Approval = "APPROVED" });
             control.ApprovalDecision.TrySetResult(true);
         }
@@ -282,19 +377,81 @@ public sealed partial class LiveRuns(ILiveRunStore store, PromptLibrary library)
         var control = Active(id); lock (control.Gate)
         {
             var proposal = control.Proposal ?? throw new ConflictException("No hay una propuesta aprobada."); var run = Get(id);
+            if (proposal.Purpose != LiveApprovalPurpose.SAVE)
+                throw new ValidationException("La revisión de contenido no autoriza guardar este borrador.");
             if (control.Semantic?.Goal is { } goal && (goal.ApprovalRequirements.Length == 0
                 || proposal.PromptId is not null && (goal.Constraints.PreserveOriginal || !goal.ApprovalRequirements.Contains(SemanticOperation.REQUEST_SAVE_VERSION))
                 || proposal.PromptId is null && !goal.ApprovalRequirements.Contains(SemanticOperation.REQUEST_SAVE_COPY) && !control.Semantic.Creates))
                 throw new ValidationException("El guardado no está autorizado por el objetivo de la tarea.");
             if (Terminal(run.Status) || run.PauseRequested || run.Approval != "APPROVED" || control.ApprovalConsumed || Hash(draft) != Hash(proposal.Draft)) throw new ConflictException("Esta acción no tiene una aprobación vigente para su contenido.");
-            if (control.Semantic?.Goal is { } sourceGoal && sourceGoal.TargetReferences.Any(target => library.Get(target.Id).Revision != target.Revision))
-                throw new ConflictException("El origen cambió después de preparar el borrador.");
-            if (proposal.SourceBasis is { } basis && library.Get(basis.Id).Revision != basis.Revision)
-                throw new ConflictException("El origen cambió después de preparar la copia.");
-            control.Cancellation.Token.ThrowIfCancellationRequested(); control.ApprovalConsumed = true;
-            var saved = proposal.PromptId is { } existing ? library.Update(existing, proposal.Draft) : library.Create(proposal.Draft);
+            ValidateContentReview(control, proposal);
+            if (control.Semantic?.Goal is { AuthoringContract: not null } reviewedGoal && !reviewedGoal.HasHumanContentApproval(draft))
+                throw new ConflictException("Falta una revisión humana vigente del contenido exacto que se intenta guardar.");
+            PromptDocument Save(PromptLibrary targetLibrary)
+            {
+                if (control.Semantic?.Goal is { } sourceGoal && sourceGoal.TargetReferences.Any(target => targetLibrary.Get(target.Id).Revision != target.Revision))
+                    throw new ConflictException("El origen cambió después de preparar el borrador.");
+                if (proposal.SourceBasis is { } basis && targetLibrary.Get(basis.Id).Revision != basis.Revision)
+                    throw new ConflictException("El origen cambió después de preparar la copia.");
+                control.Cancellation.Token.ThrowIfCancellationRequested();
+                return proposal.PromptId is { } existing ? targetLibrary.Update(existing, proposal.Draft) : targetLibrary.Create(proposal.Draft);
+            }
+            var sources = (control.Semantic?.Goal?.TargetReferences ?? []).Concat(proposal.SourceBasis is { } basis ? [basis] : []).Distinct().ToArray();
+            var saved = store is ILiveRunCommitStore durable ? durable.Commit(run, proposal, sources, Save) : Save(library);
+            control.ApprovalConsumed = true;
             Emit(id, LiveStatus.UI_UPDATED, LiveActor.USER_SELECTED, "Versión confirmada y persistida; historial conservado.", "Approval", target: saved.Id,
                 update: r => r with { Approval = "CONSUMED", EffectCommitted = true, TargetId = saved.Id, Revision = saved.Revision }); return saved;
         }
+    }
+    // The proposal binds the complete form and process-owned authority. The extra
+    // content hash identifies the inventory the user reviewed; neither replaces the other.
+    private static LiveApproval BindContentReview(Control control, LiveApproval proposal)
+    {
+        if (control.Semantic?.Goal is not { AuthoringContract: { } contract } goal) return proposal;
+        if (!goal.HasCurrentAuthoringContract || goal.InputContract is { } fields && !fields.Matches(proposal.Draft.TemplateText))
+            throw new ValidationException("El contexto o los campos del borrador ya no corresponden al encargo fijado.");
+        contract.ValidateConfirmedProposal(proposal.Draft);
+        var review = contract.GetContentReview(proposal.Draft.TemplateText);
+        var authority = goal.ContentApprovalFingerprint(proposal.Draft);
+        return proposal with { Hash = Hash(new { proposal.Hash, authority, review }), ContentReview = review, ContentAuthorityHash = authority };
+    }
+    private static void SetSaveProposal(Control control, LiveApproval proposal)
+    {
+        // Reviewing content may precede copy/execution. A later requested save
+        // needs its own unconsumed decision; refreshing that save keeps its waiter.
+        if (control.Proposal is { Purpose: LiveApprovalPurpose.CONTENT_ONLY })
+        {
+            control.ApprovalConsumed = false;
+            control.ApprovalDecision = NewDecision();
+        }
+        control.Proposal = proposal;
+    }
+    private void ValidateContentReview(Control control, LiveApproval proposal)
+    {
+        var goal = control.Semantic?.Goal;
+        if (goal?.AuthoringContract is not { } contract)
+        {
+            if (proposal.ContentReview is not null) throw new ConflictException("La propuesta perdió su contrato de revisión.");
+            return;
+        }
+        if (!goal.HasCurrentAuthoringContract || proposal.ContentReview is null
+            || proposal.ContentAuthorityHash != goal.ContentApprovalFingerprint(proposal.Draft)
+            || Hash(proposal.ContentReview) != Hash(contract.GetContentReview(proposal.Draft.TemplateText)))
+            throw new ConflictException("El contrato, origen, campos o contenido cambiaron después de preparar la revisión.");
+        if (contract.SourceSnapshot is { PromptId: { } id } snapshot)
+        {
+            var source = library.Get(id);
+            if (source.Revision != snapshot.Revision || LiveRuns.Hash(source.TemplateText) != snapshot.SavedBodyHash
+                || snapshot.WorkingDraftId is null && (source.TemplateText != snapshot.TemplateText
+                    || source.Title != snapshot.Title || source.Description != snapshot.Description || source.CategoryId != snapshot.CategoryId))
+                throw new ConflictException("El origen de la revisión de contenido ya no está vigente.");
+        }
+        if (contract.WorkingDraftId is { } workingId && (goal.WorkingTarget is not { } working
+            || working.ArtifactId != workingId || working.BodyHash != contract.WorkingBodyHash
+            || control.WorkingDraft is not { } actual || actual.Id != workingId
+            || actual.TemplateText != contract.SourceText || LiveRuns.Hash(actual.TemplateText) != working.BodyHash
+            || actual.Title != contract.SourceSnapshot!.Title || actual.Description != contract.SourceSnapshot.Description
+            || actual.CategoryId != contract.SourceSnapshot.CategoryId))
+            throw new ConflictException("El borrador de trabajo ya no coincide con el contexto revisado.");
     }
 }

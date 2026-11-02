@@ -1,0 +1,15 @@
+{
+  "version": 4,
+  "server": "https://example.invalid/",
+  "slot": "mi-pc-nova",
+  "name": "Mi equipo",
+  "capability": "nova-reasoned",
+  "python": "",
+  "dotnet": "",
+  "endpoint": "http://127.0.0.1:12434/",
+  "provider": "docker-model-runner",
+  "physicalModel": "docker.io/ai/qwen3@sha256:977d1540140cd0d5437d2e22ffc6853714bef103bda39754edd0f2d9e2aabb82",
+  "thinking": true,
+  "sessionMode": "connected",
+  "reasoningProfile": "qwen3-thinking-r2b/1"
+}

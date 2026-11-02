@@ -6,6 +6,7 @@ namespace QuickPrompt.Web.Infrastructure;
 public record TemplateEditInterpretation(string RequestedContentChange, string? ValidationFeedback = null, string? ApprovedPreferencesJson = null, string[]? TargetTerms = null)
 {
     [System.Text.Json.Serialization.JsonIgnore] public string[]? ApplicationEffects {get;init;}
+    [System.Text.Json.Serialization.JsonIgnore] public QuickPrompt.Nova.Application.PromptInputContract? InputContract {get;init;}
 }
 public interface ILocalLlmClient
 {
@@ -18,4 +19,13 @@ public interface ILocalLlmClient
     Task<AssistPlan> PlanAssist(string command,string model,CancellationToken ct);
     Task<(string Text,double ElapsedMs)> Execute(CompiledPrompt prompt, string model, bool confirmed, Func<string,Task>? progress, CancellationToken ct);
 }
-public sealed class LlmUnavailableException(string message) : Exception(message);
+public sealed class LlmUnavailableException : Exception
+{
+    public string Code { get; }
+    public LlmUnavailableException(string message) : this(message, "MODEL_UNAVAILABLE") { }
+    public LlmUnavailableException(string message, string code) : base(message)
+    {
+        Code = code is "MODEL_UNAVAILABLE" or "MODEL_TIMEOUT" or "MODEL_FAILED" or "MODEL_OUTPUT_LIMIT" or "QUEUE_EXPIRED" or "LOCAL_DISPATCH_TIMEOUT"
+            or "CONNECTION_REVOKED" or "SESSION_REVOKED" or "LEASE_EXPIRED" or "HOST_STOPPED" or "COMPANION_NOT_OBSERVED" ? code : "MODEL_FAILED";
+    }
+}

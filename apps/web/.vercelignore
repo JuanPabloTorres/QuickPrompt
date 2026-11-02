@@ -1,0 +1,4 @@
+# Build output must not become a Tailwind source in the next remote build.
+dist/
+node_modules/
+.env*

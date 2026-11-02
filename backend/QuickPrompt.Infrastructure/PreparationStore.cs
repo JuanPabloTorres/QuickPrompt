@@ -4,49 +4,19 @@ using QuickPrompt.Nova.Application;
 
 namespace QuickPrompt.Web.Infrastructure;
 
-public sealed class SqlitePromptRetriever(LocalStore store) : IPromptRetriever
+public sealed class SqlitePromptRetriever : IPromptRetriever
 {
-    public PromptDocument ReadSource(Guid id)
+    private readonly CatalogPromptRetriever retriever;
+    public SqlitePromptRetriever(LocalStore store)
     {
-        using var measurement = NovaTelemetry.Measure("retrieval.source");
-        var source = store.FindTemplate(id) ?? throw new MissingPromptException();
-        if (!source.IsActive) throw new ValidationException("El origen está archivado.");
-        return PromptLibrary.Document(source);
+        var adapter = new NovaPromptStore(store);
+        var library = new PromptLibrary(adapter, adapter);
+        retriever = new(library, new NovaCollectionStore(store, library));
     }
-    public RetrievalCandidate[] Retrieve(string query, Guid? sourceId)
-        => Retrieve(query, sourceId, null);
-    public RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter)
-    {
-        using var measurement = NovaTelemetry.Measure("retrieval.sqlite");
-        var found = new Dictionary<Guid, Template>();
-        void Add(CatalogQuery q) { foreach (var item in store.QueryTemplates(q with { GroupId = filter?.GroupId, Category = filter?.CategoryId?.ToString() ?? "", Favorites = filter?.Favorites == true || q.Favorites }).Items) found.TryAdd(item.Id, item); }
-        // Bounded OR recall across existing SQL title/body/category/group search. No vectors or new schema.
-        // Sentence terminators are not part of a search term. Preserve internal
-        // dots and technical prefixes (.NET, 8.0, C++, C#) without interpreting intent.
-        var terms = System.Text.RegularExpressions.Regex.Matches(PromptSearch.Normalize(query), @"\.?[\p{L}\p{N}+#]+(?:\.[\p{L}\p{N}+#]+)*", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromMilliseconds(100))
-            .Select(m => m.Value).Where(t => t.Length > 1).Distinct().Take(12).ToArray();
-        foreach (var term in terms) Add(new(Search: term, Size: 12));
-        Add(new(Favorites: true, Size: 6)); Add(new(Size: 6, Sort: "recent", Recent: true));
-        if (found.Count == 0) Add(new(Size: 6));
-        if (sourceId is { } id)
-        {
-            var source = store.FindTemplate(id) ?? throw new MissingPromptException();
-            if (!source.IsActive) throw new ValidationException("El origen está archivado.");
-            found[id] = source;
-        }
-        var groupNames = store.Groups().ToDictionary(g => g.Group.Id, g => g.Group.Name);
-        var duplicateIds = found.Values.GroupBy(t => PromptSearch.Normalize(t.Template.Replace("\r\n", "\n").Trim())).Where(g => g.Count() > 1).SelectMany(g => g.Select(t => t.Id)).ToHashSet();
-        return found.Values.Select(t => {
-            var title = PromptSearch.Normalize(t.Title); var body = PromptSearch.Normalize(t.Description + " " + t.Template);
-            var groups = PromptSearch.Normalize(string.Join(' ', store.GroupsFor("template", t.Id).Select(g => groupNames.GetValueOrDefault(g, ""))));
-            var score = terms.Sum(term => title.Contains(term, StringComparison.Ordinal) ? 4 : body.Contains(term, StringComparison.Ordinal) ? 2 : groups.Contains(term, StringComparison.Ordinal) ? 3 : 0)
-                + (t.IsFavorite ? .25 : 0) + (t.LastUsed.HasValue ? .1 : 0) + (t.Id == sourceId ? 100 : 0);
-            var reason = t.Id == sourceId ? "Origen seleccionado explícitamente." : score >= 2 ? "Coincidencias literales; prioridad por título, favoritos y uso." : "Contexto reciente o de colección; requiere selección semántica.";
-            return new RetrievalCandidate(PromptLibrary.Document(t), score, reason + (duplicateIds.Contains(t.Id) ? " Contenido duplicado en los candidatos; conserva la identidad de cada registro." : ""));
-        }).OrderByDescending(c => c.Score).ThenBy(c => c.Prompt.Id).Take(6).ToArray();
-    }
+    public PromptDocument ReadSource(Guid id) => retriever.ReadSource(id);
+    public RetrievalCandidate[] Retrieve(string query, Guid? sourceId) => retriever.Retrieve(query, sourceId);
+    public RetrievalCandidate[] Retrieve(string query, Guid? sourceId, RetrievalFilter? filter) => retriever.Retrieve(query, sourceId, filter);
 }
-
 public sealed record StoredPreparation(string Fingerprint, PreparedDraft Draft);
 public sealed class PreparedDraftStore(LocalStore store) : IPreparedDraftStore
 {

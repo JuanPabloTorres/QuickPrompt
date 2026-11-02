@@ -240,7 +240,8 @@ public sealed class SemanticContextTests : IDisposable
         Assert.NotEqual(SemanticOutcome.CLARIFICATION, result.Semantic!.DesiredOutcome);
         Assert.Equal(savedSource ? source.Id : (Guid?)null, result.SourceId);
         Assert.NotNull(generation.Received);
-        Assert.Equal(working.TemplateText, savedSource ? generation.SourceBody : generation.Received!.WorkingDraft!.TemplateText);
+        Assert.Equal(working.TemplateText, generation.Received!.WorkingDraft!.TemplateText);
+        if (savedSource) Assert.Equal(source.TemplateText, generation.SourceBody); // Real library identity stays separate from the working body.
         Assert.Equal(source.TemplateText, library.Get(source.Id).TemplateText); Assert.Single(store.Versions(source.Id));
         Assert.Equal(incidental.TemplateText, library.Get(incidental.Id).TemplateText); Assert.Single(store.Versions(incidental.Id));
     }

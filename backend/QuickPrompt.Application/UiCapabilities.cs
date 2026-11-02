@@ -14,7 +14,7 @@ public static class UiCapabilities
     [UiCapability("ui_open_create_prompt", "Abrir el formulario de creación", "Open the real new-prompt form, without saving. Only for a new draft requested by the user.")]
     public static JsonElement UiOpenCreatePrompt => Empty;
 
-    [UiCapability("ui_prepare_creation", "Generar y escribir el nuevo borrador", "Generate the requested new reusable prompt with Qwen and type the validated title and body into the real open form. Arguments MUST be empty {}: do not pass title, body or text. Code invokes the generator with the original request. Never saves.")]
+    [UiCapability("ui_prepare_creation", "Preparar y escribir el nuevo borrador", "Prepare the new reusable prompt from the exact task and requirements established by the human author, preserving them literally. Open the required human content review before composing the draft into the real form. Arguments MUST be empty {}: never supply title, body or substitute instructions. The application owns the established contract and its review. This prepares a draft and never saves or executes it.")]
     public static JsonElement UiPrepareCreation => Empty;
 
     [UiCapability("ui_load_active_draft", "Recuperar el borrador de la conversación", "Load the authorized previous conversation draft into the real editor. No text arguments; content is bound by code to the session artifact. Use before changing, copying or running that draft.")]

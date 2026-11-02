@@ -8,6 +8,10 @@ namespace QuickPrompt.Nova.Api;
 public record EditorCompileInput(string TemplateText, Dictionary<string, string> Values);
 public record EditorDraftInput(Guid? PromptId, int? Revision, string Title, string TemplateText, Dictionary<string, string> Values, Guid? SessionId = null);
 public record UiObservedInput(Guid PreparedId, Guid? SourceId, int? SourceRevision, string RenderedText);
+public record LiveClarificationInput(Guid RunId, long QuestionSequence, string Answer, string NextSurface)
+{
+    public AuthoringBriefReply? Brief { get; init; }
+}
 public static class LiveEndpoints
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -28,6 +32,34 @@ public static class LiveEndpoints
             return run;
         });
         api.MapGet("/nova/live/{id:guid}/actions", (Guid id, bool visible, HttpContext context, SameTabUiDispatcher dispatcher) => dispatcher.Poll(id, context.Request.Headers["X-Nova-Surface"].ToString(), visible));
+        api.MapPost("/nova/live/{id:guid}/clarification", (Guid id, LiveClarificationInput reply, LiveRuns live,
+            AgentOrchestrator engine, IUiDecisionModel model, PromptLibrary library, SameTabUiDispatcher dispatcher, HttpContext context) =>
+        {
+            dispatcher.RequireSurface(id, context.Request.Headers["X-Nova-Surface"].ToString());
+            if (reply.Brief is not null && !string.IsNullOrEmpty(reply.Answer)) throw new ValidationException("Elige confirmar el contrato o enviar una aclaración.");
+            if (reply.NextSurface is not { Length: >= 32 and <= 128 } || reply.NextSurface.Any(char.IsWhiteSpace))
+                throw new ValidationException("Falta el control de la pestaña que continuará el encargo.");
+            var control = live.Active(id);
+            lock (control.Gate)
+            {
+                var fingerprint = LiveRuns.Hash(reply);
+                if (control.Continuation is { } receipt)
+                {
+                    if (receipt.RunId != reply.RunId || receipt.Fingerprint != fingerprint)
+                        throw new ConflictException("Esta pregunta ya fue respondida.");
+                    return live.Get(receipt.RunId);
+                }
+                if (control.Cancellation.IsCancellationRequested) throw new ConflictException("El encargo fue detenido.");
+                var view = live.View(id);
+                var next = reply.Brief is { } brief
+                    ? AuthoringBriefs.Continue(control.Input, view.Run, view.Brief ?? throw new ConflictException("No hay contrato pendiente."), reply.RunId, reply.QuestionSequence, brief)
+                    : AuthoringClarifications.Continue(control.Input, view.Run, view.Question ?? "", reply.RunId, reply.QuestionSequence, reply.Answer);
+                var run = live.Create(next); dispatcher.Bind(next.RunId, reply.NextSurface);
+                control.Continuation = (reply.RunId, fingerprint);
+                if (live.TryLaunch(next.RunId)) _ = engine.RunVisible(next, origin, live, model, dispatcher.Factory(), library, maxSteps);
+                return run;
+            }
+        });
         api.MapPost("/nova/live/{id:guid}/actions/progress", (Guid id, UiActionProgress progress, HttpContext context, SameTabUiDispatcher dispatcher) => { dispatcher.Progress(id, context.Request.Headers["X-Nova-Surface"].ToString(), progress); return Results.NoContent(); });
         api.MapPost("/nova/live/{id:guid}/actions/receipt", (Guid id, UiActionReceipt receipt, HttpContext context, SameTabUiDispatcher dispatcher) => { dispatcher.Acknowledge(id, context.Request.Headers["X-Nova-Surface"].ToString(), receipt); context.RequestServices.GetService<DevelopmentLabObserver>()?.Receipt(id,receipt); return Results.NoContent(); });
         api.MapGet("/nova/live/{id:guid}", (Guid id, LiveRuns live) => live.View(id));

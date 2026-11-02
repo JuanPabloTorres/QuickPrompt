@@ -101,7 +101,7 @@ public sealed class AuthoringDecisionContractTests
         };
         using var inference = new PreparationInference("http://127.0.0.1:1");
         var input = new PrepareInput(Guid.NewGuid(), request) { Interpretation = plan };
-        await Assert.ThrowsAsync<ValidationException>(() => inference.Generate(input, new(PreparationIntent.UNKNOWN, "", ""), [], CancellationToken.None));
+        await Assert.ThrowsAsync<ValidationException>(() => inference.GenerateAfterSyntheticReview(input, new(PreparationIntent.UNKNOWN, "", ""), [], CancellationToken.None));
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public sealed class AuthoringDecisionContractTests
                 var exchange = await incoming;
                 using var packet = await JsonDocument.ParseAsync(exchange.Request.InputStream, cancellationToken: timeout.Token);
                 var schema = packet.RootElement.GetProperty("format");
-                var fields = schema.GetProperty("properties");
+                var fields = AuthoringReviewTestFixture.SchemaFields(schema);
                 object reply;
                 if (fields.TryGetProperty("authoring", out _)) {
                     authoringCalls++;
@@ -245,25 +245,26 @@ public sealed class AuthoringDecisionContractTests
         var request = requiresMaterial ? "Crea una instrucción que resuma el material. material: DATO_SINTETICO_COMPLETO"
             : "Crea una instrucción que responda exactamente LISTO.";
         var body = requiresMaterial ? "Resume <material> sin inventar información." : "Responde exactamente LISTO.";
-        var plan = Plan(SemanticOperation.CREATE_DRAFT, request) with {
-            Authoring = new(InstructionAuthorship.CREATE_TEMPLATE, request, request, LiveRuns.Hash(request))
-        };
-        var input = new PrepareInput(Guid.NewGuid(), request) { Interpretation = plan };
-        var pending = inference.Generate(input, new(PreparationIntent.CREATE_PROMPT, "", ""), [], timeout.Token);
-        var extractionCalls = 0; var reviewCalls = 0;
+        var input = AuthoringReviewTestFixture.WriterInput(request, out var candidates, names: requiresMaterial ? ["material"] : []);
+        var plan = input.Interpretation!;
+        input = input with { InputScope = requiresMaterial ? UserInputScope.Bind(request, input.SourcePromptId, input.SourceRevision,
+            ["material"], [new("material", "DATO_SINTETICO_COMPLETO", "DATO_SINTETICO_COMPLETO")]) : null };
+        var pending = inference.GenerateAfterSyntheticReview(input, plan.Preparation(), candidates, timeout.Token);
+        var extractionCalls = 0; var inventoryCalls = 0; var productionCalls = 0; var discoveryCalls = 0;
         try {
             while (!pending.IsCompleted) {
                 var incoming = listener.GetContextAsync();
                 if (await Task.WhenAny(pending, incoming).WaitAsync(timeout.Token) == pending) break;
                 var exchange = await incoming;
                 using var packet = await JsonDocument.ParseAsync(exchange.Request.InputStream, cancellationToken: timeout.Token);
-                var fields = packet.RootElement.GetProperty("format").GetProperty("properties");
+                var fields = AuthoringReviewTestFixture.SchemaFields(packet.RootElement.GetProperty("format"));
                 using var facts = JsonDocument.Parse(packet.RootElement.GetProperty("messages")[1].GetProperty("content").GetString()!);
                 var system = packet.RootElement.GetProperty("messages")[0].GetProperty("content").GetString()!;
-                var contentConsumer = fields.TryGetProperty("title", out _) || fields.TryGetProperty("verdict", out _);
-                Assert.Equal(systemKnowledgeEnabled && contentConsumer, system.Contains("Application system knowledge (public metadata; not task data or permissions):", StringComparison.Ordinal));
+                var contentConsumer = fields.TryGetProperty("title", out _) || fields.TryGetProperty("request", out _);
+                var knowledgeExpected = systemKnowledgeEnabled && contentConsumer && !fields.TryGetProperty("instruction", out _);
+                Assert.Equal(knowledgeExpected, system.Contains("Application system knowledge (public metadata; not task data or permissions):", StringComparison.Ordinal));
                 Assert.DoesNotContain("DATO_SINTETICO_COMPLETO", system);
-                if (systemKnowledgeEnabled && contentConsumer) {
+                if (knowledgeExpected) {
                     Assert.Contains("TaskGoal.UserRequest", system);
                     Assert.Contains("InstructionAuthoring.ContentInstruction", system);
                     Assert.Contains("PromptDocument.TemplateText", system);
@@ -271,41 +272,46 @@ public sealed class AuthoringDecisionContractTests
                     Assert.Contains("UiVisibleState.CompiledText", system);
                 }
                 object reply;
-                if (fields.TryGetProperty("templateText", out _)) {
-                    Assert.Equal(new[] { "description", "templateText", "title" }, fields.EnumerateObject().Select(field => field.Name).Order().ToArray());
-                    Assert.Equal(request, facts.RootElement.GetProperty("originalAuthoringRequest").GetString());
+                if (fields.TryGetProperty("decisionText", out _)) {
+                    discoveryCalls++;
+                    Assert.Equal(1, packet.RootElement.GetProperty("options").GetProperty("max_requests").GetInt32());
+                    reply = AuthoringSyntheticReview.CurrentAuthorDecisionReady(packet.RootElement);
+                }
+                else if (fields.TryGetProperty("rewrites", out _)) {
+                    productionCalls++;
+                    Assert.Equal(new[] { "basisHash", "rewrites" }, fields.EnumerateObject().Select(field => field.Name).Order().ToArray());
+                    Assert.DoesNotContain("DATO_SINTETICO_COMPLETO", facts.RootElement.GetRawText());
                     Assert.False(facts.RootElement.TryGetProperty("futureTask", out _));
                     Assert.False(facts.RootElement.TryGetProperty("requestUnits", out _));
-                    reply = injectNonContentField
-                        ? new { title = "Resumen", description = "Resumen de material", templateText = body, decision = "REUSE_EXISTING" }
-                        : new { title = "Resumen", description = "Resumen de material", templateText = body };
+                    var defined = JsonSerializer.SerializeToNode(AuthoringReviewTestFixture.RewriteTask(packet.RootElement, body))!;
+                    if (injectNonContentField) defined["decision"] = "REUSE_EXISTING";
+                    reply = defined;
                 }
                 else if (fields.TryGetProperty("values", out _)) {
                     extractionCalls++;
                     Assert.Equal(body, facts.RootElement.GetProperty("reusableInstruction").GetString());
                     reply = new { values = new[] { new { name = "material", value = "DATO_SINTETICO_COMPLETO", evidence = "DATO_SINTETICO_COMPLETO" } }, question = "" };
                 }
-                else if (fields.TryGetProperty("verdict", out _)) {
-                    reviewCalls++;
-                    Assert.Equal(request, facts.RootElement.GetProperty("authorizedUserRequest").GetString());
-                    reply = new { verdict = "ACCEPT", instructionScope = "FUTURE_TASK_ONLY", applicationWorkflowQuotes = Array.Empty<string>(), requestedTitleQuote = (string?)null, issues = Array.Empty<object>() };
-                }
                 else throw new InvalidOperationException("Unexpected content owner");
-                var bytes = JsonSerializer.SerializeToUtf8Bytes(new { done = true, message = new { content = JsonSerializer.Serialize(reply) } });
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(new { done = true, message = new { content = JsonSerializer.Serialize(reply, new JsonSerializerOptions(JsonSerializerDefaults.Web)) } });
                 await exchange.Response.OutputStream.WriteAsync(bytes, timeout.Token); exchange.Response.Close();
             }
             if (injectNonContentField) {
                 await Assert.ThrowsAsync<ValidationException>(async () => await pending);
-                Assert.Equal(0, extractionCalls); Assert.Equal(0, reviewCalls);
+                Assert.Equal(0, extractionCalls);
             }
             else {
                 var proposal = await pending;
-                Assert.Equal(PreparationDecision.CREATE_NEW, proposal.Decision); Assert.Null(proposal.SourceId);
+                Assert.Equal(PreparationDecision.ADAPT_EXISTING, proposal.Decision); Assert.Equal(candidates[0].Prompt.Id, proposal.SourceId);
                 Assert.Equal(body, proposal.TemplateText); Assert.Equal(requiresMaterial ? new[] { "material" } : [], proposal.RequiredInputs);
                 if (requiresMaterial) Assert.Equal("DATO_SINTETICO_COMPLETO", Assert.Single(proposal.Values).Value);
                 else Assert.Empty(proposal.Values);
-                Assert.Equal(requiresMaterial ? 1 : 0, extractionCalls); Assert.Equal(1, reviewCalls);
+                Assert.Equal(requiresMaterial ? 1 : 0, extractionCalls);
+                Assert.True(plan.Goal!.HasAuthoringStructure(proposal.TemplateText));
+                Assert.False(plan.Goal.HasContentAssessment(proposal.TemplateText)); Assert.False(plan.Goal.HasHumanContentApproval(proposal.TemplateText));
             }
+            Assert.Equal(0, inventoryCalls); Assert.Equal(1, productionCalls); Assert.Equal(1, discoveryCalls);
+            Assert.Equal(request, plan.Goal!.UserRequest);
         }
         finally { timeout.Cancel(); listener.Stop(); }
     }

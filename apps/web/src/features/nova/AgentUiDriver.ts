@@ -22,6 +22,7 @@ export function readUiState(): UiState {
     candidates: agentUiSurface.candidates().map(node => ({ id: node.dataset.promptId!, revision: Number(node.dataset.revision), title: node.getAttribute('aria-label') ?? '' })),
     promptId: root?.dataset.promptId || null, revision: root?.dataset.promptId ? Number(root.dataset.revision) : null,
     title: editing ? input('prompt-title')!.value : root?.querySelector('[data-testid="focus-title"]')?.textContent ?? null,
+    description: editing ? root?.querySelector<HTMLTextAreaElement>('#prompt-description')?.value ?? null : null,
     templateText: editing ? input('prompt-content')!.value : root?.dataset.templateText ?? null,
     values, variableNames: Object.keys(values), draftChanged: editing && (shown(test('draft-prepared')) || !root?.dataset.promptId && !!input('prompt-content')?.value),
     compiledReady: ready, compiledText: ready ? test('compiled-preview')?.textContent ?? null : null,
@@ -127,7 +128,7 @@ export class AgentUiDriver {
   }
   async execute(action: UiAction): Promise<UiState> {
     await this.boundary(); const before = readUiState(), command = this.commands.find(action.tool);
-    if (this.previous && !command?.allowObservedChange && (before.mode !== this.previous.mode || before.promptId !== this.previous.promptId || before.revision !== this.previous.revision || before.title !== this.previous.title || before.templateText !== this.previous.templateText || JSON.stringify(before.values) !== JSON.stringify(this.previous.values))) throw new Error('MANUAL_INTERVENTION');
+    if (this.previous && !command?.allowObservedChange && (before.mode !== this.previous.mode || before.promptId !== this.previous.promptId || before.revision !== this.previous.revision || before.title !== this.previous.title || before.description !== this.previous.description || before.templateText !== this.previous.templateText || JSON.stringify(before.values) !== JSON.stringify(this.previous.values))) throw new Error('MANUAL_INTERVENTION');
     if (action.target && !command?.allowsExternalTarget && before.promptId !== action.target) throw new Error('UI_IDENTITY_MISMATCH');
     if (!command) throw new Error('UNKNOWN_UI_TOOL');
     if (command.kind === 'immediate') {

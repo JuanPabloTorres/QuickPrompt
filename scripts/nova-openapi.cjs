@@ -10,6 +10,8 @@ const promptInput = object({ title: { ...string, maxLength: 160 }, templateText:
 const schemas = {
   PromptCategory: object({ id: { ...integer, minimum: 0 }, name: string }),
   PromptInput: promptInput,
+  PromptCaptureInput: object({ operationId: uuid, prompt: ref('PromptInput') }),
+  PromptCaptureResult: object({ operationId: uuid, prompt: ref('Prompt'), replayed: boolean }),
   PromptUpdateInput: { allOf: [ref('PromptInput'), { type: 'object', required: ['revision'], properties: { revision: { ...integer, minimum: 1 } } }] },
   Prompt: object({ id: uuid, title: string, templateText: string, description: string, categoryId: integer, isFavorite: boolean, isArchived: boolean, revision: integer, createdAt: { ...string, format: 'date-time' }, updatedAt: { ...string, format: 'date-time' }, lastUsedAt: { ...string, format: 'date-time', nullable: true }, uses: integer, variableNames: { type: 'array', items: string }, defaults: dictionary }),
   PromptPage: object({ items: { type: 'array', items: ref('Prompt') }, total: integer }),
@@ -18,6 +20,7 @@ const schemas = {
   PortableTemplatePackage: { ...object({ format: { type: 'string', enum: ['quickprompt-template'] }, formatVersion: { type: 'integer', enum: [1] }, prompt: { ...object({ title: string, template: string, description: string, category: { oneOf: [string, integer] } }), additionalProperties: false } }), additionalProperties: false },
   CompileInput: object({ revision: integer, values: dictionary }),
   CompileResult: object({ text: string, templateRevision: integer }),
+  PromptRendering: object({ promptId: uuid, templateRevision: integer, text: { ...string, nullable: true }, missingVariables: { type: 'array', items: string } }),
   UsageInput: object({ revision: integer, values: dictionary, operationId: uuid, expectedText: { ...string, maxLength: 64000 } }),
   InspectInput: object({ templateText: { ...string, maxLength: 32000 } }),
   GroupInput: object({ name: { ...string, maxLength: 80 }, revision: integer }, ['name']),
@@ -64,12 +67,78 @@ schemas.NovaRequest.properties.sessionId = { ...uuid, nullable: true };
 const liveStatus = { ...string, enum: ['CREATED','INTERPRETING','TOOL_PROPOSED','TOOL_APPROVED','TOOL_RUNNING','UI_UPDATED','VERIFYING','AWAITING_APPROVAL','PAUSED','COMPLETED','FAILED','CANCELLED','BLOCKED'] };
 const liveActor = { ...string, enum: ['MODEL_SELECTED','RULE_SELECTED','USER_SELECTED','SYSTEM_VALIDATION'] };
 schemas.LiveStart = object({ runId: uuid, sessionId: uuid, message: { ...string, maxLength: 16000 }, mode: { ...string, enum: ['LIVE','SAME_TAB','BROWSER'] }, sourceId: { ...uuid, nullable: true }, sourceRevision: { ...integer, nullable: true }, values: dictionary, model: { ...localModel, default: metadata.defaultModel } }, ['runId','sessionId','message','mode']);
+schemas.LiveCommand = object({ operation: { ...string, enum: ['CREATE_DRAFT','PROPOSE_ADAPTATION','OPEN_PROMPT','SEARCH_PROMPT','FILL_VARIABLES','PREPARE_LOCAL_EXECUTION','PREPARE_PROVIDER','EXECUTE_LOCAL','COPY_TO_CLIPBOARD'] }, content: { ...string, maxLength: 8000 }, providerId: { ...string, nullable: true }, requestedOutcomes: { type: 'array', maxItems: 8, items: string, nullable: true }, copyContent: { ...string, enum: ['RENDERED','TEMPLATE'] }, inputNames: { type: 'array', maxItems: 60, uniqueItems: true, nullable: true, items: { ...string, minLength: 1, maxLength: 80 }, description: 'Explicit user field selection for CREATE_DRAFT or PROPOSE_ADAPTATION. Null/absent asks for definition before authoring. Empty means no new inputs; existing source inputs are retained. These are names, never values or write approval.' } }, ['operation']);
+schemas.LiveStart.properties.command = { allOf: [ref('LiveCommand')], nullable: true };
 schemas.LiveRecord = object({ runId: uuid, sessionId: uuid, fingerprint: string, mode: { ...string, enum: ['LIVE','SAME_TAB','BROWSER'] }, status: liveStatus, sequence: { ...integer, minimum: 0 }, updatedAt: { ...string, format: 'date-time' }, targetId: { ...uuid, nullable: true }, revision: { ...integer, nullable: true }, pauseRequested: boolean, browserOpen: boolean, errorCode: { ...string, nullable: true }, approval: string, effectCommitted: boolean, model: string, contractVersion: string });
 schemas.LiveEvent = object({ runId: uuid, eventId: uuid, sequence: { ...integer, minimum: 1 }, timestamp: { ...string, format: 'date-time' }, stage: string, actor: liveActor, toolName: { ...string, nullable: true }, targetId: { ...uuid, nullable: true }, status: liveStatus, durationMs: { type: 'number', nullable: true }, errorCode: { ...string, nullable: true }, safeDisplayMessage: string, actionId: { ...uuid, nullable: true }, actionSequence: { ...integer, nullable: true } });
 schemas.UiVisibleState = object({ mode: { ...string, enum: ['discover','focus','create'] }, candidates: { type: 'array', maxItems: 24, items: object({ id: uuid, title: string, revision: integer }) }, promptId: { ...uuid, nullable: true }, revision: { ...integer, nullable: true }, title: { ...string, nullable: true }, templateText: { ...string, nullable: true }, values: dictionary, variableNames: { type: 'array', items: string }, draftChanged: boolean, compiledReady: boolean, compiledText: { ...string, nullable: true }, response: { ...string, nullable: true }, responseComplete: boolean, providerOpen: boolean, providerId: { ...string, nullable: true }, error: { ...string, nullable: true } });
 schemas.LiveProposal = object({ id: uuid, hash: string, promptId: { ...uuid, nullable: true }, revision: { ...integer, nullable: true }, draft: ref('PromptInput'), originalText: string });
+schemas.AuthoringAuthoritySpan = object({ start: { ...integer, minimum: 0 }, length: { ...integer, minimum: 0 }, text: string });
+schemas.AuthoringLedgerEntry = object({
+  id: { ...integer, minimum: 1 }, source: { ...string, enum: ['REQUEST', 'SOURCE'] },
+  start: { ...integer, minimum: 0, description: 'UTF-16 offset in the original source.' }, length: { ...integer, minimum: 0 }, text: string,
+  role: { ...string, enum: ['FUTURE_TASK', 'CONTEXT', 'INPUT_DATA', 'CURRENT_WORKFLOW', 'METADATA', 'REPLACED', 'UNRESOLVED'] },
+  replacementText: { ...string, nullable: true }, changeAuthority: { type: 'array', items: ref('AuthoringAuthoritySpan') },
+});
+schemas.AuthoringReviewSource = object({ promptId: { ...uuid, nullable: true }, revision: { ...integer, nullable: true }, bodyHash: { ...string, nullable: true }, originalText: { ...string, nullable: true } });
+Object.assign(schemas.AuthoringReviewSource.properties, {
+  sourceTitle: { ...string, nullable: true }, sourceDescription: { ...string, nullable: true }, sourceCategoryId: { ...integer, nullable: true },
+  savedBodyHash: { ...string, nullable: true }, savedOriginalText: { ...string, nullable: true },
+  workingDraftId: { ...uuid, nullable: true }, workingBodyHash: { ...string, nullable: true },
+});
+schemas.LiteralChange = object({ id: string,
+  kind: { ...string, enum: ['MISSING_SOURCE_CLAUSE', 'REMOVED_SOURCE_URI', 'ADDED_URI'] },
+  originalText: { ...string, nullable: true }, proposedText: { ...string, nullable: true },
+});
+schemas.LiteralChanges = object({ entries: { type: 'array', maxItems: 200, items: ref('LiteralChange') } });
+schemas.AuthoringContentReview = object({
+  status: { ...string, enum: ['REQUIRES_HUMAN_CONTENT_REVIEW'] }, contractHash: string, bodyHash: string, originalRequest: string,
+  source: ref('AuthoringReviewSource'), ledger: { type: 'array', items: ref('AuthoringLedgerEntry') },
+});
+schemas.AuthoringContentReview.properties.literalChanges = { allOf: [ref('LiteralChanges')],
+  description: 'Host-computed literal differences from saved and working snapshots. Conservative textual checks are not exhaustive semantic coverage. Every listed ID requires acknowledgement.' };
+schemas.AuthoringBriefSource = object({ promptId: { ...uuid, nullable: true }, revision: { ...integer, nullable: true },
+  templateText: { ...string, maxLength: 32000 }, title: string, description: string });
+schemas.AuthoringBriefContent = object({ title: { ...string, minLength: 1, maxLength: 160 }, description: { ...string, maxLength: 2000 },
+  task: { ...string, maxLength: 8000, description: 'Initially empty for a new task. Confirmation requires a nonempty task.' },
+  steps: { type: 'array', maxItems: 40, items: { ...string, minLength: 1, maxLength: 8000 } },
+  constraints: { type: 'array', maxItems: 40, items: { ...string, minLength: 1, maxLength: 8000 } },
+  outputRequirements: { type: 'array', maxItems: 40, items: { ...string, minLength: 1, maxLength: 8000 } },
+  references: { type: 'array', maxItems: 16, items: object({ uri: string,
+    role: { ...string, enum: ['FUTURE_TASK', 'CURRENT_SESSION', 'BOTH', null], nullable: true } }) },
+});
+schemas.AuthoringBriefReview = object({ basisHash: string, originalRequest: { ...string, maxLength: 32000 },
+  source: { allOf: [ref('AuthoringBriefSource')], nullable: true }, inputs: { type: 'array', maxItems: 60, items: string },
+  proposed: ref('AuthoringBriefContent') });
+schemas.AuthoringBriefReview.properties.stage = { ...string, enum: ['ESTABLISH_TASK', 'REVIEW_CONTENT'], default: 'REVIEW_CONTENT',
+  description: 'Server-owned phase. Task establishment runs before inference. Content review retains the established contract until the author chooses changes.' };
+schemas.AuthoringBriefReview.properties.establishedTask = { allOf: [ref('AuthoringBriefContent')], nullable: true };
+schemas.AuthoringBriefReview.properties.suggested = { allOf: [ref('AuthoringBriefContent')], nullable: true,
+  description: 'Unaccepted model suggestion shown separately. It never automatically replaces proposed.' };
+schemas.AuthoringBriefReply = object({ basisHash: string, content: ref('AuthoringBriefContent'), confirmed: { ...boolean, enum: [true] } });
+schemas.ConfirmedAuthoringBrief = object({ review: ref('AuthoringBriefReview'), content: ref('AuthoringBriefContent'), edited: { ...boolean, readOnly: true } });
+schemas.AuthoringContentReview.properties.confirmedBrief = { allOf: [ref('ConfirmedAuthoringBrief')], nullable: true,
+  description: 'Server-bound exact content contract; distinct from permission to save or execute.' };
+schemas.LiveClarificationInput = object({ runId: uuid, questionSequence: { ...integer, minimum: 1 }, answer: { ...string, maxLength: 2000 },
+  nextSurface: { ...string, minLength: 32, maxLength: 128 } });
+schemas.LiveClarificationInput.properties.brief = { allOf: [ref('AuthoringBriefReply')], nullable: true,
+  description: 'Choose either a literal answer or a brief confirmation with an empty answer. The server retains the review, phase and original command.' };
+schemas.LiveProposal.properties.contentReview = { allOf: [ref('AuthoringContentReview')], nullable: true,
+  description: 'Original material and exact-content review. Model interpretation cannot approve content; case values are masked. Saved and working snapshots remain distinct and private to their authorized user.' };
+schemas.LiveProposal.properties.purpose = { ...string, enum: ['SAVE', 'CONTENT_ONLY'], default: 'SAVE',
+  description: 'CONTENT_ONLY reviews proposed content before another requested effect; it never grants persistence and cannot be committed.' };
+schemas.LiveApprovalInput = object({
+  approvalId: uuid, hash: string, revision: { ...integer, nullable: true }, confirmed: boolean,
+  contentReviewed: { ...boolean, default: false }, contentReviewHash: { ...string, nullable: true },
+  approvedLiteralChangeIds: { type: 'array', uniqueItems: true, maxItems: 200, items: string, default: [],
+    description: 'Exact set of IDs individually acknowledged in contentReview.literalChanges.entries. Unknown, duplicated, missing or stale IDs are rejected.' },
+}, ['approvalId', 'hash', 'revision', 'confirmed']);
 schemas.LiveView = object({ run: ref('LiveRecord'), request: { ...string, nullable: true }, question: { ...string, nullable: true }, observation: { allOf: [ref('UiVisibleState')], nullable: true }, proposal: { allOf: [ref('LiveProposal')], nullable: true }, decisions: { type: 'array', maxItems: 16, items: object({ toolName: string, arguments: { type: 'object' }, selectionFormat: { ...string, enum: ['tool_call','json_schema_retry'] } }) } });
 schemas.LiveView.properties.semantic = { allOf: [ref('SemanticInterpretation')], nullable: true };
+schemas.LiveView.properties.brief = { allOf: [ref('AuthoringBriefReview')], nullable: true };
+schemas.LiveView.properties.sourceChoices = { type: 'array', maxItems: 6,
+  description: 'Read-only candidates offered for explicit selection after an ambiguous search. Selection does not authorize writes or execution.',
+  items: object({ id: uuid, title: string, revision: { ...integer, minimum: 1 } }) };
 schemas.LiveDeletion = object({ id: uuid, hash: string, promptId: uuid, revision: { ...integer, minimum: 1 }, title: string });
 schemas.LiveView.properties.deletion = { allOf: [ref('LiveDeletion')], nullable: true };
 schemas.LiveRuntime = object({
@@ -97,11 +166,12 @@ const actionProgress = op('post', '/nova/live/{id}/actions/progress', 'Report lo
 actionProgress.parameters.push(surfaceHeader);
 op('post', '/nova/live/observe', 'Create a metadata/event lifetime for an explicitly selected existing model operation; does not execute it', 'LiveStart', 'LiveRecord');
 op('get', '/nova/live/{id}', 'Read persisted control metadata plus temporary authorized request, observation and proposal; content is not a general log', null, 'LiveView');
+op('post', '/nova/live/{id}/clarification', 'Continue an owned pending content question or brief with the same source/session and a new RunId. Requires the original X-Nova-Surface; validates phase, sequence and current basis. Establishing a task permits a proposal, not persistence. Replaying the same body preserves its receipt; changed replies conflict.', 'LiveClarificationInput', 'LiveRecord');
 const activity = op('get', '/nova/live/{id}/events', 'Ordered replayable execution events. Observer disconnect never starts or repeats tools.', null, null);
 activity.parameters.push({ name: 'after', in: 'query', schema: { ...integer, minimum: 0 } }, { name: 'Last-Event-ID', in: 'header', schema: string });
 activity.responses[200].content = { 'text/event-stream': { schema: { ...string, description: 'event: activity; id: RunId:Sequence; data: LiveEvent. Monotonic sequence, stable EventId. Only transport keep-alive comments are timer based.' } } };
 for (const control of ['pause','resume','cancel']) op('post', `/nova/live/{id}/${control}`, 'Control the actual run at operation boundaries; resume validates the current source revision', null, 'LiveRecord');
-op('post', '/nova/live/{id}/approve', 'Single proposal/run/content/revision approval. Does not itself write the source; the supervised React save control consumes it.', object({ approvalId: uuid, hash: string, revision: { ...integer, nullable: true }, confirmed: boolean }), 'LiveRecord');
+op('post', '/nova/live/{id}/approve', 'Single proposal/run/content/revision approval. A content review requires contentReviewed=true, its exact contractHash and all approvedLiteralChangeIds. CONTENT_ONLY consumes the review without granting save. SAVE requires the supervised React commit control. Changed content, source, fields, literal changes or revision invalidate approval.', 'LiveApprovalInput', 'LiveRecord');
 op('post', '/nova/live/{id}/deletion', 'Human-only deletion decision bound to the visible proposal, run, target and revision. Confirming deletes once; cancellation preserves the record. No model commit tool.', object({ approvalId: uuid, hash: string, revision: { ...integer, nullable: true }, confirmed: boolean }), 'LiveRecord');
 op('post', '/nova/live/{id}/proposal', 'Review user edits to a pending proposal; invalidates the old approval hash and preserves source', 'PromptUpdateInput', 'LiveView');
 op('post', '/nova/live/{id}/commit', 'Consume one current exact-content approval through the real editor control, with source revision guard', 'PromptUpdateInput', 'Prompt');
@@ -114,12 +184,14 @@ operation('get', '/api/v1/categories', 'List persisted domain category IDs and d
 const list = op('get', '/prompts', 'Search saved prompts without an LLM', null, 'PromptPage');
 list.parameters.push(...['search', 'sort', 'groupId'].map(name => ({ name, in: 'query', schema: string })), ...['favorites', 'recent', 'archived'].map(name => ({ name, in: 'query', schema: boolean })), ...['page', 'size'].map(name => ({ name, in: 'query', schema: integer })));
 op('post', '/prompts', 'Create a prompt; server owns identity and revision', 'PromptInput', 'Prompt', 201);
+op('post', '/prompts/capture', 'Capture literal prompt content once per operation UUID; conflicting replays return 409', 'PromptCaptureInput', 'PromptCaptureResult');
 op('get', '/prompts/{id}', 'Read an existing prompt', null, 'Prompt');
 op('put', '/prompts/{id}', 'Update content with a mandatory current revision', 'PromptUpdateInput', 'Prompt');
 op('delete', '/prompts/{id}', 'Delete after explicit confirmation; preserve compiled history', 'Confirmation', null, 204);
 for (const action of ['favorite', 'archive', 'restore']) op('post', `/prompts/{id}/${action}`, 'Change prompt state with optimistic concurrency', 'Revision', 'Prompt');
 op('post', '/prompts/{id}/duplicate', 'Duplicate a stored template without copying its history', null, 'Prompt');
 op('post', '/prompts/{id}/compile', 'Read-only deterministic compile; no usage is recorded', 'CompileInput', 'CompileResult');
+op('post', '/prompts/{id}/render', 'Read-only reusable content with explicit values; excludes private defaults and settings, reports missing variables', 'CompileInput', 'PromptRendering');
 op('post', '/prompts/{id}/usage', 'Acknowledge completed use with a durable idempotency receipt and exact snapshot', 'UsageInput', null, 204);
 op('get', '/prompts/{id}/versions', 'Read preserved legacy-compatible revisions', null, { type: 'array', items: { type: 'object' } });
 const shareTemplate = op('get', '/prompts/{id}/share', 'Read the existing portable template allowlist, excluding identity, defaults, usage and history', null, 'PortableTemplatePackage');

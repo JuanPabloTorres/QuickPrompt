@@ -17,6 +17,8 @@ internal static class ApplicationModules
         services.AddSingleton<IPromptWriter>(sp => sp.GetRequiredService<NovaPromptStore>());
         services.AddSingleton(sp => sp.GetRequiredService<LocalPromptLibrary>().Prompts);
         services.AddSingleton<IPromptCatalog>(sp => sp.GetRequiredService<PromptLibrary>());
+        services.AddSingleton<IPromptCaptureWriter>(sp => sp.GetRequiredService<LocalPromptLibrary>().Store);
+        services.AddSingleton<IPromptCapture, PromptCapture>();
         services.AddSingleton<IResultHistory>(sp => sp.GetRequiredService<LocalStore>());
         services.AddSingleton(sp => sp.GetRequiredService<LocalPromptLibrary>().Collections);
         services.AddSingleton<ICollectionReader>(sp => sp.GetRequiredService<NovaCollectionStore>());
@@ -36,12 +38,19 @@ internal static class ApplicationModules
         var runtime = settings.Runtime;
         if (runtime != "adaptive-core") throw new InvalidOperationException("La ruta agéntica nativa fue retirada. Configura QuickPrompt:Agent:Runtime=adaptive-core.");
         var core = new AdaptiveCoreOptions(settings.CorePython, Path.GetFullPath(settings.CoreWorker),
-            Path.GetFullPath(settings.CoreSdkRoot), settings.Endpoint, settings.SemanticThinking, settings.QwenThinkingSampling);
+            Path.GetFullPath(settings.CoreSdkRoot), settings.CoreEndpoint ?? settings.Endpoint,
+            settings.SemanticThinking, settings.QwenThinkingSampling, settings.CoreProvider, settings.CorePhysicalModel);
+        // Validate the operator's binding now; optional missing runtime files
+        // remain a typed request-time failure, not an implicit provider fallback.
+        core.ValidateModelConfiguration();
         // Optional AI must not prevent opening the manual library. Missing Core
         // dependencies fail explicitly when an AI request crosses the boundary.
         services.AddSingleton(core);
         services.AddSingleton<ActionChoiceInterpreter>();
         services.AddSingleton<ILocalEmbeddings>(_ => new OllamaEmbeddings(settings.Endpoint));
+        // This compatibility client still owns read-only availability discovery.
+        // Inference goes through Core; the paired/cloud wrapper deliberately has
+        // no local discovery and cannot replace this local lifetime contract.
         services.AddSingleton<ILocalLlmClient>(sp => OllamaClient.CreateOwned(
             settings.Endpoint, settings.AiTimeout, LocalModelPolicy.AgentContextLength, settings.QwenThinkingSampling,
             modelTransport: sp.GetRequiredService<IAgentModelTransport>()));
@@ -54,13 +63,13 @@ internal static class ApplicationModules
         services.AddSingleton<IValidatedAgentModelTransport>(sp => sp.GetRequiredService<AdaptiveCoreModelTransport>());
         services.AddSingleton<IInputValueExtractor>(sp => new PromptInputValueExtractor(sp.GetRequiredService<IAgentModelTransport>()));
         services.AddSingleton<IInputScopeInterpreter>(sp => new PromptInputScopeInterpreter(sp.GetRequiredService<IInputValueExtractor>()));
-        services.AddSingleton<IDraftFidelityReviewer>(sp => new DraftFidelityReviewer(sp.GetRequiredService<IValidatedAgentModelTransport>(),
-            semanticThinking: settings.SemanticThinking,
-            includeSystemKnowledge: settings.AuthoringUseContract));
+        var translationSource = settings.TranslationSources.Create();
+        if (translationSource is not null) services.AddSingleton<IAuthoringTranslationSourceViews>(translationSource);
         services.AddSingleton<IPromptGenerator>(sp => new PromptDraftGenerator(sp.GetRequiredService<IValidatedAgentModelTransport>(),
-            sp.GetRequiredService<ILocalLlmClient>(), sp.GetRequiredService<IInputValueExtractor>(), sp.GetRequiredService<IDraftFidelityReviewer>(),
+            sp.GetRequiredService<IInputValueExtractor>(),
             semanticThinking: settings.SemanticThinking,
-            includeSystemKnowledge: settings.AuthoringUseContract));
+            includeSystemKnowledge: settings.AuthoringUseContract,
+            translationSourceViews: sp.GetService<IAuthoringTranslationSourceViews>()));
         services.AddSingleton<IIntentInterpreter>(sp => sp.GetRequiredService<ActionChoiceInterpreter>());
         services.AddSingleton<ISemanticIntentInterpreter>(sp => sp.GetRequiredService<ActionChoiceInterpreter>());
         services.AddSingleton<ISemanticContentInterpreter, PromptContentInterpreter>();

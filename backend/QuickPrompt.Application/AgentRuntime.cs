@@ -45,23 +45,29 @@ public record AgentSession(Guid Id, PromptDocument? Source, PreparedDraft? Draft
     PromptDocument[]? Candidates = null, SemanticInterpretation? LastProposal = null, SemanticOperation? PendingAction = null, string Approval = "NONE", bool SourceStale = false, SemanticInterpretation? PendingPlan = null, string? PendingRequest = null)
 {
     public int DraftRevision { get; init; } = 1;
+    // Store concurrency is distinct from reusable-instruction/body revision. Not part of local HTTP JSON.
+    [JsonIgnore] public int StorageRevision { get; init; }
     public LiveCommand? PendingCommand { get; init; }
     public DraftRef? WorkingDraftReference => Draft is null ? null : new(Draft.Id, Id, DraftRevision,
         Draft.SourceId is { } source && Draft.SourceRevision is { } revision ? new(source, revision) : null, Draft.TemplateText);
     public PreparedDraft? UnsavedDraft => Draft is { SourceId: null } ? Draft : null;
     public int? SourceRevision => Draft?.SourceRevision ?? Source?.Revision;
 }
-// Temporary task context only. Never written to SQLite or general logs, bounded by age and count.
-public sealed class AgentSessions
+/// <summary>Atomic storage boundary for task context. Callers bind identity outside model arguments.</summary>
+public interface IAgentSessionStore
 {
-    private readonly ConcurrentDictionary<Guid, AgentSession> sessions = new();
-    public AgentSession? Get(Guid id)
-    {
-        foreach (var entry in sessions.Where(e => e.Value.UpdatedAt < DateTime.UtcNow.AddHours(-2))) sessions.TryRemove(entry.Key, out _);
-        foreach (var entry in sessions.OrderBy(e => e.Value.UpdatedAt).Take(Math.Max(0, sessions.Count - 100))) sessions.TryRemove(entry.Key, out _);
-        return sessions.GetValueOrDefault(id);
-    }
-    public void Put(AgentSession session) { Get(session.Id); sessions[session.Id] = session; }
+    AgentSession? Get(Guid id);
+    void Put(AgentSession session);
+    AgentSession Update(Guid id, Func<AgentSession?, AgentSession> transition);
+    void Forget(Guid id);
+}
+
+// Existing local behavior remains transient, bounded and never logged or written to SQLite.
+public sealed partial class AgentSessions(IAgentSessionStore? store = null)
+{
+    private readonly IAgentSessionStore storage = store ?? new TransientAgentSessionStore();
+    public AgentSession? Get(Guid id) => storage.Get(id);
+    public void Put(AgentSession session) => storage.Put(session);
     public DraftRef RequireWorkingDraft(DraftRef expected)
     {
         var current = Get(expected.SessionId)?.WorkingDraftReference;
@@ -72,7 +78,8 @@ public sealed class AgentSessions
     }
     // Conversation identity is independent from immutable preparation operation receipts.
     // Only a verified authoring action may replace the artifact's semantic provenance.
-    public AgentSession ObserveDraft(AgentSession observation, DraftObservationKind kind = DraftObservationKind.Snapshot)
+    public AgentSession ObserveDraft(AgentSession observation, DraftObservationKind kind = DraftObservationKind.Snapshot,
+        int? expectedDraftRevision = null, Guid? expectedDraftId = null)
     {
         var draft = observation.Draft ?? throw new ValidationException("Falta el borrador observado.");
         if (observation.Id == Guid.Empty || draft.SessionId is { } sessionId && sessionId != observation.Id
@@ -81,11 +88,13 @@ public sealed class AgentSessions
                 && !(observation.Source?.Id == sourceId && observation.Source.Revision == draft.SourceRevision)
                 && !draft.Candidates.Any(candidate => candidate.Prompt.Id == sourceId && candidate.Prompt.Revision == draft.SourceRevision)
             || !Enum.IsDefined(kind)) throw new ValidationException("Identidad del borrador observado inválida.");
-        Get(observation.Id);
-        return sessions.AddOrUpdate(observation.Id, _ => Transition(null), (_, previous) => Transition(previous));
+        return storage.Update(observation.Id, Transition);
 
         AgentSession Transition(AgentSession? previous)
         {
+            if (expectedDraftRevision is { } expected && (expected != (previous?.DraftRevision ?? 0)
+                || expected > 0 && previous?.Draft?.Id != expectedDraftId))
+                throw new ConflictException("El contexto conservado cambió. Recupera su revisión actual.");
             var prior = previous?.Draft;
             var sameIdentity = kind != DraftObservationKind.NewArtifact && prior is not null
                 && prior.SourceId == draft.SourceId && prior.SourceRevision == draft.SourceRevision;
@@ -99,6 +108,24 @@ public sealed class AgentSessions
                 Values = new(observation.Values), UpdatedAt = DateTime.UtcNow
             };
         }
+    }
+    public void Forget(Guid id) => storage.Forget(id);
+}
+
+internal sealed class TransientAgentSessionStore : IAgentSessionStore
+{
+    private readonly ConcurrentDictionary<Guid, AgentSession> sessions = new();
+    public AgentSession? Get(Guid id)
+    {
+        foreach (var entry in sessions.Where(e => e.Value.UpdatedAt < DateTime.UtcNow.AddHours(-2))) sessions.TryRemove(entry.Key, out _);
+        foreach (var entry in sessions.OrderBy(e => e.Value.UpdatedAt).Take(Math.Max(0, sessions.Count - 100))) sessions.TryRemove(entry.Key, out _);
+        return sessions.GetValueOrDefault(id);
+    }
+    public void Put(AgentSession session) { Get(session.Id); sessions[session.Id] = session; }
+    public AgentSession Update(Guid id, Func<AgentSession?, AgentSession> transition)
+    {
+        Get(id);
+        return sessions.AddOrUpdate(id, _ => transition(null), (_, prior) => transition(prior));
     }
     public void Forget(Guid id) => sessions.TryRemove(id, out _);
 }
