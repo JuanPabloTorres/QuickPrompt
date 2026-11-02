@@ -8,7 +8,10 @@ incidentes conservan su propietario en `SAAS_DELIVERY.md` (expediente local).
 Las rutas de expedientes locales entre comillas de código no son enlaces ni
 archivos incluidos en este candidato; no son requisitos de instalación.
 
-### R4 — candidato de entrega MCP completa, 02/11/2026
+### R4 — candidato de entrega MCP completa descartado, 02/11/2026
+
+Las siguientes condiciones describen el candidato evaluado; el filtro se retira
+del camino activo al no superar la aceptación pública.
 
 El usuario confirma que la respuesta de ChatGPT aparece al refrescar. La consulta
 literal de QA devolvió `items=[]` por el conector y terminó visible en la conversación
@@ -48,10 +51,27 @@ no equivale a aceptación de ChatGPT ni a la suite PostgreSQL/OAuth completa.
 Para volver al transporte anterior basta retirar el registro de
 `McpSingleResponseFilter`; no hay migración, cambio de scopes o reconexión obligatoria.
 
-Estado: **mitigación de compatibilidad implementada localmente; R4 sigue abierto**.
-No hay publicación, commit, push, cambio de conexión o nueva aceptación en ChatGPT.
-Antes de cerrar: publicar con autorización y comprobar la consulta original sin
-refrescar en el servicio activo; conservar el resultado fallido si reaparece.
+Tras autorización expresa se publicó `a629e13` en la rama existente y Render
+`dep-dbkgbgpsrm7s738cvp2g` pasó a Live. La CI del mismo SHA aprobó sus dos jobs;
+Accounts obtuvo 650 PASS / 0 FAIL / 21 omitidas. La llamada web del servicio nuevo
+devolvió HTTP 200 / JSON en 217 ms, con canales iguales y campos raíz presentes,
+traza `5b9437b322e74603b78549cc0c4f6e9f`. Esa señal no acredita la presentación.
+
+La búsqueda falló visualmente tanto en la conversación original como en una nueva
+con QuickPrompt seleccionado expresamente, sin refrescar ni regenerar. Un control
+nuevo sin apps ni herramientas también terminó en «This response couldn’t load».
+Capturas y AX confirmaron los tres síntomas; no se cuentan como tres defectos
+atribuibles a nuestra lógica MCP. En esta sesión el fallo no es exclusivo del
+plugin y SSE no es una condición necesaria. La causa interna del cliente sigue
+sin confirmar. La captura CDP quedó indisponible durante la resolución del
+documento por Browser Use; no se eludió ese límite ni se enviaron datos a soporte.
+
+Se retira la adaptación de transporte y su límite añadido de 1 MiB, restaurando
+los cuatro archivos de código/tests exactamente a `e16e4ee`. Se preservan el commit
+descartado, la CI y `.playwright/mcp-response-delivery/public-acceptance-failed.json`.
+La restauración pública y sus comprobaciones se registran en `publication.json`.
+Estado del error: **NO RESUELTO**. Falta una señal del cliente que identifique la
+primera transformación o entrega fallida; no se añade otro parche por hipótesis.
 
 ### Diagnóstico del componente y distinción de plazos del 29/10
 
