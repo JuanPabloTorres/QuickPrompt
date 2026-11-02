@@ -1,6 +1,8 @@
 # QuickPrompt 1.0.1 — versión inicial
 
-Integración en `main`. El tag y la promoción finales esperan la aceptación pública.
+Versión inicial de entrega en `main`, identificada por `v1.0.1`. El workflow
+publica los artefactos tras los controles de CI. La promoción del servicio público
+queda sujeta a su aceptación operativa.
 
 La entrega reúne la aplicación web de cuentas, bibliotecas con variables,
 colecciones, versiones e historial, permisos compartidos, correo Brevo, NOVA, MCP

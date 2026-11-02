@@ -4,8 +4,8 @@
 
 Propietario actual: chat Cerrar integralmente QuickPrompt. Se retoma el checkout
 `QuickPrompt-Initial-Release-20261102` que preparó el otro chat; no hay otro plan
-de entrega. La orden actual autoriza commit, merge, CI/CD, tag y promoción tras
-completar los controles requeridos. El tag final todavía no acredita aceptación.
+de entrega. El tag `v1.0.1` identifica la entrega inicial. La promoción del
+servicio público requiere los controles de aceptación operativa.
 
 La muestra conjunta congelada pasó 19/20 (8/8 adaptación COMPRESS, 6/6 búsqueda,
 5/6 ejecución), 28 llamadas reales y cero retries. El fallo H-E02 de foto omitida
@@ -46,7 +46,8 @@ autenticación y aislamiento. No ejecutar un descenso parcial sobre la base viva
 Estado integral pendiente. La aceptación pública NOVA/MCP se interrumpió
 cuando el usuario detuvo el navegador con Escape. El horario de 12 horas pasó
 las pruebas del candidato y sigue pendiente de aceptación en el dominio público.
-El tag y la promoción esperan los controles de publicación.
+CI comprueba el código del tag antes de publicar los artefactos. La promoción
+del servicio público sigue pendiente.
 
 ## R3/R5, dos cuentas y persistencia públicas — 02/11/2026, 20:49 UTC
 

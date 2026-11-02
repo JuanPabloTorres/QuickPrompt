@@ -5,8 +5,10 @@ ayuda a buscar, redactar y ejecutar instrucciones con revisión y permisos expl�
 La edición SaaS usa React/TypeScript, .NET 10 y PostgreSQL; MCP delega acceso a una
 biblioteca concreta y Companion conecta el modelo local del usuario.
 
-Versión inicial **1.0.1** en preparación. Estado de aceptación integral: **pendiente**; consultar
-[controles y fallos abiertos](docs/development/GO_TO_MARKET.md).
+**QuickPrompt 1.0.1** es la versión inicial de la aplicación web y Companion.
+La campaña de NOVA con Qwen en Docker Model Runner pasó 19 de 20 casos de
+compresión, búsqueda y ejecución. Consulta el [acta de versión](docs/releases/INITIAL_1.0.1.md)
+y los [controles pendientes para la operación pública](docs/development/GO_TO_MARKET.md).
 
 ## Preparar el entorno
 
@@ -57,15 +59,10 @@ identidad por archivo y avisos originales. No incluye pesos, entornos, configura
 privada o implementaciones de dependencias externas. El exportador lo usa por
 defecto y permite seleccionar explícitamente una instalación propia compatible.
 
-Los tags `v1.*` publican el ZIP y sus hashes y una imagen GHCR versionada sólo
-después de los controles. La promoción explícita de `main` usa el deploy hook del
+Los tags `v1.*` activan la publicación del ZIP con su SHA-256 y de la imagen
+versionada en GHCR cuando pasan los controles. La promoción explícita de `main` usa el deploy hook del
 servicio Render existente, guardado como secreto de GitHub; fija el SHA comprobado.
 El secreto todavía debe configurarse antes de habilitar la promoción. Un commit,
 un tag o una ejecución de CI no sustituyen aceptación pública de NOVA/MCP.
 
-[Acta de versión inicial](docs/releases/INITIAL_1.0.1.md).
-
-Traducción contextual comprobada el 02/11: tras la aclaración humana de tarjeta/registro,
-una nueva captura produjo Card and instruction y Open the card «Firmar» and request
-to sign <acuerdo>. Dos llamadas reales, sin retries ni efectos. El fallo automático
-sin aclaración se conserva; no se declara una campaña automática 4/4.
+[Descargas de la versión 1.0.1](https://github.com/JuanPabloTorres/QuickPrompt/releases/tag/v1.0.1).
