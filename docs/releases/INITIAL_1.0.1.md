@@ -1,6 +1,6 @@
 # QuickPrompt 1.0.1 — versión inicial
 
-Estado: preparación de integración; tag y promoción finales pendientes de aceptación.
+Integración en `main`. El tag y la promoción finales esperan la aceptación pública.
 
 La entrega reúne la aplicación web de cuentas, bibliotecas con variables,
 colecciones, versiones e historial, permisos compartidos, correo Brevo, NOVA, MCP
@@ -18,10 +18,15 @@ usuario confirmó el significado de tarjeta/registro de interfaz; su comprobaci�
 posterior debe identificarse como contextualizada por una aclaración humana.
 Los experimentos rechazados no se promueven ni se combinan con otros resultados.
 
-Pendientes: aceptación pública NOVA/Companion y ChatGPT MCP, cifrado/retención y
-restauración operativa privada, aceptación de horario público de 12 horas y
-resultado real de instalación en VM nueva. El usuario detuvo el control del
-navegador con Escape durante este corte. No se declara GO integral ni comercial.
+La instalación en VM Windows nueva pasó los 15 controles de exportación y nueve
+de ciclo de vida en el run 41546049096 para `e28c5e0`. Se restauró un respaldo
+DPAPI de Neon en un PostgreSQL privado sin red y coincidieron los datos de 36
+tablas, tres secuencias y el catálogo de permisos. El procedimiento operativo,
+la retención y las limitaciones constan en `docs/development/GO_TO_MARKET.md`.
+
+Quedan pendientes la aceptación pública NOVA/Companion y MCP en ChatGPT, el
+horario de 12 horas en el dominio publicado y la comprobación de CI del SHA
+final. El usuario detuvo el navegador con Escape durante la aceptación.
 
 El workflow entrega ZIP/hash e imagen versionados cuando pasan los controles; la
 promoción del commit exacto se solicita explícitamente y usa el servicio existente.

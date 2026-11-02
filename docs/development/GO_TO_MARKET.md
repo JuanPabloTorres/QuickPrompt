@@ -10,20 +10,43 @@ completar los controles requeridos. El tag final todavía no acredita aceptació
 La muestra conjunta congelada pasó 19/20 (8/8 adaptación COMPRESS, 6/6 búsqueda,
 5/6 ejecución), 28 llamadas reales y cero retries. El fallo H-E02 de foto omitida
 se conserva. Ese score no mide authoring TRANSLATE. Las capturas R13/R14 sin aclaración siguen 3/4; R14 se rechazó. Se integra
-la conservación de citas como contexto de lectura de R13; el usuario confirmó ahora que ficha
-significa tarjeta/registro de interfaz. La nueva comprobación debe etiquetarse
-como asistida por esa aclaración, sin alterar las capturas originales.
+la conservación de citas como contexto de lectura de R13. El usuario confirmó que
+ficha significa tarjeta o registro de interfaz. Con esa aclaración, dos llamadas
+reales a Qwen produjeron `Open the card «Firmar» and request to sign <acuerdo>.`
+La captura conserva la cita y la variable originales. El resultado automático
+sin aclaración sigue registrado como 3/4.
 
 Integración CI/CD: snapshot Core permitido por hashes, recurso lingüístico en
 trabajo Linux explícito, instalación/rollback/retiro del paquete en Windows nuevo,
 publicación de ZIP/hash y GHCR tras controles, promoción explícita por SHA exacto.
-Resultados remotos todavía pendientes; no declarar PASS por escribir el YAML.
+El merge `b5a4608` conserva ambas historias. En `e28c5e0`, GitHub Actions
+41546049096 verificó el contenedor Cloud y la instalación en una VM Windows nueva
+con 15 controles de exportación y nueve de ciclo de vida. Ambos ZIP eran
+idénticos. La primera corrida 41545818425 reveló conversión de finales de línea
+en el SDK y un descenso parcial de esquema. Se bloquea el descenso de
+`PairedReasoningProfile` antes de emitir DDL. El retorno operativo usa una copia
+verificada con su aplicación correspondiente.
 
-Estado integral: PENDIENTE. La aceptación pública NOVA/MCP se interrumpió cuando
-el usuario detuvo Computer Use con Escape; no se operará más el navegador en ese
-turno. Permanecen también respaldo cifrado operativo y restauración privados,
-horario de 12 horas público y comprobación de instalación final. Se conserva el
-resto del expediente histórico; las fechas inferiores no son estado nuevo.
+El respaldo del 02/11/2026 usa DPAPI del usuario Windows y tiene fecha de
+conservación hasta 07/12/2026 UTC. La purga es manual. Se leyó una instantánea
+PostgreSQL de Neon con TLS verificado. Se restauró desde el archivo cifrado en
+PostgreSQL 18 sin red ni acceso público. Coincidieron las huellas de 36 tablas,
+tres secuencias y el catálogo con 23 tablas bajo FORCE RLS. El motor reanalizó
+una restricción y una política cuya representación textual difería. Se eliminó
+el contenedor de ensayo y no hubo escrituras en Neon. La copia depende de la
+cuenta Windows operadora y del acceso a su perfil DPAPI.
+
+En un rollback de publicación, cerrar admisión y conservar evidencia de las
+escrituras posteriores al corte. Restaurar la copia verificada en un destino
+privado nuevo con PostgreSQL 18, validar datos, catálogo y guardas con la
+aplicación correspondiente y comprobar que el retorno no descartará escrituras.
+Solo después conmutar backend y frontend como conjunto y repetir health,
+autenticación y aislamiento. No ejecutar un descenso parcial sobre la base viva.
+
+Estado integral pendiente. La aceptación pública NOVA/MCP se interrumpió
+cuando el usuario detuvo el navegador con Escape. El horario de 12 horas pasó
+las pruebas del candidato y sigue pendiente de aceptación en el dominio público.
+El tag y la promoción esperan los controles de publicación.
 
 ## R3/R5, dos cuentas y persistencia públicas — 02/11/2026, 20:49 UTC
 

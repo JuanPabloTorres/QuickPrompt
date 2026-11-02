@@ -3,11 +3,15 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using QuickPrompt.Accounts.Delegation;
 using QuickPrompt.Accounts.Executions;
 using QuickPrompt.Accounts.Libraries;
+using QuickPrompt.Accounts.Persistence;
 using QuickPrompt.Nova.Application;
 using Xunit;
 
@@ -132,13 +136,13 @@ public sealed partial class AccountHttpTests
         await using var host = await Start(); using var owner = Client(host.App); using var device = Client(host.App);
         await Login(owner, await Register(owner, host.Mail));
         await ReasonedDevice(owner, device);
-        await using var database = new NpgsqlConnection(postgres.MigrationConnection); await database.OpenAsync();
-        await using var transaction = await database.BeginTransactionAsync();
-        await using var rollback = new NpgsqlCommand(PairedReasoningMigrationTests.Sql("Down"), database, transaction);
-        var blocked = await Assert.ThrowsAsync<PostgresException>(() => rollback.ExecuteNonQueryAsync());
-        Assert.Equal("P0001", blocked.SqlState);
-        Assert.Contains("no grant will be converted or deleted", blocked.MessageText);
-        await transaction.RollbackAsync();
+        await using var migration = new AccountDatabase(new DbContextOptionsBuilder<AccountDatabase>()
+            .UseNpgsql(postgres.MigrationConnection, options => options.MigrationsHistoryTable("history", "qp_migrations")).Options);
+        var blocked = await Assert.ThrowsAsync<NotSupportedException>(() => migration.GetService<IMigrator>()
+            .MigrateAsync("20261029151628_CompanionOperationalPresence"));
+        Assert.Contains("Restore a verified backup", blocked.Message);
+        await using var database = new NpgsqlConnection(postgres.MigrationConnection);
+        await database.OpenAsync();
         await using var check = new NpgsqlCommand("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='bounded_connection' AND conrelid='qp_operations.connections'::regclass", database);
         Assert.Contains(PairedReasoningProtocol.GrantProfile, (string)(await check.ExecuteScalarAsync())!);
         Assert.Equal(PairedReasoningProtocol.GrantProfile, (await device.GetFromJsonAsync<LocalCompanionProfile>("/api/companion/v1/profile"))!.ProfileId);

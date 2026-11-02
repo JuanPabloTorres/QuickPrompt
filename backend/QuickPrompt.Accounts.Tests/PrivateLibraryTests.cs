@@ -158,15 +158,9 @@ public sealed class PrivateLibraryTests(PostgresFixture postgres) : IClassFixtur
         var prompt = await library.SavePrompt(actor, owned.Id, null, 0, "Conservar", "Explica <tema>.");
         await using var migration = new AccountDatabase(new DbContextOptionsBuilder<AccountDatabase>()
             .UseNpgsql(postgres.MigrationConnection, options => options.MigrationsHistoryTable("history", "qp_migrations")).Options);
-        var refused = await Record.ExceptionAsync(() => migration.GetService<IMigrator>()
+        var refused = await Assert.ThrowsAsync<NotSupportedException>(() => migration.GetService<IMigrator>()
             .MigrateAsync("20261026050826_InitialAccounts"));
-        if (refused is PostgresException { SqlState: "P0001" } guarded)
-        {
-            // The explicit reasoning-profile Down can refuse the downgrade
-            // before the historical destructive migration is even reached.
-            Assert.Equal("Reasoning-profile connections exist. Review their retention and removal explicitly before rollback; no grant will be converted or deleted.", guarded.MessageText);
-        }
-        else Assert.IsType<NotSupportedException>(refused);
+        Assert.Contains("Restore a verified backup", refused.Message);
         // A rejected downgrade must not have dropped a newer runtime dependency first.
         await new AccountRoleGuard(postgres.Application).StartAsync(CancellationToken.None);
         Assert.Equal(prompt.Template, Assert.Single(await library.ListVersions(actor, owned.Id, prompt.Id)).Template);
