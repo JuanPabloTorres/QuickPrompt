@@ -168,7 +168,7 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
       </select></div><IconAction className="secondary" label="Actualizar equipos NOVA" glyph={RefreshCw} disabled={running || operation.busy} onClick={() => setReload(value => value + 1)} /></div>
       {!connections ? <p role="status">Consultando equipos…</p> : connections.length === 0
         ? <p className="muted">Vincula un equipo desde Conexiones locales.</p>
-        : <p className="muted">Mantén NOVA y Qwen abiertos en el equipo elegido. NOVA comprueba la conexión al enviar.</p>}
+        : <p className="muted">NOVA comprueba la señal del equipo al enviar. Una señal reciente no verifica la generación del modelo.</p>}
       {restoring && <p role="status">Comprobando la última ejecución de este equipo…</p>}
       {operation.error && <p role="alert" className="error">{operation.error}</p>}
     </section>;

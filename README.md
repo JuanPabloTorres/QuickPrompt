@@ -5,9 +5,9 @@ ayuda a buscar, redactar y ejecutar instrucciones con revisión y permisos expl�
 La edición SaaS usa React/TypeScript, .NET 10 y PostgreSQL; MCP delega acceso a una
 biblioteca concreta y Companion conecta el modelo local del usuario.
 
-**QuickPrompt 1.0.2** actualiza el acceso, el espacio web y el panel integrado de NOVA.
+**QuickPrompt 1.0.3** actualiza el acceso, el espacio web y el panel integrado de NOVA. Consulta las [notas de la versión](docs/releases/v1.0.3.md).
 La campaña de NOVA con Qwen en Docker Model Runner pasó 19 de 20 casos de
-compresión, búsqueda y ejecución. Consulta el [acta de versión](docs/releases/INITIAL_1.0.1.md)
+compresión, búsqueda y ejecución. Consulta el [acta inicial](docs/releases/INITIAL_1.0.1.md)
 y los [controles pendientes para la operación pública](docs/development/GO_TO_MARKET.md).
 
 ## Preparar el entorno
@@ -65,4 +65,4 @@ servicio Render existente, guardado como secreto de GitHub; fija el SHA comproba
 El secreto todavía debe configurarse antes de habilitar la promoción. Un commit,
 un tag o una ejecución de CI no sustituyen aceptación pública de NOVA/MCP.
 
-[Descargas de la versión 1.0.2](https://github.com/JuanPabloTorres/QuickPrompt/releases/tag/v1.0.2).
+[Descargas de la versión 1.0.3](https://github.com/JuanPabloTorres/QuickPrompt/releases/tag/v1.0.3).
