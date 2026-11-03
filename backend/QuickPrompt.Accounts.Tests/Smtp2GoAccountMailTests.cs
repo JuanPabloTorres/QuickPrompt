@@ -44,7 +44,7 @@ public sealed class Smtp2GoAccountMailTests
         await mail.Send(message, default);
         Assert.Equal(1, handler.Calls); Assert.Equal(new Uri("https://api.smtp2go.com/v3/email/send"), handler.Uri); Assert.Equal(HttpMethod.Post, handler.Method);
         Assert.True(handler.ApiKey == Key, "Only the fixed API may receive the synthetic credential.");
-        Assert.Equal(new[] { "sender", "subject", "text_body", "to" }, handler.Body.EnumerateObject().Select(property => property.Name).Order());
+        Assert.Equal(new[] { "html_body", "sender", "subject", "text_body", "to" }, handler.Body.EnumerateObject().Select(property => property.Name).Order());
         var sender = new System.Net.Mail.MailAddress(handler.Body.GetProperty("sender").GetString()!);
         Assert.Equal("sender@example.invalid", sender.Address); Assert.Equal("QuickPrompt QA", sender.DisplayName);
         Assert.Equal("recipient@example.invalid", Assert.Single(handler.Body.GetProperty("to").EnumerateArray()).GetString());

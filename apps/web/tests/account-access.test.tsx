@@ -31,7 +31,7 @@ function newPassword(confirmation = password) {
 }
 
 it.each([
-  ['login', 'Bienvenido a tu espacio'], ['register', 'Crea tu cuenta'],
+  ['login', 'Inicia sesión'], ['register', 'Crea tu cuenta'],
   ['recover', 'Recupera tu acceso'], ['resend', 'Reenvía tu confirmación'],
 ])('opens the direct %s route', (route, title) => {
   setup(`/account/${route}`);

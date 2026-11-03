@@ -32,7 +32,8 @@ public sealed class Smtp2GoAccountMail : IAccountMail
             sender = new MailAddress(settings.SenderEmail, settings.SenderName).ToString(),
             to = new[] { message.Email },
             subject = AccountMailContract.Subject(message.Purpose),
-            text_body = AccountMailContract.Text(message.Purpose, link)
+            text_body = AccountMailContract.Text(message.Purpose, link),
+            html_body = AccountMailContract.Html(message.Purpose, link)
         });
         try
         {

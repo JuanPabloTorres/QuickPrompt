@@ -47,6 +47,34 @@ internal static class AccountMailContract
             : "Para elegir una nueva contraseña de QuickPrompt, abre este enlace.\n\n")
         + link + "\n\nSi no solicitaste esta acción, ignora este mensaje.";
 
+    internal static string Html(string purpose, string link)
+    {
+        var confirmation = purpose == "confirm";
+        var title = confirmation ? "Confirma tu correo" : "Elige una nueva contraseña";
+        var message = confirmation
+            ? "Ya casi tienes tu cuenta de QuickPrompt. Abre este enlace y confirma tu correo para entrar."
+            : "Recibimos una solicitud para recuperar tu acceso. Abre este enlace y elige una contraseña nueva.";
+        var action = confirmation ? "Abrir confirmación" : "Abrir recuperación";
+        var safeLink = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(link);
+        return $$"""
+            <!doctype html>
+            <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+            <body style="margin:0;background:#f1f5f9;color:#16243a;font:16px/1.55 Arial,sans-serif">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="16"><tr><td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="28" style="max-width:540px;background:#fff;border:1px solid #d6e0ee;border-radius:16px">
+                  <tr><td>
+                    <p style="margin:0;color:#17408b;font-weight:bold">QuickPrompt</p>
+                    <h1 style="margin:12px 0;font-size:26px;line-height:1.2">{{title}}</h1>
+                    <p>{{message}}</p>
+                    <p style="margin:24px 0"><a href="{{safeLink}}" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#17408b;color:#fff;text-decoration:none;font-weight:bold">{{action}}</a></p>
+                    <p style="margin-bottom:0;color:#43536a">Si no solicitaste esta acción, puedes ignorar este mensaje.</p>
+                  </td></tr>
+                </table>
+              </td></tr></table>
+            </body></html>
+            """;
+    }
+
     internal static async Task<JsonDocument> ReadReceipt(HttpContent content, CancellationToken cancellation)
         => JsonDocument.Parse(await ReadReceiptBytes(content, cancellation));
 

@@ -297,28 +297,24 @@ it('keeps a terminal question in recoverable history instead of leaving it over 
   fireEvent.click(screen.getByRole('button', { name: 'Cerrar actividad' }));
   expect(screen.queryByText(question)).toBeNull();
 });
-it('uncovers an obscured workspace control without taking its focus or pausing the agent', async () => {
+it('keeps the inline assistant open when focus returns to the workspace without pausing the agent', () => {
   const control = vi.fn(); window.addEventListener('nova-ui-control', control);
   try {
     render(<LazyMotion features={domAnimation}><input aria-label="Campo de trabajo" /><AgentDock context="Biblioteca" actions={null}><textarea aria-label="Petición" /></AgentDock></LazyMotion>);
     fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
-    expect(screen.getByRole('button', { name: 'Cerrar asistente NOVA' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Cerrar panel de NOVA' }).getAttribute('aria-expanded')).toBe('true');
     const field = screen.getByRole('textbox', { name: 'Campo de trabajo' });
-    vi.spyOn(document.querySelector<HTMLElement>('.nova-dock-panel')!, 'getBoundingClientRect').mockReturnValue(new DOMRect(600, 300, 400, 400));
-    vi.spyOn(field, 'getBoundingClientRect').mockReturnValue(new DOMRect(650, 400, 100, 50));
     act(() => field.focus());
-    expect(screen.getByRole('button', { name: 'Abrir asistente NOVA' }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Cerrar panel de NOVA' }).getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(field); expect(control).not.toHaveBeenCalled();
   } finally { window.removeEventListener('nova-ui-control', control); }
 });
-it('uncovers a field that was already focused before a non-focusing panel reveal', async () => {
+it('reveals the inline panel without stealing focus when requested', async () => {
   render(<LazyMotion features={domAnimation}><input aria-label="Campo activo" /><AgentDock context="Biblioteca" actions={null}>{null}</AgentDock></LazyMotion>);
   const field = screen.getByRole('textbox', { name: 'Campo activo' });
-  vi.spyOn(document.querySelector<HTMLElement>('.nova-dock-panel')!, 'getBoundingClientRect').mockReturnValue(new DOMRect(600, 300, 400, 400));
-  vi.spyOn(field, 'getBoundingClientRect').mockReturnValue(new DOMRect(650, 400, 100, 50));
   field.focus();
   act(() => window.dispatchEvent(new CustomEvent('nova-open-assistant', { detail: { focus: false } })));
-  await waitFor(() => expect(screen.getByTestId('nova-dock').getAttribute('data-expanded')).toBe('false'));
+  await waitFor(() => expect(screen.getByTestId('nova-dock').getAttribute('data-expanded')).toBe('true'));
   expect(document.activeElement).toBe(field);
 });
 it('removes the working toast as soon as a fast task has finished', async () => {

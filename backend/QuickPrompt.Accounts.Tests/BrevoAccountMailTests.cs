@@ -45,11 +45,14 @@ public sealed class BrevoAccountMailTests
         Assert.Equal(1, handler.Calls); Assert.Equal(new Uri("https://api.brevo.com/v3/smtp/email"), handler.Uri); Assert.Equal(HttpMethod.Post, handler.Method);
         Assert.True(handler.ApiKey == Key, "The configured synthetic credential must be sent only to the fixed API.");
         var body = handler.Body;
-        Assert.Equal(new[] { "sender", "subject", "textContent", "to" }, body.EnumerateObject().Select(property => property.Name).Order());
+        Assert.Equal(new[] { "htmlContent", "sender", "subject", "textContent", "to" }, body.EnumerateObject().Select(property => property.Name).Order());
         Assert.Equal("sender@example.invalid", body.GetProperty("sender").GetProperty("email").GetString());
         Assert.Equal("QuickPrompt QA", body.GetProperty("sender").GetProperty("name").GetString());
         Assert.Equal("recipient@example.invalid", Assert.Single(body.GetProperty("to").EnumerateArray()).GetProperty("email").GetString());
         Assert.Contains(message.Link, body.GetProperty("textContent").GetString());
+        var html = body.GetProperty("htmlContent").GetString();
+        Assert.Contains(System.Text.Encodings.Web.HtmlEncoder.Default.Encode(message.Link), html);
+        Assert.Contains(purpose == "confirm" ? "Abrir confirmación" : "Abrir recuperación", html);
         Assert.False(log.Messages.Any(text => text.Contains(Key, StringComparison.Ordinal) || text.Contains("synthetic_confirm_code", StringComparison.Ordinal)), "Mail logs must omit private credential and account-link values.");
     }
 

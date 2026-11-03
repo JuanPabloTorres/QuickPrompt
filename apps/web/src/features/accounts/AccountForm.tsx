@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { useEffect, useMemo, useState, type ComponentPropsWithoutRef } from 'react';
+import { ArrowLeft, KeyRound, LockKeyhole, LogIn, MailCheck, MailPlus, MailQuestion, Send, UserRoundPlus, type LucideIcon } from 'lucide-react';
 import { AppIcon } from '../../components/ui/Icon';
 import { InlineSpinner } from '../../components/ui/Feedback';
+import googleSignIn from '../../design/google-sign-in.svg';
 import { ApiError, errorMessage } from '../../services/api';
 import { useBoundOperation } from '../../services/useBoundOperation';
 import type { AccountFormMode, AccountOptions, AccountService, AccountToken } from '../../services/accounts';
@@ -14,7 +15,40 @@ function initialForm(): { mode: AccountFormMode; token?: AccountToken } {
   const token = { userId: query.get('userId') ?? '', code: query.get('code') ?? '' };
   return { mode, token };
 }
-const titles: Record<AccountFormMode, string> = { login: 'Bienvenido a tu espacio', register: 'Crea tu cuenta', recover: 'Recupera tu acceso', resend: 'Reenvía tu confirmación', confirm: 'Confirma tu correo', reset: 'Elige una nueva contraseña' };
+const accountActions: Record<AccountFormMode, { title: string; label: string; glyph: LucideIcon }> = {
+  login: { title: 'Inicia sesión', label: 'Entrar', glyph: LogIn },
+  register: { title: 'Crea tu cuenta', label: 'Crear cuenta', glyph: UserRoundPlus },
+  recover: { title: 'Recupera tu acceso', label: 'Enviar recuperación', glyph: Send },
+  resend: { title: 'Reenvía tu confirmación', label: 'Reenviar confirmación', glyph: Send },
+  confirm: { title: 'Confirma tu correo', label: 'Confirmar correo', glyph: MailCheck },
+  reset: { title: 'Elige una nueva contraseña', label: 'Guardar contraseña', glyph: LockKeyhole },
+};
+const accountSteps: Partial<Record<AccountFormMode, { step: string; guide: string }>> = {
+  register: { step: 'Tu correo · Paso 1 de 2', guide: '¿Qué correo quieres usar? Te enviaremos un enlace para confirmar tu cuenta.' },
+  confirm: { step: 'Tu correo · Paso 2 de 2', guide: 'Llegaste desde tu correo. Confirma que te pertenece para activar tu cuenta.' },
+  recover: { step: 'Recuperar acceso · Paso 1 de 2', guide: '¿Con qué correo entras a QuickPrompt? Si corresponde, te enviaremos un enlace para recuperar el acceso.' },
+  reset: { step: 'Recuperar acceso · Paso 2 de 2', guide: 'Elige una contraseña nueva para volver a entrar a tu cuenta.' },
+  resend: { step: 'Confirmación por correo', guide: '¿A qué correo debemos reenviar el enlace? Revisa también la carpeta de spam.' },
+};
+
+function accountFailure(mode: AccountFormMode, failure: unknown) {
+  if (failure instanceof ApiError) {
+    if (mode === 'login' && failure.status === 401)
+      return 'No pudimos iniciar sesión. Revisa tus datos y la confirmación del correo.';
+    if (failure.status === 400 && mode === 'reset')
+      return 'No pudimos cambiar la contraseña. Revisa sus requisitos o solicita otro enlace de recuperación.';
+    if (failure.status === 400 && mode === 'confirm')
+      return 'No pudimos confirmar el correo con este enlace. Solicita otro enlace de confirmación.';
+  }
+  return errorMessage(failure);
+}
+
+function AccountIconButton({ label, glyph, children, ...button }: ComponentPropsWithoutRef<'button'> & { label: string; glyph?: LucideIcon }) {
+  return <span className="account-icon-action">
+    <button {...button} aria-label={label}>{children ?? (glyph && <AppIcon glyph={glyph} />)}</button>
+    <span className="account-icon-hint" aria-hidden="true">{label}</span>
+  </span>;
+}
 
 export function AccountForm({ service, options, csrf, onLogin }: { service: AccountService; options: AccountOptions; csrf: string; onLogin: () => void }) {
   const [initial] = useState(initialForm);
@@ -58,31 +92,39 @@ export function AccountForm({ service, options, csrf, onLogin }: { service: Acco
         }
       }
     } catch (failure) {
-      if (operation.isCurrent(pending)) setError(failure instanceof ApiError && failure.status === 401
-        ? 'No pudimos iniciar sesión. Revisa tus datos, la confirmación del correo o vuelve a intentarlo más tarde.' : errorMessage(failure));
+      if (operation.isCurrent(pending)) setError(accountFailure(mode, failure));
     } finally { operation.finish(pending); }
   }
   const needsEmail = mode === 'login' || mode === 'register' || mode === 'recover' || mode === 'resend';
   const needsPassword = mode === 'login' || mode === 'register' || mode === 'reset';
+  const guidance = accountSteps[mode];
+  const action = accountActions[mode];
   return <section className="account-card" aria-labelledby="account-form-title">
-    <span className="eyebrow">TU CUENTA QUICKPROMPT</span><h2 id="account-form-title">{titles[mode]}</h2>
-    {mode === 'login' && options.google && <><form action="/account/google" method="post"><input type="hidden" name="__RequestVerificationToken" value={csrf} /><button className="secondary account-google" disabled={operation.busy || !csrf}>Continuar con Google<AppIcon glyph={ArrowRight} size={16} /></button></form><div className="account-divider"><span>o utiliza tu correo</span></div></>}
+    <div className="account-card-heading"><span className="account-card-symbol"><AppIcon glyph={mode === 'login' ? LockKeyhole : action.glyph} /></span><h2 id="account-form-title">{action.title}</h2></div>
     {options.mailDelivery === 'development-pickup' && mode !== 'login' && <p className="account-helper">Entorno de prueba: los mensajes se guardan en el buzón local de desarrollo.</p>}
     {!options.email && needsEmail && <p className="account-helper">El registro y la recuperación por correo no están disponibles.{options.google && mode === 'login' ? ' Puedes continuar con Google.' : ' Puedes volver a iniciar sesión con una cuenta existente.'}</p>}
-    {mode === 'register' && <p className="account-helper">Después de crear tu cuenta, abre el enlace de confirmación que recibirás por correo antes de iniciar sesión.</p>}
-    {mode === 'recover' && <p className="account-helper">Introduce el correo de tu cuenta para solicitar un enlace y elegir una contraseña nueva.</p>}
-    {mode === 'resend' && <p className="account-helper">Si aún no confirmaste tu correo, solicita otro enlace. Revisa también la carpeta de spam.</p>}
+    {guidance && (options.email || !needsEmail) && <div className="account-guide"><span>{guidance.step}</span><p>{guidance.guide}</p></div>}
     <form onSubmit={event => { event.preventDefault(); void submit(); }} aria-busy={operation.busy}>
       <fieldset disabled={operation.busy}>
         {needsEmail && <div><label htmlFor="account-email">Correo electrónico</label><input id="account-email" type="email" value={email} onChange={event => setEmail(event.target.value)} required maxLength={256} autoComplete="email" autoCapitalize="none" /></div>}
         {needsPassword && <div><label htmlFor="account-password">Contraseña</label><input id="account-password" type="password" value={password} onChange={event => setPassword(event.target.value)} required minLength={mode === 'login' ? undefined : 12} maxLength={256} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} aria-describedby={mode === 'login' ? undefined : 'account-password-help'} />{mode !== 'login' && <p id="account-password-help" className="account-helper">12 caracteres o más, con mayúsculas, minúsculas, números y un símbolo.</p>}</div>}
         {(mode === 'register' || mode === 'reset') && <div><label htmlFor="account-password-confirmation">Repite la contraseña</label><input id="account-password-confirmation" type="password" value={confirmation} onChange={event => { setConfirmation(event.target.value); setError(''); }} required maxLength={256} autoComplete="new-password" aria-invalid={error === 'Las contraseñas no coinciden.'} aria-describedby={error === 'Las contraseñas no coinciden.' ? 'account-form-error' : undefined} /></div>}
-        {mode === 'confirm' && <p>Confirma que este correo te pertenece para activar tu cuenta.</p>}
-        <button className="primary account-submit" disabled={!options.email && (mode === 'register' || mode === 'recover' || mode === 'resend')}>{operation.busy && <InlineSpinner />}{mode === 'login' ? 'Entrar' : mode === 'register' ? 'Crear cuenta' : mode === 'recover' ? 'Enviar recuperación' : mode === 'resend' ? 'Reenviar confirmación' : mode === 'confirm' ? 'Confirmar correo' : 'Guardar contraseña'}<AppIcon glyph={ArrowRight} size={16} /></button>
+        <AccountIconButton type="submit" className="primary icon-button account-submit" label={action.label} glyph={action.glyph} disabled={!options.email && needsEmail && mode !== 'login'}>{operation.busy ? <InlineSpinner /> : undefined}</AccountIconButton>
       </fieldset>
     </form>
-    {error && <p id="account-form-error" role="alert" className="error">{error}</p>}{notice && <p role="status" className="account-notice">{notice}</p>}
-    <div className="account-links">{mode === 'login' ? <><button type="button" onClick={() => choose('recover')} disabled={operation.busy}>Olvidé mi contraseña</button><button type="button" onClick={() => choose('register')} disabled={operation.busy}>Crear una cuenta</button></> : <button type="button" onClick={() => choose('login')} disabled={operation.busy}>Volver a iniciar sesión</button>}</div>
-    <div className="account-links">{(mode === 'login' || mode === 'register' || mode === 'confirm') && <button type="button" onClick={() => choose('resend')} disabled={operation.busy}>Reenviar correo de confirmación</button>}{mode === 'reset' && <button type="button" onClick={() => choose('recover')} disabled={operation.busy}>Solicitar otro enlace de recuperación</button>}</div>
+    {error && <p id="account-form-error" role="alert" className="error">{error}</p>}
+    {notice && <div className="account-notice">
+      <p role="status">{notice}</p>
+      {needsEmail && mode !== 'login' && <p>Revisa tu bandeja de entrada y la carpeta de spam.</p>}
+    </div>}
+    <div className="account-links" role="group" aria-label="Opciones de acceso">
+      {mode === 'login' ? <>
+        {options.google && <form action="/account/google" method="post"><input type="hidden" name="__RequestVerificationToken" value={csrf} /><AccountIconButton type="submit" className="account-google" label="Continuar con Google" disabled={operation.busy || !csrf}><img src={googleSignIn} alt="" width="40" height="40" /></AccountIconButton></form>}
+        <AccountIconButton type="button" className="secondary icon-button" label="Crear una cuenta" glyph={UserRoundPlus} onClick={() => choose('register')} disabled={operation.busy} />
+        <AccountIconButton type="button" className="secondary icon-button" label="Olvidé mi contraseña" glyph={KeyRound} onClick={() => choose('recover')} disabled={operation.busy} />
+      </> : <AccountIconButton type="button" className="secondary icon-button" label="Volver a iniciar sesión" glyph={ArrowLeft} onClick={() => choose('login')} disabled={operation.busy} />}
+      {(mode === 'login' || mode === 'register' || mode === 'confirm') && <AccountIconButton type="button" className="secondary icon-button" label="Reenviar correo de confirmación" glyph={MailPlus} onClick={() => choose('resend')} disabled={operation.busy} />}
+      {mode === 'reset' && <AccountIconButton type="button" className="secondary icon-button" label="Solicitar otro enlace de recuperación" glyph={MailQuestion} onClick={() => choose('recover')} disabled={operation.busy} />}
+    </div>
   </section>;
 }

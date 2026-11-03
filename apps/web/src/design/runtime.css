@@ -4,7 +4,8 @@
 .runtime-map { display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr); grid-template-areas: 'context center tools' 'model center human'; align-items: start; gap: 24px 12px; position: relative; padding: 12px 0; background-image: radial-gradient(var(--line) .65px, transparent .65px); background-size: 18px 18px; }
 .runtime-connections { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .runtime-connections path { fill: none; stroke: var(--intelligence); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: .35; }
-.runtime-card { position: relative; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-small); overflow-wrap: anywhere; }
+.runtime-card { position: relative; min-width: 0; padding: 14px; border: 1px solid var(--panel-edge); border-inline-start: 3px solid var(--intelligence); border-radius: 12px; background: var(--panel-light); box-shadow: var(--shadow-small); overflow-wrap: anywhere; }
+.runtime-human { border-inline-start-color: var(--accent); }
 .runtime-card-title { display: flex; align-items: center; gap: 8px; color: var(--intelligence); margin-bottom: 8px; }
 .runtime-card-title h3 { margin: 0; font-size: .875rem; font-weight: 600; }
 .runtime-card > strong { display: block; font-size: .8125rem; line-height: 1.5; }

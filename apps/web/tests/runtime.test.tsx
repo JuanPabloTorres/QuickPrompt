@@ -95,7 +95,7 @@ it('shows only the observed flow in compact mode and leaves detailed facts to ac
 });
 it('keeps the live map in the control bar instead of occupying the editor workspace', async () => {
   const snapshot: NovaRuntimeSnapshot = { view: view(), disconnected: false, stop: vi.fn(async () => {}) };
-  render(<><NovaWelcome runtime={snapshot} home={false} controlling onOpen={vi.fn()} onHelp={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /><label>Instrucción<textarea /></label></>);
+  render(<><NovaWelcome runtime={snapshot} home={false} controlling onHelp={vi.fn()} /><AgentControl runId={id} runtime={snapshot} /><label>Instrucción<textarea /></label></>);
   const stop = await screen.findByRole('button', { name: 'Detener agente' });
   expect(stop.closest('.nova-control-banner')?.querySelector('.runtime-flow--compact')).toBeTruthy();
   expect(document.querySelector('.nova-mission')).toBeNull();
@@ -217,7 +217,7 @@ it('reopens hidden runtime details from the compact control after the assistant 
   expect(await screen.findByTestId('agent-runtime')).toBeTruthy();
   act(() => screen.getByRole('button', { name: 'Pausar' }).focus());
   expect(screen.getByTestId('nova-dock').dataset.expanded).toBe('true');
-  fireEvent.click(screen.getByRole('button', { name: 'Cerrar asistente NOVA' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar panel de NOVA' }));
   expect(screen.queryByTestId('agent-runtime')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Actividad de NOVA' }));
   expect(await screen.findByTestId('agent-runtime')).toBeTruthy();

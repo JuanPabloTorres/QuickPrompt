@@ -52,7 +52,8 @@ public sealed class BrevoAccountMail : IAccountMail
             sender = new { email = senderEmail, name = senderName },
             to = new[] { new { email = message.Email } },
             subject = AccountMailContract.Subject(message.Purpose),
-            textContent = AccountMailContract.Text(message.Purpose, link)
+            textContent = AccountMailContract.Text(message.Purpose, link),
+            htmlContent = AccountMailContract.Html(message.Purpose, link)
         });
         try
         {

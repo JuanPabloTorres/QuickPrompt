@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { domAnimation, LazyMotion, MotionConfig } from 'motion/react';
+import { RefreshCw } from 'lucide-react';
 import { z } from 'zod';
 import { AgentRuntimeServiceProvider } from '../../components/ServiceContext';
+import { IconAction } from '../../components/ui/Icon';
 import { useUiPortalScope } from '../../components/ui/UiPortalScope';
 import { companionConnectionLabel, isNovaCompanionProfile, type AccountConnection, type AccountPrompt, type AccountService } from '../../services/accounts';
 import { ApiError } from '../../services/api';
@@ -161,14 +163,12 @@ export function AccountNovaBoundary({ accountId, libraryId, service, onExpired, 
     });
   };
   const configuration = <section className="account-nova-configuration" data-nova-command="true" aria-label="Equipo autorizado para NOVA">
-      <div className="account-section-heading"><div><span className="eyebrow">NOVA PRIVADA</span><h3>Tu agente, en tu biblioteca</h3></div>
-        <button type="button" className="secondary" disabled={running || operation.busy} onClick={() => setReload(value => value + 1)}>Actualizar equipos NOVA</button></div>
-      <label htmlFor="account-nova-connection">Equipo de NOVA</label><select id="account-nova-connection" value={connectionId} disabled={running || operation.busy || restoring} onChange={event => setConnectionId(event.target.value)}>
+      <div className="account-nova-device"><div><label htmlFor="account-nova-connection">Equipo de NOVA</label><select id="account-nova-connection" value={connectionId} disabled={running || operation.busy || restoring} onChange={event => setConnectionId(event.target.value)}>
         <option value="">Elige un equipo autorizado</option>{connections?.map(item => <option key={item.id} value={item.id}>{companionConnectionLabel(item)} · {companionPresenceLabel(item, presenceClock.now, presenceClock.receivedAt)}</option>)}
-      </select>
-      <p className="muted">Mantén abierto el componente local de NOVA en el equipo elegido para que pueda procesar el contenido con Qwen3:8b.</p>
-      <p className="muted">La autorización y la señal del proceso son distintas. Una señal reciente no verifica la generación del modelo; NOVA vuelve a comprobarla al enviar.</p>
-      {!connections ? <p role="status">Consultando equipos…</p> : connections.length === 0 && <p>Vincula un equipo con la capacidad NOVA desde Conexiones locales. La biblioteca manual sigue disponible.</p>}
+      </select></div><IconAction className="secondary" label="Actualizar equipos NOVA" glyph={RefreshCw} disabled={running || operation.busy} onClick={() => setReload(value => value + 1)} /></div>
+      {!connections ? <p role="status">Consultando equipos…</p> : connections.length === 0
+        ? <p className="muted">Vincula un equipo desde Conexiones locales.</p>
+        : <p className="muted">Mantén NOVA y Qwen abiertos en el equipo elegido. NOVA comprueba la conexión al enviar.</p>}
       {restoring && <p role="status">Comprobando la última ejecución de este equipo…</p>}
       {operation.error && <p role="alert" className="error">{operation.error}</p>}
     </section>;

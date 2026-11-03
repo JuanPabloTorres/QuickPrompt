@@ -100,8 +100,8 @@ function AccountLibraryContent({ library, service, onExpired, agent }: LibraryPr
     {focused && !editor && operation.error && <p className="error" role="alert">{operation.error} Tus datos permanecen en el detalle. Vuelve a la biblioteca para revisar la versión actual antes de reintentar.</p>}
     {focused && !editor && operation.notice && <p role="status" className="account-notice">{operation.notice}</p>}
     <div hidden={!!focused || !!editor}>
-    <button type="button" className="text-button" data-nova-control="library.home" onClick={() => { setFocused(undefined); catalog.select({ search: '', filter: 'all', collectionId: undefined, ungrouped: false }); }}>Ver todos los prompts</button>
     <LibraryToolbar title={library.name} createLabel="Crear prompt" collectionLabel="Filtrar por colección" includeUngrouped total={catalog.result?.total ?? 0}
+      onReset={() => { setFocused(undefined); catalog.select({ search: '', filter: 'all', collectionId: undefined, ungrouped: false }); }}
       search={catalog.query.search} filter={catalog.query.filter} groupId={collectionId} groups={groups.items} view={view} busy={operation.busy}
       onSearch={search => catalog.select({ search })} onFilter={filter => catalog.select({ filter, ...(filter === 'recent' ? { sort: 'recent' } : {}) })}
       onGroup={id => catalog.select({ collectionId: id && id !== 'ungrouped' ? id : undefined, ungrouped: id === 'ungrouped' })} onView={setView}

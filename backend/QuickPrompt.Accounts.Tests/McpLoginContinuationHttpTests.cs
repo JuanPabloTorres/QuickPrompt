@@ -51,7 +51,7 @@ public sealed partial class AccountHttpTests
         var response = await client.GetAsync(QueryHelpers.AddQueryString("/connect/authorize", request!));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Iniciar sesión", html); Assert.DoesNotContain("name=library_id", html);
+        Assert.Contains("Inicia sesión para conectar QuickPrompt", html); Assert.DoesNotContain("name=library_id", html);
         var form = McpHiddenFields(html);
         Assert.Contains(McpLoginContinuation.FormField, form.Keys); Assert.DoesNotContain("action", form.Keys);
         return form;

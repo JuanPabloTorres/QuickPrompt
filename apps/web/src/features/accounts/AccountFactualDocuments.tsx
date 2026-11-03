@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { IconAction } from '../../components/ui/Icon';
 import { Dialog } from '../../components/ui/Dialog';
 import type { AccountService } from '../../services/accounts';
 import type { FactualDocument, FactualDocumentSummary } from '../../services/accountFactual';
@@ -10,7 +12,7 @@ import '../../design/factual.css';
 /** Durable, approved documents are distinct from seven-day raw executions and reusable prompts. */
 export function AccountFactualDocuments({ libraryId, service, onExpired }: { libraryId: string; service: AccountService; onExpired: () => void }) {
   const [open, setOpen] = useState(false);
-  return <section className="account-remembered" aria-label="Documentos aprobados"><div className="account-section-heading"><div><span className="eyebrow">HISTORIAL DE DOCUMENTOS</span><h3>Documentos aprobados</h3></div><button className="secondary" aria-expanded={open} onClick={() => setOpen(value => !value)}>{open ? 'Ocultar documentos' : 'Ver documentos aprobados'}</button></div>
+  return <section className="account-remembered" aria-label="Documentos aprobados"><div className="account-section-heading"><h3>Documentos aprobados</h3><IconAction className="secondary" aria-expanded={open} label={open ? 'Ocultar documentos' : 'Ver documentos aprobados'} glyph={open ? EyeOff : Eye} onClick={() => setOpen(value => !value)} /></div>
     <p className="muted">Textos que revisaste y aprobaste mediante transformación factual. Se conservan separados de las respuestas sin revisar y de tus plantillas. Eliminar el prompt de origen también elimina estos documentos derivados.</p>
     {open && <FactualDocumentList key={libraryId} libraryId={libraryId} service={service} onExpired={onExpired} />}
   </section>;
@@ -30,7 +32,7 @@ function FactualDocumentList({ libraryId, service, onExpired }: { libraryId: str
     api.documents(page, controller.signal).then(result => { if (!controller.signal.aborted) { setItems(result.items); setTotal(result.total); } }).catch(error => { if (!controller.signal.aborted) operation.fail(error); });
     return () => controller.abort();
   }, [api, page, reload, operation.clear, operation.fail]);
-  return <><button className="text-button" onClick={() => setReload(value => value + 1)}>Actualizar documentos</button>
+  return <><IconAction className="secondary" label="Actualizar documentos" glyph={RefreshCw} onClick={() => setReload(value => value + 1)} />
     {operation.error && <p role="alert" className="error">{operation.error}</p>}
     {!items ? !operation.error && <p role="status">Consultando documentos aprobados…</p> : !items.length ? <p>Aún no hay documentos aprobados en esta página.</p> : <ul className="account-memory-list">{items.map(item => <li key={item.id}><div><strong>{item.title}</strong><span>Documento aprobado · prompt versión {item.promptRevision} · {historyDate(item.createdAt)}</span><span>{item.edited ? 'Con modificaciones en revisión' : 'Hechos confirmados en revisión'}</span></div><button className="secondary" onClick={() => setSelected(item.id)}>Abrir documento {item.title}</button></li>)}</ul>}
     {(page > 0 || total > 20) && <nav className="pagination" aria-label="Páginas de documentos"><button className="secondary" disabled={page === 0} onClick={() => setPage(value => value - 1)}>Documentos anteriores</button><span>Página {page + 1}</span><button className="secondary" disabled={(page + 1) * 20 >= total} onClick={() => setPage(value => value + 1)}>Documentos siguientes</button></nav>}

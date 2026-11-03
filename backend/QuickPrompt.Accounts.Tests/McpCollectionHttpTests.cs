@@ -32,7 +32,7 @@ public sealed partial class AccountHttpTests
         var request = McpRequest(protocol, verifier, import, create, collections);
         var review = await a.GetAsync(QueryHelpers.AddQueryString("/connect/authorize", request!)); review.EnsureSuccessStatusCode();
         var html = await review.Content.ReadAsStringAsync();
-        if (collections) Assert.Contains("COLECCIONES compartidas", html); else Assert.Contains("No permite leer ni importar colecciones", html);
+        if (collections) Assert.Contains("Leer colecciones compartidas que ya aceptaste", html); else Assert.Contains("No permite leer ni importar colecciones", html);
         if (!import) Assert.Contains("No permite importar prompts individuales", html);
         if (!create) Assert.Contains("No permite crear prompts libres", html);
         var tokens = await McpRedeem(protocol, await ApproveMcp(a, library, request), verifier);

@@ -41,7 +41,8 @@ public sealed class MailjetAccountMail : IAccountMail
                 From = new { Email = settings.SenderEmail, Name = settings.SenderName },
                 To = new[] { new { Email = message.Email } },
                 Subject = AccountMailContract.Subject(message.Purpose),
-                TextPart = AccountMailContract.Text(message.Purpose, link)
+                TextPart = AccountMailContract.Text(message.Purpose, link),
+                HTMLPart = AccountMailContract.Html(message.Purpose, link)
             } }
         }, options: JsonSerializerOptions.Default);
         try

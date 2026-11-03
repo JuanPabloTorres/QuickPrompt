@@ -39,7 +39,7 @@ function setup(openAgent = true) {
 }
 it('opens the existing action workbench from the welcome without starting a task', async () => {
   const calls = setup(false);
-  fireEvent.click(screen.getByRole('button', { name: 'Trabajar con NOVA' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir asistente NOVA' }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Crear prompt' })));
   expect(screen.getAllByRole('region', { name: 'Panel de NOVA' })).toHaveLength(1);
   expect(calls.filter(call => call.method !== 'GET')).toEqual([]);

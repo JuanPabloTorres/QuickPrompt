@@ -65,7 +65,7 @@ it('uses the shared authenticated shell and account-owned navigation without loc
   expect(fixture.paths.every(path => path.startsWith('/account/') || path.startsWith('/api/accounts/'))).toBe(true);
   expect(Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))).toEqual(['nova-theme']);
   fireEvent.click(within(sidebar).getByRole('button', { name: 'Cerrar sesión' }));
-  await screen.findByRole('heading', { name: 'Bienvenido a tu espacio' });
+  await screen.findByRole('heading', { name: 'Inicia sesión' });
   expect(screen.queryByRole('complementary', { name: 'Barra lateral de QuickPrompt' })).toBeNull();
   expect(screen.queryByText(actor.email)).toBeNull();
 });

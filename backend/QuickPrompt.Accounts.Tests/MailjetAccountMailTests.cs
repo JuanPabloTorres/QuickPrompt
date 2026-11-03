@@ -53,7 +53,7 @@ public sealed class MailjetAccountMailTests
         Assert.Equal("Basic", handler.Scheme); Assert.Equal(Key + ":" + Secret, handler.DecodedCredentials);
         Assert.Equal(new[] { "Messages" }, handler.Body.EnumerateObject().Select(property => property.Name));
         var sent = Assert.Single(handler.Body.GetProperty("Messages").EnumerateArray());
-        Assert.Equal(new[] { "From", "Subject", "TextPart", "To" }, sent.EnumerateObject().Select(property => property.Name).Order());
+        Assert.Equal(new[] { "From", "HTMLPart", "Subject", "TextPart", "To" }, sent.EnumerateObject().Select(property => property.Name).Order());
         Assert.Equal("sender@example.invalid", sent.GetProperty("From").GetProperty("Email").GetString());
         Assert.Equal("QuickPrompt Cuentas", sent.GetProperty("From").GetProperty("Name").GetString());
         Assert.Equal(message.Email, Assert.Single(sent.GetProperty("To").EnumerateArray()).GetProperty("Email").GetString());

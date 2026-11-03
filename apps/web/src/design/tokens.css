@@ -29,6 +29,13 @@
   --scrim: #050b17b8;
   --shadow: 0 12px 36px #00000026;
   --shadow-small: 0 4px 16px #00000024;
+  --panel-radius: 18px;
+  --panel-edge: color-mix(in srgb, var(--border) 72%, var(--surface));
+  --panel-light: linear-gradient(145deg, color-mix(in srgb, var(--intelligence) 6%, var(--surface)), var(--surface) 60%);
+  --work-grid:
+    linear-gradient(color-mix(in srgb, var(--border) 14%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 14%, transparent) 1px, transparent 1px) 0 0 / 48px 48px;
+  --work-background: radial-gradient(ellipse at 15% 0%, color-mix(in srgb, var(--intelligence) 11%, transparent), transparent 56%), var(--work-grid), var(--background);
   --state-tint: 12%;
   --accent-soft: color-mix(in srgb, var(--accent) var(--state-tint), var(--surface));
   --intelligence-soft: color-mix(in srgb, var(--intelligence) var(--state-tint), var(--surface));

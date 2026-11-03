@@ -6,7 +6,7 @@
 .account-factual .factual-check { display: flex; gap: 12px; align-items: center; min-height: 44px; margin-block: 16px; }
 .factual-check input { width: 20px; height: 20px; flex-shrink: 0; }
 .factual-facts { min-width: 0; border: 0; padding: 0; display: grid; gap: 20px; }
-.factual-fact { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.factual-fact { min-width: 0; padding: 16px; border: 1px solid var(--panel-edge); border-inline-start: 3px solid var(--intelligence); border-radius: 12px; background: var(--panel-light); }
 .factual-fact label { display: block; margin-top: 16px; }
 .factual-fact textarea, .factual-fact select { width: 100%; }
 .account-factual details { padding: 12px; border: 1px solid var(--border); border-radius: 12px; }

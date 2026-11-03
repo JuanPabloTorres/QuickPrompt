@@ -271,7 +271,7 @@ function ApplicationView() {
         contentClarification={inputRequest?.runId === liveRunId ? { identity: visibleSession, confirm: continueAuthoring } : undefined}
         inputDefinition={inputRequest?.runId === liveRunId ? { updating: inputRequest.command.operation === 'PROPOSE_ADAPTATION', confirm: names => quickRequest(inputRequest.message, inputRequest.source, undefined, { ...inputRequest.command, inputNames: names }) } : undefined} />
       <AgentControl runId={controlling ? liveRunId : null} runtime={runtime} />
-      {mode === 'discover' && <NovaWelcome runtime={runtime} home controlling={controlling} onOpen={() => window.dispatchEvent(new Event('nova-open-assistant'))} onHelp={() => setHelpOpen(true)} />}
+      {mode === 'discover' && <NovaWelcome runtime={runtime} home controlling={controlling} onHelp={() => setHelpOpen(true)} />}
       {!workerRunId && <AgentDock suspended={controlling} hasActivity={!!liveRunId} context={mode === 'create' ? draft.title || 'Borrador actual' : activePrompt?.title ?? 'Tu biblioteca'} actions={<QuickActions compact source={activePrompt ?? undefined} sourceValues={activePrompt ? valuesByPrompt[activePrompt.id] : undefined} disabled={!!executionRunId} onRequest={quickRequest} onRemove={quickRemove} />}>
         <p className="search-hint" data-testid="nova-action-workbench">Elige la acción; NOVA te ayuda con el contenido, los datos y la búsqueda.</p>
       </AgentDock>}

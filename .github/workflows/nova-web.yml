@@ -204,7 +204,10 @@ jobs:
         run: |
           [[ "$GITHUB_REF_NAME" =~ ^v1\.[0-9]+\.[0-9]+$ ]]
           test "$(node -p "require('./apps/web/package.json').version")" = "${GITHUB_REF_NAME#v}"
-          gh release create "$GITHUB_REF_NAME" dist/QuickPrompt-Companion.zip dist/SHA256SUMS.txt --verify-tag --target "$GITHUB_SHA" --notes-file docs/releases/INITIAL_1.0.1.md
+          notes="docs/releases/$GITHUB_REF_NAME.md"
+          if [[ "$GITHUB_REF_NAME" == v1.0.1 ]]; then notes=docs/releases/INITIAL_1.0.1.md; fi
+          test -f "$notes"
+          gh release create "$GITHUB_REF_NAME" dist/QuickPrompt-Companion.zip dist/SHA256SUMS.txt --verify-tag --target "$GITHUB_SHA" --notes-file "$notes"
       - name: Publish the versioned production image
         env:
           GH_TOKEN: ${{ github.token }}

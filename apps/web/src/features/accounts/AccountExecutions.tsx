@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Eye, RefreshCw, Square } from 'lucide-react';
+import { IconAction } from '../../components/ui/Icon';
 import { Dialog } from '../../components/ui/Dialog';
 import type { AccountConnection, AccountExecution, AccountExecutionResult, AccountPrompt, AccountService } from '../../services/accounts';
 import { downloadPreparedText } from '../../services/textExport';
@@ -108,14 +110,14 @@ export function AccountExecutions({ libraryId, service, refresh, onExpired, onCa
     return () => controller.abort();
   }, [scope, libraryId, service, refresh, reload, operation.clear, operation.fail]);
   return <section className="account-remembered" aria-label="Preparaciones recientes">
-    <div className="account-section-heading"><div><span className="eyebrow">RESULTADOS PRIVADOS</span><h3>Preparaciones recientes</h3></div><button className="secondary" disabled={operation.busy} onClick={() => setReload(value => value + 1)}>Actualizar preparaciones</button></div>
+    <div className="account-section-heading"><h3>Preparaciones recientes</h3><IconAction className="secondary" label="Actualizar preparaciones" glyph={RefreshCw} disabled={operation.busy} onClick={() => setReload(value => value + 1)} /></div>
     <p className="muted">Hasta 100 solicitudes de esta biblioteca, con el trabajo activo primero. Los datos enviados y resultados caducan siete días después de terminar; puedes olvidarlos antes. El recibo sin contenido se conserva para evitar repeticiones y mantener las cuotas.</p>
     {operation.error && forgetting?.libraryId !== libraryId && <p role="alert" className="error">{operation.error}</p>}
     {!jobs ? !operation.error && <p role="status">Cargando preparaciones…</p> : jobs.length ? <ul className="account-memory-list">{jobs.map(job => <li key={job.id}>
       <div><strong>{job.forgottenAt ? 'Contenido olvidado' : job.kind === 'RunLocalPrompt' && job.status === 'Running' ? 'Ejecutando en tu equipo' : labels[job.status]}</strong><span>{historyDate(job.createdAt)}</span>{job.cancelRequested && active(job) && <span role="status">Cancelación solicitada…</span>}
         {job.kind === 'RunLocalPrompt' && job.errorCode && <p className="muted">{localIssues[job.errorCode] ?? 'La ejecución terminó sin respuesta. Revisa tu equipo antes de volver a solicitarla.'}</p>}</div>
-      {active(job) ? <button className="secondary" disabled={operation.busy || job.cancelRequested} onClick={() => { void operation.run(signal => service.cancelExecution(libraryId, job.id, signal), () => setReload(value => value + 1)); }}>Detener preparación</button>
-        : !job.forgottenAt && <div className="account-actions">{job.status === 'Completed' && <button className="secondary" onClick={() => setSelected(job)}>Ver resultado</button>}
+      {active(job) ? <IconAction className="secondary" label="Detener preparación" glyph={Square} disabled={operation.busy || job.cancelRequested} onClick={() => { void operation.run(signal => service.cancelExecution(libraryId, job.id, signal), () => setReload(value => value + 1)); }} />
+        : !job.forgottenAt && <div className="account-actions">{job.status === 'Completed' && <IconAction className="secondary" label="Ver resultado" glyph={Eye} onClick={() => setSelected(job)} />}
           <button className="text-button" disabled={operation.busy} onClick={() => setForgetting(job)} aria-label={`Olvidar contenido de ${historyDate(job.createdAt)}`}>Olvidar contenido</button></div>}
     </li>)}</ul> : <p>Aún no has preparado una instrucción en esta biblioteca.</p>}
     {selected?.libraryId === libraryId && <AccountExecutionResultDialog key={`${libraryId}:${selected.id}`} libraryId={libraryId} job={selected} service={service} onExpired={onExpired} onUsed={onCatalogChanged} onClose={() => setSelected(undefined)} />}

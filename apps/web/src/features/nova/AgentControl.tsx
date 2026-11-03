@@ -4,8 +4,8 @@ import { useAgentOverlayHost } from './useAgentOverlayHost';
 import type { NovaRuntimeSnapshot } from './NovaLive';
 import { AgentRuntimePanel } from './AgentRuntimePanel';
 import { liveLabels, terminalLive } from '../../services/live';
-import { Workflow } from 'lucide-react';
-import { AppIcon } from '../../components/ui/Icon';
+import { ScanEye, Square, Workflow, X } from 'lucide-react';
+import { IconAction } from '../../components/ui/Icon';
 import { useUiPortalScope } from '../../components/ui/UiPortalScope';
 
 const controlScope = '[data-nova-user-control="true"], .nova-approval-dialog';
@@ -71,10 +71,10 @@ export function AgentControl({ runId, runtime }: { runId: string | null; runtime
     {!reviewOpen && createPortal(<aside className="nova-control-banner" data-awaiting-approval={!!awaitingApproval} data-nova-user-control="true" aria-label="Control del agente">
       {awaitingApproval ? <>
         <div role="alert" data-nova-approval-alert="true"><strong>NOVA necesita tu aprobación</strong><span>{current?.view.deletion ? 'Revisa el prompt antes de confirmar su eliminación.' : current?.view.proposal?.purpose === 'CONTENT_ONLY' ? 'La propuesta está lista. Revisa el contenido antes de continuar.' : 'El borrador está listo. Revisa los cambios antes de guardarlos.'}</span></div>
-        <div className="nova-approval-choices"><button type="button" className="primary" disabled={!!current?.busy || !!paused} onClick={reviewApproval}>{current?.view.deletion ? 'Revisar eliminación' : 'Revisar y aprobar'}</button><button type="button" className="secondary" onClick={stop}>No aprobar</button></div>
+        <div className="nova-approval-choices"><IconAction className="primary" label={current?.view.deletion ? 'Revisar eliminación' : 'Revisar y aprobar'} glyph={ScanEye} disabled={!!current?.busy || !!paused} onClick={reviewApproval} /><IconAction className="secondary" label="No aprobar" glyph={X} onClick={stop} /></div>
       </> : <>
       <div role="status"><strong>{current?.disconnected ? 'NOVA · sin conexión' : paused ? 'NOVA · en pausa' : 'NOVA tiene el control'}</strong></div>
-      <div className="nova-control-actions"><button type="button" className="icon-button" aria-label="Ver actividad de NOVA" title="Ver actividad de NOVA" onClick={() => window.dispatchEvent(new Event('nova-open-activity'))}><AppIcon glyph={Workflow} size={20} aria-hidden="true" /></button><button type="button" className="secondary" aria-label="Detener agente" onClick={stop}>Detener</button></div>
+      <div className="nova-control-actions"><IconAction label="Ver actividad de NOVA" glyph={Workflow} onClick={() => window.dispatchEvent(new Event('nova-open-activity'))} /><IconAction className="secondary" label="Detener agente" glyph={Square} onClick={stop} /></div>
       </>}
       {!awaitingApproval && current && <AgentRuntimePanel view={current.view} status={current.status ?? liveLabels[current.view.run.status] ?? current.view.run.status} disconnected={current.disconnected} controlled compact controls={null} />}
     </aside>, host)}

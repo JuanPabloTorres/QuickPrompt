@@ -1,7 +1,7 @@
 import { useApplicationServices } from '../../components/ServiceContext';
 import { AppIcon } from '../../components/ui/Icon';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowUpRight, Copy, ListChecks, MoreHorizontal, Pencil, Play, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowUpRight, Copy, FolderOpen, ListChecks, MoreHorizontal, Pencil, Play, Plus, Search, Trash2 } from 'lucide-react';
 import { AnimatePresence, m, useReducedMotionConfig } from 'motion/react';
 import { panelMotion, stillPanelMotion } from '../../design/motion';
 import { Dialog } from '../../components/ui/Dialog';
@@ -16,7 +16,7 @@ const actions = [
   { id: 'create', label: 'Crear prompt', icon: Plus, question: '¿Qué prompt quieres crear?', hint: 'Describe para qué lo necesitas y qué resultado esperas.', submit: 'Crear con NOVA' },
   { id: 'update', label: 'Actualizar prompt', icon: Pencil, question: '¿Qué quieres cambiar?', hint: 'Por ejemplo: hacerlo más breve, cambiar el tono o añadir una sección.', submit: 'Preparar cambios' },
   { id: 'find', label: 'Buscar por significado', icon: Search, question: '¿Qué prompt necesitas?', hint: 'Describe su propósito con tus palabras. NOVA buscará entre los prompts guardados.', submit: 'Buscar con IA' },
-  { id: 'open', label: 'Buscar y abrir', icon: Search, submit: 'Abrir con NOVA' },
+  { id: 'open', label: 'Buscar y abrir', icon: FolderOpen, submit: 'Abrir con NOVA' },
   { id: 'delete', label: 'Eliminar prompt', icon: Trash2, submit: 'Revisar eliminación' },
   { id: 'fill', label: 'Completar variables', icon: ListChecks, submit: 'Completar con NOVA' },
   { id: 'prepare', label: 'Preparar para una IA', icon: ArrowUpRight, submit: 'Preparar con NOVA' },
@@ -157,7 +157,7 @@ export function QuickActions({ source, sourceValues, disabled = false, onRequest
   }
   return <section ref={root} className={`nova-quick-actions${compact ? ' quick-actions-compact' : ''}`} aria-label="Acciones rápidas de NOVA">
     {!compact && <p className="quick-actions-caption">Elige una acción. NOVA te pide solo los detalles.</p>}
-    <div className="quick-action-buttons">{actions.slice(0, 4).map(button)}{compact && <button ref={moreTrigger} type="button" className="icon-button quick-more-trigger" aria-label="Más acciones de NOVA" aria-expanded={moreOpen} aria-controls={moreOpen ? menuId : undefined} onClick={() => setMoreOpen(value => !value)}><AppIcon glyph={MoreHorizontal} size={20} aria-hidden="true"  /><span>Más acciones</span></button>}</div>
+    <div className="quick-action-buttons">{actions.slice(0, 4).map(button)}{compact && <button ref={moreTrigger} type="button" className="icon-button quick-more-trigger" aria-label="Más acciones de NOVA" title="Más acciones de NOVA" aria-expanded={moreOpen} aria-controls={moreOpen ? menuId : undefined} onClick={() => setMoreOpen(value => !value)}><AppIcon glyph={MoreHorizontal} size={20} /></button>}</div>
     {compact ? <AnimatePresence>{moreOpen && <m.div id={menuId} className="quick-actions-menu" aria-label="Más acciones de NOVA" role="group" variants={reduced ? stillPanelMotion : panelMotion} initial="closed" animate="open" exit="closed">{actions.slice(4).map(button)}</m.div>}</AnimatePresence> : <details className="quick-more"><summary>Más acciones</summary><div className="quick-action-buttons">{actions.slice(4).map(button)}</div></details>}
     <Dialog open={!!action} onOpenChange={open => { if (!open) setAction(null); }} title={action?.label ?? 'Acción rápida'} description="Elige los detalles y NOVA realizará la acción en esta misma pestaña." onCloseAutoFocus={event => { event.preventDefault(); if (trigger.current?.isConnected) trigger.current.focus(); else moreTrigger.current?.focus(); }}>
       {action && <ActionForm key={action.id} action={action} initialPrompt={source} initialValues={sourceValues} onRequest={onRequest} onRemove={onRemove} onClose={() => setAction(null)} />}

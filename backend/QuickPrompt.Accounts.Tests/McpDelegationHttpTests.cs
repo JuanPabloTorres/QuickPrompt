@@ -32,7 +32,9 @@ public sealed partial class AccountHttpTests
     {
         var review = await owner.GetAsync(QueryHelpers.AddQueryString("/connect/authorize", request!));
         Assert.Equal(HttpStatusCode.OK, review.StatusCode);
-        Assert.Contains("Aprobar lectura", await review.Content.ReadAsStringAsync());
+        var consentPage = await review.Content.ReadAsStringAsync();
+        Assert.Contains("Aprobar permisos", consentPage);
+        Assert.Contains("Buscar, leer y completar variables", consentPage);
         var form = new Dictionary<string, string>(request) { ["action"] = "approve", ["library_id"] = library.ToString() };
         var response = await owner.PostAsync("/connect/authorize", new FormUrlEncodedContent(form));
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);

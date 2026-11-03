@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { IconAction } from '../../components/ui/Icon';
 import { Dialog } from '../../components/ui/Dialog';
 import { ApiError } from '../../services/api';
 import type { AccountPrompt, AccountService, RememberedContext, SavedEditorContext } from '../../services/accounts';
@@ -38,7 +40,7 @@ export function AccountRememberedDrafts({ libraryId, service, onExpired, onResto
     }, 'Contexto olvidado. Los prompts de tu biblioteca se conservan.');
   }
   return <section className="account-remembered" aria-label="Borradores conservados">
-    <div className="account-section-heading"><div><span className="eyebrow">RETOMAR EL TRABAJO</span><h3>Borradores conservados</h3></div><button className="text-button" disabled={operation.busy} onClick={() => setRefresh(value => value + 1)}>Actualizar borradores</button></div>
+    <div className="account-section-heading"><h3>Borradores conservados</h3><IconAction className="secondary" label="Actualizar borradores" glyph={RefreshCw} disabled={operation.busy} onClick={() => setRefresh(value => value + 1)} /></div>
     <p className="muted">Sólo se conserva lo que eliges guardar aquí. Caduca a los siete días; no conserva aprobaciones ni ejecuta acciones al recuperarlo.</p>
     {operation.error && <p className="error" role="alert">{operation.error}</p>}{operation.notice && <p role="status">{operation.notice}</p>}
     {!items ? !operation.error && <p role="status">Cargando borradores conservados…</p> : items.length ? <ul className="account-memory-list">{items.map(item => <li key={item.id}><div><strong>{item.title}</strong><span>Disponible hasta {new Date(item.expiresAt).toLocaleDateString()}</span></div><div className="account-actions"><button className="secondary" disabled={operation.busy} onClick={() => restore(item.id)} aria-label={`Recuperar borrador ${item.title}`}>Recuperar</button><button className="text-button" disabled={operation.busy} onClick={() => setForgetting(item)} aria-label={`Olvidar borrador ${item.title}`}>Olvidar</button></div></li>)}</ul> : <p className="muted">Todavía no has conservado ningún borrador.</p>}

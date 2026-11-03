@@ -9,9 +9,9 @@ export function WorkspaceSidebarFrame({ onHome, navigation, utilities, workspace
 }) {
   return <aside className="workspace-sidebar" aria-label="Barra lateral de QuickPrompt">
     <AppBrand onClick={onHome} homeControl={homeControl} />
-    <div className="sidebar-workspace-label">{workspaceLabel}</div>
+    <div className="sr-only">{workspaceLabel}</div>
     {navigation}
-    <div className="sidebar-utilities">{utilities}<p className="sidebar-local"><i aria-hidden="true" /><span>{statusLabel}</span></p></div>
+    <div className="sidebar-utilities">{utilities}<p className="sidebar-local" title={statusLabel}><i aria-hidden="true" /><span className="sr-only">{statusLabel}</span></p></div>
   </aside>;
 }
 

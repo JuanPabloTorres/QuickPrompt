@@ -18,6 +18,12 @@ internal static class McpConsent
 {
     private const string Server = OpenIddictServerAspNetCoreDefaults.AuthenticationScheme;
     private static string Html(string value) => HtmlEncoder.Default.Encode(value);
+    private const string PageStart = """
+        <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>QuickPrompt · Conectar plugin</title><link rel="stylesheet" href="/assets/mcp-consent.css"></head>
+        <body><main><p class="brand">QuickPrompt</p>
+        """;
+    private const string PageEnd = "</main></body></html>";
 
     internal static async Task<IResult> Handle(HttpContext context, DelegationOrigin origin, DelegationBoundary boundary,
         LibraryAccess libraries, IAntiforgery antiforgery, CancellationToken cancellation)
@@ -44,40 +50,43 @@ internal static class McpConsent
         var inputs = string.Concat(McpLoginContinuation.Parameters(request).Select(item => $"<input type=hidden name=\"{item.Key}\" value=\"{Html(item.Value ?? "")}\">"));
         var choices = string.Concat(mine.Select(library => $"<option value=\"{library.Id}\">{Html(library.Name)}</option>"));
         var disabled = mine.Length == 0 ? " disabled" : "";
-        var page = "<!doctype html><html lang=es><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>QuickPrompt · Autorizar MCP</title>"
-            + "<main><h1>Conectar MCP con QuickPrompt</h1><p>Cliente: QuickPrompt MCP. Permite buscar, leer y completar variables de una biblioteca elegida.</p>"
+        var page = PageStart
+            + "<h1>Conecta tu biblioteca</h1><div class=guide><strong>QuickPrompt MCP · Paso 2 de 2</strong><p>¿Qué biblioteca quieres usar con el plugin? Revisa los permisos y elige si quieres continuar.</p></div>"
+            + "<h2>Qué podrá hacer el plugin</h2><ul><li>Buscar, leer y completar variables en la biblioteca que elijas.</li>"
             + (request.HasScope(McpDelegationPolicy.ImportScope)
-                ? "<p><strong>También autoriza leer prompts individuales compartidos que ya aceptaste en tu cuenta e importarlos como copias en la biblioteca elegida.</strong> No permite aceptar invitaciones ni cambiar el original.</p>"
-                : "<p>No permite importar prompts individuales compartidos.</p>")
+                ? "<li>Leer prompts compartidos que ya aceptaste e importarlos como copias.</li>" : "")
             + (request.HasScope(McpDelegationPolicy.CreateScope)
-                ? "<p><strong>También autoriza guardar prompts NUEVOS en la biblioteca elegida.</strong> No permite modificar prompts existentes.</p>"
-                : "<p>No permite crear prompts libres a partir de contenido nuevo.</p>")
+                ? "<li>Guardar prompts nuevos en esa biblioteca.</li>" : "")
             + (request.HasScope(McpDelegationPolicy.CollectionsScope)
-                ? "<p><strong>También autoriza leer COLECCIONES compartidas que ya aceptaste e importar el conjunto como una colección y prompts NUEVOS en la biblioteca elegida.</strong> No acepta invitaciones ni modifica originales o copias existentes.</p>"
-                : "<p>No permite leer ni importar colecciones compartidas.</p>")
-            + "<p>No permite borrar, ejecutar IA ni leer memoria, valores guardados o resultados.</p>"
+                ? "<li>Leer colecciones compartidas que ya aceptaste e importarlas como colecciones y prompts nuevos.</li>" : "")
+            + "</ul><details><summary>Permisos excluidos</summary><ul>"
+            + (request.HasScope(McpDelegationPolicy.ImportScope) ? "" : "<li>No permite importar prompts individuales.</li>")
+            + (request.HasScope(McpDelegationPolicy.CreateScope) ? "" : "<li>No permite crear prompts libres.</li>")
+            + (request.HasScope(McpDelegationPolicy.CollectionsScope) ? "" : "<li>No permite leer ni importar colecciones compartidas.</li>")
+            + "<li>No permite aceptar invitaciones, editar o borrar prompts existentes, ejecutar IA ni leer memoria, valores guardados o resultados.</li></ul></details>"
             + "<p>El acceso vence como máximo en 30 días y puedes revocarlo en Conexiones."
             + (request.HasScope(Scopes.OfflineAccess) ? " Incluye renovación de sesión dentro de ese plazo." : "") + "</p>"
             + "<form method=post action=\"/connect/authorize\">" + inputs
             + $"<input type=hidden name=\"{Html(tokens.FormFieldName)}\" value=\"{Html(tokens.RequestToken!)}\">"
             + $"<label>Biblioteca <select required name=library_id{disabled}><option value=\"\">Elige una biblioteca</option>{choices}</select></label>"
-            + $"<button name=action value=approve{disabled}>Aprobar lectura{(request.HasScope(McpDelegationPolicy.ImportScope) ? ", importación de prompts" : "")}{(request.HasScope(McpDelegationPolicy.CreateScope) ? ", creación" : "")}{(request.HasScope(McpDelegationPolicy.CollectionsScope) ? " y colecciones" : "")} de esta biblioteca</button><button name=action value=deny formnovalidate>Denegar</button></form></main></html>";
+            + (mine.Length == 0 ? "<p>Crea una biblioteca en QuickPrompt y vuelve a iniciar la conexión.</p>" : "")
+            + $"<div class=actions><button class=primary name=action value=approve{disabled}>Aprobar permisos</button><button name=action value=deny formnovalidate>Denegar</button></div></form>" + PageEnd;
         return Results.Content(page, "text/html; charset=utf-8");
     }
 
     private static IResult LoginPage(HttpContext context, OpenIddictRequest request, DelegationOrigin origin, IAntiforgery antiforgery)
     {
         if (!context.RequestServices.GetRequiredService<GoogleAvailability>().Enabled)
-            return Results.Content("<!doctype html><html lang=es><title>QuickPrompt · Iniciar sesión</title><main><h1>Inicia sesión en QuickPrompt</h1><p>El acceso con Google no está disponible. Inicia sesión y vuelve a esta autorización.</p><a href=\"/\">Abrir QuickPrompt</a></main></html>", "text/html; charset=utf-8", statusCode: 401);
+            return Results.Content(PageStart + "<h1>Inicia sesión en QuickPrompt</h1><div class=guide><strong>QuickPrompt MCP · Paso 1 de 2</strong><p>Entra a tu cuenta y vuelve al plugin para conectar tu biblioteca.</p></div><a href=\"/\">Abrir QuickPrompt</a>" + PageEnd, "text/html; charset=utf-8", statusCode: 401);
         var ticket = McpLoginContinuation.Issue(context.RequestServices.GetRequiredService<IDataProtectionProvider>(), origin,
             context.RequestServices.GetRequiredService<McpAccountSettings>(), request);
         var tokens = antiforgery.GetAndStoreTokens(context);
-        var page = "<!doctype html><html lang=es><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>QuickPrompt · Iniciar sesión</title>"
-            + "<main><h1>Inicia sesión para conectar QuickPrompt</h1><p>Después de entrar volverás aquí para elegir una biblioteca y revisar los permisos. Iniciar sesión no autoriza la conexión.</p>"
+        var page = PageStart
+            + "<h1>Inicia sesión para conectar QuickPrompt</h1><div class=guide><strong>QuickPrompt MCP · Paso 1 de 2</strong><p>Entra a tu cuenta. Después podrás elegir una biblioteca y decidir qué acceso autorizas.</p></div>"
             + "<form method=post action=\"/account/google\">"
             + $"<input type=hidden name=\"{Html(tokens.FormFieldName)}\" value=\"{Html(tokens.RequestToken!)}\">"
             + $"<input type=hidden name=\"{McpLoginContinuation.FormField}\" value=\"{Html(ticket)}\">"
-            + "<button>Continuar con Google</button></form></main></html>";
+            + "<button class=primary>Continuar con Google</button></form>" + PageEnd;
         return Results.Content(page, "text/html; charset=utf-8");
     }
 

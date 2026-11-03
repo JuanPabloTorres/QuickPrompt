@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, LockKeyhole, Plus, ShieldCheck } from 'lucide-react';
-import { AppBrand } from '../../components/ui/AppBrand';
-import { AppIcon } from '../../components/ui/Icon';
+import { ArrowLeft, ArrowRight, FileText, Library, LockKeyhole, Mail, Monitor, Moon, Plus, RotateCw, Settings, Sparkles, Sun } from 'lucide-react';
+import { AppIcon, IconAction } from '../../components/ui/Icon';
+import { NovaLogo } from '../../design/NovaLogo';
 import { ErrorState, InlineSpinner } from '../../components/ui/Feedback';
 import { errorMessage } from '../../services/api';
 import type { AccountLibrary, AccountOptions, AccountService, AccountUser } from '../../services/accounts';
@@ -17,6 +17,12 @@ import { useInterfaceTheme } from '../../hooks/useInterfaceTheme';
 import { AccountWorkspaceSidebar, type AccountWorkspaceView } from './AccountWorkspaceSidebar';
 
 type Boot = { user: AccountUser | null; options: AccountOptions; csrf: string };
+const workspaceViews = {
+  libraries: { title: 'Mis bibliotecas', glyph: Library, description: 'Guarda prompts privados y decide cuándo compartirlos.' },
+  invitations: { title: 'Invitaciones', glyph: Mail, description: 'Revisa los prompts y colecciones compartidos.' },
+  connections: { title: 'Conexiones locales', glyph: Monitor, description: 'Revisa qué equipos y clientes tienen acceso.' },
+  preferences: { title: 'Mis preferencias', glyph: Settings, description: 'Define cómo quieres trabajar con NOVA.' },
+};
 export function AccountPage({ service }: { service: AccountService }) {
   const [theme, setTheme] = useInterfaceTheme();
   const [boot, setBoot] = useState<Boot>();
@@ -78,16 +84,29 @@ export function AccountPage({ service }: { service: AccountService }) {
   const portalScope = useMemo(() => ({ active: !checking, dialogHost, overlayHost, onRetry: verifyIdentity }), [checking, dialogHost, overlayHost, verifyIdentity]);
   return <UiPortalScopeProvider value={portalScope}><div className={boot?.user ? 'app-shell accounts-page accounts-workspace' : 'accounts-page'}>
     <a className="skip-link" href="#main">Ir al contenido</a>
-    {!boot?.user && <header className="accounts-brand"><AppBrand onClick={() => { window.history.replaceState(null, '', '/'); reload(); }} /></header>}
+    {!boot?.user && <header className="accounts-brand">
+      <div className="accounts-wordmark"><NovaLogo size={32} /> <span>QuickPrompt <small>NOVA</small></span></div>
+      <button type="button" className="secondary icon-button" aria-label={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><AppIcon glyph={theme === 'dark' ? Sun : Moon} /></button>
+    </header>}
     <main className="accounts-main" id="main" tabIndex={-1}>
-      {!boot ? failure ? <ErrorState title="No pudimos abrir tu espacio" message={failure}><button className="secondary" onClick={reload}>Reintentar</button></ErrorState>
+      {!boot ? failure ? <ErrorState title="No pudimos abrir tu espacio" message={failure}><button type="button" className="secondary icon-button" aria-label="Reintentar" title="Reintentar" onClick={reload}><AppIcon glyph={RotateCw} /></button></ErrorState>
         : <p role="status"><InlineSpinner /> Preparando tu espacio…</p>
         : boot.user ? <>
           {checking && <div role={checkFailed ? 'alert' : 'status'}><p>{checkFailed ? 'No pudimos confirmar tu acceso. El contenido sigue oculto.' : 'Comprobando tu sesión. Tu trabajo está en pausa…'}</p><button type="button" className="secondary" data-nova-user-control="true" onClick={verifyIdentity}>Volver a comprobar acceso</button></div>}
           <div hidden={checking}><AccountLibraries key={boot.user.id} user={boot.user} options={boot.options} service={service} onExit={reload} theme={theme} onTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} /></div>
         </>
           : <div className="accounts-entry">
-            <section className="accounts-intro"><span className="eyebrow">QUICKPROMPT, CONTIGO</span><h1>Un espacio propio para tus instrucciones.</h1><p>Entra para crear tus bibliotecas privadas y conservar lo que funciona.</p><div className="accounts-assurance"><AppIcon glyph={ShieldCheck} size={24} /><p>Tu cuenta identifica tu espacio.<br />Tú decides qué instrucciones guardar.</p></div></section>
+            <section className="accounts-intro">
+              <h1>Tu biblioteca de prompts<span>.</span></h1>
+              <p>Organiza tus instrucciones y trabaja con NOVA cuando lo necesites.</p>
+              <div className="accounts-signal" aria-hidden="true">
+                <span><AppIcon glyph={FileText} size={24} /></span>
+                <i />
+                <span><AppIcon glyph={Sparkles} size={32} /></span>
+                <i />
+                <span><AppIcon glyph={LockKeyhole} size={24} /></span>
+              </div>
+            </section>
             <AccountForm service={service} options={boot.options} csrf={boot.csrf} onLogin={reload} />
           </div>}
     </main>
@@ -119,20 +138,23 @@ function AccountLibraries({ user, options, service, onExit, theme, onTheme }: {
     }, 'Biblioteca creada en tu cuenta.');
   }
   const active = libraries?.find(item => item.id === selected);
+  const current = workspaceViews[view];
   return <section className="account-libraries">
     <AccountWorkspaceSidebar view={view} theme={theme} busy={operation.busy} delegation={options.delegation}
       onHome={() => { setSelected(''); setView('libraries'); }} onView={setView} onTheme={onTheme} onLogout={() => void act('logout')} />
-    <div className="account-welcome"><div><span className="eyebrow">TU ESPACIO</span><h1>{view === 'preferences' ? 'Mis preferencias' : view === 'invitations' ? 'Invitaciones' : view === 'connections' ? 'Conexiones locales' : 'Mis bibliotecas'}</h1><p>{user.email}</p></div></div>
-    <p className="accounts-stage-note">Tus prompts son privados hasta que publicas una versión e invitas a otra cuenta. Con un equipo autorizado, NOVA prepara contenido y tú revisas cada guardado.</p>
+    <div className="account-welcome"><div className="account-workspace-identity">
+      <span className="account-card-symbol"><AppIcon glyph={current.glyph} size={24} /></span>
+      <div><h1>{current.title}</h1><p>{current.description}</p></div>
+    </div><span className="account-workspace-email">{user.email}</span></div>
     {operation.error && <p role="alert" className="error">{operation.error}</p>}{operation.notice && <p role="status">{operation.notice}</p>}
     {view === 'preferences' ? <NovaPreferenceEditor client={service.preferences} savedMessage="Preferencias confirmadas en tu cuenta." onExpired={onExit} /> : view === 'connections' ? <AccountConnections service={service} onExpired={onExit} /> : view === 'invitations' ? <AccountInvitations libraries={libraries ?? []} service={service} onExpired={onExit} onImported={libraryId => { setSelected(libraryId); setView('libraries'); }} /> : active ? <>
-      <button className="text-button" onClick={() => setSelected('')}><AppIcon glyph={ArrowLeft} />Volver a mis bibliotecas</button>
+      <IconAction className="secondary" label="Volver a mis bibliotecas" glyph={ArrowLeft} onClick={() => setSelected('')} />
       <AccountPromptLibrary key={`${user.id}:${active.id}`} library={active} service={service} onExpired={onExit} agentAccountId={options.delegation ? user.id : undefined} />
     </> : <><form className="account-new-library" onSubmit={event => { event.preventDefault(); void act('create'); }}>
       <div><label htmlFor="account-library-name">Nombre de tu biblioteca</label><input id="account-library-name" value={name} onChange={event => setName(event.target.value)} required maxLength={160} disabled={operation.busy} autoComplete="off" /></div>
-      <button className="primary" disabled={operation.busy || !name.trim()}>{operation.busy ? <InlineSpinner /> : <AppIcon glyph={Plus} />}Crear biblioteca</button>
+      <IconAction className="primary" type="submit" label="Crear biblioteca" glyph={Plus} disabled={operation.busy || !name.trim()}>{operation.busy ? <InlineSpinner /> : undefined}</IconAction>
     </form>
-    {!libraries ? !operation.error && <p role="status">Cargando bibliotecas…</p> : libraries.length ? <ul className="account-library-list">{libraries.map(library => <li key={library.id}><AppIcon glyph={LockKeyhole} size={20} /><div><h2>{library.name}</h2><span>Biblioteca privada</span></div><button className="secondary" aria-label={`Abrir biblioteca ${library.name}`} onClick={() => setSelected(library.id)}>Abrir<AppIcon glyph={ArrowRight} size={16} /></button></li>)}</ul> : <div className="empty-state"><h2>Tu primera biblioteca empieza aquí.</h2><p>Ponle un nombre para crear tu espacio.</p></div>}
+    {!libraries ? !operation.error && <p role="status">Cargando bibliotecas…</p> : libraries.length ? <ul className="account-library-list">{libraries.map(library => <li key={library.id}><AppIcon glyph={LockKeyhole} size={20} /><div><h2>{library.name}</h2><span>Biblioteca privada</span></div><IconAction className="secondary" label={`Abrir biblioteca ${library.name}`} glyph={ArrowRight} onClick={() => setSelected(library.id)} /></li>)}</ul> : <div className="empty-state"><AppIcon glyph={Library} size={32} /><h2>Tu primera biblioteca empieza aquí.</h2><p>Ponle un nombre para crear tu espacio.</p></div>}
     </>}
   </section>;
 }

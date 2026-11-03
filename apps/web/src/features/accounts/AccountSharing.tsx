@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Download, Mail, ShieldOff } from 'lucide-react';
+import { Check, Download, Eye, Mail, RefreshCw, ShieldOff, X } from 'lucide-react';
 import { Dialog } from '../../components/ui/Dialog';
 import { formatDateTime } from '../../components/ui/dateTime';
-import { AppIcon } from '../../components/ui/Icon';
+import { AppIcon, IconAction } from '../../components/ui/Icon';
 import { InlineSpinner } from '../../components/ui/Feedback';
 import { ApiError } from '../../services/api';
 import type { AccountInvitation, AccountLibrary, AccountPrompt, AccountPublication, AccountService, SharedCollection, SharedPrompt } from '../../services/accounts';
@@ -87,16 +87,16 @@ export function AccountInvitations({ libraries, service, onExpired, onImported }
       setInvitations(items); setRevoking(undefined);
     }, state === 1 ? 'Invitación aceptada. Ya puedes ver la versión compartida.' : state === 2 ? 'Invitación rechazada.' : 'Permiso revocado.');
   }
-  return <section className="account-invitations" aria-label="Invitaciones a prompts">
-    <div className="account-section-heading"><div><span className="eyebrow">COMPARTIR CON PERMISO</span><h2>Invitaciones</h2></div><button className="secondary" disabled={operation.busy} onClick={() => setRefresh(value => value + 1)}>Actualizar invitaciones</button></div>
+  return <section className="account-invitations account-view-panel" aria-label="Invitaciones a prompts">
+    <div className="account-section-heading"><h2>Bandeja de invitaciones</h2><IconAction className="secondary" label="Actualizar invitaciones" glyph={RefreshCw} disabled={operation.busy} onClick={() => setRefresh(value => value + 1)} /></div>
     <p className="muted">Aceptar permite leer una versión fija e importar una copia propia. Nunca concede editar la biblioteca de quien comparte.</p>
     {operation.error && <p role="alert" className="error">{operation.error}</p>}{operation.notice && <p role="status" className="account-notice">{operation.notice}</p>}
     {!invitations ? !operation.error && <p role="status">Cargando invitaciones…</p> : invitations.length ? <ul className="account-prompt-list">{invitations.map(item => <li key={item.id}>
       <div className="account-section-heading"><div><h3>{item.title}</h3><p className="muted">{item.isCollection ? 'Colección de prompts' : 'Prompt individual'} · {item.sentByMe ? `Enviada a ${item.recipientEmail ?? 'la cuenta invitada'}` : 'Recibida'} · {item.state === 0 ? 'Pendiente' : item.state === 1 ? item.available ? 'Aceptada' : 'Acceso no disponible' : item.state === 2 ? 'Rechazada' : 'Revocada'}</p></div></div>
       <div className="account-actions">
-        {!item.sentByMe && item.state === 0 && <><button className="primary" disabled={operation.busy} onClick={() => decide(item, 1)}>Aceptar invitación a {item.title}</button><button className="secondary" disabled={operation.busy} onClick={() => decide(item, 2)}>Rechazar invitación a {item.title}</button></>}
-        {!item.sentByMe && item.state === 1 && item.available && <button className="primary" onClick={() => setSelected(item)}>Ver versión compartida de {item.title}</button>}
-        {item.sentByMe && (item.state === 0 || item.state === 1) && <button className="secondary" disabled={operation.busy} onClick={() => setRevoking(item)}>Revocar invitación a {item.recipientEmail}</button>}
+        {!item.sentByMe && item.state === 0 && <><IconAction className="primary" label={`Aceptar invitación a ${item.title}`} glyph={Check} disabled={operation.busy} onClick={() => decide(item, 1)} /><IconAction className="secondary" label={`Rechazar invitación a ${item.title}`} glyph={X} disabled={operation.busy} onClick={() => decide(item, 2)} /></>}
+        {!item.sentByMe && item.state === 1 && item.available && <IconAction className="primary" label={`Ver versión compartida de ${item.title}`} glyph={Eye} onClick={() => setSelected(item)} />}
+        {item.sentByMe && (item.state === 0 || item.state === 1) && <IconAction className="secondary" label={`Revocar invitación a ${item.recipientEmail}`} glyph={ShieldOff} disabled={operation.busy} onClick={() => setRevoking(item)} />}
       </div>
     </li>)}</ul> : <div className="empty-state"><h3>No tienes invitaciones.</h3><p>Las instrucciones compartidas contigo aparecerán aquí.</p></div>}
     {selected && <SharedPromptDialog key={selected.publicationId} invitation={selected} libraries={libraries} service={service} onExpired={onExpired} onClose={() => setSelected(undefined)} onImported={onImported} />}

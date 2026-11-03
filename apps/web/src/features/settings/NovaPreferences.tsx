@@ -3,6 +3,8 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { ApiError, errorMessage } from '../../services/api';
 import { type PreferenceClient, type PreparationPreferences as Preferences } from '../../services/preferences';
 import { useBoundOperation } from '../../services/useBoundOperation';
+import { Check, RefreshCw, Trash2 } from 'lucide-react';
+import { IconAction } from '../../components/ui/Icon';
 
 const emptyPreferences: Preferences = { language: null, format: null, providerId: null };
 
@@ -47,13 +49,13 @@ export function NovaPreferenceEditor({ client, savedMessage, onExpired }: { clie
   }
   const busy = operation.busy || !loaded;
   return <>
-    <details><summary>Preferencias de NOVA</summary><p className="muted">Solo se conservarán las opciones que confirmes. Puedes eliminarlas cuando quieras. El destino preferido no autoriza una conexión ni cambia el modelo local.</p>
+    <details className="nova-preferences"><summary>Preferencias de NOVA</summary><p className="muted">Solo se conservarán las opciones que confirmes. Puedes eliminarlas cuando quieras. El destino preferido no autoriza una conexión ni cambia el modelo local.</p>
       {!loaded && !error && <p role="status">Cargando preferencias…</p>}
       <div className="prepared-field"><label htmlFor={`${prefix}-language`}>Idioma de respuesta</label><select id={`${prefix}-language`} disabled={busy} value={preferences.language ?? ''} onChange={event => setPreferences(previous => ({ ...previous, language: event.target.value as Preferences['language'] || null }))}><option value="">Según cada solicitud</option><option value="es">Español</option><option value="en">Inglés</option></select></div>
       <div className="prepared-field"><label htmlFor={`${prefix}-format`}>Formato preferido</label><select id={`${prefix}-format`} disabled={busy} value={preferences.format ?? ''} onChange={event => setPreferences(previous => ({ ...previous, format: event.target.value as Preferences['format'] || null }))}><option value="">Según cada solicitud</option>{['JSON', 'Markdown', 'Tabla', 'Texto'].map(format => <option key={format}>{format}</option>)}</select></div>
       <div className="prepared-field"><label htmlFor={`${prefix}-provider`}>Destino preferido</label><select id={`${prefix}-provider`} disabled={busy} value={preferences.providerId ?? ''} onChange={event => setPreferences(previous => ({ ...previous, providerId: event.target.value || null }))}><option value="">Elegir al utilizar</option><option value="ollama">Qwen local</option><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option><option value="gemini">Gemini</option><option value="copilot">Copilot</option><option value="perplexity">Perplexity</option></select></div>
-      <div className="dialog-actions"><button className="secondary" disabled={busy} onClick={() => void work(signal => client.save(preferences, true, signal), savedMessage)}>Confirmar preferencias</button><button className="text-button" disabled={busy} onClick={() => void work(async signal => { await client.forget(signal); return emptyPreferences; }, 'Preferencias eliminadas.')}>Eliminar preferencias</button></div>
-      {!loaded && error && <button className="secondary" onClick={() => setRefresh(value => value + 1)}>Reintentar preferencias</button>}
+      <div className="dialog-actions"><IconAction className="primary" label="Confirmar preferencias" glyph={Check} disabled={busy} onClick={() => void work(signal => client.save(preferences, true, signal), savedMessage)} /><IconAction className="secondary" label="Eliminar preferencias" glyph={Trash2} disabled={busy} onClick={() => void work(async signal => { await client.forget(signal); return emptyPreferences; }, 'Preferencias eliminadas.')} /></div>
+      {!loaded && error && <IconAction className="secondary" label="Reintentar preferencias" glyph={RefreshCw} onClick={() => setRefresh(value => value + 1)} />}
     </details>
     {error && <p className="error" role="alert">{error}</p>}{feedback && <p className="notice" role="status">{feedback}</p>}
   </>;
